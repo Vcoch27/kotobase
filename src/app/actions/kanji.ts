@@ -1,0 +1,78 @@
+"use server";
+
+import { adminDb } from "@/lib/firebase-admin";
+import { revalidatePath } from "next/cache";
+
+export async function getKanjiNote(character: string) {
+  if (!character) return null;
+  try {
+    const docRef = await adminDb.collection("kanji_notes").doc(character).get();
+    if (!docRef.exists) {
+      return null;
+    }
+    return {
+      id: docRef.id,
+      ...docRef.data()
+    };
+  } catch (error) {
+    console.error("Lỗi khi lấy thông tin Hán tự:", error);
+    return null;
+  }
+}
+
+export async function upsertKanjiNote(
+  character: string,
+  data: {
+    meaning?: string;
+    mnemonic?: string;
+  }
+) {
+  if (!character) throw new Error("Ký tự Hán tự không được để trống.");
+
+  try {
+    const docRef = adminDb.collection("kanji_notes").doc(character);
+    
+    await docRef.set({
+      character,
+      meaning: data.meaning || null,
+      mnemonic: data.mnemonic || null,
+      updatedAt: new Date().toISOString()
+    }, { merge: true }); // Merge true is equivalent to Upsert in Firestore
+
+    revalidatePath("/");
+    return { success: true, data: { character, ...data } };
+  } catch (error) {
+    console.error("Lỗi khi lưu Hán tự:", error);
+    return { success: false, error: "Không thể lưu ghi chú Hán tự." };
+  }
+}
+
+export async function getBulkKanjiNotes(characters: string[]) {
+  if (!characters.length) return [];
+  try {
+    // Firestore 'in' query has a limit of 10 items.
+    // If characters list is large, we need to chunk it.
+    const chunkSize = 10;
+    const chunks = [];
+    for (let i = 0; i < characters.length; i += chunkSize) {
+      chunks.push(characters.slice(i, i + chunkSize));
+    }
+
+    const allNotes: any[] = [];
+    
+    for (const chunk of chunks) {
+      const snapshot = await adminDb.collection("kanji_notes")
+        .where("character", "in", chunk)
+        .get();
+        
+      snapshot.docs.forEach(doc => {
+        allNotes.push({ id: doc.id, ...doc.data() });
+      });
+    }
+    
+    return allNotes;
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách Hán tự:", error);
+    return [];
+  }
+}
