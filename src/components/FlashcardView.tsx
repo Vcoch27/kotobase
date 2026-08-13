@@ -4,8 +4,12 @@ import React, { useState, useEffect, useCallback } from "react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
 import { 
   RotateCcw, Shuffle, ArrowLeft, ArrowRight, X, Check, 
-  Rotate3D, GraduationCap, LayoutList, RefreshCcw 
+  Rotate3D, GraduationCap, LayoutList, RefreshCcw, BrainCircuit
 } from "lucide-react";
+import { 
+  AnkiRating, AnkiCardData, DEFAULT_ANKI_DATA, 
+  calculateNextReview, loadAnkiProgress, saveAnkiProgress, formatInterval 
+} from "@/lib/anki-utils";
 
 interface VocabularyData {
   id: string;
@@ -20,7 +24,7 @@ interface FlashcardViewProps {
   vocabularies: VocabularyData[];
 }
 
-type StudyMode = "normal" | "progress";
+type StudyMode = "normal" | "progress" | "anki";
 
 // Fisher-Yates Shuffle
 const shuffleArray = <T,>(array: T[]): T[] => {
@@ -43,10 +47,38 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
   const [knownIds, setKnownIds] = useState<Set<string>>(new Set());
   const [unknownIds, setUnknownIds] = useState<Set<string>>(new Set());
 
+  // Anki tracking
+  const [ankiProgress, setAnkiProgress] = useState<Record<string, AnkiCardData>>({});
+  const [ankiStats, setAnkiStats] = useState({ new: 0, due: 0 });
+
   // Initialization
   useEffect(() => {
     if (vocabularies.length > 0) {
-      setDeck(vocabularies);
+      if (mode === "anki") {
+        const progress = loadAnkiProgress();
+        setAnkiProgress(progress);
+        
+        const now = Date.now();
+        const ankiDeck = vocabularies.filter(v => {
+          const p = progress[v.id];
+          if (!p) return true; // New card
+          if (p.nextReview <= now) return true; // Due card
+          return false;
+        });
+        
+        setDeck(ankiDeck);
+        // Calculate stats
+        let newCount = 0;
+        let dueCount = 0;
+        ankiDeck.forEach(v => {
+          if (!progress[v.id]) newCount++;
+          else dueCount++;
+        });
+        setAnkiStats({ new: newCount, due: dueCount });
+      } else {
+        setDeck(vocabularies);
+      }
+      
       setCurrentIndex(0);
       setIsFlipped(false);
       setIsFinished(false);
@@ -55,7 +87,7 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
     } else {
       setDeck([]);
     }
-  }, [vocabularies]);
+  }, [vocabularies, mode]);
 
   // Actions
   const flipCard = useCallback(() => {
@@ -98,6 +130,24 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
     handleNext();
   }, [currentIndex, deck, handleNext]);
 
+  const handleAnkiRate = useCallback((rating: AnkiRating) => {
+    const currentVocab = deck[currentIndex];
+    if (!currentVocab) return;
+    
+    const currentProgress = ankiProgress[currentVocab.id] || { ...DEFAULT_ANKI_DATA };
+    const newProgressData = calculateNextReview(rating, currentProgress);
+    
+    const newAnkiProgress = {
+      ...ankiProgress,
+      [currentVocab.id]: newProgressData
+    };
+    
+    setAnkiProgress(newAnkiProgress);
+    saveAnkiProgress(newAnkiProgress);
+    
+    handleNext();
+  }, [currentIndex, deck, ankiProgress, handleNext]);
+
   // Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -119,23 +169,49 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
         case "ArrowRight":
           e.preventDefault();
           if (mode === "normal") handleNext();
-          else handleProgress(true);
+          else if (mode === "progress") handleProgress(true);
           break;
         case "ArrowLeft":
           e.preventDefault();
           if (mode === "normal") handlePrev();
-          else handleProgress(false);
+          else if (mode === "progress") handleProgress(false);
+          break;
+        case "1":
+          if (mode === "anki" && isFlipped) { e.preventDefault(); handleAnkiRate("again"); }
+          break;
+        case "2":
+          if (mode === "anki" && isFlipped) { e.preventDefault(); handleAnkiRate("hard"); }
+          break;
+        case "3":
+          if (mode === "anki" && isFlipped) { e.preventDefault(); handleAnkiRate("good"); }
+          break;
+        case "4":
+          if (mode === "anki" && isFlipped) { e.preventDefault(); handleAnkiRate("easy"); }
           break;
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isFinished, deck.length, mode, handleNext, handlePrev, handleProgress, flipCard]);
+  }, [isFinished, deck.length, mode, handleNext, handlePrev, handleProgress, handleAnkiRate, flipCard, isFlipped]);
 
   // Restart Logic
   const restartAll = () => {
-    setDeck(vocabularies);
+    setDeck(vocabularies); // Normal mode behavior
+    // If anki mode, it should ideally re-fetch from local storage.
+    if (mode === "anki") {
+      const progress = loadAnkiProgress();
+      setAnkiProgress(progress);
+      
+      const now = Date.now();
+      const ankiDeck = vocabularies.filter(v => {
+        const p = progress[v.id];
+        if (!p) return true;
+        if (p.nextReview <= now) return true;
+        return false;
+      });
+      setDeck(ankiDeck);
+    }
     setCurrentIndex(0);
     setIsFlipped(false);
     setIsFinished(false);
@@ -144,12 +220,10 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
   };
 
   const shuffleAll = () => {
-    setDeck(shuffleArray(vocabularies));
+    setDeck(prev => shuffleArray(prev));
     setCurrentIndex(0);
     setIsFlipped(false);
     setIsFinished(false);
-    setKnownIds(new Set());
-    setUnknownIds(new Set());
   };
 
   const studyUnknowns = () => {
@@ -172,12 +246,33 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
     );
   }
 
+  if (mode === "anki" && deck.length === 0) {
+    return (
+      <div className="p-16 text-center bg-slate-900/60 rounded-3xl border border-slate-800 text-emerald-400 animate-fadeIn">
+        <BrainCircuit className="w-16 h-16 mx-auto mb-4 drop-shadow-[0_0_15px_rgba(52,211,153,0.3)]" />
+        <p className="text-xl font-bold text-slate-100">Bạn đã ôn xong cho hiện tại!</p>
+        <p className="text-sm text-slate-400 mt-2">Không còn thẻ nào đến hạn trong thư mục này. Hãy quay lại sau nhé.</p>
+        <button 
+          onClick={() => setMode("normal")}
+          className="mt-6 px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-semibold transition-all"
+        >
+          Trở về Mode Bình thường
+        </button>
+      </div>
+    );
+  }
+
   if (isFinished) {
     return (
       <div className="w-full max-w-2xl mx-auto bg-slate-900 border border-slate-700/80 rounded-3xl p-8 shadow-2xl animate-fadeIn text-center">
         <GraduationCap className="w-16 h-16 mx-auto mb-4 text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.3)]" />
         <h2 className="text-2xl font-black text-white mb-2">Đã hoàn thành!</h2>
-        <p className="text-slate-400 mb-8">Bạn đã đi qua hết {deck.length} thẻ trong danh sách này.</p>
+        
+        {mode === "anki" ? (
+          <p className="text-slate-400 mb-8">Bạn đã ôn xong toàn bộ thẻ đến hạn hôm nay.</p>
+        ) : (
+          <p className="text-slate-400 mb-8">Bạn đã đi qua hết {deck.length} thẻ trong danh sách này.</p>
+        )}
         
         {mode === "progress" && (
           <div className="flex justify-center gap-8 mb-8">
@@ -202,12 +297,14 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
               <RefreshCcw className="w-5 h-5" /> Tiếp tục học các từ chưa nhớ ({unknownIds.size})
             </button>
           )}
-          <button 
-            onClick={restartAll}
-            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-bold transition-all"
-          >
-            <RotateCcw className="w-5 h-5" /> Bắt đầu lại từ đầu
-          </button>
+          {mode !== "anki" && (
+            <button 
+              onClick={restartAll}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-bold transition-all"
+            >
+              <RotateCcw className="w-5 h-5" /> Bắt đầu lại từ đầu
+            </button>
+          )}
         </div>
       </div>
     );
@@ -215,7 +312,6 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
 
   const currentVocab = deck[currentIndex];
   
-  // Safe guard trong trường hợp state deck đang được cập nhật
   if (!currentVocab) {
     return null;
   }
@@ -245,15 +341,27 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
                 : "text-slate-500 hover:text-slate-300"
             }`}
           >
-            <GraduationCap className="w-4 h-4" /> Tiến độ (Ghi nhớ)
+            <GraduationCap className="w-4 h-4" /> Tiến độ
+          </button>
+          <button
+            onClick={() => setMode("anki")}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              mode === "anki"
+                ? "bg-rose-500/20 text-rose-400 shadow border border-rose-500/20"
+                : "text-slate-500 hover:text-slate-300"
+            }`}
+          >
+            <BrainCircuit className="w-4 h-4" /> Anki (SRS)
           </button>
         </div>
 
         <div className="flex items-center gap-2">
-          <button onClick={shuffleAll} className="p-2 text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all" title="Trộn thẻ (Shuffle)">
-            <Shuffle className="w-5 h-5" />
-          </button>
-          <button onClick={restartAll} className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all" title="Bắt đầu lại">
+          {mode !== "anki" && (
+            <button onClick={shuffleAll} className="p-2 text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all" title="Trộn thẻ (Shuffle)">
+              <Shuffle className="w-5 h-5" />
+            </button>
+          )}
+          <button onClick={restartAll} className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all" title="Bắt đầu lại / Refresh">
             <RotateCcw className="w-5 h-5" />
           </button>
         </div>
@@ -267,6 +375,12 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
             <span className="flex gap-4">
               <span className="text-emerald-400">Thuộc: {knownIds.size}</span>
               <span className="text-rose-400">Chưa: {unknownIds.size}</span>
+            </span>
+          )}
+          {mode === "anki" && (
+            <span className="flex gap-4">
+              <span className="text-sky-400">Mới: {ankiStats.new}</span>
+              <span className="text-rose-400">Đến hạn: {ankiStats.due}</span>
             </span>
           )}
         </div>
@@ -328,7 +442,42 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
 
       {/* Controls Footer */}
       <div className="flex items-center justify-center gap-4 mt-2">
-        {mode === "normal" ? (
+        {mode === "anki" ? (
+          <div className="w-full max-w-xl mx-auto flex items-center gap-2 md:gap-4">
+            {!isFlipped ? (
+               <div className="w-full text-center text-slate-400 text-sm font-semibold h-16 flex items-center justify-center">
+                  Bấm lật thẻ hoặc [Space] để hiện kết quả
+               </div>
+            ) : (() => {
+              const p = ankiProgress[currentVocab.id] || { ...DEFAULT_ANKI_DATA };
+              const tAgain = calculateNextReview("again", p);
+              const tHard = calculateNextReview("hard", p);
+              const tGood = calculateNextReview("good", p);
+              const tEasy = calculateNextReview("easy", p);
+
+              return (
+                <>
+                  <button onClick={() => handleAnkiRate("again")} className="flex-1 py-3 rounded-2xl font-bold bg-slate-800 hover:bg-slate-700 border-b-4 border-rose-500 text-white flex flex-col items-center gap-1 active:translate-y-1 active:border-b-0 transition-all">
+                    <span className="text-rose-400 text-[10px] uppercase tracking-wider">Lại (1)</span>
+                    <span className="text-sm text-slate-300">{formatInterval(tAgain.interval)}</span>
+                  </button>
+                  <button onClick={() => handleAnkiRate("hard")} className="flex-1 py-3 rounded-2xl font-bold bg-slate-800 hover:bg-slate-700 border-b-4 border-amber-500 text-white flex flex-col items-center gap-1 active:translate-y-1 active:border-b-0 transition-all">
+                    <span className="text-amber-400 text-[10px] uppercase tracking-wider">Khó (2)</span>
+                    <span className="text-sm text-slate-300">{formatInterval(tHard.interval)}</span>
+                  </button>
+                  <button onClick={() => handleAnkiRate("good")} className="flex-1 py-3 rounded-2xl font-bold bg-slate-800 hover:bg-slate-700 border-b-4 border-emerald-500 text-white flex flex-col items-center gap-1 active:translate-y-1 active:border-b-0 transition-all">
+                    <span className="text-emerald-400 text-[10px] uppercase tracking-wider">Tốt (3)</span>
+                    <span className="text-sm text-slate-300">{formatInterval(tGood.interval)}</span>
+                  </button>
+                  <button onClick={() => handleAnkiRate("easy")} className="flex-1 py-3 rounded-2xl font-bold bg-slate-800 hover:bg-slate-700 border-b-4 border-sky-500 text-white flex flex-col items-center gap-1 active:translate-y-1 active:border-b-0 transition-all">
+                    <span className="text-sky-400 text-[10px] uppercase tracking-wider">Dễ (4)</span>
+                    <span className="text-sm text-slate-300">{formatInterval(tEasy.interval)}</span>
+                  </button>
+                </>
+              )
+            })()}
+          </div>
+        ) : mode === "normal" ? (
           <>
             <button 
               onClick={handlePrev} 
