@@ -3,16 +3,17 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { revalidatePath } from "next/cache";
 
-export async function getKanjiNote(character: string) {
+export async function getKanjiNote(character: string): Promise<{ id: string; mnemonic?: string; meaning?: string; character: string } | null> {
   if (!character) return null;
   try {
     const docRef = await adminDb.collection("kanji_notes").doc(character).get();
     if (!docRef.exists) {
       return null;
     }
+    const data = docRef.data() as { mnemonic?: string; meaning?: string; character: string };
     return {
       id: docRef.id,
-      ...docRef.data()
+      ...data
     };
   } catch (error) {
     console.error("Lỗi khi lấy thông tin Hán tự:", error);
