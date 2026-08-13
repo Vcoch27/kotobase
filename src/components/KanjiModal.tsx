@@ -99,20 +99,6 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
               </div>
             )}
 
-            {/* Mnemonic / Mẹo nhớ */}
-            <div>
-              <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 mb-1.5">
-                <BookOpen className="w-4 h-4 text-amber-400" /> Mẹo nhớ (Mnemonic)
-              </label>
-              <textarea
-                rows={2}
-                value={mnemonic}
-                onChange={(e) => setMnemonic(e.target.value)}
-                placeholder="Ví dụ: Miệng (口) mở ra gọi điện thoại..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all"
-              />
-            </div>
-
             {/* Meaning / Nghĩa */}
             <div>
               <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 mb-1.5">
@@ -124,6 +110,20 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
                 onChange={(e) => setMeaning(e.target.value)}
                 placeholder="Nghĩa Hán tự..."
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all"
+              />
+            </div>
+
+            {/* Mnemonic / Mẹo nhớ */}
+            <div>
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 mb-1.5">
+                <BookOpen className="w-4 h-4 text-amber-400" /> Mẹo nhớ (Mnemonic)
+              </label>
+              <input
+                type="text"
+                value={mnemonic}
+                onChange={(e) => setMnemonic(e.target.value)}
+                placeholder="Ví dụ: Miệng (口) mở ra gọi điện thoại..."
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all"
               />
             </div>
 
