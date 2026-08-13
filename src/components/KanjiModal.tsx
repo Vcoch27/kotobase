@@ -34,6 +34,14 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
     }
   }, [isOpen, character]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    if (isOpen) window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !character) return null;
 
   const handleSave = async (e: React.FormEvent) => {
@@ -54,8 +62,14 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-slate-900 border border-slate-700/80 shadow-2xl text-slate-100">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn tracking-normal font-sans text-base font-normal text-left leading-normal cursor-default"
+      onClick={onClose}
+    >
+      <div 
+        className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-slate-900 border border-slate-700/80 shadow-2xl text-slate-100"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header với hiệu ứng gradient */}
         <div className="relative p-6 bg-gradient-to-br from-indigo-900/60 via-slate-900 to-purple-900/40 border-b border-slate-700/60">
           <button
