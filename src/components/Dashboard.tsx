@@ -10,6 +10,7 @@ import { FolderTree } from "./FolderTree";
 import { getVocabularies } from "@/app/actions/vocabulary";
 import { getFolders, createFolder } from "@/app/actions/folder";
 import { LayoutGrid, Eye, Search, FolderPlus, Layers } from "lucide-react";
+import { getFolderFullPath } from "@/lib/folder-utils";
 
 export function Dashboard() {
   const [viewMode, setViewMode] = useState<"overview" | "focus" | "flashcard">("overview");
@@ -221,7 +222,7 @@ export function Dashboard() {
                 >
                   <option value="">-- Không có (Root) --</option>
                   {folders.map((f) => (
-                    <option key={f.id} value={f.id}>{f.name}</option>
+                    <option key={f.id} value={f.id}>{getFolderFullPath(f, folders)}</option>
                   ))}
                 </select>
               </div>

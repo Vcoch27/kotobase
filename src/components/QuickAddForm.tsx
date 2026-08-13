@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createVocabulary } from "@/app/actions/vocabulary";
 import { Plus, AlertTriangle, Sparkles, Folder, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { getFolderFullPath } from "@/lib/folder-utils";
 
 interface FolderItem {
   id: string;
@@ -268,7 +269,7 @@ export function QuickAddForm({ folders, onSuccess }: QuickAddFormProps) {
                           : "bg-slate-800/60 text-slate-400 border-slate-700 hover:text-slate-200 hover:bg-slate-800"
                       }`}
                     >
-                      {selected && <Check className="w-3.5 h-3.5" />} {f.name}
+                      {selected && <Check className="w-3.5 h-3.5" />} {getFolderFullPath(f, folders)}
                     </button>
                   );
                 })}

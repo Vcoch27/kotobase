@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { createBulkVocabulary } from "@/app/actions/vocabulary";
 import { Upload, Copy, CheckCircle, Sparkles, Folder } from "lucide-react";
+import { getFolderFullPath } from "@/lib/folder-utils";
 
 interface FolderItem {
   id: string;
@@ -115,7 +116,7 @@ Ví dụ:
               >
                 <option value="">-- Không xếp thư mục --</option>
                 {folders.map(f => (
-                  <option key={f.id} value={f.id}>{f.name}</option>
+                  <option key={f.id} value={f.id}>{getFolderFullPath(f, folders)}</option>
                 ))}
               </select>
             </div>
