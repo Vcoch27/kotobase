@@ -97,13 +97,13 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
     });
     setSavingKanji(false);
     
-    if (res.success) {
+    if (res.success && res.data) {
       // Cập nhật lại UI local
       const updatedKanji = { ...selectedKanji, meaning: res.data.meaning, mnemonic: res.data.mnemonic };
       setSelectedKanji(updatedKanji);
       setKanjiNotes(prev => prev.map(k => k.id === updatedKanji.id ? updatedKanji : k));
       setIsEditingKanji(false);
-    } else {
+    } else if (!res.success) {
       alert(res.error || "Có lỗi xảy ra khi lưu!");
     }
   };

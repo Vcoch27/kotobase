@@ -27,7 +27,7 @@ export async function upsertKanjiNote(
     meaning?: string;
     mnemonic?: string;
   }
-) {
+): Promise<{ success: true; data: { character: string; meaning?: string; mnemonic?: string } } | { success: false; error: string }> {
   if (!character) throw new Error("Ký tự Hán tự không được để trống.");
 
   try {
