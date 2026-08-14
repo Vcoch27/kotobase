@@ -286,9 +286,9 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
 
   if (vocabularies.length === 0) {
     return (
-      <div className="p-12 text-center bg-slate-900/60 rounded-2xl border border-slate-800 text-slate-400">
-        <GraduationCap className="w-10 h-10 mx-auto mb-3 text-slate-600" />
-        <p className="text-base font-semibold text-slate-300">Không có dữ liệu Flashcard</p>
+      <div className="p-12 text-center bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 transition-colors">
+        <GraduationCap className="w-10 h-10 mx-auto mb-3 text-slate-400 dark:text-slate-600" />
+        <p className="text-base font-semibold text-slate-700 dark:text-slate-300">Không có dữ liệu Flashcard</p>
         <p className="text-xs text-slate-500 mt-1">Hãy thêm từ vựng vào thư mục này để bắt đầu học.</p>
       </div>
     );
@@ -296,13 +296,13 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
 
   if (mode === "anki" && deck.length === 0) {
     return (
-      <div className="p-16 text-center bg-slate-900/60 rounded-3xl border border-slate-800 text-emerald-400 animate-fadeIn">
-        <BrainCircuit className="w-16 h-16 mx-auto mb-4 drop-shadow-[0_0_15px_rgba(52,211,153,0.3)]" />
-        <p className="text-xl font-bold text-slate-100">Bạn đã ôn xong cho hiện tại!</p>
-        <p className="text-sm text-slate-400 mt-2">Không còn thẻ nào đến hạn trong thư mục này. Hãy quay lại sau nhé.</p>
+      <div className="p-16 text-center bg-white dark:bg-slate-900/60 rounded-3xl border border-slate-200 dark:border-slate-800 text-emerald-600 dark:text-emerald-400 animate-fadeIn transition-colors">
+        <BrainCircuit className="w-16 h-16 mx-auto mb-4 drop-shadow-[0_0_15px_rgba(52,211,153,0.3)] text-emerald-500 dark:text-emerald-400" />
+        <p className="text-xl font-bold text-slate-800 dark:text-slate-100">Bạn đã ôn xong cho hiện tại!</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Không còn thẻ nào đến hạn trong thư mục này. Hãy quay lại sau nhé.</p>
         <button 
           onClick={() => setMode("normal")}
-          className="mt-6 px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-semibold transition-all"
+          className="mt-6 px-6 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-semibold transition-all"
         >
           Trở về Mode Bình thường
         </button>
@@ -312,26 +312,26 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
 
   if (isFinished) {
     return (
-      <div className="w-full max-w-2xl mx-auto bg-slate-900 border border-slate-700/80 rounded-3xl p-8 shadow-2xl animate-fadeIn text-center">
-        <GraduationCap className="w-16 h-16 mx-auto mb-4 text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.3)]" />
-        <h2 className="text-2xl font-black text-white mb-2">Đã hoàn thành!</h2>
+      <div className="w-full max-w-2xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl p-8 shadow-2xl animate-fadeIn text-center transition-colors">
+        <GraduationCap className="w-16 h-16 mx-auto mb-4 text-emerald-500 dark:text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.3)]" />
+        <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Đã hoàn thành!</h2>
         
         {mode === "anki" ? (
-          <p className="text-slate-400 mb-8">Bạn đã ôn xong toàn bộ thẻ đến hạn hôm nay.</p>
+          <p className="text-slate-500 dark:text-slate-400 mb-8">Bạn đã ôn xong toàn bộ thẻ đến hạn hôm nay.</p>
         ) : (
-          <p className="text-slate-400 mb-8">Bạn đã đi qua hết {deck.length} thẻ trong danh sách này.</p>
+          <p className="text-slate-500 dark:text-slate-400 mb-8">Bạn đã đi qua hết {deck.length} thẻ trong danh sách này.</p>
         )}
         
         {mode === "progress" && (
           <div className="flex justify-center gap-8 mb-8">
             <div className="text-center">
-              <div className="text-3xl font-black text-emerald-400">{knownIds.size}</div>
-              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-1">Đã thuộc</div>
+              <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{knownIds.size}</div>
+              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">Đã thuộc</div>
             </div>
-            <div className="w-px bg-slate-800"></div>
+            <div className="w-px bg-slate-200 dark:bg-slate-800"></div>
             <div className="text-center">
-              <div className="text-3xl font-black text-rose-400">{unknownIds.size}</div>
-              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-1">Chưa nhớ</div>
+              <div className="text-3xl font-black text-rose-600 dark:text-rose-400">{unknownIds.size}</div>
+              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">Chưa nhớ</div>
             </div>
           </div>
         )}
@@ -348,7 +348,7 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
           {mode !== "anki" && (
             <button 
               onClick={restartAll}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-bold transition-all"
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold transition-all"
             >
               <RotateCcw className="w-5 h-5" /> Bắt đầu lại từ đầu
             </button>
@@ -369,14 +369,14 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
   return (
     <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 animate-fadeIn">
       {/* Top Controls Bar */}
-      <div className="flex items-center justify-between bg-slate-900 border border-slate-800 p-3 rounded-2xl shadow-lg">
-        <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+      <div className="flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl shadow-lg transition-colors">
+        <div className="flex items-center bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
           <button
             onClick={() => setMode("normal")}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
               mode === "normal"
-                ? "bg-slate-800 text-slate-200 shadow"
-                : "text-slate-500 hover:text-slate-300"
+                ? "bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 shadow"
+                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
             <LayoutList className="w-4 h-4" /> Bình thường
@@ -385,8 +385,8 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
             onClick={() => setMode("progress")}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
               mode === "progress"
-                ? "bg-indigo-600/20 text-indigo-400 shadow border border-indigo-500/20"
-                : "text-slate-500 hover:text-slate-300"
+                ? "bg-indigo-100 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-400 shadow border border-indigo-200 dark:border-indigo-500/20"
+                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
             <GraduationCap className="w-4 h-4" /> Tiến độ
@@ -395,8 +395,8 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
             onClick={() => setMode("anki")}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
               mode === "anki"
-                ? "bg-rose-500/20 text-rose-400 shadow border border-rose-500/20"
-                : "text-slate-500 hover:text-slate-300"
+                ? "bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 shadow border border-rose-200 dark:border-rose-500/20"
+                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
             <BrainCircuit className="w-4 h-4" /> Anki (SRS)
@@ -408,18 +408,18 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
             <button 
               onClick={handleUndo} 
               disabled={currentIndex === 0 && !isFinished}
-              className="p-2 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-all disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:bg-transparent" 
+              className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-all disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:bg-transparent" 
               title="Quay lại (Undo) - Phím Backspace"
             >
               <Undo2 className="w-5 h-5" />
             </button>
           )}
           {mode !== "anki" && (
-            <button onClick={shuffleAll} className="p-2 text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all" title="Trộn thẻ (Shuffle)">
+            <button onClick={shuffleAll} className="p-2 text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-lg transition-all" title="Trộn thẻ (Shuffle)">
               <Shuffle className="w-5 h-5" />
             </button>
           )}
-          <button onClick={restartAll} className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all" title="Bắt đầu lại / Refresh">
+          <button onClick={restartAll} className="p-2 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-all" title="Bắt đầu lại / Refresh">
             <RotateCcw className="w-5 h-5" />
           </button>
         </div>
@@ -427,22 +427,22 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
 
       {/* Progress Bar */}
       <div className="w-full">
-        <div className="flex justify-between text-xs font-bold text-slate-400 mb-2 px-1">
+        <div className="flex justify-between text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 px-1">
           <span>{currentIndex + 1} / {deck.length}</span>
           {mode === "progress" && (
             <span className="flex gap-4">
-              <span className="text-emerald-400">Thuộc: {knownIds.size}</span>
-              <span className="text-rose-400">Chưa: {unknownIds.size}</span>
+              <span className="text-emerald-600 dark:text-emerald-400">Thuộc: {knownIds.size}</span>
+              <span className="text-rose-600 dark:text-rose-400">Chưa: {unknownIds.size}</span>
             </span>
           )}
           {mode === "anki" && (
             <span className="flex gap-4">
-              <span className="text-sky-400">Mới: {ankiStats.new}</span>
-              <span className="text-rose-400">Đến hạn: {ankiStats.due}</span>
+              <span className="text-sky-600 dark:text-sky-400">Mới: {ankiStats.new}</span>
+              <span className="text-rose-600 dark:text-rose-400">Đến hạn: {ankiStats.due}</span>
             </span>
           )}
         </div>
-        <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+        <div className="h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
           <div 
             className="h-full bg-indigo-500 transition-all duration-300 ease-out rounded-full" 
             style={{ width: `${progressPercent}%` }}
@@ -464,40 +464,40 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
           }`}
         >
           {/* Front */}
-          <div className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-8 text-center">
-            <span className="absolute top-6 left-6 text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+          <div className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-8 text-center transition-colors">
+            <span className="absolute top-6 left-6 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
               <Rotate3D className="w-4 h-4" /> Bấm để lật
             </span>
-            <div className="text-5xl md:text-7xl font-black text-white tracking-wider" onClick={(e) => e.stopPropagation()}>
+            <div className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white tracking-wider" onClick={(e) => e.stopPropagation()}>
               <ClickableKanjiString text={currentVocab.word} />
             </div>
             {currentVocab.sinoVietnamese && (
-              <div className="mt-8 text-sm font-semibold text-slate-500 uppercase tracking-[0.3em]">
+              <div className="mt-8 text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em]">
                 {currentVocab.sinoVietnamese}
               </div>
             )}
           </div>
 
           {/* Back */}
-          <div className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-8 text-center rotate-y-180">
-            <span className="absolute top-6 left-6 text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+          <div className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-8 text-center rotate-y-180 transition-colors">
+            <span className="absolute top-6 left-6 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
               <Rotate3D className="w-4 h-4" /> Bấm để lật
             </span>
             
             {currentVocab.reading && (
-              <div className="text-xl md:text-2xl font-bold text-amber-400 mb-2">
+              <div className="text-xl md:text-2xl font-bold text-amber-600 dark:text-amber-400 mb-2">
                 {currentVocab.reading}
               </div>
             )}
             
-            <div className="text-3xl md:text-5xl font-black text-white mb-6">
+            <div className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white mb-6">
               {currentVocab.meaning}
             </div>
 
             {currentVocab.example && (
-              <div className="mt-4 p-4 bg-slate-950/50 rounded-2xl border border-slate-700/50 w-full max-w-lg">
+              <div className="mt-4 p-4 bg-white/50 dark:bg-slate-950/50 rounded-2xl border border-slate-200 dark:border-slate-700/50 w-full max-w-lg">
                 <span className="block text-xs font-bold text-slate-500 uppercase mb-1">Ví dụ minh họa</span>
-                <p className="text-base text-slate-300 italic">{currentVocab.example}</p>
+                <p className="text-base text-slate-700 dark:text-slate-300 italic">{currentVocab.example}</p>
               </div>
             )}
           </div>
@@ -509,7 +509,7 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
         {mode === "anki" ? (
           <div className="w-full max-w-xl mx-auto flex items-center gap-2 md:gap-4">
             {!isFlipped ? (
-               <div className="w-full text-center text-slate-400 text-sm font-semibold h-16 flex items-center justify-center">
+               <div className="w-full text-center text-slate-500 dark:text-slate-400 text-sm font-semibold h-16 flex items-center justify-center">
                   Bấm lật thẻ hoặc [Space] để hiện kết quả
                </div>
             ) : (() => {
@@ -521,21 +521,21 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
 
               return (
                 <>
-                  <button onClick={() => handleAnkiRate("again")} className="flex-1 py-3 rounded-2xl font-bold bg-slate-800 hover:bg-slate-700 border-b-4 border-rose-500 text-white flex flex-col items-center gap-1 active:translate-y-1 active:border-b-0 transition-all">
-                    <span className="text-rose-400 text-[10px] uppercase tracking-wider">Lại (1)</span>
-                    <span className="text-sm text-slate-300">{formatInterval(tAgain.interval)}</span>
+                  <button onClick={() => handleAnkiRate("again")} className="flex-1 py-3 rounded-2xl font-bold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-transparent border-b-4 border-b-rose-500 text-slate-900 dark:text-white flex flex-col items-center gap-1 active:translate-y-1 active:border-b transition-all shadow-sm">
+                    <span className="text-rose-600 dark:text-rose-400 text-[10px] uppercase tracking-wider">Lại (1)</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-300">{formatInterval(tAgain.interval)}</span>
                   </button>
-                  <button onClick={() => handleAnkiRate("hard")} className="flex-1 py-3 rounded-2xl font-bold bg-slate-800 hover:bg-slate-700 border-b-4 border-amber-500 text-white flex flex-col items-center gap-1 active:translate-y-1 active:border-b-0 transition-all">
-                    <span className="text-amber-400 text-[10px] uppercase tracking-wider">Khó (2)</span>
-                    <span className="text-sm text-slate-300">{formatInterval(tHard.interval)}</span>
+                  <button onClick={() => handleAnkiRate("hard")} className="flex-1 py-3 rounded-2xl font-bold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-transparent border-b-4 border-b-amber-500 text-slate-900 dark:text-white flex flex-col items-center gap-1 active:translate-y-1 active:border-b transition-all shadow-sm">
+                    <span className="text-amber-600 dark:text-amber-400 text-[10px] uppercase tracking-wider">Khó (2)</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-300">{formatInterval(tHard.interval)}</span>
                   </button>
-                  <button onClick={() => handleAnkiRate("good")} className="flex-1 py-3 rounded-2xl font-bold bg-slate-800 hover:bg-slate-700 border-b-4 border-emerald-500 text-white flex flex-col items-center gap-1 active:translate-y-1 active:border-b-0 transition-all">
-                    <span className="text-emerald-400 text-[10px] uppercase tracking-wider">Tốt (3)</span>
-                    <span className="text-sm text-slate-300">{formatInterval(tGood.interval)}</span>
+                  <button onClick={() => handleAnkiRate("good")} className="flex-1 py-3 rounded-2xl font-bold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-transparent border-b-4 border-b-emerald-500 text-slate-900 dark:text-white flex flex-col items-center gap-1 active:translate-y-1 active:border-b transition-all shadow-sm">
+                    <span className="text-emerald-600 dark:text-emerald-400 text-[10px] uppercase tracking-wider">Tốt (3)</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-300">{formatInterval(tGood.interval)}</span>
                   </button>
-                  <button onClick={() => handleAnkiRate("easy")} className="flex-1 py-3 rounded-2xl font-bold bg-slate-800 hover:bg-slate-700 border-b-4 border-sky-500 text-white flex flex-col items-center gap-1 active:translate-y-1 active:border-b-0 transition-all">
-                    <span className="text-sky-400 text-[10px] uppercase tracking-wider">Dễ (4)</span>
-                    <span className="text-sm text-slate-300">{formatInterval(tEasy.interval)}</span>
+                  <button onClick={() => handleAnkiRate("easy")} className="flex-1 py-3 rounded-2xl font-bold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-transparent border-b-4 border-b-sky-500 text-slate-900 dark:text-white flex flex-col items-center gap-1 active:translate-y-1 active:border-b transition-all shadow-sm">
+                    <span className="text-sky-600 dark:text-sky-400 text-[10px] uppercase tracking-wider">Dễ (4)</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-300">{formatInterval(tEasy.interval)}</span>
                   </button>
                 </>
               )
@@ -546,13 +546,13 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
             <button 
               onClick={handlePrev} 
               disabled={currentIndex === 0}
-              className="flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all disabled:opacity-30 text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent hover:border-slate-700"
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all disabled:opacity-30 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white hover:bg-slate-50 dark:bg-transparent dark:hover:bg-slate-800 border border-slate-200 dark:border-transparent hover:border-slate-300 dark:hover:border-slate-700 shadow-sm dark:shadow-none"
             >
               <ArrowLeft className="w-5 h-5" /> Trước (Left)
             </button>
             <button 
               onClick={handleNext}
-              className="flex items-center gap-2 px-8 py-3 rounded-2xl font-bold transition-all text-slate-900 bg-emerald-400 hover:bg-emerald-300 shadow-lg shadow-emerald-500/20 active:scale-95"
+              className="flex items-center gap-2 px-8 py-3 rounded-2xl font-bold transition-all text-white dark:text-slate-900 bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-400 dark:hover:bg-emerald-300 shadow-lg shadow-emerald-500/20 active:scale-95"
             >
               Tiếp theo (Right) <ArrowRight className="w-5 h-5" />
             </button>
@@ -561,13 +561,13 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
           <>
             <button 
               onClick={() => handleProgress(false)}
-              className="flex items-center gap-2 px-8 py-4 rounded-2xl font-bold transition-all text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 active:scale-95 w-40 justify-center"
+              className="flex items-center gap-2 px-8 py-4 rounded-2xl font-bold transition-all text-rose-600 dark:text-rose-300 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 border border-rose-200 dark:border-rose-500/30 active:scale-95 w-40 justify-center shadow-sm"
             >
               <X className="w-6 h-6" /> Chưa (Left)
             </button>
             <button 
               onClick={() => handleProgress(true)}
-              className="flex items-center gap-2 px-8 py-4 rounded-2xl font-bold transition-all text-emerald-900 bg-emerald-400 hover:bg-emerald-300 shadow-lg shadow-emerald-500/20 active:scale-95 w-40 justify-center"
+              className="flex items-center gap-2 px-8 py-4 rounded-2xl font-bold transition-all text-white dark:text-emerald-900 bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-400 dark:hover:bg-emerald-300 shadow-lg shadow-emerald-500/20 active:scale-95 w-40 justify-center"
             >
               <Check className="w-6 h-6" /> Đã thuộc (Right)
             </button>

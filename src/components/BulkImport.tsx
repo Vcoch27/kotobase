@@ -70,27 +70,27 @@ Ví dụ:
   };
 
   return (
-    <div className="bg-slate-900 border border-indigo-500/30 rounded-2xl p-5 shadow-xl animate-fadeIn">
+    <div className="bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-500/30 rounded-2xl p-5 shadow-xl animate-fadeIn transition-colors">
       <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+        <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30">
           <Sparkles className="w-5 h-5" />
         </div>
         <div>
-          <h3 className="text-sm font-bold text-slate-100">Nhập liệu hàng loạt bằng AI (Bulk Import)</h3>
-          <p className="text-xs text-slate-400">Copy prompt dưới đây, yêu cầu AI tạo từ vựng, rồi dán kết quả JSON vào đây.</p>
+          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Nhập liệu hàng loạt bằng AI (Bulk Import)</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Copy prompt dưới đây, yêu cầu AI tạo từ vựng, rồi dán kết quả JSON vào đây.</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Cột trái: Prompt mẫu */}
-        <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800 relative">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">Prompt gợi ý cho ChatGPT / Claude:</span>
-          <p className="text-xs text-slate-300 whitespace-pre-wrap font-mono leading-relaxed opacity-80 h-32 overflow-y-auto custom-scrollbar">
+        <div className="bg-slate-50 dark:bg-slate-950/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800 relative transition-colors">
+          <span className="text-[11px] font-bold text-slate-500 dark:text-slate-500 uppercase tracking-wider mb-2 block">Prompt gợi ý cho ChatGPT / Claude:</span>
+          <p className="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap font-mono leading-relaxed opacity-80 h-32 overflow-y-auto custom-scrollbar">
             {promptText}
           </p>
           <button
             onClick={copyPrompt}
-            className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white shadow-md transition-all"
+            className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase rounded-lg bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-500 dark:hover:bg-indigo-400 text-white shadow-md transition-all"
           >
             {copied ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
             {copied ? "Đã copy!" : "Copy Prompt"}
@@ -103,16 +103,16 @@ Ví dụ:
             value={jsonText}
             onChange={(e) => setJsonText(e.target.value)}
             placeholder="Dán mã JSON trả về từ AI vào đây..."
-            className="w-full h-24 px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-xs text-slate-200 font-mono outline-none custom-scrollbar"
+            className="w-full h-24 px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-xs text-slate-700 dark:text-slate-200 font-mono outline-none custom-scrollbar transition-colors"
           ></textarea>
 
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 flex-1">
-              <Folder className="w-4 h-4 text-slate-400" />
+              <Folder className="w-4 h-4 text-slate-400 dark:text-slate-400" />
               <select
                 value={selectedFolderId}
                 onChange={(e) => setSelectedFolderId(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-300 outline-none focus:border-indigo-500"
+                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-700 dark:text-slate-300 outline-none focus:border-indigo-500 transition-colors"
               >
                 <option value="">-- Không xếp thư mục --</option>
                 {folders.map(f => (
@@ -133,7 +133,7 @@ Ví dụ:
       </div>
 
       {message && (
-        <div className={`mt-3 p-2.5 text-xs rounded-lg border ${message.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'}`}>
+        <div className={`mt-3 p-2.5 text-xs rounded-lg border ${message.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-400'}`}>
           {message.text}
         </div>
       )}
