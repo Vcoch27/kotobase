@@ -38,7 +38,7 @@ export function ClickableKanjiString({
                 key={idx}
                 onClick={(e) => handleKanjiClick(segment.text, e)}
                 title={`Bấm để xem & sửa thông tin Hán tự ${segment.text}`}
-                className={`cursor-pointer px-1 py-0.5 rounded-md font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/30 border border-amber-500/30 hover:border-amber-400 transition-all duration-150 shadow-sm hover:scale-105 ${kanjiClassName}`}
+                className={`cursor-pointer px-1 py-0.5 rounded-md font-bold text-amber-600 dark:text-amber-300 bg-amber-100 dark:bg-amber-500/10 hover:bg-amber-200 dark:hover:bg-amber-500/30 border border-amber-300 dark:border-amber-500/30 hover:border-amber-400 dark:hover:border-amber-400 transition-all duration-150 shadow-sm hover:scale-105 ${kanjiClassName}`}
               >
                 {segment.text}
               </span>

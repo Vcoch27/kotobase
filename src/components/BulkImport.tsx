@@ -81,29 +81,28 @@ Ví dụ:
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Cột trái: Prompt mẫu */}
-        <div className="bg-slate-50 dark:bg-slate-950/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800 relative transition-colors">
-          <span className="text-[11px] font-bold text-slate-500 dark:text-slate-500 uppercase tracking-wider mb-2 block">Prompt gợi ý cho ChatGPT / Claude:</span>
-          <p className="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap font-mono leading-relaxed opacity-80 h-32 overflow-y-auto custom-scrollbar">
-            {promptText}
-          </p>
+      <div className="flex flex-col gap-4">
+        {/* Nút Copy Prompt */}
+        <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-950/50 p-3 rounded-xl border border-slate-200 dark:border-slate-800 transition-colors">
+          <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+            Copy Prompt này để yêu cầu ChatGPT/Claude tạo danh sách từ vựng chuẩn JSON:
+          </span>
           <button
             onClick={copyPrompt}
-            className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase rounded-lg bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-500 dark:hover:bg-indigo-400 text-white shadow-md transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase rounded-lg bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-500 dark:hover:bg-indigo-400 text-white shadow-sm transition-all whitespace-nowrap"
           >
             {copied ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
             {copied ? "Đã copy!" : "Copy Prompt"}
           </button>
         </div>
 
-        {/* Cột phải: Khung nhập JSON và chọn Folder */}
+        {/* Khung nhập JSON và chọn Folder */}
         <div className="space-y-3">
           <textarea
             value={jsonText}
             onChange={(e) => setJsonText(e.target.value)}
             placeholder="Dán mã JSON trả về từ AI vào đây..."
-            className="w-full h-24 px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-xs text-slate-700 dark:text-slate-200 font-mono outline-none custom-scrollbar transition-colors"
+            className="w-full h-32 px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-xs text-slate-700 dark:text-slate-200 font-mono outline-none custom-scrollbar transition-colors"
           ></textarea>
 
           <div className="flex items-center justify-between gap-3">

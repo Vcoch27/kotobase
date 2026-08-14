@@ -85,7 +85,7 @@ export function OverviewView({ vocabularies, onRefresh }: OverviewViewProps) {
                 {/* Reading & Sino-Vietnamese */}
                 <td className="py-4 px-4 align-top space-y-1">
                   {item.reading && (
-                    <span className="block text-xs font-medium text-amber-600 dark:text-amber-300/90 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-500/20 w-fit">
+                    <span className="block text-xs font-medium text-amber-700 dark:text-amber-300/90 bg-amber-100 dark:bg-amber-500/10 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-500/20 w-fit">
                       {item.reading}
                     </span>
                   )}

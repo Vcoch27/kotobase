@@ -63,18 +63,18 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn tracking-normal font-sans text-base font-normal text-left leading-normal cursor-default"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-slate-900/60 backdrop-blur-sm animate-fadeIn tracking-normal font-sans text-base font-normal text-left leading-normal cursor-default"
       onClick={onClose}
     >
       <div 
-        className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-slate-900 border border-slate-700/80 shadow-2xl text-slate-100"
+        className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 shadow-2xl text-slate-900 dark:text-slate-100 transition-colors"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header với hiệu ứng gradient */}
-        <div className="relative p-6 bg-gradient-to-br from-indigo-900/60 via-slate-900 to-purple-900/40 border-b border-slate-700/60">
+        <div className="relative p-6 bg-gradient-to-br from-indigo-50 dark:from-indigo-900/60 via-white dark:via-slate-900 to-purple-50 dark:to-purple-900/40 border-b border-slate-200 dark:border-slate-700/60 transition-colors">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800/80 transition-colors"
+            className="absolute top-4 right-4 p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-full hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -84,29 +84,29 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
               {character}
             </div>
             <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-semibold uppercase tracking-wider mb-1">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/20 text-xs font-semibold uppercase tracking-wider mb-1">
                 <Sparkles className="w-3.5 h-3.5" /> Chi tiết Hán tự
               </div>
-              <h2 className="text-xl font-bold text-slate-100">Thông tin & Mẹo nhớ {character}</h2>
-              <p className="text-xs text-slate-400 mt-0.5">Chỉnh sửa trực tiếp thông tin Kanji để ghi nhớ sâu hơn</p>
+              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Thông tin & Mẹo nhớ {character}</h2>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Chỉnh sửa trực tiếp thông tin Kanji để ghi nhớ sâu hơn</p>
             </div>
           </div>
         </div>
 
         {/* Content Body */}
         {loading ? (
-          <div className="p-12 text-center text-slate-400">
+          <div className="p-12 text-center text-slate-500 dark:text-slate-400">
             <div className="inline-block w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin mb-3"></div>
             <p className="text-sm font-medium">Đang tải thông tin Hán tự...</p>
           </div>
         ) : (
-          <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+          <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
             {message && (
               <div
                 className={`p-3 text-xs rounded-xl border ${
                   message.type === "success"
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                    : "bg-rose-500/10 border-rose-500/30 text-rose-400"
+                    ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400"
+                    : "bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-400"
                 }`}
               >
                 {message.text}
@@ -115,38 +115,38 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
 
             {/* Meaning / Nghĩa */}
             <div>
-              <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 mb-1.5">
-                <FileText className="w-4 h-4 text-emerald-400" /> Nghĩa (Optional)
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                <FileText className="w-4 h-4 text-emerald-500 dark:text-emerald-400" /> Nghĩa (Optional)
               </label>
               <input
                 type="text"
                 value={meaning}
                 onChange={(e) => setMeaning(e.target.value)}
                 placeholder="Nghĩa Hán tự..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all"
               />
             </div>
 
             {/* Mnemonic / Mẹo nhớ */}
             <div>
-              <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 mb-1.5">
-                <BookOpen className="w-4 h-4 text-amber-400" /> Mẹo nhớ (Mnemonic)
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                <BookOpen className="w-4 h-4 text-amber-500 dark:text-amber-400" /> Mẹo nhớ (Mnemonic)
               </label>
               <input
                 type="text"
                 value={mnemonic}
                 onChange={(e) => setMnemonic(e.target.value)}
                 placeholder="Ví dụ: Miệng (口) mở ra gọi điện thoại..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all"
               />
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-slate-200 rounded-xl hover:bg-slate-800 transition-colors"
+                className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 Đóng
               </button>
