@@ -45,14 +45,15 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
   const [feedback, setFeedback] = useState<"none" | "correct" | "wrong">("none");
   const [showHint, setShowHint] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
+  const [quizMode, setQuizMode] = useState<"mix" | "type1" | "type2">("mix");
   
   // Ref cho ô input để tự động focus
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Khởi tạo quiz khi vocabularies thay đổi
+  // Khởi tạo quiz khi vocabularies hoặc quizMode thay đổi
   useEffect(() => {
     startNewQuiz();
-  }, [vocabularies]);
+  }, [vocabularies, quizMode]);
 
   const startNewQuiz = () => {
     if (vocabularies.length === 0) {
@@ -62,12 +63,17 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
     }
     
     // Tạo danh sách câu hỏi: xáo trộn và gán ngẫu nhiên dạng 1 hoặc 2
-    const shuffled = shuffleArray(vocabularies).map(v => ({
-      ...v,
-      // Random type 1 or 2. Note: nếu từ không có reading, bắt buộc phải dùng type 2? Hoặc type 1 gõ bằng word.
-      // Để đơn giản, cứ random 50/50
-      quizType: (Math.random() > 0.5 ? 1 : 2) as QuizType
-    }));
+    const shuffled = shuffleArray(vocabularies).map(v => {
+      let qType: QuizType = 1;
+      if (quizMode === "mix") {
+        qType = (Math.random() > 0.5 ? 1 : 2) as QuizType;
+      } else if (quizMode === "type1") {
+        qType = 1;
+      } else if (quizMode === "type2") {
+        qType = 2;
+      }
+      return { ...v, quizType: qType };
+    });
     
     setQuizList(shuffled);
     setCurrentIndex(0);
@@ -182,9 +188,9 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
 
   return (
     <div className="max-w-3xl mx-auto w-full space-y-6">
-      {/* Thanh Tiến độ */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl flex items-center justify-between gap-6 shadow-sm transition-colors">
-        <div className="flex-1">
+      {/* Thanh Tiến độ và Cài đặt */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm transition-colors">
+        <div className="flex-1 w-full">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tiến độ kiểm tra</span>
             <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{currentIndex + 1} / {quizList.length}</span>
@@ -195,6 +201,28 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
               style={{ width: `${progressPercentage}%` }}
             ></div>
           </div>
+        </div>
+
+        {/* Quiz Mode Selector */}
+        <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+          <button 
+            onClick={() => setQuizMode("mix")}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${quizMode === "mix" ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200 dark:border-slate-600" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
+          >
+            Ngẫu nhiên
+          </button>
+          <button 
+            onClick={() => setQuizMode("type1")}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${quizMode === "type1" ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200 dark:border-slate-600" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
+          >
+            Chỉ Dạng 1
+          </button>
+          <button 
+            onClick={() => setQuizMode("type2")}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${quizMode === "type2" ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200 dark:border-slate-600" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
+          >
+            Chỉ Dạng 2
+          </button>
         </div>
       </div>
 
