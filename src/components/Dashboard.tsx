@@ -246,6 +246,33 @@ export function Dashboard() {
             </div>
           </div>
 
+          {/* Mode Description & Usage Guide Banner */}
+          <div className="bg-white/60 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800/80 p-3.5 px-4 rounded-2xl flex items-start gap-3.5 transition-colors shadow-sm">
+            <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 shadow-sm shrink-0">
+              {viewMode === "overview" && <LayoutGrid className="w-4 h-4 text-amber-500" />}
+              {viewMode === "focus" && <Eye className="w-4 h-4 text-indigo-500" />}
+              {viewMode === "flashcard" && <Layers className="w-4 h-4 text-emerald-500" />}
+              {viewMode === "kanji" && <Library className="w-4 h-4 text-rose-500" />}
+              {viewMode === "quiz" && <BrainCircuit className="w-4 h-4 text-purple-500" />}
+            </div>
+            <div className="space-y-0.5">
+              <div className="font-bold text-slate-800 dark:text-slate-200 text-xs">
+                {viewMode === "overview" && "Mode 1: Quản lý & Danh sách Tổng quan"}
+                {viewMode === "focus" && "Mode 2: Ôn tập che đáp án (Active Recall)"}
+                {viewMode === "flashcard" && "Mode 3: Flashcard lặp lại ngắt quãng (SRS Anki)"}
+                {viewMode === "kanji" && "Mode 4: Tra cứu & Quản lý Hán tự (Kanji Dictionary)"}
+                {viewMode === "quiz" && "Mode 5: Kiểm tra gõ phím (Typing Quiz)"}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                {viewMode === "overview" && "Xem toàn bộ từ vựng dưới dạng bảng. Bấm vào bất kỳ dòng nào để chỉnh sửa thông tin, hoặc kéo thả dòng vào thư mục bên trái để phân loại."}
+                {viewMode === "focus" && "Luyện nhớ nhanh bằng cách che bớt nghĩa và cách đọc. Bấm vào từng thẻ để lật mở đáp án hoặc bấm 'Ẩn tất cả' để bắt đầu tự dò bài."}
+                {viewMode === "flashcard" && "Luyện tập theo phương pháp lặp lại ngắt quãng (Spaced Repetition). Lật thẻ kiểm tra và chọn mức độ nhớ để hệ thống xếp lịch ôn tập tối ưu."}
+                {viewMode === "kanji" && "Tra cứu tất cả các Hán tự có trong từ vựng. Bấm trực tiếp vào nghĩa/mẹo nhớ để chỉnh sửa nhanh, hoặc bấm vào từ vựng liên quan để xem chi tiết."}
+                {viewMode === "quiz" && "Thử thách phản xạ bằng cách gõ trực tiếp đáp án tiếng Nhật. Hỗ trợ 2 dạng câu hỏi: Dạng 1 (Nhìn Kanji/Từ vựng → Gõ Cách đọc) và Dạng 2 (Nhìn Nghĩa tiếng Việt → Gõ Tiếng Nhật). Tự động tổng hợp danh sách từ đã bỏ qua để ôn lại ở cuối bài."}
+              </p>
+            </div>
+          </div>
+
           <div className="pb-10">
             {loading ? (
               <div className="p-16 text-center text-slate-500 dark:text-slate-400">
