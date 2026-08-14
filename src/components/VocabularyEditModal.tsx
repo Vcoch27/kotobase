@@ -12,6 +12,7 @@ interface VocabularyData {
   sinoVietnamese?: string | null;
   example?: string | null;
   note?: string | null;
+  folderVocabularies?: { folderId: string; folder: { id: string; name: string } }[];
 }
 
 interface VocabularyEditModalProps {
@@ -72,7 +73,22 @@ export function VocabularyEditModal({ vocabulary, onClose, onSuccess }: Vocabula
             <h3 className="text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <FileEdit className="w-5 h-5 text-indigo-500 dark:text-indigo-400" /> Chỉnh sửa Từ vựng
             </h3>
-            <p className="text-xs font-medium text-slate-500 mt-1">Cập nhật thông tin chi tiết cho flashcard.</p>
+            <div className="flex flex-col gap-1 mt-1.5">
+              <p className="text-xs font-medium text-slate-500">Cập nhật thông tin chi tiết cho flashcard.</p>
+              {vocabulary.folderVocabularies && vocabulary.folderVocabularies.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {vocabulary.folderVocabularies.map(f => (
+                    <span key={f.folderId} className="text-[10px] font-bold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full">
+                      📁 {f.folder.name}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-[10px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full w-fit">
+                  📁 Không thuộc thư mục nào
+                </span>
+              )}
+            </div>
           </div>
           <button onClick={onClose} className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-500/10 rounded-xl transition-all">
             <X className="w-5 h-5" />

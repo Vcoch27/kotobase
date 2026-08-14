@@ -21,6 +21,7 @@ interface VocabularyData {
   sinoVietnamese?: string | null;
   example?: string | null;
   note?: string | null;
+  folderVocabularies?: { folderId: string; folder: { id: string; name: string } }[];
 }
 
 interface KanjiDictionaryViewProps {
