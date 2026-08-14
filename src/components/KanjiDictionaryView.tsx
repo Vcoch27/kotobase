@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Search, Library, FileText, BookOpen, Edit3, Loader2 } from "lucide-react";
-import { getAllKanjiNotes } from "@/app/actions/kanji";
+import { getAllKanjiNotes, upsertKanjiNote } from "@/app/actions/kanji";
 import { getVocabulariesByKanji } from "@/app/actions/vocabulary";
 import { VocabularyEditModal } from "./VocabularyEditModal";
 
@@ -37,6 +37,11 @@ export function KanjiDictionaryView({ vocabularies, onRefreshVocab }: KanjiDicti
   const [editingVocab, setEditingVocab] = useState<VocabularyData | null>(null);
   const [relatedVocabularies, setRelatedVocabularies] = useState<VocabularyData[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
+  
+  // Trạng thái edit Kanji
+  const [isEditingKanji, setIsEditingKanji] = useState(false);
+  const [editKanjiForm, setEditKanjiForm] = useState({ meaning: "", mnemonic: "" });
+  const [savingKanji, setSavingKanji] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -72,13 +77,34 @@ export function KanjiDictionaryView({ vocabularies, onRefreshVocab }: KanjiDicti
   // Đóng modal Kanji detail bằng phím Esc
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && selectedKanji && !editingVocab) {
+      if (e.key === "Escape" && selectedKanji && !editingVocab && !isEditingKanji) {
         setSelectedKanji(null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedKanji, editingVocab]);
+  }, [selectedKanji, editingVocab, isEditingKanji]);
+
+  // Xử lý lưu Hán tự
+  const handleSaveKanji = async () => {
+    if (!selectedKanji) return;
+    setSavingKanji(true);
+    const res = await upsertKanjiNote(selectedKanji.character, {
+      meaning: editKanjiForm.meaning.trim(),
+      mnemonic: editKanjiForm.mnemonic.trim(),
+    });
+    setSavingKanji(false);
+    
+    if (res.success) {
+      // Cập nhật lại UI local
+      const updatedKanji = { ...selectedKanji, meaning: res.data.meaning, mnemonic: res.data.mnemonic };
+      setSelectedKanji(updatedKanji);
+      setKanjiNotes(prev => prev.map(k => k.id === updatedKanji.id ? updatedKanji : k));
+      setIsEditingKanji(false);
+    } else {
+      alert(res.error || "Có lỗi xảy ra khi lưu!");
+    }
+  };
 
   // Lọc danh sách Hán tự hiển thị dựa theo searchQuery
   const filteredKanji = kanjiNotes.filter((k) => {
@@ -166,30 +192,89 @@ export function KanjiDictionaryView({ vocabularies, onRefreshVocab }: KanjiDicti
                 {selectedKanji.character}
               </div>
               <div className="flex-1">
-                <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Thông tin Hán tự</h3>
-                
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 mb-0.5">
-                      <FileText className="w-3.5 h-3.5" /> NGHĨA
-                    </div>
-                    <div className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                      {selectedKanji.meaning || <span className="text-slate-400 italic font-normal text-sm">Chưa có nghĩa</span>}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 mb-0.5">
-                      <BookOpen className="w-3.5 h-3.5" /> MẸO NHỚ
-                    </div>
-                    <div className="text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                      {selectedKanji.mnemonic || <span className="text-slate-400 italic">Chưa có mẹo nhớ</span>}
-                    </div>
-                  </div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Thông tin Hán tự</h3>
+                  {!isEditingKanji && (
+                    <button 
+                      onClick={() => {
+                        setEditKanjiForm({ meaning: selectedKanji.meaning || "", mnemonic: selectedKanji.mnemonic || "" });
+                        setIsEditingKanji(true);
+                      }}
+                      className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline px-2 py-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
+                    >
+                      CHỈNH SỬA
+                    </button>
+                  )}
                 </div>
+                
+                {isEditingKanji ? (
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 mb-1">
+                        <FileText className="w-3.5 h-3.5" /> NGHĨA
+                      </div>
+                      <input
+                        type="text"
+                        value={editKanjiForm.meaning}
+                        onChange={(e) => setEditKanjiForm(prev => ({ ...prev, meaning: e.target.value }))}
+                        className="w-full px-3 py-1.5 rounded-lg text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-slate-800 dark:text-slate-100"
+                        placeholder="Nhập nghĩa..."
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 mb-1">
+                        <BookOpen className="w-3.5 h-3.5" /> MẸO NHỚ
+                      </div>
+                      <textarea
+                        value={editKanjiForm.mnemonic}
+                        onChange={(e) => setEditKanjiForm(prev => ({ ...prev, mnemonic: e.target.value }))}
+                        className="w-full px-3 py-1.5 rounded-lg text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-slate-800 dark:text-slate-100 min-h-[60px]"
+                        placeholder="Nhập mẹo nhớ..."
+                      />
+                    </div>
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      <button 
+                        onClick={() => setIsEditingKanji(false)}
+                        className="text-xs px-3 py-1.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-medium"
+                      >
+                        Hủy
+                      </button>
+                      <button 
+                        onClick={handleSaveKanji}
+                        disabled={savingKanji}
+                        className="text-xs px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg disabled:opacity-50 transition-colors shadow-md shadow-indigo-500/20"
+                      >
+                        {savingKanji ? "Đang lưu..." : "Lưu thay đổi"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 mb-0.5">
+                        <FileText className="w-3.5 h-3.5" /> NGHĨA
+                      </div>
+                      <div className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                        {selectedKanji.meaning || <span className="text-slate-400 italic font-normal text-sm">Chưa có nghĩa</span>}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 mb-0.5">
+                        <BookOpen className="w-3.5 h-3.5" /> MẸO NHỚ
+                      </div>
+                      <div className="text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                        {selectedKanji.mnemonic || <span className="text-slate-400 italic">Chưa có mẹo nhớ</span>}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               <button 
-                onClick={() => setSelectedKanji(null)}
+                onClick={() => {
+                  setSelectedKanji(null);
+                  setIsEditingKanji(false);
+                }}
                 className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-800 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-full transition-colors"
               >
                 ✕
