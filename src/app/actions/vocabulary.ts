@@ -162,3 +162,26 @@ export async function deleteVocabulary(id: string) {
     return { success: false, error: "Không thể xóa từ vựng." };
   }
 }
+
+export async function updateVocabulary(id: string, input: Partial<CreateVocabInput>) {
+  try {
+    const updateData: any = {
+      updatedAt: new Date().toISOString(),
+    };
+    
+    if (input.word !== undefined) updateData.word = input.word.trim();
+    if (input.meaning !== undefined) updateData.meaning = input.meaning.trim();
+    if (input.reading !== undefined) updateData.reading = input.reading?.trim() || null;
+    if (input.sinoVietnamese !== undefined) updateData.sinoVietnamese = input.sinoVietnamese?.trim() || null;
+    if (input.example !== undefined) updateData.example = input.example?.trim() || null;
+    if (input.note !== undefined) updateData.note = input.note?.trim() || null;
+    if (input.folderIds !== undefined) updateData.folderIds = input.folderIds;
+
+    await adminDb.collection("vocabularies").doc(id).update(updateData);
+    revalidatePath("/");
+    return { success: true };
+  } catch (error) {
+    console.error("Lỗi khi cập nhật từ vựng:", error);
+    return { success: false, error: "Không thể cập nhật từ vựng." };
+  }
+}
