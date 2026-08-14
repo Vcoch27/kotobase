@@ -12,7 +12,7 @@ import { FolderTree } from "./FolderTree";
 import { AnkiSettingsModal } from "./AnkiSettingsModal";
 import { getVocabularies } from "@/app/actions/vocabulary";
 import { getFolders, createFolder } from "@/app/actions/folder";
-import { LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, Moon, Sun, Library } from "lucide-react";
+import { LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, Moon, Sun, Library, LogOut } from "lucide-react";
 import { getFolderFullPath } from "@/lib/folder-utils";
 import { useTheme } from "next-themes";
 
@@ -126,10 +126,22 @@ export function Dashboard() {
                         setShowSettingsDropdown(false);
                         setShowSettingsModal(true);
                       }}
-                      className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
+                      className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-b border-slate-100 dark:border-slate-800"
                     >
                       <BrainCircuit className="w-4 h-4 text-rose-500 dark:text-rose-400" />
                       Cài đặt Anki
+                    </button>
+                    <button 
+                      onClick={async () => {
+                        setShowSettingsDropdown(false);
+                        const { logout } = await import('@/app/actions/auth');
+                        await logout();
+                        window.location.href = '/login';
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors text-left"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Đăng xuất
                     </button>
                   </div>
                 </>
