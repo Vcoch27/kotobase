@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { getKanjiNote, upsertKanjiNote } from "@/app/actions/kanji";
 import { X, Save, Sparkles, BookOpen, FileText } from "lucide-react";
 
@@ -11,11 +12,16 @@ interface KanjiModalProps {
 }
 
 export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [mnemonic, setMnemonic] = useState("");
   const [meaning, setMeaning] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isOpen && character) {
@@ -42,7 +48,7 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen || !character) return null;
+  if (!isOpen || !character || !mounted) return null;
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +67,7 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
     }
   };
 
-  return (
+  return createPortal(
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-transparent animate-fadeIn tracking-normal font-sans text-base font-normal text-left leading-normal cursor-default"
       onClick={onClose}
@@ -161,6 +167,7 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

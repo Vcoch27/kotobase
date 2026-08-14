@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { HelpCircle, CheckCircle2, XCircle, SkipForward, Info, RotateCcw } from "lucide-react";
+import { HelpCircle, CheckCircle2, XCircle, SkipForward, Info, RotateCcw, Shuffle } from "lucide-react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
 
 interface VocabularyData {
@@ -47,6 +47,10 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
   const [isFinished, setIsFinished] = useState(false);
   const [quizMode, setQuizMode] = useState<"mix" | "type1" | "type2">("mix");
   
+  // Danh sách từ làm đúng và từ đã bấm bỏ qua
+  const [skippedList, setSkippedList] = useState<QuizItem[]>([]);
+  const [correctList, setCorrectList] = useState<QuizItem[]>([]);
+  
   // Ref cho ô input để tự động focus
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -55,15 +59,19 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
     startNewQuiz();
   }, [vocabularies, quizMode]);
 
-  const startNewQuiz = () => {
-    if (vocabularies.length === 0) {
+  const startNewQuiz = (customVocabs?: VocabularyData[]) => {
+    const sourceList = customVocabs && customVocabs.length > 0 ? customVocabs : vocabularies;
+    
+    if (sourceList.length === 0) {
       setQuizList([]);
       setIsFinished(false);
+      setSkippedList([]);
+      setCorrectList([]);
       return;
     }
     
     // Tạo danh sách câu hỏi: xáo trộn và gán ngẫu nhiên dạng 1 hoặc 2
-    const shuffled = shuffleArray(vocabularies).map(v => {
+    const shuffled = shuffleArray(sourceList).map(v => {
       let qType: QuizType = 1;
       if (quizMode === "mix") {
         qType = (Math.random() > 0.5 ? 1 : 2) as QuizType;
@@ -81,6 +89,8 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
     setFeedback("none");
     setShowHint(false);
     setIsFinished(false);
+    setSkippedList([]);
+    setCorrectList([]);
     
     // Tự động focus sau một chút
     setTimeout(() => {
@@ -114,6 +124,8 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
 
     if (isCorrect) {
       setFeedback("correct");
+      // Lưu vào danh sách đúng nếu chưa có
+      setCorrectList(prev => prev.some(item => item.id === currentItem.id) ? prev : [...prev, currentItem]);
       // Đợi 1 giây rồi chuyển câu tiếp theo
       setTimeout(() => {
         moveToNext();
@@ -136,7 +148,12 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
   };
 
   const handleSkip = () => {
-    setFeedback("none"); // Tránh hiện nhấp nháy xanh
+    const currentItem = quizList[currentIndex];
+    if (currentItem) {
+      // Lưu vào danh sách bỏ qua nếu chưa có
+      setSkippedList(prev => prev.some(item => item.id === currentItem.id) ? prev : [...prev, currentItem]);
+    }
+    setFeedback("none");
     moveToNext();
   };
 
@@ -164,19 +181,118 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
   }
 
   if (isFinished) {
+    const totalCount = quizList.length;
+    const correctCount = correctList.length;
+    const skippedCount = skippedList.length;
+
     return (
-      <div className="p-16 text-center bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl max-w-2xl mx-auto mt-8">
-        <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
-          <CheckCircle2 className="w-10 h-10" />
+      <div className="max-w-4xl mx-auto w-full space-y-8 animate-fadeIn">
+        {/* Card Tổng kết Kết quả */}
+        <div className="p-8 md:p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl transition-colors">
+          <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="w-8 h-8" />
+          </div>
+          
+          <h2 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white mb-2">
+            Kết quả kiểm tra
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+            Bạn đã hoàn thành lượt kiểm tra với {totalCount} từ vựng.
+          </p>
+
+          {/* Thống kê tỉ lệ */}
+          <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto mb-8">
+            <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20">
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block mb-1">
+                Chính xác
+              </span>
+              <span className="text-2xl font-black text-emerald-700 dark:text-emerald-300">
+                {correctCount} / {totalCount}
+              </span>
+            </div>
+            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
+              <span className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block mb-1">
+                Đã bỏ qua
+              </span>
+              <span className="text-2xl font-black text-amber-700 dark:text-amber-300">
+                {skippedCount} / {totalCount}
+              </span>
+            </div>
+          </div>
+
+          {/* Nút hành động */}
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            {skippedCount > 0 && (
+              <button 
+                onClick={() => startNewQuiz(skippedList)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-amber-500/20 active:scale-95 text-sm"
+              >
+                <RotateCcw className="w-4 h-4" /> Chỉ ôn lại {skippedCount} từ đã bỏ qua
+              </button>
+            )}
+            <button 
+              onClick={() => startNewQuiz()}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/30 active:scale-95 text-sm"
+            >
+              <Shuffle className="w-4 h-4" /> Kiểm tra lại toàn bộ danh sách
+            </button>
+          </div>
         </div>
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-2">Hoàn thành xuất sắc!</h2>
-        <p className="text-slate-500 dark:text-slate-400 mb-8">Bạn đã kiểm tra hết {quizList.length} từ vựng trong danh sách này.</p>
-        <button 
-          onClick={startNewQuiz}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-colors shadow-lg shadow-indigo-500/30"
-        >
-          <RotateCcw className="w-5 h-5" /> Kiểm tra lại lần nữa
-        </button>
+
+        {/* Danh sách các từ bị bỏ qua (Bảng phong cách Tổng quan) */}
+        {skippedCount > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between px-2">
+              <h3 className="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                Danh sách từ cần ghi nhớ thêm ({skippedCount})
+              </h3>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Bấm vào Hán tự để xem mẹo nhớ
+              </span>
+            </div>
+
+            <div className="w-full overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg">
+              <table className="w-full text-left border-collapse min-w-[650px]">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
+                    <th className="py-3.5 px-4">Từ vựng</th>
+                    <th className="py-3.5 px-4">Cách đọc / Hán Việt</th>
+                    <th className="py-3.5 px-4">Nghĩa tiếng Việt</th>
+                    <th className="py-3.5 px-4">Ví dụ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-sm text-slate-700 dark:text-slate-200">
+                  {skippedList.map((item) => (
+                    <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3.5 px-4 align-top font-black text-lg text-slate-900 dark:text-white">
+                        <ClickableKanjiString text={item.word} />
+                      </td>
+                      <td className="py-3.5 px-4 align-top space-y-1">
+                        {item.reading && (
+                          <span className="inline-block text-xs font-medium text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-500/10 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-500/20 mr-2">
+                            {item.reading}
+                          </span>
+                        )}
+                        {item.sinoVietnamese && (
+                          <span className="inline-block text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase">
+                            {item.sinoVietnamese}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 align-top font-bold text-emerald-600 dark:text-emerald-400">
+                        {item.meaning}
+                      </td>
+                      <td className="py-3.5 px-4 align-top text-xs italic text-slate-600 dark:text-slate-400 max-w-xs">
+                        {item.example || "---"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -184,7 +300,7 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
   const currentItem = quizList[currentIndex];
   if (!currentItem) return null;
 
-  const progressPercentage = ((currentIndex) / quizList.length) * 100;
+  const progressPercentage = ((currentIndex + 1) / quizList.length) * 100;
 
   return (
     <div className="max-w-3xl mx-auto w-full space-y-6">
@@ -203,26 +319,54 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
           </div>
         </div>
 
-        {/* Quiz Mode Selector */}
-        <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
-          <button 
-            onClick={() => setQuizMode("mix")}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${quizMode === "mix" ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200 dark:border-slate-600" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
-          >
-            Ngẫu nhiên
-          </button>
-          <button 
-            onClick={() => setQuizMode("type1")}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${quizMode === "type1" ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200 dark:border-slate-600" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
-          >
-            Chỉ Dạng 1
-          </button>
-          <button 
-            onClick={() => setQuizMode("type2")}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${quizMode === "type2" ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200 dark:border-slate-600" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
-          >
-            Chỉ Dạng 2
-          </button>
+        {/* Quiz Actions & Settings */}
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {/* Quiz Mode Selector */}
+          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+            <button 
+              onClick={() => setQuizMode("mix")}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${quizMode === "mix" ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200 dark:border-slate-600" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
+            >
+              Ngẫu nhiên
+            </button>
+            <button 
+              onClick={() => setQuizMode("type1")}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${quizMode === "type1" ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200 dark:border-slate-600" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
+            >
+              Chỉ Dạng 1
+            </button>
+            <button 
+              onClick={() => setQuizMode("type2")}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${quizMode === "type2" ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200 dark:border-slate-600" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
+            >
+              Chỉ Dạng 2
+            </button>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+            <button 
+              onClick={startNewQuiz}
+              title="Xáo trộn lại từ đầu"
+              className="p-1.5 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-colors"
+            >
+              <Shuffle className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => {
+                setCurrentIndex(0);
+                setUserInput("");
+                setFeedback("none");
+                setShowHint(false);
+                setIsFinished(false);
+                setTimeout(() => inputRef.current?.focus(), 100);
+              }}
+              title="Làm lại từ đầu (Giữ nguyên thứ tự)"
+              className="p-1.5 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
