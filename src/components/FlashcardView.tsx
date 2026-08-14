@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
 import { 
   RotateCcw, Shuffle, ArrowLeft, ArrowRight, X, Check, 
-  Rotate3D, GraduationCap, LayoutList, RefreshCcw, BrainCircuit
+  Rotate3D, GraduationCap, LayoutList, RefreshCcw, BrainCircuit, Undo2
 } from "lucide-react";
 import { 
   AnkiRating, AnkiCardData, DEFAULT_ANKI_DATA, 
@@ -51,6 +51,7 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
   // Anki tracking
   const [ankiProgress, setAnkiProgress] = useState<Record<string, AnkiCardData>>({});
   const [ankiStats, setAnkiStats] = useState({ new: 0, due: 0 });
+  const [ankiHistory, setAnkiHistory] = useState<Record<string, AnkiCardData>[]>([]);
 
   // Initialization
   useEffect(() => {
@@ -143,6 +144,9 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
     const currentVocab = deck[currentIndex];
     if (!currentVocab) return;
     
+    // Lưu lịch sử trước khi thay đổi
+    setAnkiHistory(prev => [...prev, ankiProgress]);
+    
     const currentProgress = ankiProgress[currentVocab.id] || { ...DEFAULT_ANKI_DATA };
     const newProgressData = calculateNextReview(rating, currentProgress);
     
@@ -156,6 +160,37 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
     
     handleNext();
   }, [currentIndex, deck, ankiProgress, handleNext]);
+
+  const handleUndo = useCallback(() => {
+    if (isFinished) {
+      setIsFinished(false);
+      // Revert Anki history for the last card
+      if (mode === "anki" && ankiHistory.length > 0) {
+        const prevProgress = ankiHistory[ankiHistory.length - 1];
+        setAnkiProgress(prevProgress);
+        saveAnkiProgress(prevProgress);
+        setAnkiHistory(prev => prev.slice(0, -1));
+      }
+      return;
+    }
+    
+    if (currentIndex > 0) {
+      // Revert Anki history for the current card we are stepping back TO
+      if (mode === "anki" && ankiHistory.length > 0) {
+        const prevProgress = ankiHistory[ankiHistory.length - 1];
+        setAnkiProgress(prevProgress);
+        saveAnkiProgress(prevProgress);
+        setAnkiHistory(prev => prev.slice(0, -1));
+      }
+      
+      setIsFlipped(false);
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setCurrentIndex((prev) => prev - 1);
+        setIsTransitioning(false);
+      }, 150);
+    }
+  }, [currentIndex, mode, ankiHistory, isFinished]);
 
   // Keyboard Shortcuts
   useEffect(() => {
@@ -197,12 +232,16 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
         case "4":
           if (mode === "anki" && isFlipped) { e.preventDefault(); handleAnkiRate("easy"); }
           break;
+        case "Backspace":
+          e.preventDefault();
+          handleUndo();
+          break;
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isFinished, deck.length, mode, handleNext, handlePrev, handleProgress, handleAnkiRate, flipCard, isFlipped]);
+  }, [isFinished, deck.length, mode, handleNext, handlePrev, handleProgress, handleAnkiRate, handleUndo, flipCard, isFlipped]);
 
   // Restart Logic
   const restartAll = () => {
@@ -365,6 +404,16 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          {mode !== "normal" && (
+            <button 
+              onClick={handleUndo} 
+              disabled={currentIndex === 0 && !isFinished}
+              className="p-2 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-all disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:bg-transparent" 
+              title="Quay lại (Undo) - Phím Backspace"
+            >
+              <Undo2 className="w-5 h-5" />
+            </button>
+          )}
           {mode !== "anki" && (
             <button onClick={shuffleAll} className="p-2 text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all" title="Trộn thẻ (Shuffle)">
               <Shuffle className="w-5 h-5" />

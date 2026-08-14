@@ -31,16 +31,18 @@ export function calculateNextReview(rating: AnkiRating, card: AnkiCardData): Ank
     interval = 0;
   } else {
     if (interval === 0) {
-      interval = rating === "easy" ? 4 : 1;
+      interval = rating === "easy" ? 4 : rating === "good" ? 1 : 0.5; // easy: 4d, good: 1d, hard: 12h
+    } else if (interval === 0.5) {
+      interval = rating === "easy" ? 5 : rating === "good" ? 2 : 1;
     } else if (interval === 1) {
-      interval = rating === "easy" ? 8 : 6;
+      interval = rating === "easy" ? 6 : rating === "good" ? 3 : 2;
     } else {
       const bonus = rating === "easy" ? 1.3 : 1;
       // For hard, we just slightly increase the interval
       if (rating === "hard") {
-        interval = Math.round(interval * 1.2);
+        interval = interval * 1.2;
       } else {
-        interval = Math.round(interval * easeFactor * bonus);
+        interval = interval * easeFactor * bonus;
       }
     }
   }
@@ -78,7 +80,8 @@ export function saveAnkiProgress(progress: Record<string, AnkiCardData>) {
 
 export function formatInterval(interval: number): string {
   if (interval === 0) return "< 1m";
-  if (interval < 30) return `${interval}d`;
+  if (interval < 1) return `${Math.round(interval * 24)}h`;
+  if (interval < 30) return `${Math.round(interval)}d`;
   if (interval < 365) return `${Math.round(interval / 30)}mo`;
   return `${(interval / 365).toFixed(1)}y`;
 }
