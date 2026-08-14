@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
-import { Eye, EyeOff, Folder as FolderIcon, Trash2, HelpCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Eye, EyeOff, Folder as FolderIcon, Trash2, HelpCircle, ChevronLeft, ChevronRight, Volume2 } from "lucide-react";
 import { deleteVocabulary } from "@/app/actions/vocabulary";
+import { playAudio } from "@/lib/tts-utils";
 
 interface VocabularyData {
   id: string;
@@ -126,6 +127,16 @@ export function FocusRecallView({ vocabularies, onRefresh }: FocusRecallViewProp
                 </div>
 
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      playAudio(item.reading || item.word);
+                    }}
+                    className="p-1.5 text-slate-400 dark:text-slate-600 hover:text-indigo-500 dark:hover:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
+                    title="Phát âm thanh"
+                  >
+                    <Volume2 className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={(e) => handleDelete(item.id, item.word, e)}
                     className="p-1.5 text-slate-400 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"

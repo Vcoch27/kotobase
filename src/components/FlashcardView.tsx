@@ -4,8 +4,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
 import { 
   RotateCcw, Shuffle, ArrowLeft, ArrowRight, X, Check, 
-  Rotate3D, GraduationCap, LayoutList, RefreshCcw, BrainCircuit, Undo2, Eye, EyeOff
+  Rotate3D, GraduationCap, LayoutList, RefreshCcw, BrainCircuit, Undo2, Eye, EyeOff, Volume2
 } from "lucide-react";
+import { playAudio } from "@/lib/tts-utils";
 import { 
   AnkiRating, AnkiCardData, DEFAULT_ANKI_DATA, 
   calculateNextReview, loadAnkiProgress, saveAnkiProgress, formatInterval 
@@ -237,12 +238,17 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
           e.preventDefault();
           handleUndo();
           break;
+        case "v":
+        case "V":
+          e.preventDefault();
+          playAudio(deck[currentIndex].reading || deck[currentIndex].word);
+          break;
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isFinished, deck.length, mode, handleNext, handlePrev, handleProgress, handleAnkiRate, handleUndo, flipCard, isFlipped]);
+  }, [isFinished, deck, currentIndex, mode, handleNext, handlePrev, handleProgress, handleAnkiRate, handleUndo, flipCard, isFlipped]);
 
   // Restart Logic
   const restartAll = () => {
@@ -477,6 +483,16 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
             <span className="absolute top-6 left-6 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
               <Rotate3D className="w-4 h-4" /> Bấm để lật
             </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                playAudio(currentVocab.reading || currentVocab.word);
+              }}
+              className="absolute top-4 right-4 p-3 rounded-xl text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
+              title="Phát âm thanh"
+            >
+              <Volume2 className="w-5 h-5" />
+            </button>
             <div className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-wide" onClick={(e) => e.stopPropagation()}>
               <ClickableKanjiString text={currentVocab.word} />
             </div>
