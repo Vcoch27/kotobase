@@ -20,13 +20,13 @@ export async function login(password: string) {
       const token = await signToken("authenticated");
       console.log("--> signToken thành công:", token);
       
-      // Set cookie valid for 30 days
+      // Set cookie valid for 1 day
       cookies().set({
       name: AUTH_COOKIE_NAME,
       value: token,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 24 * 30, // 30 days
+      maxAge: 60 * 60 * 24, // 1 day
       path: "/",
       sameSite: "lax",
     });
