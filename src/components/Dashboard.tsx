@@ -42,8 +42,8 @@ export function Dashboard() {
       getVocabularies(selectedFolderId, searchQuery),
       getFolders(),
     ]);
-    setVocabularies(vocabData);
-    setFolders(folderData);
+    setVocabularies(Array.isArray(vocabData) ? vocabData : []);
+    setFolders(Array.isArray(folderData) ? folderData : []);
     setLoading(false);
   };
 

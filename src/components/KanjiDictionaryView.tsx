@@ -50,10 +50,18 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
     let isMounted = true;
     const fetchKanji = async () => {
       setLoading(true);
-      const notes = await getAllKanjiNotes();
-      if (isMounted) {
-        setKanjiNotes(notes);
-        setLoading(false);
+      try {
+        const notes = await getAllKanjiNotes();
+        if (isMounted) {
+          setKanjiNotes(Array.isArray(notes) ? notes : []);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Lỗi tải danh sách Hán tự:", err);
+        if (isMounted) {
+          setKanjiNotes([]);
+          setLoading(false);
+        }
       }
     };
     fetchKanji();
@@ -65,12 +73,20 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
     let isMounted = true;
     if (selectedKanji) {
       setLoadingRelated(true);
-      getVocabulariesByKanji(selectedKanji.character).then(vocabs => {
-        if (isMounted) {
-          setRelatedVocabularies(vocabs);
-          setLoadingRelated(false);
-        }
-      });
+      getVocabulariesByKanji(selectedKanji.character)
+        .then(vocabs => {
+          if (isMounted) {
+            setRelatedVocabularies(Array.isArray(vocabs) ? vocabs : []);
+            setLoadingRelated(false);
+          }
+        })
+        .catch(err => {
+          console.error("Lỗi tải từ vựng liên quan:", err);
+          if (isMounted) {
+            setRelatedVocabularies([]);
+            setLoadingRelated(false);
+          }
+        });
     } else {
       setRelatedVocabularies([]);
     }
@@ -140,7 +156,7 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">Tra cứu Hán tự</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Có tổng cộng {kanjiNotes.length} Hán tự đã lưu ghi chú</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Có tổng cộng {(kanjiNotes || []).length} Hán tự đã lưu ghi chú</p>
           </div>
         </div>
 
@@ -157,14 +173,14 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
       </div>
 
       {/* Grid danh sách Hán tự */}
-      {filteredKanji.length === 0 ? (
+      {(filteredKanji || []).length === 0 ? (
         <div className="p-12 text-center bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 transition-colors">
           <Library className="w-10 h-10 mx-auto mb-3 text-slate-400 dark:text-slate-600" />
           <p className="text-base font-semibold text-slate-700 dark:text-slate-300">Không tìm thấy Hán tự nào</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {filteredKanji.map((kanji) => (
+          {(filteredKanji || []).map((kanji) => (
             <div
               key={kanji.id}
               onClick={() => setSelectedKanji(kanji)}
@@ -303,7 +319,7 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
                 Từ vựng chứa {selectedKanji.character}
                 {!loadingRelated && (
                   <span className="text-xs font-medium text-slate-500 bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-full">
-                    {relatedVocabularies.length} từ
+                    {(relatedVocabularies || []).length} từ
                   </span>
                 )}
               </h4>
@@ -313,13 +329,13 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
                   <Loader2 className="w-6 h-6 animate-spin mb-2 text-indigo-500" />
                   <span className="text-xs">Đang tìm từ vựng trong CSDL...</span>
                 </div>
-              ) : relatedVocabularies.length === 0 ? (
+              ) : (relatedVocabularies || []).length === 0 ? (
                 <div className="text-center p-8 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl text-slate-500 dark:text-slate-400 text-sm">
                   Chưa có từ vựng nào trong CSDL chứa Hán tự này.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {relatedVocabularies.map(vocab => (
+                  {(relatedVocabularies || []).map(vocab => (
                     <div 
                       key={vocab.id}
                       onClick={() => setEditingVocab(vocab)}
