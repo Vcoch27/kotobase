@@ -66,6 +66,17 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
     }
   };
 
+  // Hàm tính tổng số từ vựng đệ quy (bao gồm cả thư mục con)
+  const getRecursiveCount = (node: any): number => {
+    let count = node._count?.folderVocabularies || 0;
+    if (node.children && node.children.length > 0) {
+      node.children.forEach((child: any) => {
+        count += getRecursiveCount(child);
+      });
+    }
+    return count;
+  };
+
   // Render recursive
   const renderTree = (nodes: any[], level = 0) => {
     return nodes.map(node => {
@@ -73,6 +84,7 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
       const isSelected = selectedFolderId === node.id;
       const hasChildren = node.children.length > 0;
       const isDragOver = dragOverFolderId === node.id;
+      const totalCount = getRecursiveCount(node);
 
       return (
         <div key={node.id} className="w-full">
@@ -99,7 +111,7 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
             
             <span className="text-xs truncate flex-1">{node.name}</span>
             <span className="text-[10px] text-slate-500 bg-slate-900/50 px-1.5 py-0.5 rounded shrink-0">
-              {node._count?.folderVocabularies || 0}
+              {totalCount}
             </span>
           </div>
           
