@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
-import { Trash2, Folder as FolderIcon, BookOpen, Edit3 } from "lucide-react";
+import { Trash2, Folder as FolderIcon, BookOpen, Edit3, ChevronLeft, ChevronRight } from "lucide-react";
 import { deleteVocabulary } from "@/app/actions/vocabulary";
 import { VocabularyEditModal } from "./VocabularyEditModal";
 import { getFolderFullPath } from "@/lib/folder-utils";
@@ -26,6 +26,15 @@ interface OverviewViewProps {
 
 export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewProps) {
   const [editingVocab, setEditingVocab] = useState<VocabularyData | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 30;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [vocabularies]);
+
+  const totalPages = Math.ceil(vocabularies.length / ITEMS_PER_PAGE);
+  const paginatedVocabularies = vocabularies.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const handleDelete = async (e: React.MouseEvent, id: string, word: string) => {
     e.stopPropagation(); // Ngăn mở modal sửa khi bấm xóa
@@ -67,7 +76,7 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-sm text-slate-700 dark:text-slate-200 transition-colors duration-300">
-            {vocabularies.map((item) => (
+            {paginatedVocabularies.map((item) => (
               <tr 
                 key={item.id} 
                 draggable
@@ -147,6 +156,33 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl mt-4 shadow-sm transition-colors duration-300">
+          <div className="text-sm text-slate-500 dark:text-slate-400">
+            Hiển thị <span className="font-bold text-slate-700 dark:text-slate-200">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> - <span className="font-bold text-slate-700 dark:text-slate-200">{Math.min(currentPage * ITEMS_PER_PAGE, vocabularies.length)}</span> trên <span className="font-bold text-slate-700 dark:text-slate-200">{vocabularies.length}</span> từ vựng
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div className="text-sm font-bold text-slate-700 dark:text-slate-200 px-2">
+              {currentPage} / {totalPages}
+            </div>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {editingVocab && (
         <VocabularyEditModal 

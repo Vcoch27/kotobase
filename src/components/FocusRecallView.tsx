@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
-import { Eye, EyeOff, Folder as FolderIcon, Trash2, HelpCircle } from "lucide-react";
+import { Eye, EyeOff, Folder as FolderIcon, Trash2, HelpCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { deleteVocabulary } from "@/app/actions/vocabulary";
 
 interface VocabularyData {
@@ -22,6 +22,15 @@ interface FocusRecallViewProps {
 
 export function FocusRecallView({ vocabularies, onRefresh }: FocusRecallViewProps) {
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 30;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [vocabularies]);
+
+  const totalPages = Math.ceil(vocabularies.length / ITEMS_PER_PAGE);
+  const paginatedVocabularies = vocabularies.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) => ({
@@ -87,7 +96,7 @@ export function FocusRecallView({ vocabularies, onRefresh }: FocusRecallViewProp
 
       {/* Accordion / Flashcard Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {vocabularies.map((item) => {
+        {paginatedVocabularies.map((item) => {
           const isExpanded = !!expandedIds[item.id];
 
           return (
@@ -185,6 +194,33 @@ export function FocusRecallView({ vocabularies, onRefresh }: FocusRecallViewProp
           );
         })}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl mt-4 shadow-sm transition-colors duration-300">
+          <div className="text-sm text-slate-500 dark:text-slate-400">
+            Hiển thị <span className="font-bold text-slate-700 dark:text-slate-200">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> - <span className="font-bold text-slate-700 dark:text-slate-200">{Math.min(currentPage * ITEMS_PER_PAGE, vocabularies.length)}</span> trên <span className="font-bold text-slate-700 dark:text-slate-200">{vocabularies.length}</span> từ vựng
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div className="text-sm font-bold text-slate-700 dark:text-slate-200 px-2">
+              {currentPage} / {totalPages}
+            </div>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
