@@ -3,14 +3,14 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { revalidatePath } from "next/cache";
 
-export async function getKanjiNote(character: string): Promise<{ id: string; mnemonic?: string; meaning?: string; character: string } | null> {
+export async function getKanjiNote(character: string): Promise<{ id: string; hanviet?: string; mnemonic?: string; meaning?: string; character: string } | null> {
   if (!character) return null;
   try {
     const docRef = await adminDb.collection("kanji_notes").doc(character).get();
     if (!docRef.exists) {
       return null;
     }
-    const data = docRef.data() as { mnemonic?: string; meaning?: string; character: string };
+    const data = docRef.data() as { hanviet?: string; mnemonic?: string; meaning?: string; character: string };
     return {
       id: docRef.id,
       ...data
@@ -24,10 +24,11 @@ export async function getKanjiNote(character: string): Promise<{ id: string; mne
 export async function upsertKanjiNote(
   character: string,
   data: {
+    hanviet?: string;
     meaning?: string;
     mnemonic?: string;
   }
-): Promise<{ success: true; data: { character: string; meaning?: string; mnemonic?: string } } | { success: false; error: string }> {
+): Promise<{ success: true; data: { character: string; hanviet?: string; meaning?: string; mnemonic?: string } } | { success: false; error: string }> {
   if (!character) throw new Error("Ký tự Hán tự không được để trống.");
 
   try {
@@ -35,6 +36,7 @@ export async function upsertKanjiNote(
     
     await docRef.set({
       character,
+      hanviet: data.hanviet || null,
       meaning: data.meaning || null,
       mnemonic: data.mnemonic || null,
       updatedAt: new Date().toISOString()

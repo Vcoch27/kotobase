@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { getKanjiNote, upsertKanjiNote } from "@/app/actions/kanji";
-import { X, Save, Sparkles, BookOpen, FileText } from "lucide-react";
+import { X, Save, Sparkles, BookOpen, FileText, Type } from "lucide-react";
 
 interface KanjiModalProps {
   character: string | null;
@@ -17,6 +17,7 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
   const [saving, setSaving] = useState(false);
   const [mnemonic, setMnemonic] = useState("");
   const [meaning, setMeaning] = useState("");
+  const [hanviet, setHanviet] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
@@ -31,9 +32,11 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
         if (res) {
           setMnemonic(res.mnemonic || "");
           setMeaning(res.meaning || "");
+          setHanviet(res.hanviet || "");
         } else {
           setMnemonic("");
           setMeaning("");
+          setHanviet("");
         }
         setLoading(false);
       });
@@ -57,6 +60,7 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
     const res = await upsertKanjiNote(character, {
       mnemonic,
       meaning,
+      hanviet,
     });
     setSaving(false);
     if (res.success) {
@@ -118,6 +122,20 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
                 {message.text}
               </div>
             )}
+
+            {/* Hanviet / Âm Hán Việt */}
+            <div>
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                <Type className="w-4 h-4 text-indigo-500 dark:text-indigo-400" /> Âm Hán Việt (Ví dụ: QUẢNG)
+              </label>
+              <input
+                type="text"
+                value={hanviet}
+                onChange={(e) => setHanviet(e.target.value.toUpperCase())}
+                placeholder="Nhập Âm Hán Việt..."
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm font-bold tracking-wide text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all uppercase"
+              />
+            </div>
 
             {/* Meaning / Nghĩa */}
             <div>

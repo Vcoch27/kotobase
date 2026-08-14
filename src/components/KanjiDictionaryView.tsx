@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, Library, FileText, BookOpen, Edit3, Loader2 } from "lucide-react";
+import { Search, Library, FileText, BookOpen, Edit3, Loader2, Type } from "lucide-react";
 import { getAllKanjiNotes, upsertKanjiNote } from "@/app/actions/kanji";
 import { getVocabulariesByKanji } from "@/app/actions/vocabulary";
 import { VocabularyEditModal } from "./VocabularyEditModal";
@@ -9,6 +9,7 @@ import { VocabularyEditModal } from "./VocabularyEditModal";
 interface KanjiNote {
   id: string;
   character: string;
+  hanviet?: string | null;
   meaning?: string | null;
   mnemonic?: string | null;
 }
@@ -42,7 +43,7 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
   
   // Trạng thái edit Kanji
   const [isEditingKanji, setIsEditingKanji] = useState(false);
-  const [editKanjiForm, setEditKanjiForm] = useState({ meaning: "", mnemonic: "" });
+  const [editKanjiForm, setEditKanjiForm] = useState({ hanviet: "", meaning: "", mnemonic: "" });
   const [savingKanji, setSavingKanji] = useState(false);
 
   useEffect(() => {
@@ -92,6 +93,7 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
     if (!selectedKanji) return;
     setSavingKanji(true);
     const res = await upsertKanjiNote(selectedKanji.character, {
+      hanviet: editKanjiForm.hanviet.trim(),
       meaning: editKanjiForm.meaning.trim(),
       mnemonic: editKanjiForm.mnemonic.trim(),
     });
@@ -99,7 +101,7 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
     
     if (res.success && res.data) {
       // Cập nhật lại UI local
-      const updatedKanji = { ...selectedKanji, meaning: res.data.meaning, mnemonic: res.data.mnemonic };
+      const updatedKanji = { ...selectedKanji, hanviet: res.data.hanviet, meaning: res.data.meaning, mnemonic: res.data.mnemonic };
       setSelectedKanji(updatedKanji);
       setKanjiNotes(prev => prev.map(k => k.id === updatedKanji.id ? updatedKanji : k));
       setIsEditingKanji(false);
@@ -113,6 +115,7 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
     const q = searchQuery.toLowerCase();
     return (
       k.character.includes(q) ||
+      (k.hanviet && k.hanviet.toLowerCase().includes(q)) ||
       (k.meaning && k.meaning.toLowerCase().includes(q)) ||
       (k.mnemonic && k.mnemonic.toLowerCase().includes(q))
     );
@@ -201,6 +204,18 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
                 {isEditingKanji ? (
                   <div className="space-y-3">
                     <div>
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 mb-1">
+                        <Type className="w-3.5 h-3.5" /> ÂM HÁN VIỆT
+                      </div>
+                      <input
+                        type="text"
+                        value={editKanjiForm.hanviet}
+                        onChange={(e) => setEditKanjiForm(prev => ({ ...prev, hanviet: e.target.value.toUpperCase() }))}
+                        className="w-full px-3 py-1.5 rounded-lg text-sm font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-slate-800 dark:text-slate-100 uppercase"
+                        placeholder="Ví dụ: QUẢNG"
+                      />
+                    </div>
+                    <div>
                       <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 mb-1">
                         <FileText className="w-3.5 h-3.5" /> NGHĨA
                       </div>
@@ -241,11 +256,19 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
                   </div>
                 ) : (
                   <div className="space-y-3 cursor-pointer group" onClick={() => {
-                    setEditKanjiForm({ meaning: selectedKanji.meaning || "", mnemonic: selectedKanji.mnemonic || "" });
+                    setEditKanjiForm({ hanviet: selectedKanji.hanviet || "", meaning: selectedKanji.meaning || "", mnemonic: selectedKanji.mnemonic || "" });
                     setIsEditingKanji(true);
                   }}>
                     <div className="p-2 -mx-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors relative">
                       <Edit3 className="w-3.5 h-3.5 absolute top-2 right-2 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 mb-0.5">
+                        <Type className="w-3.5 h-3.5" /> ÂM HÁN VIỆT
+                      </div>
+                      <div className="text-lg font-black tracking-wide text-slate-900 dark:text-white uppercase mb-3">
+                        {selectedKanji.hanviet || <span className="text-slate-400 italic font-normal text-sm lowercase">Nhấn để thêm âm Hán Việt...</span>}
+                      </div>
+
                       <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 mb-0.5">
                         <FileText className="w-3.5 h-3.5" /> NGHĨA
                       </div>
