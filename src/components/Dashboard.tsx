@@ -7,6 +7,7 @@ import { OverviewView } from "./OverviewView";
 import { FocusRecallView } from "./FocusRecallView";
 import { FlashcardView } from "./FlashcardView";
 import { KanjiDictionaryView } from "./KanjiDictionaryView";
+import { TypingQuizView } from "./TypingQuizView";
 import { FolderTree } from "./FolderTree";
 import { AnkiSettingsModal } from "./AnkiSettingsModal";
 import { getVocabularies } from "@/app/actions/vocabulary";
@@ -16,7 +17,7 @@ import { getFolderFullPath } from "@/lib/folder-utils";
 import { useTheme } from "next-themes";
 
 export function Dashboard() {
-  const [viewMode, setViewMode] = useState<"overview" | "focus" | "flashcard" | "kanji">("overview");
+  const [viewMode, setViewMode] = useState<"overview" | "focus" | "flashcard" | "kanji" | "quiz">("overview");
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [vocabularies, setVocabularies] = useState<any[]>([]);
   const [folders, setFolders] = useState<any[]>([]);
@@ -232,6 +233,16 @@ export function Dashboard() {
               >
                 <Library className="w-3.5 h-3.5" /> Mode 4: Tra cứu Kanji
               </button>
+              <button
+                onClick={() => setViewMode("quiz")}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  viewMode === "quiz"
+                    ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-900"
+                }`}
+              >
+                <BrainCircuit className="w-3.5 h-3.5" /> Mode 5: Quiz
+              </button>
             </div>
           </div>
 
@@ -247,6 +258,8 @@ export function Dashboard() {
               <FocusRecallView vocabularies={vocabularies} onRefresh={fetchData} />
             ) : viewMode === "kanji" ? (
               <KanjiDictionaryView vocabularies={vocabularies} folders={folders} onRefreshVocab={fetchData} />
+            ) : viewMode === "quiz" ? (
+              <TypingQuizView vocabularies={vocabularies} />
             ) : (
               <FlashcardView vocabularies={vocabularies} />
             )}
