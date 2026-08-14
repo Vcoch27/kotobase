@@ -111,13 +111,13 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
   };
 
   // Lọc danh sách Hán tự hiển thị dựa theo searchQuery
-  const filteredKanji = kanjiNotes.filter((k) => {
+  const filteredKanji = (kanjiNotes || []).filter((k) => {
     const q = searchQuery.toLowerCase();
     return (
-      k.character.includes(q) ||
-      (k.hanviet && k.hanviet.toLowerCase().includes(q)) ||
-      (k.meaning && k.meaning.toLowerCase().includes(q)) ||
-      (k.mnemonic && k.mnemonic.toLowerCase().includes(q))
+      k?.character?.includes(q) ||
+      (k?.hanviet && k.hanviet.toLowerCase().includes(q)) ||
+      (k?.meaning && k.meaning.toLowerCase().includes(q)) ||
+      (k?.mnemonic && k.mnemonic.toLowerCase().includes(q))
     );
   });
 
