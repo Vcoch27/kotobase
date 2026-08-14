@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Save, FileEdit, BookOpen } from "lucide-react";
 import { updateVocabulary } from "@/app/actions/vocabulary";
+import { getFolderFullPath } from "@/lib/folder-utils";
 
 interface VocabularyData {
   id: string;
@@ -17,11 +18,12 @@ interface VocabularyData {
 
 interface VocabularyEditModalProps {
   vocabulary: VocabularyData;
+  folders: any[];
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export function VocabularyEditModal({ vocabulary, onClose, onSuccess }: VocabularyEditModalProps) {
+export function VocabularyEditModal({ vocabulary, folders, onClose, onSuccess }: VocabularyEditModalProps) {
   const [formData, setFormData] = useState({
     word: vocabulary.word || "",
     meaning: vocabulary.meaning || "",
@@ -79,7 +81,7 @@ export function VocabularyEditModal({ vocabulary, onClose, onSuccess }: Vocabula
                 <div className="flex flex-wrap gap-1">
                   {vocabulary.folderVocabularies.map(f => (
                     <span key={f.folderId} className="text-[10px] font-bold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full">
-                      📁 {f.folder.name}
+                      📁 {getFolderFullPath(f.folder, folders)}
                     </span>
                   ))}
                 </div>

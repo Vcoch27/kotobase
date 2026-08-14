@@ -242,11 +242,11 @@ export function Dashboard() {
                 <p className="text-sm font-medium">Đang tải dữ liệu từ vựng...</p>
               </div>
             ) : viewMode === "overview" ? (
-              <OverviewView vocabularies={vocabularies} onRefresh={fetchData} />
+              <OverviewView vocabularies={vocabularies} folders={folders} onRefresh={fetchData} />
             ) : viewMode === "focus" ? (
               <FocusRecallView vocabularies={vocabularies} onRefresh={fetchData} />
             ) : viewMode === "kanji" ? (
-              <KanjiDictionaryView vocabularies={vocabularies} onRefreshVocab={fetchData} />
+              <KanjiDictionaryView vocabularies={vocabularies} folders={folders} onRefreshVocab={fetchData} />
             ) : (
               <FlashcardView vocabularies={vocabularies} />
             )}

@@ -5,6 +5,7 @@ import { ClickableKanjiString } from "./ClickableKanjiString";
 import { Trash2, Folder as FolderIcon, BookOpen, Edit3 } from "lucide-react";
 import { deleteVocabulary } from "@/app/actions/vocabulary";
 import { VocabularyEditModal } from "./VocabularyEditModal";
+import { getFolderFullPath } from "@/lib/folder-utils";
 
 interface VocabularyData {
   id: string;
@@ -19,10 +20,11 @@ interface VocabularyData {
 
 interface OverviewViewProps {
   vocabularies: VocabularyData[];
+  folders: any[];
   onRefresh?: () => void;
 }
 
-export function OverviewView({ vocabularies, onRefresh }: OverviewViewProps) {
+export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewProps) {
   const [editingVocab, setEditingVocab] = useState<VocabularyData | null>(null);
 
   const handleDelete = async (e: React.MouseEvent, id: string, word: string) => {
@@ -121,7 +123,7 @@ export function OverviewView({ vocabularies, onRefresh }: OverviewViewProps) {
                           key={fv.folderId}
                           className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 whitespace-nowrap"
                         >
-                          <FolderIcon className="w-3 h-3 text-indigo-500 dark:text-indigo-400" /> {fv.folder.name}
+                          <FolderIcon className="w-3 h-3 text-indigo-500 dark:text-indigo-400" /> {getFolderFullPath(fv.folder, folders)}
                         </span>
                       ))
                     ) : (
@@ -148,7 +150,8 @@ export function OverviewView({ vocabularies, onRefresh }: OverviewViewProps) {
 
       {editingVocab && (
         <VocabularyEditModal 
-          vocabulary={editingVocab} 
+          vocabulary={editingVocab}
+          folders={folders}
           onClose={() => setEditingVocab(null)} 
           onSuccess={() => {
             setEditingVocab(null);

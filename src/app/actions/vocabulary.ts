@@ -109,7 +109,7 @@ export async function getVocabularies(folderId?: string, searchQuery?: string) {
     const foldersSnapshot = await adminDb.collection("folders").get();
     const folderMap = new Map<string, any>();
     foldersSnapshot.docs.forEach(doc => {
-      folderMap.set(doc.id, { id: doc.id, name: doc.data().name });
+      folderMap.set(doc.id, { id: doc.id, name: doc.data().name, parentId: doc.data().parentId });
     });
 
     let vocabs = snapshot.docs.map(doc => {
@@ -195,7 +195,7 @@ export async function getVocabulariesByKanji(character: string) {
     const foldersSnapshot = await adminDb.collection("folders").get();
     const folderMap = new Map<string, any>();
     foldersSnapshot.docs.forEach(doc => {
-      folderMap.set(doc.id, { id: doc.id, name: doc.data().name });
+      folderMap.set(doc.id, { id: doc.id, name: doc.data().name, parentId: doc.data().parentId });
     });
 
     let vocabs: any[] = [];

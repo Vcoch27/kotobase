@@ -26,10 +26,11 @@ interface VocabularyData {
 
 interface KanjiDictionaryViewProps {
   vocabularies: VocabularyData[];
+  folders: any[];
   onRefreshVocab?: () => void;
 }
 
-export function KanjiDictionaryView({ vocabularies, onRefreshVocab }: KanjiDictionaryViewProps) {
+export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: KanjiDictionaryViewProps) {
   const [kanjiNotes, setKanjiNotes] = useState<KanjiNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -324,6 +325,7 @@ export function KanjiDictionaryView({ vocabularies, onRefreshVocab }: KanjiDicti
       {editingVocab && (
         <VocabularyEditModal 
           vocabulary={editingVocab} 
+          folders={folders}
           onClose={() => setEditingVocab(null)} 
           onSuccess={() => {
             setEditingVocab(null);
