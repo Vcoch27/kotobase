@@ -15,12 +15,19 @@ export function AnkiSettingsModal({ onClose }: AnkiSettingsModalProps) {
     setSettings(loadAnkiSettings());
   }, []);
 
-  const handleChange = (key: keyof AnkiSettings, value: string) => {
-    const num = parseFloat(value);
-    setSettings(prev => ({
-      ...prev,
-      [key]: isNaN(num) ? prev[key] : num
-    }));
+  const handleChange = (key: keyof AnkiSettings, value: string | number) => {
+    if (typeof value === "string" && (key.includes("Unit") === false)) {
+      const num = parseFloat(value);
+      setSettings(prev => ({
+        ...prev,
+        [key]: isNaN(num) ? prev[key] : num
+      }));
+    } else {
+      setSettings(prev => ({
+        ...prev,
+        [key]: value
+      }));
+    }
   };
 
   const handleSave = () => {
@@ -31,6 +38,19 @@ export function AnkiSettingsModal({ onClose }: AnkiSettingsModalProps) {
   const handleReset = () => {
     setSettings(DEFAULT_ANKI_SETTINGS);
   };
+
+  const UnitSelect = ({ value, onChange }: { value: 'm' | 'h' | 'd', onChange: (val: 'm' | 'h' | 'd') => void }) => (
+    <select 
+      value={value || 'd'} 
+      onChange={e => onChange(e.target.value as 'm' | 'h' | 'd')}
+      className="bg-transparent text-xs font-semibold text-slate-500 hover:text-slate-300 outline-none cursor-pointer text-right w-12 text-center"
+      style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
+    >
+      <option value="m">phút</option>
+      <option value="h">giờ</option>
+      <option value="d">ngày</option>
+    </select>
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
@@ -63,14 +83,14 @@ export function AnkiSettingsModal({ onClose }: AnkiSettingsModalProps) {
                   <div className="text-sm font-bold text-slate-200">Nút Khó (Hard)</div>
                   <div className="text-[10px] text-slate-500 mt-1 font-medium">Khoảng thời gian thẻ lặp lại khi chọn Khó</div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <input 
-                    type="number" step="0.1" min="0.1" max="10"
+                    type="number" step="0.1" min="0.1" max="1000"
                     value={settings.newCardHardInterval}
                     onChange={(e) => handleChange("newCardHardInterval", e.target.value)}
                     className="w-16 bg-slate-950 border border-slate-700 rounded-xl px-2 py-1.5 text-center text-sm font-bold text-rose-400 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
                   />
-                  <span className="text-xs font-semibold text-slate-500 w-8">ngày</span>
+                  <UnitSelect value={settings.newCardHardUnit || 'h'} onChange={(val) => handleChange("newCardHardUnit", val)} />
                 </div>
               </div>
 
@@ -79,14 +99,14 @@ export function AnkiSettingsModal({ onClose }: AnkiSettingsModalProps) {
                   <div className="text-sm font-bold text-slate-200">Nút Tốt (Good)</div>
                   <div className="text-[10px] text-slate-500 mt-1 font-medium">Khoảng thời gian chuẩn khi bạn đã nhớ</div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <input 
-                    type="number" step="0.5" min="0.5" max="30"
+                    type="number" step="0.1" min="0.1" max="1000"
                     value={settings.newCardGoodInterval}
                     onChange={(e) => handleChange("newCardGoodInterval", e.target.value)}
                     className="w-16 bg-slate-950 border border-slate-700 rounded-xl px-2 py-1.5 text-center text-sm font-bold text-emerald-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
                   />
-                  <span className="text-xs font-semibold text-slate-500 w-8">ngày</span>
+                  <UnitSelect value={settings.newCardGoodUnit || 'd'} onChange={(val) => handleChange("newCardGoodUnit", val)} />
                 </div>
               </div>
 
@@ -95,14 +115,14 @@ export function AnkiSettingsModal({ onClose }: AnkiSettingsModalProps) {
                   <div className="text-sm font-bold text-slate-200">Nút Dễ (Easy)</div>
                   <div className="text-[10px] text-slate-500 mt-1 font-medium">Bước nhảy thời gian lớn khi từ quá dễ</div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <input 
-                    type="number" step="1" min="1" max="30"
+                    type="number" step="0.1" min="0.1" max="1000"
                     value={settings.newCardEasyInterval}
                     onChange={(e) => handleChange("newCardEasyInterval", e.target.value)}
                     className="w-16 bg-slate-950 border border-slate-700 rounded-xl px-2 py-1.5 text-center text-sm font-bold text-sky-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 outline-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
                   />
-                  <span className="text-xs font-semibold text-slate-500 w-8">ngày</span>
+                  <UnitSelect value={settings.newCardEasyUnit || 'd'} onChange={(val) => handleChange("newCardEasyUnit", val)} />
                 </div>
               </div>
             </div>
@@ -122,7 +142,7 @@ export function AnkiSettingsModal({ onClose }: AnkiSettingsModalProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   <input 
-                    type="number" step="0.1" min="1" max="3"
+                    type="number" step="0.1" min="1" max="5"
                     value={settings.hardMultiplier}
                     onChange={(e) => handleChange("hardMultiplier", e.target.value)}
                     className="w-16 bg-slate-950 border border-slate-700 rounded-xl px-2 py-1.5 text-center text-sm font-bold text-rose-400 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
@@ -138,7 +158,7 @@ export function AnkiSettingsModal({ onClose }: AnkiSettingsModalProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   <input 
-                    type="number" step="0.1" min="1" max="3"
+                    type="number" step="0.1" min="1" max="5"
                     value={settings.easyBonus}
                     onChange={(e) => handleChange("easyBonus", e.target.value)}
                     className="w-16 bg-slate-950 border border-slate-700 rounded-xl px-2 py-1.5 text-center text-sm font-bold text-sky-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 outline-none [&::-webkit-inner-spin-button]:appearance-none transition-all"

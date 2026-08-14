@@ -14,16 +14,22 @@ export const DEFAULT_ANKI_DATA: AnkiCardData = {
 
 export interface AnkiSettings {
   newCardHardInterval: number;
+  newCardHardUnit: 'm' | 'h' | 'd';
   newCardGoodInterval: number;
+  newCardGoodUnit: 'm' | 'h' | 'd';
   newCardEasyInterval: number;
+  newCardEasyUnit: 'm' | 'h' | 'd';
   hardMultiplier: number;
   easyBonus: number;
 }
 
 export const DEFAULT_ANKI_SETTINGS: AnkiSettings = {
-  newCardHardInterval: 0.5,
+  newCardHardInterval: 12,
+  newCardHardUnit: 'h',
   newCardGoodInterval: 1,
+  newCardGoodUnit: 'd',
   newCardEasyInterval: 4,
+  newCardEasyUnit: 'd',
   hardMultiplier: 1.2,
   easyBonus: 1.3,
 };
@@ -43,14 +49,21 @@ export function calculateNextReview(rating: AnkiRating, card: AnkiCardData): Ank
   easeFactor = easeFactor + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
   if (easeFactor < 1.3) easeFactor = 1.3;
 
+  // Helper to convert to days
+  const toDays = (val: number, unit?: 'm' | 'h' | 'd') => {
+    if (unit === 'm') return val / (24 * 60);
+    if (unit === 'h') return val / 24;
+    return val;
+  };
+
   // Calculate new Interval
   if (q < 3) {
     interval = 0;
   } else {
     if (interval === 0) {
-      interval = rating === "easy" ? settings.newCardEasyInterval 
-               : rating === "good" ? settings.newCardGoodInterval 
-               : settings.newCardHardInterval;
+      interval = rating === "easy" ? toDays(settings.newCardEasyInterval, settings.newCardEasyUnit)
+               : rating === "good" ? toDays(settings.newCardGoodInterval, settings.newCardGoodUnit)
+               : toDays(settings.newCardHardInterval, settings.newCardHardUnit);
     } else {
       const bonus = rating === "easy" ? settings.easyBonus : 1;
       if (rating === "hard") {
