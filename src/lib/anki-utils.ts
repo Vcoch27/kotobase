@@ -128,6 +128,10 @@ export function saveAnkiSettings(settings: AnkiSettings) {
 
 export function formatInterval(interval: number): string {
   if (interval === 0) return "< 1m";
+  if (interval < 1 / 24) {
+    const minutes = Math.round(interval * 24 * 60);
+    return `${Math.max(1, minutes)}m`;
+  }
   if (interval < 1) return `${Math.round(interval * 24)}h`;
   if (interval < 30) return `${Math.round(interval)}d`;
   if (interval < 365) return `${Math.round(interval / 30)}mo`;

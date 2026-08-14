@@ -43,12 +43,12 @@ export function AnkiSettingsModal({ onClose }: AnkiSettingsModalProps) {
     <select 
       value={value || 'd'} 
       onChange={e => onChange(e.target.value as 'm' | 'h' | 'd')}
-      className="bg-transparent text-xs font-semibold text-slate-500 hover:text-slate-300 outline-none cursor-pointer text-right w-12 text-center"
+      className="bg-transparent text-xs font-semibold text-slate-500 hover:text-slate-300 outline-none cursor-pointer text-center"
       style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
     >
-      <option value="m">phút</option>
-      <option value="h">giờ</option>
-      <option value="d">ngày</option>
+      <option value="m" className="bg-slate-900 text-slate-200 font-medium py-1">phút</option>
+      <option value="h" className="bg-slate-900 text-slate-200 font-medium py-1">giờ</option>
+      <option value="d" className="bg-slate-900 text-slate-200 font-medium py-1">ngày</option>
     </select>
   );
 
