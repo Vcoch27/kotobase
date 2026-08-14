@@ -12,8 +12,25 @@ export const DEFAULT_ANKI_DATA: AnkiCardData = {
   nextReview: 0,
 };
 
+export interface AnkiSettings {
+  newCardHardInterval: number;
+  newCardGoodInterval: number;
+  newCardEasyInterval: number;
+  hardMultiplier: number;
+  easyBonus: number;
+}
+
+export const DEFAULT_ANKI_SETTINGS: AnkiSettings = {
+  newCardHardInterval: 0.5,
+  newCardGoodInterval: 1,
+  newCardEasyInterval: 4,
+  hardMultiplier: 1.2,
+  easyBonus: 1.3,
+};
+
 export function calculateNextReview(rating: AnkiRating, card: AnkiCardData): AnkiCardData {
   let { interval, easeFactor } = card;
+  const settings = loadAnkiSettings();
   
   // Mapping rating to SM-2 quality (0-5)
   let q = 4;
@@ -31,16 +48,13 @@ export function calculateNextReview(rating: AnkiRating, card: AnkiCardData): Ank
     interval = 0;
   } else {
     if (interval === 0) {
-      interval = rating === "easy" ? 4 : rating === "good" ? 1 : 0.5; // easy: 4d, good: 1d, hard: 12h
-    } else if (interval === 0.5) {
-      interval = rating === "easy" ? 5 : rating === "good" ? 2 : 1;
-    } else if (interval === 1) {
-      interval = rating === "easy" ? 6 : rating === "good" ? 3 : 2;
+      interval = rating === "easy" ? settings.newCardEasyInterval 
+               : rating === "good" ? settings.newCardGoodInterval 
+               : settings.newCardHardInterval;
     } else {
-      const bonus = rating === "easy" ? 1.3 : 1;
-      // For hard, we just slightly increase the interval
+      const bonus = rating === "easy" ? settings.easyBonus : 1;
       if (rating === "hard") {
-        interval = interval * 1.2;
+        interval = interval * settings.hardMultiplier;
       } else {
         interval = interval * easeFactor * bonus;
       }
@@ -75,6 +89,27 @@ export function saveAnkiProgress(progress: Record<string, AnkiCardData>) {
     localStorage.setItem(ANKI_STORAGE_KEY, JSON.stringify(progress));
   } catch (e) {
     console.error("Lỗi khi lưu Anki Progress", e);
+  }
+}
+
+export const ANKI_SETTINGS_KEY = "kotobase_anki_settings";
+
+export function loadAnkiSettings(): AnkiSettings {
+  if (typeof window === "undefined") return DEFAULT_ANKI_SETTINGS;
+  try {
+    const data = localStorage.getItem(ANKI_SETTINGS_KEY);
+    return data ? { ...DEFAULT_ANKI_SETTINGS, ...JSON.parse(data) } : DEFAULT_ANKI_SETTINGS;
+  } catch (e) {
+    return DEFAULT_ANKI_SETTINGS;
+  }
+}
+
+export function saveAnkiSettings(settings: AnkiSettings) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(ANKI_SETTINGS_KEY, JSON.stringify(settings));
+  } catch (e) {
+    console.error("Lỗi khi lưu Anki Settings", e);
   }
 }
 
