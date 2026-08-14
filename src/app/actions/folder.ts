@@ -58,26 +58,58 @@ export async function createFolder(name: string, parentId?: string) {
   }
 }
 
-export async function deleteFolder(id: string) {
+export async function deleteFolderAndVocabs(id: string) {
   try {
-    await adminDb.collection("folders").doc(id).delete();
+    const allFoldersSnapshot = await adminDb.collection("folders").get();
+    const allFolders = allFoldersSnapshot.docs.map(doc => ({ id: doc.id, parentId: doc.data().parentId }));
     
-    // Cần phải gỡ bỏ thư mục này ra khỏi các từ vựng đang chứa nó
-    const vocabSnapshot = await adminDb.collection("vocabularies").where("folderIds", "array-contains", id).get();
-    const batch = adminDb.batch();
+    const folderIdsToDelete = new Set<string>();
+    folderIdsToDelete.add(id);
+
+    // Thu thập đệ quy tất cả các thư mục con
+    let addedNew = true;
+    while (addedNew) {
+      addedNew = false;
+      allFolders.forEach(f => {
+        if (f.parentId && folderIdsToDelete.has(f.parentId) && !folderIdsToDelete.has(f.id)) {
+          folderIdsToDelete.add(f.id);
+          addedNew = true;
+        }
+      });
+    }
+
+    const folderIdsArray = Array.from(folderIdsToDelete);
+
+    // Lấy tất cả từ vựng
+    const vocabSnapshot = await adminDb.collection("vocabularies").get();
+    const vocabsToDelete: string[] = [];
     
     vocabSnapshot.docs.forEach(doc => {
-      const data = doc.data();
-      const updatedFolderIds = (data.folderIds || []).filter((fid: string) => fid !== id);
-      batch.update(doc.ref, { folderIds: updatedFolderIds });
+      const folderIds = doc.data().folderIds || [];
+      const hasMatch = folderIds.some((fid: string) => folderIdsToDelete.has(fid));
+      if (hasMatch) {
+        vocabsToDelete.push(doc.id);
+      }
     });
-    
-    await batch.commit();
+
+    const allDocRefsToDelete = [
+      ...folderIdsArray.map(fid => adminDb.collection("folders").doc(fid)),
+      ...vocabsToDelete.map(vid => adminDb.collection("vocabularies").doc(vid))
+    ];
+
+    // Xóa theo batch để tránh giới hạn 500 của Firestore
+    const BATCH_SIZE = 400;
+    for (let i = 0; i < allDocRefsToDelete.length; i += BATCH_SIZE) {
+      const batch = adminDb.batch();
+      const chunk = allDocRefsToDelete.slice(i, i + BATCH_SIZE);
+      chunk.forEach(ref => batch.delete(ref));
+      await batch.commit();
+    }
 
     revalidatePath("/");
     return { success: true };
   } catch (error) {
-    console.error("Lỗi khi xóa thư mục:", error);
+    console.error("Lỗi khi xóa thư mục và từ vựng:", error);
     return { success: false, error: "Không thể xóa thư mục." };
   }
 }

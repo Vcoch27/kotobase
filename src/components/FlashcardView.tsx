@@ -468,7 +468,7 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
             <span className="absolute top-6 left-6 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
               <Rotate3D className="w-4 h-4" /> Bấm để lật
             </span>
-            <div className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white tracking-wider" onClick={(e) => e.stopPropagation()}>
+            <div className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-wide" onClick={(e) => e.stopPropagation()}>
               <ClickableKanjiString text={currentVocab.word} />
             </div>
             {currentVocab.sinoVietnamese && (

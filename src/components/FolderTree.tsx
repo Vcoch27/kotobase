@@ -2,7 +2,8 @@
 
 import React, { useState, useMemo } from "react";
 import { assignVocabularyToFolder } from "@/app/actions/vocabulary";
-import { Folder, ChevronRight, ChevronDown, CheckCircle2 } from "lucide-react";
+import { deleteFolderAndVocabs } from "@/app/actions/folder";
+import { Folder, ChevronRight, ChevronDown, CheckCircle2, Trash2 } from "lucide-react";
 
 interface FolderItem {
   id: string;
@@ -21,6 +22,7 @@ interface FolderTreeProps {
 export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefresh }: FolderTreeProps) {
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+  const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
 
   // Build tree from flat list
   const tree = useMemo(() => {
@@ -66,6 +68,28 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
     }
   };
 
+  const handleDeleteFolder = async (folderId: string, folderName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const confirmText = window.prompt(`CẢNH BÁO NGUY HIỂM: Hành động này sẽ XÓA VĨNH VIỄN thư mục "${folderName}", tất cả thư mục con, VÀ TOÀN BỘ TỪ VỰNG bên trong.\n\nHãy gõ chữ "XOA" (viết hoa, không dấu) để xác nhận:`);
+    
+    if (confirmText === "XOA") {
+      setDeletingFolderId(folderId);
+      const res = await deleteFolderAndVocabs(folderId);
+      setDeletingFolderId(null);
+      
+      if (res.success) {
+        if (selectedFolderId === folderId) {
+          onSelectFolder("all");
+        }
+        onRefresh();
+      } else {
+        alert(res.error || "Không thể xóa thư mục!");
+      }
+    } else if (confirmText !== null) {
+      alert("Xác nhận không đúng. Đã hủy thao tác xóa.");
+    }
+  };
+
   // Hàm tính tổng số từ vựng đệ quy (bao gồm cả thư mục con)
   const getRecursiveCount = (node: any): number => {
     let count = node._count?.folderVocabularies || 0;
@@ -94,7 +118,7 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, node.id)}
             style={{ paddingLeft: `${level * 12 + 8}px` }}
-            className={`flex items-center gap-2 py-1.5 pr-2 my-0.5 rounded-lg cursor-pointer transition-all ${
+            className={`group flex items-center gap-1.5 py-1.5 pr-2 my-0.5 rounded-lg cursor-pointer transition-all ${
               isSelected ? "bg-indigo-100 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-300 font-semibold border border-indigo-200 dark:border-indigo-500/30 shadow-sm" : 
               isDragOver ? "bg-amber-100 dark:bg-amber-500/20 border-2 border-dashed border-amber-500 text-amber-700 dark:text-amber-300" :
               "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-slate-200 border border-transparent"
@@ -110,9 +134,25 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
             <Folder className={`w-4 h-4 shrink-0 ${isSelected ? "text-indigo-500 dark:text-indigo-400" : isDragOver ? "text-amber-500 dark:text-amber-400" : "text-slate-400 dark:text-slate-500"}`} />
             
             <span className="text-xs truncate flex-1">{node.name}</span>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-900/50 px-1.5 py-0.5 rounded shrink-0">
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-900/50 px-1.5 py-0.5 rounded shrink-0 mr-1">
               {totalCount}
             </span>
+            
+            {/* Delete button appears on hover over the item */}
+            <div className="shrink-0 group-hover:opacity-100 opacity-0 transition-opacity">
+              <button
+                onClick={(e) => handleDeleteFolder(node.id, node.name, e)}
+                disabled={deletingFolderId === node.id}
+                className="p-1 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded transition-colors disabled:opacity-50"
+                title="Xóa thư mục và toàn bộ từ vựng bên trong"
+              >
+                {deletingFolderId === node.id ? (
+                  <div className="w-3.5 h-3.5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
+              </button>
+            </div>
           </div>
           
           {hasChildren && isExpanded && (

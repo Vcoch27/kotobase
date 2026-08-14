@@ -385,7 +385,7 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
           {currentItem.quizType === 1 ? (
             <>
               {/* DẠNG 1: HIỂN THỊ TỪ VỰNG */}
-              <div className="text-5xl md:text-7xl font-black text-slate-800 dark:text-white tracking-widest mb-6 drop-shadow-sm">
+              <div className="text-4xl md:text-5xl font-black text-slate-800 dark:text-white tracking-wide mb-6 drop-shadow-sm">
                 <ClickableKanjiString text={currentItem.word} />
               </div>
               
