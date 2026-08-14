@@ -42,6 +42,7 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Progress tracking
   const [knownIds, setKnownIds] = useState<Set<string>>(new Set());
@@ -97,7 +98,11 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
   const handleNext = useCallback(() => {
     if (currentIndex < deck.length - 1) {
       setIsFlipped(false);
-      setTimeout(() => setCurrentIndex((prev) => prev + 1), 150);
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setCurrentIndex((prev) => prev + 1);
+        setIsTransitioning(false);
+      }, 150);
     } else {
       setIsFinished(true);
     }
@@ -106,7 +111,11 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
   const handlePrev = useCallback(() => {
     if (currentIndex > 0) {
       setIsFlipped(false);
-      setTimeout(() => setCurrentIndex((prev) => prev - 1), 150);
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setCurrentIndex((prev) => prev - 1);
+        setIsTransitioning(false);
+      }, 150);
     }
   }, [currentIndex]);
 
@@ -393,7 +402,13 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
       </div>
 
       {/* Flashcard 3D Container */}
-      <div className="relative w-full aspect-[4/3] md:aspect-[16/9] perspective-1000 cursor-pointer" onClick={flipCard}>
+      <div 
+        key={currentVocab.id}
+        className={`relative w-full aspect-[4/3] md:aspect-[16/9] perspective-1000 cursor-pointer ${
+          isTransitioning ? "animate-fadeOut" : "animate-fadeIn"
+        }`} 
+        onClick={flipCard}
+      >
         <div 
           className={`w-full h-full relative transition-transform duration-500 transform-style-3d shadow-2xl rounded-3xl ${
             isFlipped ? "rotate-y-180" : ""
