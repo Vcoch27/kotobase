@@ -111,7 +111,7 @@ export function OverviewView({ vocabularies, onRefresh }: OverviewViewProps) {
                     item.folderVocabularies.map((fv) => (
                       <span
                         key={fv.folderId}
-                        className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700"
+                        className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 whitespace-nowrap"
                       >
                         <FolderIcon className="w-3 h-3 text-indigo-400" /> {fv.folder.name}
                       </span>
