@@ -77,3 +77,23 @@ export async function getBulkKanjiNotes(characters: string[]) {
     return [];
   }
 }
+
+export async function getAllKanjiNotes() {
+  try {
+    const snapshot = await adminDb.collection("kanji_notes").get();
+    const notes: any[] = [];
+    snapshot.docs.forEach((doc) => {
+      notes.push({ id: doc.id, ...doc.data() });
+    });
+    // Sort by updated time desc (optional)
+    notes.sort((a, b) => {
+      const dateA = new Date(a.updatedAt || 0).getTime();
+      const dateB = new Date(b.updatedAt || 0).getTime();
+      return dateB - dateA;
+    });
+    return notes;
+  } catch (error) {
+    console.error("Lỗi khi lấy toàn bộ Hán tự:", error);
+    return [];
+  }
+}
