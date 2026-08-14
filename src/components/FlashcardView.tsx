@@ -241,7 +241,12 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
         case "v":
         case "V":
           e.preventDefault();
-          playAudio(deck[currentIndex].reading || deck[currentIndex].word);
+          const card = deck[currentIndex];
+          const exampleTextKey = card.example ? card.example.replace(/[\(（].*?[\)）]/g, '').trim() : '';
+          const textToPlayKey = exampleTextKey 
+            ? `${card.reading || card.word}。 …… ${exampleTextKey}`
+            : (card.reading || card.word);
+          playAudio(textToPlayKey);
           break;
       }
     };
@@ -483,16 +488,6 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
             <span className="absolute top-6 left-6 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
               <Rotate3D className="w-4 h-4" /> Bấm để lật
             </span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                playAudio(currentVocab.reading || currentVocab.word);
-              }}
-              className="absolute top-4 right-4 p-3 rounded-xl text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
-              title="Phát âm thanh"
-            >
-              <Volume2 className="w-5 h-5" />
-            </button>
             <div className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-wide" onClick={(e) => e.stopPropagation()}>
               <ClickableKanjiString text={currentVocab.word} />
             </div>
@@ -508,6 +503,20 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
             <span className="absolute top-6 left-6 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
               <Rotate3D className="w-4 h-4" /> Bấm để lật
             </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const exampleTextBtn = currentVocab.example ? currentVocab.example.replace(/[\(（].*?[\)）]/g, '').trim() : '';
+                const textToPlayBtn = exampleTextBtn 
+                  ? `${currentVocab.reading || currentVocab.word}。 …… ${exampleTextBtn}`
+                  : (currentVocab.reading || currentVocab.word);
+                playAudio(textToPlayBtn);
+              }}
+              className="absolute top-4 right-4 p-3 rounded-xl text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
+              title="Phát âm thanh"
+            >
+              <Volume2 className="w-5 h-5" />
+            </button>
             
             {currentVocab.reading && (
               <div className="text-xl md:text-2xl font-bold text-amber-600 dark:text-amber-400 mb-2">

@@ -10,9 +10,10 @@ import { KanjiDictionaryView } from "./KanjiDictionaryView";
 import { TypingQuizView } from "./TypingQuizView";
 import { FolderTree } from "./FolderTree";
 import { AnkiSettingsModal } from "./AnkiSettingsModal";
+import { TTSSettingsModal } from "./TTSSettingsModal";
 import { getVocabularies } from "@/app/actions/vocabulary";
 import { getFolders, createFolder } from "@/app/actions/folder";
-import { LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, Moon, Sun, Library, LogOut, ChevronDown, ChevronRight } from "lucide-react";
+import { LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, Volume2 } from "lucide-react";
 import { getFolderFullPath } from "@/lib/folder-utils";
 import { useTheme } from "next-themes";
 
@@ -25,10 +26,10 @@ export function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Modal tạo thư mục mới
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showTTSSettingsModal, setShowTTSSettingsModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderParentId, setNewFolderParentId] = useState<string>("");
   const [creatingFolder, setCreatingFolder] = useState(false);
@@ -134,6 +135,16 @@ export function Dashboard() {
                     >
                       <BrainCircuit className="w-4 h-4 text-rose-500 dark:text-rose-400" />
                       Cài đặt Anki
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setShowSettingsDropdown(false);
+                        setShowTTSSettingsModal(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-b border-slate-100 dark:border-slate-800"
+                    >
+                      <Volume2 className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                      Cài đặt Phát âm
                     </button>
                     <button 
                       onClick={async () => {
@@ -392,6 +403,11 @@ export function Dashboard() {
       {/* Modal Cài đặt Anki */}
       {showSettingsModal && (
         <AnkiSettingsModal onClose={() => setShowSettingsModal(false)} />
+      )}
+
+      {/* Modal Cài đặt Phát âm (TTS) */}
+      {showTTSSettingsModal && (
+        <TTSSettingsModal onClose={() => setShowTTSSettingsModal(false)} />
       )}
     </div>
   );
