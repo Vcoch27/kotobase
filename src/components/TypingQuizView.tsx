@@ -346,7 +346,7 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
           {/* Action Buttons */}
           <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
             <button 
-              onClick={startNewQuiz}
+              onClick={() => startNewQuiz()}
               title="Xáo trộn lại từ đầu"
               className="p-1.5 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-colors"
             >
