@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, Library, FileText, BookOpen, Edit3 } from "lucide-react";
+import { Search, Library, FileText, BookOpen, Edit3, Loader2 } from "lucide-react";
 import { getAllKanjiNotes } from "@/app/actions/kanji";
+import { getVocabulariesByKanji } from "@/app/actions/vocabulary";
 import { VocabularyEditModal } from "./VocabularyEditModal";
 
 interface KanjiNote {
@@ -34,6 +35,8 @@ export function KanjiDictionaryView({ vocabularies, onRefreshVocab }: KanjiDicti
   
   const [selectedKanji, setSelectedKanji] = useState<KanjiNote | null>(null);
   const [editingVocab, setEditingVocab] = useState<VocabularyData | null>(null);
+  const [relatedVocabularies, setRelatedVocabularies] = useState<VocabularyData[]>([]);
+  const [loadingRelated, setLoadingRelated] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -48,6 +51,23 @@ export function KanjiDictionaryView({ vocabularies, onRefreshVocab }: KanjiDicti
     fetchKanji();
     return () => { isMounted = false; };
   }, []);
+
+  // Khi chọn Kanji, lấy danh sách từ vựng từ server
+  useEffect(() => {
+    let isMounted = true;
+    if (selectedKanji) {
+      setLoadingRelated(true);
+      getVocabulariesByKanji(selectedKanji.character).then(vocabs => {
+        if (isMounted) {
+          setRelatedVocabularies(vocabs);
+          setLoadingRelated(false);
+        }
+      });
+    } else {
+      setRelatedVocabularies([]);
+    }
+    return () => { isMounted = false; };
+  }, [selectedKanji]);
 
   // Đóng modal Kanji detail bằng phím Esc
   useEffect(() => {
@@ -69,11 +89,6 @@ export function KanjiDictionaryView({ vocabularies, onRefreshVocab }: KanjiDicti
       (k.mnemonic && k.mnemonic.toLowerCase().includes(q))
     );
   });
-
-  // Tìm các từ vựng chứa Hán tự đang được chọn
-  const relatedVocabularies = selectedKanji
-    ? vocabularies.filter(v => v.word.includes(selectedKanji.character))
-    : [];
 
   if (loading) {
     return (
@@ -185,12 +200,19 @@ export function KanjiDictionaryView({ vocabularies, onRefreshVocab }: KanjiDicti
             <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-slate-50 dark:bg-slate-950/30">
               <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center justify-between">
                 Từ vựng chứa {selectedKanji.character}
-                <span className="text-xs font-medium text-slate-500 bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-full">
-                  {relatedVocabularies.length} từ
-                </span>
+                {!loadingRelated && (
+                  <span className="text-xs font-medium text-slate-500 bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+                    {relatedVocabularies.length} từ
+                  </span>
+                )}
               </h4>
               
-              {relatedVocabularies.length === 0 ? (
+              {loadingRelated ? (
+                <div className="text-center p-8 text-slate-500 flex flex-col items-center">
+                  <Loader2 className="w-6 h-6 animate-spin mb-2 text-indigo-500" />
+                  <span className="text-xs">Đang tìm từ vựng trong CSDL...</span>
+                </div>
+              ) : relatedVocabularies.length === 0 ? (
                 <div className="text-center p-8 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl text-slate-500 dark:text-slate-400 text-sm">
                   Chưa có từ vựng nào trong CSDL chứa Hán tự này.
                 </div>

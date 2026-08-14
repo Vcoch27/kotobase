@@ -185,3 +185,45 @@ export async function updateVocabulary(id: string, input: Partial<CreateVocabInp
     return { success: false, error: "Không thể cập nhật từ vựng." };
   }
 }
+
+export async function getVocabulariesByKanji(character: string) {
+  if (!character) return [];
+  try {
+    const snapshot = await adminDb.collection("vocabularies").get();
+    
+    // Khởi tạo lấy danh sách folder để map tên
+    const foldersSnapshot = await adminDb.collection("folders").get();
+    const folderMap = new Map<string, any>();
+    foldersSnapshot.docs.forEach(doc => {
+      folderMap.set(doc.id, { id: doc.id, name: doc.data().name });
+    });
+
+    let vocabs: any[] = [];
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      if (data.word && data.word.includes(character)) {
+        const folderVocabularies = (data.folderIds || []).map((fId: string) => ({
+          folderId: fId,
+          folder: folderMap.get(fId) || { id: fId, name: "Thư mục không xác định" }
+        }));
+        vocabs.push({
+          id: doc.id,
+          ...data,
+          folderVocabularies
+        });
+      }
+    });
+
+    // Sort by createdAt desc
+    vocabs.sort((a: any, b: any) => {
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
+      return dateB - dateA;
+    });
+
+    return vocabs;
+  } catch (error) {
+    console.error("Lỗi khi tìm từ vựng theo Kanji:", error);
+    return [];
+  }
+}
