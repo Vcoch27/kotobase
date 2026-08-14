@@ -10,7 +10,7 @@ import { FolderTree } from "./FolderTree";
 import { AnkiSettingsModal } from "./AnkiSettingsModal";
 import { getVocabularies } from "@/app/actions/vocabulary";
 import { getFolders, createFolder } from "@/app/actions/folder";
-import { LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2 } from "lucide-react";
+import { LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit } from "lucide-react";
 import { getFolderFullPath } from "@/lib/folder-utils";
 
 export function Dashboard() {
@@ -24,6 +24,7 @@ export function Dashboard() {
 
   // Modal tạo thư mục mới
   const [showFolderModal, setShowFolderModal] = useState(false);
+  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderParentId, setNewFolderParentId] = useState<string>("");
@@ -89,13 +90,36 @@ export function Dashboard() {
             </div>
           </div>
           
-          <button 
-            onClick={() => setShowSettingsModal(true)}
-            className="p-2 rounded-xl text-slate-400 hover:text-amber-400 hover:bg-slate-900 transition-colors"
-            title="Cài đặt Anki"
-          >
-            <Settings2 className="w-5 h-5" />
-          </button>
+          <div className="relative">
+            <button 
+              onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
+              className={`p-2 rounded-xl transition-colors ${showSettingsDropdown ? 'bg-slate-800 text-amber-400' : 'text-slate-400 hover:text-amber-400 hover:bg-slate-900'}`}
+              title="Cài đặt hệ thống"
+            >
+              <Settings2 className="w-5 h-5" />
+            </button>
+            
+            {showSettingsDropdown && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setShowSettingsDropdown(false)}
+                ></div>
+                <div className="absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-fadeIn">
+                  <button 
+                    onClick={() => {
+                      setShowSettingsDropdown(false);
+                      setShowSettingsModal(true);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors text-left"
+                  >
+                    <BrainCircuit className="w-4 h-4 text-rose-400" />
+                    Cài đặt Anki
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
