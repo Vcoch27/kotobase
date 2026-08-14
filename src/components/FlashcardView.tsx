@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
 import { 
   RotateCcw, Shuffle, ArrowLeft, ArrowRight, X, Check, 
-  Rotate3D, GraduationCap, LayoutList, RefreshCcw, BrainCircuit, Undo2
+  Rotate3D, GraduationCap, LayoutList, RefreshCcw, BrainCircuit, Undo2, Eye, EyeOff
 } from "lucide-react";
 import { 
   AnkiRating, AnkiCardData, DEFAULT_ANKI_DATA, 
@@ -43,6 +43,7 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showSino, setShowSino] = useState(true);
 
   // Progress tracking
   const [knownIds, setKnownIds] = useState<Set<string>>(new Set());
@@ -404,6 +405,14 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setShowSino(!showSino)} 
+            className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-all" 
+            title={showSino ? "Ẩn âm Hán Việt" : "Hiện âm Hán Việt"}
+          >
+            {showSino ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+          </button>
+          
           {mode !== "normal" && (
             <button 
               onClick={handleUndo} 
@@ -471,8 +480,8 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
             <div className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-wide" onClick={(e) => e.stopPropagation()}>
               <ClickableKanjiString text={currentVocab.word} />
             </div>
-            {currentVocab.sinoVietnamese && (
-              <div className="mt-8 text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em]">
+            {currentVocab.sinoVietnamese && showSino && (
+              <div className="mt-8 text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] animate-fadeIn">
                 {currentVocab.sinoVietnamese}
               </div>
             )}
