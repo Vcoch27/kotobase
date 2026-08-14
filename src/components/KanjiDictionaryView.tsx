@@ -149,9 +149,9 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
   return (
     <div className="space-y-6 animate-fadeIn transition-colors">
       {/* Thanh tìm kiếm */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-4 transition-colors">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">
+          <div className="w-10 h-10 shrink-0 flex items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">
             <Library className="w-5 h-5" />
           </div>
           <div>
@@ -160,7 +160,7 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
           </div>
         </div>
 
-        <div className="relative w-full max-w-sm">
+        <div className="relative w-full max-w-none sm:max-w-sm">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -208,11 +208,11 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header Kanji */}
-            <div className="p-6 bg-gradient-to-br from-amber-50 dark:from-amber-500/10 via-white dark:via-slate-900 to-rose-50 dark:to-rose-500/10 border-b border-slate-200 dark:border-slate-800 flex items-start gap-6 relative">
-              <div className="flex-shrink-0 w-24 h-24 rounded-2xl bg-gradient-to-tr from-amber-500 to-rose-500 text-white font-bold text-5xl flex items-center justify-center shadow-lg shadow-amber-500/30">
+            <div className="p-4 sm:p-6 bg-gradient-to-br from-amber-50 dark:from-amber-500/10 via-white dark:via-slate-900 to-rose-50 dark:to-rose-500/10 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 relative">
+              <div className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-tr from-amber-500 to-rose-500 text-white font-bold text-4xl sm:text-5xl flex items-center justify-center shadow-lg shadow-amber-500/30">
                 {selectedKanji.character}
               </div>
-              <div className="flex-1">
+              <div className="flex-1 w-full">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Thông tin Hán tự</h3>
                 </div>

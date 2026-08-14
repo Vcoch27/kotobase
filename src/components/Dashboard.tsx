@@ -12,7 +12,7 @@ import { FolderTree } from "./FolderTree";
 import { AnkiSettingsModal } from "./AnkiSettingsModal";
 import { getVocabularies } from "@/app/actions/vocabulary";
 import { getFolders, createFolder } from "@/app/actions/folder";
-import { LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, Moon, Sun, Library, LogOut } from "lucide-react";
+import { LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, Moon, Sun, Library, LogOut, ChevronDown, ChevronRight } from "lucide-react";
 import { getFolderFullPath } from "@/lib/folder-utils";
 import { useTheme } from "next-themes";
 
@@ -32,6 +32,7 @@ export function Dashboard() {
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderParentId, setNewFolderParentId] = useState<string>("");
   const [creatingFolder, setCreatingFolder] = useState(false);
+  const [isMobileFolderOpen, setIsMobileFolderOpen] = useState(false);
 
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -72,20 +73,22 @@ export function Dashboard() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased pb-20 flex flex-col transition-colors duration-300">
       {/* Top Navbar */}
       <header className="sticky top-0 z-40 border-b border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl transition-colors duration-300">
-        <div className="max-w-screen-2xl mx-auto px-4 lg:px-6 h-16 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 via-rose-500 to-indigo-600 flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-amber-500/20">
+        <div className="max-w-screen-2xl mx-auto px-4 lg:px-6 py-3 md:h-16 flex flex-wrap items-center justify-between gap-3 md:gap-4">
+          {/* Logo */}
+          <div className="flex items-center gap-2 md:gap-3 shrink-0">
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-gradient-to-tr from-amber-500 via-rose-500 to-indigo-600 flex items-center justify-center text-white font-extrabold text-base md:text-xl shadow-lg shadow-amber-500/20">
               言
             </div>
             <div>
-              <h1 className="text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-                KotoBase <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Japanese</span>
+              <h1 className="text-base md:text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                KotoBase <span className="hidden sm:inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Japanese</span>
               </h1>
             </div>
           </div>
 
+          {/* Desktop Search */}
           <div className="flex-1 max-w-xl hidden md:block px-8">
-            <div className="relative">
+            <div className="relative w-full">
               <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
@@ -97,13 +100,14 @@ export function Dashboard() {
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          {/* Settings & Theme */}
+          <div className="flex items-center gap-1 md:gap-2 shrink-0">
             <button 
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="p-2 rounded-xl transition-colors text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-900"
               title="Đổi giao diện Sáng/Tối"
             >
-              {mounted && theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              {mounted && theme === "dark" ? <Sun className="w-4 h-4 md:w-5 md:h-5" /> : <Moon className="w-4 h-4 md:w-5 md:h-5" />}
             </button>
             <div className="relative">
               <button 
@@ -111,7 +115,7 @@ export function Dashboard() {
                 className={`p-2 rounded-xl transition-colors ${showSettingsDropdown ? 'bg-slate-100 dark:bg-slate-800 text-amber-500 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-900'}`}
                 title="Cài đặt hệ thống"
               >
-                <Settings2 className="w-5 h-5" />
+                <Settings2 className="w-4 h-4 md:w-5 md:h-5" />
               </button>
               
               {showSettingsDropdown && (
@@ -148,6 +152,20 @@ export function Dashboard() {
               )}
             </div>
           </div>
+          
+          {/* Mobile Search */}
+          <div className="w-full md:hidden order-last mt-1">
+            <div className="relative w-full">
+              <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm kiếm..."
+                className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-amber-500 dark:focus:border-amber-500 text-xs text-slate-700 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all"
+              />
+            </div>
+          </div>
         </div>
       </header>
 
@@ -158,22 +176,32 @@ export function Dashboard() {
         <div className="w-full md:w-64 lg:w-72 shrink-0 space-y-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl transition-colors duration-300">
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
-              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200">Quản lý Thư mục</h2>
+              <h2 
+                className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between w-full md:w-auto cursor-pointer md:cursor-default"
+                onClick={() => setIsMobileFolderOpen(!isMobileFolderOpen)}
+              >
+                <span>Quản lý Thư mục</span>
+                <span className="md:hidden p-1 bg-slate-100 dark:bg-slate-800 rounded-md ml-2">
+                  {isMobileFolderOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                </span>
+              </h2>
               <button
                 onClick={() => setShowFolderModal(true)}
                 title="Tạo thư mục mới"
-                className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-500/20 transition-colors"
+                className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-500/20 transition-colors shrink-0"
               >
                 <FolderPlus className="w-4 h-4" />
               </button>
             </div>
             
-            <FolderTree 
-              folders={folders} 
-              selectedFolderId={selectedFolderId} 
-              onSelectFolder={setSelectedFolderId}
-              onRefresh={fetchData} 
-            />
+            <div className={`${isMobileFolderOpen ? 'block' : 'hidden'} md:block`}>
+              <FolderTree 
+                folders={folders} 
+                selectedFolderId={selectedFolderId} 
+                onSelectFolder={setSelectedFolderId}
+                onRefresh={fetchData} 
+              />
+            </div>
           </div>
         </div>
 
@@ -203,8 +231,8 @@ export function Dashboard() {
           )}
 
           {/* View Modes & Vocabularies */}
-          <div className="bg-white dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-end overflow-x-auto custom-scrollbar transition-colors duration-300">
-            <div className="flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800 whitespace-nowrap">
+          <div className="bg-white dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 w-full overflow-x-auto custom-scrollbar transition-colors duration-300">
+            <div className="flex items-center w-max bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
               <button
                 onClick={() => setViewMode("overview")}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${

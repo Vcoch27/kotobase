@@ -546,15 +546,15 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
             <button 
               onClick={handlePrev} 
               disabled={currentIndex === 0}
-              className="flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all disabled:opacity-30 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white hover:bg-slate-50 dark:bg-transparent dark:hover:bg-slate-800 border border-slate-200 dark:border-transparent hover:border-slate-300 dark:hover:border-slate-700 shadow-sm dark:shadow-none"
+              className="flex items-center gap-2 px-4 md:px-6 py-3 rounded-2xl font-bold transition-all disabled:opacity-30 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white hover:bg-slate-50 dark:bg-transparent dark:hover:bg-slate-800 border border-slate-200 dark:border-transparent hover:border-slate-300 dark:hover:border-slate-700 shadow-sm dark:shadow-none"
             >
-              <ArrowLeft className="w-5 h-5" /> Trước (Left)
+              <ArrowLeft className="w-5 h-5" /> Trước <span className="hidden sm:inline">(Left)</span>
             </button>
             <button 
               onClick={handleNext}
-              className="flex items-center gap-2 px-8 py-3 rounded-2xl font-bold transition-all text-white dark:text-slate-900 bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-400 dark:hover:bg-emerald-300 shadow-lg shadow-emerald-500/20 active:scale-95"
+              className="flex items-center gap-2 px-6 md:px-8 py-3 rounded-2xl font-bold transition-all text-white dark:text-slate-900 bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-400 dark:hover:bg-emerald-300 shadow-lg shadow-emerald-500/20 active:scale-95"
             >
-              Tiếp theo (Right) <ArrowRight className="w-5 h-5" />
+              Tiếp theo <span className="hidden sm:inline">(Right)</span> <ArrowRight className="w-5 h-5" />
             </button>
           </>
         ) : (
