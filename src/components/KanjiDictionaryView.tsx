@@ -179,7 +179,7 @@ export function KanjiDictionaryView({ vocabularies, onRefreshVocab }: KanjiDicti
       {/* Modal Chi tiết Hán tự & Từ vựng liên quan */}
       {selectedKanji && (
         <div 
-          className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-slate-900/60 backdrop-blur-sm animate-fadeIn"
+          className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-transparent animate-fadeIn"
           onClick={() => setSelectedKanji(null)}
         >
           <div 
@@ -194,17 +194,6 @@ export function KanjiDictionaryView({ vocabularies, onRefreshVocab }: KanjiDicti
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Thông tin Hán tự</h3>
-                  {!isEditingKanji && (
-                    <button 
-                      onClick={() => {
-                        setEditKanjiForm({ meaning: selectedKanji.meaning || "", mnemonic: selectedKanji.mnemonic || "" });
-                        setIsEditingKanji(true);
-                      }}
-                      className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline px-2 py-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
-                    >
-                      CHỈNH SỬA
-                    </button>
-                  )}
                 </div>
                 
                 {isEditingKanji ? (
@@ -249,22 +238,24 @@ export function KanjiDictionaryView({ vocabularies, onRefreshVocab }: KanjiDicti
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    <div>
+                  <div className="space-y-3 cursor-pointer group" onClick={() => {
+                    setEditKanjiForm({ meaning: selectedKanji.meaning || "", mnemonic: selectedKanji.mnemonic || "" });
+                    setIsEditingKanji(true);
+                  }}>
+                    <div className="p-2 -mx-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors relative">
+                      <Edit3 className="w-3.5 h-3.5 absolute top-2 right-2 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                       <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 mb-0.5">
                         <FileText className="w-3.5 h-3.5" /> NGHĨA
                       </div>
                       <div className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                        {selectedKanji.meaning || <span className="text-slate-400 italic font-normal text-sm">Chưa có nghĩa</span>}
+                        {selectedKanji.meaning || <span className="text-slate-400 italic font-normal text-sm">Nhấn để thêm nghĩa...</span>}
                       </div>
-                    </div>
-                    
-                    <div>
-                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 mb-0.5">
+                      
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 mb-0.5 mt-3">
                         <BookOpen className="w-3.5 h-3.5" /> MẸO NHỚ
                       </div>
                       <div className="text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                        {selectedKanji.mnemonic || <span className="text-slate-400 italic">Chưa có mẹo nhớ</span>}
+                        {selectedKanji.mnemonic || <span className="text-slate-400 italic">Nhấn để thêm mẹo nhớ...</span>}
                       </div>
                     </div>
                   </div>
