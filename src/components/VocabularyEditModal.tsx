@@ -6,7 +6,7 @@ import { updateVocabulary } from '@/app/actions/vocabulary';
 import { getFolderFullPath } from '@/lib/folder-utils';
 import { playAudio } from '@/lib/tts-utils';
 
-interface VocabularyData {
+export interface VocabularyEditItem {
   id: string;
   word: string;
   meaning: string;
@@ -14,11 +14,11 @@ interface VocabularyData {
   sinoVietnamese?: string | null;
   example?: string | null;
   note?: string | null;
-  folderVocabularies?: { folderId: string; folder: { id: string; name: string } }[];
+  folderVocabularies?: any[];
 }
 
 interface VocabularyEditModalProps {
-  vocabulary: VocabularyData;
+  vocabulary: any;
   folders: any[];
   onClose: () => void;
   onSuccess: () => void;
