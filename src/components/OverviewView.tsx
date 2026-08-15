@@ -33,15 +33,27 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
     setCurrentPage(1);
   }, [vocabularies]);
 
-  const totalPages = Math.ceil(vocabularies.length / ITEMS_PER_PAGE);
-  const paginatedVocabularies = vocabularies.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const [localVocabs, setLocalVocabs] = useState<any[]>([]);
+
+  useEffect(() => {
+    setLocalVocabs(vocabularies);
+  }, [vocabularies]);
+
+  const totalPages = Math.ceil(localVocabs.length / ITEMS_PER_PAGE);
+  const paginatedVocabularies = localVocabs.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const handleDelete = async (e: React.MouseEvent, id: string, word: string) => {
-    e.stopPropagation(); // Ngăn mở modal sửa khi bấm xóa
+    e.stopPropagation();
     if (confirm(`Bạn có chắc chắn muốn xóa từ "${word}" không?`)) {
+      // Optimistic delete
+      setLocalVocabs(prev => prev.filter(v => v.id !== id));
+      
       const res = await deleteVocabulary(id);
       if (res.success && onRefresh) {
         onRefresh();
+      } else {
+        setLocalVocabs(vocabularies); // Rollback
+        alert("Lỗi khi xóa từ vựng!");
       }
     }
   };

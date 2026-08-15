@@ -24,11 +24,16 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
+  const [localFolders, setLocalFolders] = useState<FolderItem[]>([]);
+
+  React.useEffect(() => {
+    setLocalFolders(folders);
+  }, [folders]);
 
   // Build tree from flat list
   const tree = useMemo(() => {
     const map = new Map<string, any>();
-    folders.forEach(f => map.set(f.id, { ...f, children: [] }));
+    localFolders.forEach(f => map.set(f.id, { ...f, children: [] }));
     const root: any[] = [];
     
     map.forEach(node => {
@@ -39,7 +44,7 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
       }
     });
     return root;
-  }, [folders]);
+  }, [localFolders]);
 
   const toggleExpand = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -74,16 +79,20 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
     const confirmText = window.prompt(`CẢNH BÁO NGUY HIỂM: Hành động này sẽ XÓA VĨNH VIỄN thư mục "${folderName}", tất cả thư mục con, VÀ TOÀN BỘ TỪ VỰNG bên trong.\n\nHãy gõ chữ "XOA" (viết hoa, không dấu) để xác nhận:`);
     
     if (confirmText === "XOA") {
+      // Optimistic update
+      setLocalFolders(prev => prev.filter(f => f.id !== folderId && f.parentId !== folderId));
+      if (selectedFolderId === folderId) {
+        onSelectFolder("all");
+      }
       setDeletingFolderId(folderId);
+
       const res = await deleteFolderAndVocabs(folderId);
       setDeletingFolderId(null);
       
       if (res.success) {
-        if (selectedFolderId === folderId) {
-          onSelectFolder("all");
-        }
         onRefresh();
       } else {
+        setLocalFolders(folders); // Rollback
         alert(res.error || "Không thể xóa thư mục!");
       }
     } else if (confirmText !== null) {
@@ -95,13 +104,19 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
     e.stopPropagation();
     const newName = window.prompt("Nhập tên mới cho thư mục:", currentName);
     if (newName && newName.trim() && newName.trim() !== currentName) {
+      const trimmedName = newName.trim();
+      
+      // Optimistic update
+      setLocalFolders(prev => prev.map(f => f.id === folderId ? { ...f, name: trimmedName } : f));
       setRenamingFolderId(folderId);
-      const res = await renameFolder(folderId, newName.trim());
+      
+      const res = await renameFolder(folderId, trimmedName);
       setRenamingFolderId(null);
       
       if (res.success) {
         onRefresh();
       } else {
+        setLocalFolders(folders); // Rollback
         alert(res.error || "Không thể đổi tên thư mục!");
       }
     }

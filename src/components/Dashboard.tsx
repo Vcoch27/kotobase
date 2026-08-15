@@ -1,22 +1,33 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { QuickAddForm } from "./QuickAddForm";
 import { BulkImport } from "./BulkImport";
 import { OverviewView } from "./OverviewView";
-import { FocusRecallView } from "./FocusRecallView";
-import { FlashcardView } from "./FlashcardView";
-import { KanjiDictionaryView } from "./KanjiDictionaryView";
-import { TypingQuizView } from "./TypingQuizView";
 import { FolderTree } from "./FolderTree";
 import { AnkiSettingsModal } from "./AnkiSettingsModal";
 import { TTSSettingsModal } from "./TTSSettingsModal";
 import { JishoSearchResults } from "./JishoSearchResults";
 import { getVocabularies } from "@/app/actions/vocabulary";
 import { getFolders, createFolder } from "@/app/actions/folder";
-import { LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, Volume2 } from "lucide-react";
+import { LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, Volume2, Loader2 } from "lucide-react";
 import { getFolderFullPath } from "@/lib/folder-utils";
 import { useTheme } from "next-themes";
+import { useDebounce } from "@/hooks/useDebounce";
+
+const FocusRecallView = dynamic(() => import("./FocusRecallView").then(m => m.FocusRecallView), {
+  loading: () => <div className="flex items-center justify-center p-20"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
+});
+const FlashcardView = dynamic(() => import("./FlashcardView").then(m => m.FlashcardView), {
+  loading: () => <div className="flex items-center justify-center p-20"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
+});
+const KanjiDictionaryView = dynamic(() => import("./KanjiDictionaryView").then(m => m.KanjiDictionaryView), {
+  loading: () => <div className="flex items-center justify-center p-20"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
+});
+const TypingQuizView = dynamic(() => import("./TypingQuizView").then(m => m.TypingQuizView), {
+  loading: () => <div className="flex items-center justify-center p-20"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
+});
 
 export function Dashboard() {
   const [viewMode, setViewMode] = useState<"overview" | "focus" | "flashcard" | "kanji" | "quiz">("overview");
@@ -39,34 +50,51 @@ export function Dashboard() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
+
+  const fetchData = async (isBackground = false) => {
+    // Only set loading if not just typing (for smoother search UX) and not a background refresh
+    if (!isBackground && !debouncedSearchQuery && searchQuery === "") {
+      setLoading(true);
+    }
     const [vocabData, folderData] = await Promise.all([
-      getVocabularies(selectedFolderId, searchQuery),
+      getVocabularies(selectedFolderId, debouncedSearchQuery),
       getFolders(),
     ]);
     setVocabularies(Array.isArray(vocabData) ? vocabData : []);
     setFolders(Array.isArray(folderData) ? folderData : []);
-    setLoading(false);
+    if (!isBackground) {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     setMounted(true);
     fetchData();
-  }, [selectedFolderId, searchQuery]);
+  }, [selectedFolderId, debouncedSearchQuery]);
 
   const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFolderName.trim()) return;
-    setCreatingFolder(true);
-    const res = await createFolder(newFolderName, newFolderParentId || undefined);
-    setCreatingFolder(false);
+    
+    // Optimistic Update
+    const optimisticId = `temp-${Date.now()}`;
+    const newFolder = { id: optimisticId, name: newFolderName.trim(), parentId: newFolderParentId || null, _count: { folderVocabularies: 0 } };
+    setFolders(prev => [...prev, newFolder]);
+    
+    const submittedName = newFolderName.trim();
+    const submittedParentId = newFolderParentId;
+    
+    setNewFolderName("");
+    setNewFolderParentId("");
+    setShowFolderModal(false);
+
+    const res = await createFolder(submittedName, submittedParentId || undefined);
+    
     if (res.success) {
-      setNewFolderName("");
-      setNewFolderParentId("");
-      setShowFolderModal(false);
-      fetchData();
+      fetchData(true); // Cập nhật ngầm để lấy ID thật
     } else {
+      setFolders(prev => prev.filter(f => f.id !== optimisticId)); // Hoàn tác nếu lỗi
       alert(res.error || "Không thể tạo thư mục!");
     }
   };
@@ -214,7 +242,7 @@ export function Dashboard() {
                 folders={folders} 
                 selectedFolderId={selectedFolderId} 
                 onSelectFolder={setSelectedFolderId}
-                onRefresh={fetchData} 
+                onRefresh={() => fetchData(true)} 
               />
             </div>
           </div>
@@ -240,9 +268,9 @@ export function Dashboard() {
           </div>
 
           {showBulkImport ? (
-            <BulkImport folders={folders} currentFolderId={selectedFolderId} onSuccess={fetchData} />
+            <BulkImport folders={folders} currentFolderId={selectedFolderId} onSuccess={() => fetchData(true)} />
           ) : (
-            <QuickAddForm folders={folders} currentFolderId={selectedFolderId} onSuccess={fetchData} />
+            <QuickAddForm folders={folders} currentFolderId={selectedFolderId} onSuccess={() => fetchData(true)} />
           )}
 
           {/* View Modes & Vocabularies */}
