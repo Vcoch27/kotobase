@@ -45,6 +45,7 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
   const [isFinished, setIsFinished] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showSino, setShowSino] = useState(true);
+  const [isShuffled, setIsShuffled] = useState(false);
 
   // Progress tracking
   const [knownIds, setKnownIds] = useState<Set<string>>(new Set());
@@ -86,10 +87,12 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
       setCurrentIndex(0);
       setIsFlipped(false);
       setIsFinished(false);
+      setIsShuffled(false);
       setKnownIds(new Set());
       setUnknownIds(new Set());
     } else {
       setDeck([]);
+      setIsShuffled(false);
     }
   }, [vocabularies, mode]);
 
@@ -275,12 +278,31 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
     setCurrentIndex(0);
     setIsFlipped(false);
     setIsFinished(false);
+    setIsShuffled(false);
     setKnownIds(new Set());
     setUnknownIds(new Set());
   };
 
-  const shuffleAll = () => {
-    setDeck(prev => shuffleArray(prev));
+  const toggleShuffle = () => {
+    if (!isShuffled) {
+      setDeck(shuffleArray(deck));
+      setIsShuffled(true);
+    } else {
+      if (mode === "anki") {
+        const progress = loadAnkiProgress();
+        const now = Date.now();
+        const ankiDeck = vocabularies.filter(v => {
+          const p = progress[v.id];
+          if (!p) return true;
+          if (p.nextReview <= now) return true;
+          return false;
+        });
+        setDeck(ankiDeck);
+      } else {
+        setDeck(vocabularies);
+      }
+      setIsShuffled(false);
+    }
     setCurrentIndex(0);
     setIsFlipped(false);
     setIsFinished(false);
@@ -435,7 +457,15 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
             </button>
           )}
           {mode !== "anki" && (
-            <button onClick={shuffleAll} className="p-2 text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-lg transition-all" title="Trộn thẻ (Shuffle)">
+            <button 
+              onClick={toggleShuffle} 
+              className={`p-2 rounded-lg transition-all ${
+                isShuffled
+                  ? "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-500/40 shadow-sm"
+                  : "text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10"
+              }`} 
+              title={isShuffled ? "Tắt trộn thẻ (Về thứ tự ban đầu)" : "Trộn ngẫu nhiên (Shuffle)"}
+            >
               <Shuffle className="w-5 h-5" />
             </button>
           )}

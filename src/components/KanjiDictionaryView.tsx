@@ -5,6 +5,7 @@ import { Search, Library, FileText, BookOpen, Edit3, Loader2, Type } from "lucid
 import { getAllKanjiNotes, upsertKanjiNote } from "@/app/actions/kanji";
 import { getVocabulariesByKanji } from "@/app/actions/vocabulary";
 import { VocabularyEditModal } from "./VocabularyEditModal";
+import { KanjiLookupResults } from "./KanjiLookupResults";
 
 interface KanjiNote {
   id: string;
@@ -196,6 +197,17 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
           ))}
         </div>
       )}
+
+      {/* Tra cứu Từ điển Hán tự Mở rộng (Kanji Dictionary) */}
+      <KanjiLookupResults
+        searchQuery={searchQuery}
+        existingKanjiChars={new Set((kanjiNotes || []).map(k => k.character))}
+        onSaveSuccess={async () => {
+          const notes = await getAllKanjiNotes();
+          setKanjiNotes(Array.isArray(notes) ? notes : []);
+          if (onRefreshVocab) onRefreshVocab();
+        }}
+      />
 
       {/* Modal Chi tiết Hán tự & Từ vựng liên quan */}
       {selectedKanji && (
