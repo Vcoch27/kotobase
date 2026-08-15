@@ -46,6 +46,7 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
   const [showHint, setShowHint] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
   const [quizMode, setQuizMode] = useState<"mix" | "type1" | "type2">("mix");
+  const [isShuffled, setIsShuffled] = useState(false);
   
   // Danh sách từ làm đúng và từ đã bấm bỏ qua
   const [skippedList, setSkippedList] = useState<QuizItem[]>([]);
@@ -54,12 +55,27 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
   // Ref cho ô input để tự động focus
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const buildQuizList = (list: VocabularyData[], mode: "mix" | "type1" | "type2"): QuizItem[] => {
+    return list.map(v => {
+      let qType: QuizType = 1;
+      if (mode === "mix") {
+        qType = (Math.random() > 0.5 ? 1 : 2) as QuizType;
+      } else if (mode === "type1") {
+        qType = 1;
+      } else if (mode === "type2") {
+        qType = 2;
+      }
+      return { ...v, quizType: qType };
+    });
+  };
+
   // Khởi tạo quiz khi vocabularies hoặc quizMode thay đổi
   useEffect(() => {
-    startNewQuiz();
+    startNewQuiz(undefined, false);
+    setIsShuffled(false);
   }, [vocabularies, quizMode]);
 
-  const startNewQuiz = (customVocabs?: VocabularyData[]) => {
+  const startNewQuiz = (customVocabs?: VocabularyData[], forceShuffle?: boolean) => {
     const sourceList = customVocabs && customVocabs.length > 0 ? customVocabs : vocabularies;
     
     if (sourceList.length === 0) {
@@ -70,20 +86,11 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
       return;
     }
     
-    // Tạo danh sách câu hỏi: xáo trộn và gán ngẫu nhiên dạng 1 hoặc 2
-    const shuffled = shuffleArray(sourceList).map(v => {
-      let qType: QuizType = 1;
-      if (quizMode === "mix") {
-        qType = (Math.random() > 0.5 ? 1 : 2) as QuizType;
-      } else if (quizMode === "type1") {
-        qType = 1;
-      } else if (quizMode === "type2") {
-        qType = 2;
-      }
-      return { ...v, quizType: qType };
-    });
+    const shouldShuffle = forceShuffle !== undefined ? forceShuffle : isShuffled;
+    const orderedSource = shouldShuffle ? shuffleArray(sourceList) : [...sourceList];
+    const items = buildQuizList(orderedSource, quizMode);
     
-    setQuizList(shuffled);
+    setQuizList(items);
     setCurrentIndex(0);
     setUserInput("");
     setFeedback("none");
@@ -93,6 +100,29 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
     setCorrectList([]);
     
     // Tự động focus sau một chút
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+  };
+
+  const toggleShuffle = () => {
+    const nextShuffled = !isShuffled;
+    setIsShuffled(nextShuffled);
+
+    if (nextShuffled) {
+      setQuizList(shuffleArray(quizList));
+    } else {
+      setQuizList(buildQuizList(vocabularies, quizMode));
+    }
+
+    setCurrentIndex(0);
+    setUserInput("");
+    setFeedback("none");
+    setShowHint(false);
+    setIsFinished(false);
+    setSkippedList([]);
+    setCorrectList([]);
+
     setTimeout(() => {
       inputRef.current?.focus();
     }, 100);
@@ -346,22 +376,22 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
           {/* Action Buttons */}
           <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
             <button 
-              onClick={() => startNewQuiz()}
-              title="Xáo trộn lại từ đầu"
-              className="p-1.5 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-colors"
+              onClick={toggleShuffle}
+              title={isShuffled ? "Tắt trộn câu hỏi (Về thứ tự ban đầu)" : "Trộn câu hỏi ngẫu nhiên (Shuffle)"}
+              className={`p-1.5 rounded-lg transition-all ${
+                isShuffled
+                  ? "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-500/40 shadow-sm"
+                  : "text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-700"
+              }`}
             >
               <Shuffle className="w-4 h-4" />
             </button>
             <button 
               onClick={() => {
-                setCurrentIndex(0);
-                setUserInput("");
-                setFeedback("none");
-                setShowHint(false);
-                setIsFinished(false);
-                setTimeout(() => inputRef.current?.focus(), 100);
+                startNewQuiz(undefined, false);
+                setIsShuffled(false);
               }}
-              title="Làm lại từ đầu (Giữ nguyên thứ tự)"
+              title="Làm lại từ đầu"
               className="p-1.5 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-colors"
             >
               <RotateCcw className="w-4 h-4" />
