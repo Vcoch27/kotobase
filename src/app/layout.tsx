@@ -4,7 +4,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "KotoBase - Japanese Vocabulary & Kanji Manager",
-  description: "Ứng dụng quản lý và học Từ vựng, Hán tự tiếng Nhật thông minh với Next.js và Prisma.",
+  description: "Ứng dụng quản lý và học Từ vựng, Hán tự tiếng Nhật thông minh với phương pháp Anki SRS và Active Recall.",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({

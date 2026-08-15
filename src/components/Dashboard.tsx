@@ -15,6 +15,7 @@ import { LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, M
 import { getFolderFullPath } from "@/lib/folder-utils";
 import { useTheme } from "next-themes";
 import { useDebounce } from "@/hooks/useDebounce";
+import { AppLogo } from "./AppLogo";
 
 const FocusRecallView = dynamic(() => import("./FocusRecallView").then(m => m.FocusRecallView), {
   loading: () => <div className="flex items-center justify-center p-20"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
@@ -106,9 +107,7 @@ export function Dashboard() {
         <div className="max-w-screen-2xl mx-auto px-4 lg:px-6 py-3 md:h-16 flex flex-wrap items-center justify-between gap-3 md:gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2 md:gap-3 shrink-0">
-            <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-gradient-to-tr from-amber-500 via-rose-500 to-indigo-600 flex items-center justify-center text-white font-extrabold text-base md:text-xl shadow-lg shadow-amber-500/20">
-              言
-            </div>
+            <AppLogo />
             <div>
               <h1 className="text-base md:text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
                 KotoBase <span className="hidden sm:inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Japanese</span>
