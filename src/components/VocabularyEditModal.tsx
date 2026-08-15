@@ -86,7 +86,7 @@ export function VocabularyEditModal({
               </p>
               {vocabulary.folderVocabularies && vocabulary.folderVocabularies.length > 0 ? (
                 <div className="flex flex-wrap gap-1">
-                  {vocabulary.folderVocabularies.map((f) => (
+                  {vocabulary.folderVocabularies.map((f: any) => (
                     <span
                       key={f.folderId}
                       className="text-[10px] font-bold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full"

@@ -189,7 +189,7 @@ export function FocusRecallView({ vocabularies, onRefresh }: FocusRecallViewProp
                   {/* Folders */}
                   <div className="flex items-center justify-between pt-1 text-xs text-slate-400">
                     <div className="flex flex-wrap gap-1 ml-auto">
-                      {item.folderVocabularies?.map((fv) => (
+                      {item.folderVocabularies?.map((fv: any) => (
                         <span
                           key={fv.folderId}
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-800 text-[10px] text-slate-700 dark:text-slate-300"

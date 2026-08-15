@@ -7,6 +7,11 @@ import { deleteVocabulary } from "@/app/actions/vocabulary";
 import { VocabularyEditModal } from "./VocabularyEditModal";
 import { getFolderFullPath } from "@/lib/folder-utils";
 
+interface FolderVocabItem {
+  folderId: string;
+  folder?: any;
+}
+
 interface VocabularyData {
   id: string;
   word: string;
@@ -15,7 +20,7 @@ interface VocabularyData {
   sinoVietnamese?: string | null;
   example?: string | null;
   note?: string | null;
-  folderVocabularies?: any[];
+  folderVocabularies?: FolderVocabItem[];
 }
 
 interface OverviewViewProps {
@@ -33,7 +38,7 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
     setCurrentPage(1);
   }, [vocabularies]);
 
-  const [localVocabs, setLocalVocabs] = useState<any[]>([]);
+  const [localVocabs, setLocalVocabs] = useState<VocabularyData[]>([]);
 
   useEffect(() => {
     setLocalVocabs(vocabularies);
@@ -139,7 +144,7 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
                 <td className="py-4 px-4 align-top">
                   <div className="flex flex-wrap gap-1">
                     {item.folderVocabularies && item.folderVocabularies.length > 0 ? (
-                      item.folderVocabularies.map((fv) => (
+                      item.folderVocabularies.map((fv: any) => (
                         <span
                           key={fv.folderId}
                           className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 whitespace-nowrap"
