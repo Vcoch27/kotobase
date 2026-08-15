@@ -97,37 +97,56 @@ export async function assignVocabularyToFolder(vocabularyId: string, folderId: s
 
 export async function getVocabularies(folderId?: string, searchQuery?: string) {
   try {
-    let query: FirebaseFirestore.Query = adminDb.collection("vocabularies");
-
-    if (folderId && folderId !== "all") {
-      query = query.where("folderIds", "array-contains", folderId);
-    }
-
-    const snapshot = await query.get();
-    
-    // Khởi tạo lấy danh sách folder để map tên (Do Firebase không có Include/Join)
+    // 1. Lấy danh sách folders để map tên & tìm cây thư mục con đệ quy
     const foldersSnapshot = await adminDb.collection("folders").get();
     const folderMap = new Map<string, any>();
-    foldersSnapshot.docs.forEach(doc => {
-      folderMap.set(doc.id, { id: doc.id, name: doc.data().name, parentId: doc.data().parentId });
-    });
+    const allFolders = foldersSnapshot.docs.map(doc => ({
+      id: doc.id,
+      name: doc.data().name,
+      parentId: doc.data().parentId || null,
+    }));
+    allFolders.forEach(f => folderMap.set(f.id, f));
 
-    let vocabs = snapshot.docs.map(doc => {
-      const data = doc.data();
-      // Tái tạo lại cấu trúc folderVocabularies giống Prisma cũ để Frontend không bị lỗi
-      const folderVocabularies = (data.folderIds || []).map((fId: string) => ({
-        folderId: fId,
-        folder: folderMap.get(fId) || { id: fId, name: "Thư mục không xác định" }
-      }));
+    // 2. Tìm tất cả ID thư mục con cháu nếu có chọn thư mục cụ thể
+    const targetFolderIds = new Set<string>();
+    if (folderId && folderId !== "all") {
+      targetFolderIds.add(folderId);
+      let added = true;
+      while (added) {
+        added = false;
+        allFolders.forEach(f => {
+          if (f.parentId && targetFolderIds.has(f.parentId) && !targetFolderIds.has(f.id)) {
+            targetFolderIds.add(f.id);
+            added = true;
+          }
+        });
+      }
+    }
 
-      return {
-        id: doc.id,
-        ...data,
-        folderVocabularies
-      };
-    });
+    // 3. Lấy tất cả từ vựng từ collection
+    const snapshot = await adminDb.collection("vocabularies").get();
 
-    // Lọc thủ công tìm kiếm (Firestore không hỗ trợ OR + Fulltext Search tốt cho nhiều trường)
+    let vocabs = snapshot.docs
+      .map(doc => {
+        const data = doc.data();
+        const folderVocabularies = (data.folderIds || []).map((fId: string) => ({
+          folderId: fId,
+          folder: folderMap.get(fId) || { id: fId, name: "Thư mục không xác định" }
+        }));
+
+        return {
+          id: doc.id,
+          ...data,
+          folderVocabularies
+        };
+      })
+      .filter((v: any) => {
+        if (!folderId || folderId === "all") return true;
+        const vFolderIds: string[] = v.folderIds || [];
+        return vFolderIds.some(fId => targetFolderIds.has(fId));
+      });
+
+    // 4. Lọc tìm kiếm nếu có
     if (searchQuery && searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       vocabs = vocabs.filter((v: any) => 
@@ -138,7 +157,7 @@ export async function getVocabularies(folderId?: string, searchQuery?: string) {
       );
     }
 
-    // Sort by createdAt desc
+    // 5. Sort by createdAt desc
     vocabs.sort((a: any, b: any) => {
       const dateA = new Date(a.createdAt || 0).getTime();
       const dateB = new Date(b.createdAt || 0).getTime();

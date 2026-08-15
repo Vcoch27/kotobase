@@ -184,8 +184,8 @@ export function Dashboard() {
       <main className="flex-1 max-w-screen-2xl w-full mx-auto px-4 lg:px-6 pt-6 flex flex-col md:flex-row gap-6">
         
         {/* LEFT SIDEBAR: Folder Tree */}
-        <div className="w-full md:w-64 lg:w-72 shrink-0 space-y-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl transition-colors duration-300">
+        <div className="w-full md:w-64 lg:w-72 shrink-0 space-y-4 md:sticky md:top-20 md:self-start">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl transition-colors duration-300 md:max-h-[calc(100vh-6rem)] md:overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
               <h2 
                 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between w-full md:w-auto cursor-pointer md:cursor-default"

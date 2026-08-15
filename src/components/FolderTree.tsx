@@ -113,7 +113,12 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
       return (
         <div key={node.id} className="w-full">
           <div
-            onClick={() => onSelectFolder(node.id)}
+            onClick={() => {
+              onSelectFolder(node.id);
+              if (hasChildren) {
+                setExpandedFolders(prev => ({ ...prev, [node.id]: !prev[node.id] }));
+              }
+            }}
             onDragOver={(e) => handleDragOver(e, node.id)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, node.id)}
