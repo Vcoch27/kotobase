@@ -20,7 +20,15 @@ interface FolderTreeProps {
 }
 
 export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefresh }: FolderTreeProps) {
-  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("kotobase_expanded_folders");
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return {};
+  });
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
@@ -29,6 +37,31 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
   React.useEffect(() => {
     setLocalFolders(folders);
   }, [folders]);
+
+  // Tự động mở các thư mục cha chứa thư mục đang được chọn
+  React.useEffect(() => {
+    if (selectedFolderId && selectedFolderId !== "all" && folders.length > 0) {
+      const folderMap = new Map<string, FolderItem>();
+      folders.forEach(f => folderMap.set(f.id, f));
+
+      const newExpanded: Record<string, boolean> = {};
+      let current = folderMap.get(selectedFolderId);
+      while (current && current.parentId) {
+        newExpanded[current.parentId] = true;
+        current = folderMap.get(current.parentId);
+      }
+
+      if (Object.keys(newExpanded).length > 0) {
+        setExpandedFolders(prev => {
+          const updated = { ...prev, ...newExpanded };
+          try {
+            localStorage.setItem("kotobase_expanded_folders", JSON.stringify(updated));
+          } catch (e) {}
+          return updated;
+        });
+      }
+    }
+  }, [selectedFolderId, folders]);
 
   // Build tree from flat list
   const tree = useMemo(() => {
@@ -48,7 +81,13 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
 
   const toggleExpand = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setExpandedFolders(prev => ({ ...prev, [id]: !prev[id] }));
+    setExpandedFolders(prev => {
+      const updated = { ...prev, [id]: !prev[id] };
+      try {
+        localStorage.setItem("kotobase_expanded_folders", JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
   };
 
   const handleDragOver = (e: React.DragEvent, folderId: string) => {

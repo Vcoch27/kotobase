@@ -35,7 +35,21 @@ export function Dashboard() {
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [vocabularies, setVocabularies] = useState<any[]>([]);
   const [folders, setFolders] = useState<any[]>([]);
-  const [selectedFolderId, setSelectedFolderId] = useState<string>("all");
+  const [selectedFolderId, setSelectedFolderId] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem("kotobase_selected_folder") || "all";
+      } catch (e) {}
+    }
+    return "all";
+  });
+
+  const handleSelectFolder = (id: string) => {
+    setSelectedFolderId(id);
+    try {
+      localStorage.setItem("kotobase_selected_folder", id);
+    } catch (e) {}
+  };
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -240,7 +254,7 @@ export function Dashboard() {
               <FolderTree 
                 folders={folders} 
                 selectedFolderId={selectedFolderId} 
-                onSelectFolder={setSelectedFolderId}
+                onSelectFolder={handleSelectFolder}
                 onRefresh={() => fetchData(true)} 
               />
             </div>
