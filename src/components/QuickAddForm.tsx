@@ -12,10 +12,11 @@ interface FolderItem {
 
 interface QuickAddFormProps {
   folders: FolderItem[];
+  currentFolderId?: string;
   onSuccess?: () => void;
 }
 
-export function QuickAddForm({ folders, onSuccess }: QuickAddFormProps) {
+export function QuickAddForm({ folders, currentFolderId, onSuccess }: QuickAddFormProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [word, setWord] = useState("");
   const [meaning, setMeaning] = useState("");
@@ -23,7 +24,17 @@ export function QuickAddForm({ folders, onSuccess }: QuickAddFormProps) {
   const [sinoVietnamese, setSinoVietnamese] = useState("");
   const [example, setExample] = useState("");
   const [note, setNote] = useState("");
-  const [selectedFolderIds, setSelectedFolderIds] = useState<string[]>([]);
+  const [selectedFolderIds, setSelectedFolderIds] = useState<string[]>(
+    currentFolderId && currentFolderId !== "all" ? [currentFolderId] : []
+  );
+
+  useEffect(() => {
+    if (currentFolderId && currentFolderId !== "all") {
+      setSelectedFolderIds([currentFolderId]);
+    } else {
+      setSelectedFolderIds([]);
+    }
+  }, [currentFolderId]);
 
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(false);

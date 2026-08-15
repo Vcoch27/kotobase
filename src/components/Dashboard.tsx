@@ -197,7 +197,10 @@ export function Dashboard() {
                 </span>
               </h2>
               <button
-                onClick={() => setShowFolderModal(true)}
+                onClick={() => {
+                  setNewFolderParentId(selectedFolderId !== "all" ? selectedFolderId : "");
+                  setShowFolderModal(true);
+                }}
                 title="Tạo thư mục mới"
                 className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-500/20 transition-colors shrink-0"
               >
@@ -236,9 +239,9 @@ export function Dashboard() {
           </div>
 
           {showBulkImport ? (
-            <BulkImport folders={folders} onSuccess={fetchData} />
+            <BulkImport folders={folders} currentFolderId={selectedFolderId} onSuccess={fetchData} />
           ) : (
-            <QuickAddForm folders={folders} onSuccess={fetchData} />
+            <QuickAddForm folders={folders} currentFolderId={selectedFolderId} onSuccess={fetchData} />
           )}
 
           {/* View Modes & Vocabularies */}

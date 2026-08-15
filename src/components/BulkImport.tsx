@@ -12,15 +12,26 @@ interface FolderItem {
 
 interface BulkImportProps {
   folders: FolderItem[];
+  currentFolderId?: string;
   onSuccess?: () => void;
 }
 
-export function BulkImport({ folders, onSuccess }: BulkImportProps) {
+export function BulkImport({ folders, currentFolderId, onSuccess }: BulkImportProps) {
   const [jsonText, setJsonText] = useState("");
-  const [selectedFolderId, setSelectedFolderId] = useState<string>("");
+  const [selectedFolderId, setSelectedFolderId] = useState<string>(
+    currentFolderId && currentFolderId !== "all" ? currentFolderId : ""
+  );
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  React.useEffect(() => {
+    if (currentFolderId && currentFolderId !== "all") {
+      setSelectedFolderId(currentFolderId);
+    } else {
+      setSelectedFolderId("");
+    }
+  }, [currentFolderId]);
 
   const promptText = `Hãy đóng vai một chuyên gia tiếng Nhật. Trả lời bằng định dạng JSON chuẩn (mảng các object). Hãy tạo cho tôi danh sách từ vựng tiếng Nhật.
 Mỗi từ vựng phải tuân theo cấu trúc sau:
