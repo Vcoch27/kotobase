@@ -70,17 +70,29 @@ export async function GET(request: NextRequest) {
             if (rawDetail) {
               const cleanLines = rawDetail
                 .split(/[\r\n]+/)
-                .map((line: string) => line.replace(/^[\s#*①②③④⑤⑥⑦⑧⑨⑩\d.-]+/, "").trim())
+                .map((line: string) => {
+                  return line
+                    // Bỏ số thứ tự đầu dòng
+                    .replace(/^[\s#*①②③④⑤⑥⑦⑧⑨⑩\d.-]+/, "")
+                    // Bỏ toàn bộ phần VD / Ví dụ / ví dụ cùng các từ ghép ví dụ phía sau
+                    .replace(/[,;]?\s*(VD|Vd|vd|Ví dụ|Ví Dụ|ví dụ)\s*[:：].*$/i, "")
+                    // Bỏ các từ tiếng Nhật trong ngoặc ví dụ nếu có
+                    .replace(/[\(（][^\)）]*[\u4E00-\u9FAF\u3040-\u309F\u30A0-\u30FF]+[^\)）]*[\)）]/g, "")
+                    // Chuẩn hóa dấu phân cách cuối dòng
+                    .replace(/[;,.\s]+$/, "")
+                    .trim();
+                })
                 .filter((line: string) => line.length > 0 && !line.startsWith("Bộ:") && !line.startsWith("Nét:"));
               
               if (cleanLines.length > 0) {
-                mean = cleanLines.slice(0, 4).join(", ");
+                // Gom tối đa 3 nét nghĩa chính, phân tách bằng dấu phẩy
+                mean = cleanLines.slice(0, 3).join(", ");
               }
             }
 
             if (!mean) {
               if (rawMean && rawMean.toUpperCase() !== hanviet) {
-                mean = rawMean;
+                mean = rawMean.replace(/[,;]?\s*(VD|Vd|vd|Ví dụ|Ví Dụ|ví dụ)\s*[:：].*$/i, "").trim();
               } else {
                 mean = hanviet ? `Nghĩa Hán tự: ${hanviet.toLowerCase()}` : "";
               }
