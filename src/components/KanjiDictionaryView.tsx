@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, Library, FileText, BookOpen, Edit3, Loader2, Type } from "lucide-react";
+import { Search, Library, FileText, BookOpen, Edit3, Loader2, Type, Volume2, Wand2, X } from "lucide-react";
 import { getAllKanjiNotes, upsertKanjiNote } from "@/app/actions/kanji";
 import { getVocabulariesByKanji } from "@/app/actions/vocabulary";
 import { VocabularyEditModal } from "./VocabularyEditModal";
 import { KanjiLookupResults } from "./KanjiLookupResults";
+import { playAudio } from "@/lib/tts-utils";
+import { KanjiDetail } from "@/app/api/kanji/lookup/route";
 
 interface KanjiNote {
   id: string;
@@ -38,6 +40,7 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
   const [searchQuery, setSearchQuery] = useState("");
   
   const [selectedKanji, setSelectedKanji] = useState<KanjiNote | null>(null);
+  const [apiDetail, setApiDetail] = useState<KanjiDetail | null>(null);
   const [editingVocab, setEditingVocab] = useState<VocabularyData | null>(null);
   const [relatedVocabularies, setRelatedVocabularies] = useState<VocabularyData[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
@@ -69,11 +72,14 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
     return () => { isMounted = false; };
   }, []);
 
-  // Khi chọn Kanji, lấy danh sách từ vựng từ server
+  // Khi chọn Kanji, lấy danh sách từ vựng từ server & thông tin từ điển
   useEffect(() => {
     let isMounted = true;
     if (selectedKanji) {
       setLoadingRelated(true);
+      setApiDetail(null);
+
+      // 1. Tải từ vựng liên quan
       getVocabulariesByKanji(selectedKanji.character)
         .then(vocabs => {
           if (isMounted) {
@@ -88,8 +94,19 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
             setLoadingRelated(false);
           }
         });
+
+      // 2. Tải thông tin từ điển chi tiết (JLPT, On/Kun, nghĩa chuẩn)
+      fetch(`/api/kanji/lookup?query=${encodeURIComponent(selectedKanji.character)}`)
+        .then(r => r.json())
+        .then(res => {
+          if (isMounted && res.data && res.data.length > 0) {
+            setApiDetail(res.data[0]);
+          }
+        })
+        .catch(err => console.error("Lỗi tải thông tin API Kanji:", err));
     } else {
       setRelatedVocabularies([]);
+      setApiDetail(null);
     }
     return () => { isMounted = false; };
   }, [selectedKanji]);
@@ -190,9 +207,14 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
               <span className="text-4xl font-bold text-slate-800 dark:text-slate-100 mb-2 group-hover:scale-110 transition-transform">
                 {kanji.character}
               </span>
-              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 text-center truncate w-full">
-                {kanji.meaning || "---"}
+              <span className="text-sm font-black text-rose-600 dark:text-rose-400 text-center truncate w-full uppercase tracking-wider">
+                {kanji.hanviet || (kanji.meaning && kanji.meaning.length <= 6 ? kanji.meaning.toUpperCase() : "---")}
               </span>
+              {kanji.meaning && kanji.hanviet && (
+                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 text-center truncate w-full mt-0.5">
+                  {kanji.meaning}
+                </span>
+              )}
             </div>
           ))}
         </div>
@@ -221,12 +243,45 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
           >
             {/* Header Kanji */}
             <div className="p-4 sm:p-6 bg-gradient-to-br from-amber-50 dark:from-amber-500/10 via-white dark:via-slate-900 to-rose-50 dark:to-rose-500/10 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 relative">
-              <div className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-tr from-amber-500 to-rose-500 text-white font-bold text-4xl sm:text-5xl flex items-center justify-center shadow-lg shadow-amber-500/30">
-                {selectedKanji.character}
+              <div className="flex-shrink-0 flex flex-col items-center">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-tr from-amber-500 to-rose-500 text-white font-bold text-4xl sm:text-5xl flex items-center justify-center shadow-lg shadow-amber-500/30">
+                  {selectedKanji.character}
+                </div>
+                {apiDetail?.stroke_count && (
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-2">
+                    {apiDetail.stroke_count} nét
+                  </span>
+                )}
               </div>
-              <div className="flex-1 w-full">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Thông tin Hán tự</h3>
+
+              <div className="flex-1 w-full min-w-0">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Thông tin Hán tự
+                    </span>
+                    {apiDetail?.jlpt && (
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30">
+                        N{String(apiDetail.jlpt).replace(/^N/i, "")}
+                      </span>
+                    )}
+                  </div>
+
+                  {isEditingKanji && apiDetail && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditKanjiForm({
+                          hanviet: apiDetail.hanviet || editKanjiForm.hanviet,
+                          meaning: apiDetail.mean || editKanjiForm.meaning,
+                          mnemonic: editKanjiForm.mnemonic
+                        });
+                      }}
+                      className="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-bold"
+                    >
+                      <Wand2 className="w-3.5 h-3.5" /> Điền từ điển
+                    </button>
+                  )}
                 </div>
                 
                 {isEditingKanji ? (
@@ -284,7 +339,18 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
                   </div>
                 ) : (
                   <div className="space-y-3 cursor-pointer group" onClick={() => {
-                    setEditKanjiForm({ hanviet: selectedKanji.hanviet || "", meaning: selectedKanji.meaning || "", mnemonic: selectedKanji.mnemonic || "" });
+                    let defaultHanviet = selectedKanji.hanviet || "";
+                    let defaultMeaning = selectedKanji.meaning || "";
+                    
+                    if (defaultMeaning && apiDetail?.hanviet && defaultMeaning.toUpperCase() === apiDetail.hanviet) {
+                      defaultHanviet = apiDetail.hanviet;
+                      defaultMeaning = apiDetail.mean || "";
+                    } else {
+                      if (!defaultHanviet && apiDetail?.hanviet) defaultHanviet = apiDetail.hanviet;
+                      if (!defaultMeaning && apiDetail?.mean) defaultMeaning = apiDetail.mean;
+                    }
+                    
+                    setEditKanjiForm({ hanviet: defaultHanviet, meaning: defaultMeaning, mnemonic: selectedKanji.mnemonic || "" });
                     setIsEditingKanji(true);
                   }}>
                     <div className="p-2 -mx-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors relative">
@@ -293,18 +359,62 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
                       <div className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 mb-0.5">
                         <Type className="w-3.5 h-3.5" /> ÂM HÁN VIỆT
                       </div>
-                      <div className="text-lg font-black tracking-wide text-slate-900 dark:text-white uppercase mb-3">
-                        {selectedKanji.hanviet || <span className="text-slate-400 italic font-normal text-sm lowercase">Nhấn để thêm âm Hán Việt...</span>}
+                      <div className="text-xl font-black tracking-wider text-rose-600 dark:text-rose-400 uppercase mb-2">
+                        {selectedKanji.hanviet || apiDetail?.hanviet || <span className="text-slate-400 italic font-normal text-sm lowercase">Nhấn để thêm âm Hán Việt...</span>}
                       </div>
 
                       <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 mb-0.5">
                         <FileText className="w-3.5 h-3.5" /> NGHĨA
                       </div>
-                      <div className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                        {selectedKanji.meaning || <span className="text-slate-400 italic font-normal text-sm">Nhấn để thêm nghĩa...</span>}
+                      <div className="text-base font-bold text-slate-800 dark:text-slate-100 mb-3">
+                        {selectedKanji.meaning || apiDetail?.mean || <span className="text-slate-400 italic font-normal text-sm">Nhấn để thêm nghĩa...</span>}
                       </div>
+
+                      {/* On / Kun từ điển */}
+                      {apiDetail && (apiDetail.on_readings.length > 0 || apiDetail.kun_readings.length > 0) && (
+                        <div className="p-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 mb-3 space-y-1.5 text-xs">
+                          {apiDetail.on_readings.length > 0 && (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10px] font-bold text-rose-500 uppercase">On:</span>
+                              <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                {apiDetail.on_readings.join("、 ")}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  playAudio(apiDetail.on_readings[0]);
+                                }}
+                                className="p-1 text-slate-400 hover:text-rose-500 rounded transition-colors"
+                                title="Nghe âm On"
+                              >
+                                <Volume2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                          {apiDetail.kun_readings.length > 0 && (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10px] font-bold text-indigo-500 uppercase">Kun:</span>
+                              <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                {apiDetail.kun_readings.join("、 ")}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  playAudio(apiDetail.kun_readings[0].replace(".", ""));
+                                }}
+                                className="p-1 text-slate-400 hover:text-indigo-500 rounded transition-colors"
+                                title="Nghe âm Kun"
+                              >
+                                <Volume2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       
-                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 mb-0.5 mt-3">
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 mb-0.5 mt-2">
                         <BookOpen className="w-3.5 h-3.5" /> MẸO NHỚ
                       </div>
                       <div className="text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">

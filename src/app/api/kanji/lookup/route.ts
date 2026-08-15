@@ -50,9 +50,43 @@ export async function GET(request: NextRequest) {
             const kunList = item.kun 
               ? item.kun.split(/[\s,、]+/).map((s: string) => s.trim()).filter(Boolean) 
               : [];
-            const meaningsList = item.mean 
-              ? item.mean.split(/[,;]+/).map((s: string) => s.trim()).filter(Boolean) 
-              : [];
+
+            let rawHanviet = (item.hanviet || "").trim();
+            let rawMean = (item.mean || "").trim();
+            let rawDetail = (item.detail || "").trim();
+
+            let hanviet = "";
+            let mean = "";
+
+            // 1. Phân định Âm Hán Việt:
+            if (rawHanviet) {
+              hanviet = rawHanviet.toUpperCase();
+            } else if (rawMean && rawMean.length <= 25 && !rawMean.includes("\n")) {
+              // Trong Mazii, trường 'mean' của Kanji chính là Âm Hán Việt in hoa (VD: "CHIẾU", "TÁ", "Ý")
+              hanviet = rawMean.toUpperCase();
+            }
+
+            // 2. Phân định Nghĩa tiếng Việt từ trường detail hoặc mean
+            if (rawDetail) {
+              const cleanLines = rawDetail
+                .split(/[\r\n]+/)
+                .map((line: string) => line.replace(/^[\s#*①②③④⑤⑥⑦⑧⑨⑩\d.-]+/, "").trim())
+                .filter((line: string) => line.length > 0 && !line.startsWith("Bộ:") && !line.startsWith("Nét:"));
+              
+              if (cleanLines.length > 0) {
+                mean = cleanLines.slice(0, 4).join(", ");
+              }
+            }
+
+            if (!mean) {
+              if (rawMean && rawMean.toUpperCase() !== hanviet) {
+                mean = rawMean;
+              } else {
+                mean = hanviet ? `Nghĩa Hán tự: ${hanviet.toLowerCase()}` : "";
+              }
+            }
+
+            const meaningsList = mean ? mean.split(/[,;]+/).map((s: string) => s.trim()).filter(Boolean) : [];
 
             let jlptLevel = item.level;
             if (jlptLevel && typeof jlptLevel === "string") {
@@ -61,14 +95,14 @@ export async function GET(request: NextRequest) {
 
             return {
               kanji: item.kanji,
-              hanviet: (item.hanviet || "").toUpperCase(),
-              mean: item.mean || "",
+              hanviet: hanviet,
+              mean: mean,
               meanings: meaningsList,
               kun_readings: kunList,
               on_readings: onList,
               stroke_count: item.stroke_count ? parseInt(item.stroke_count) : undefined,
               jlpt: jlptLevel || undefined,
-              detail: item.detail || "",
+              detail: rawDetail,
             };
           });
 
