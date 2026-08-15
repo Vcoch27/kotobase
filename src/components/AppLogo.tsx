@@ -4,14 +4,23 @@ import React, { useState } from "react";
 
 interface AppLogoProps {
   className?: string;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
 }
 
 export function AppLogo({ className = "", size = "md" }: AppLogoProps) {
   const [hasError, setHasError] = useState(false);
 
-  const dimension = size === "sm" ? "w-8 h-8" : size === "lg" ? "w-12 h-12" : "w-8 h-8 md:w-10 md:h-10";
-  const textSize = size === "sm" ? "text-sm" : size === "lg" ? "text-2xl" : "text-base md:text-xl";
+  const dimension = 
+    size === "sm" ? "w-8 h-8" : 
+    size === "lg" ? "w-12 h-12" : 
+    size === "xl" ? "w-16 h-16" : 
+    "w-8 h-8 md:w-10 md:h-10";
+    
+  const textSize = 
+    size === "sm" ? "text-sm" : 
+    size === "lg" ? "text-2xl" : 
+    size === "xl" ? "text-3xl" : 
+    "text-base md:text-xl";
 
   if (!hasError) {
     return (

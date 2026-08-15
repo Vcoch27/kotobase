@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { login } from "@/app/actions/auth";
 import { Lock, ArrowRight, ShieldAlert, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { AppLogo } from "@/components/AppLogo";
 
 export default function LoginPage() {
   const [password, setPassword] = useState("");
@@ -42,8 +43,8 @@ export default function LoginPage() {
         <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-amber-500/10 dark:bg-amber-500/5 rounded-full blur-3xl pointer-events-none"></div>
         
         <div className="relative z-10 text-center mb-8">
-          <div className="w-16 h-16 mx-auto bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20 mb-6">
-            <Lock className="w-8 h-8 text-white" />
+          <div className="flex justify-center mb-6">
+            <AppLogo size="xl" className="shadow-2xl shadow-indigo-500/20" />
           </div>
           <h1 className="text-2xl font-black text-slate-800 dark:text-white mb-2 flex items-center justify-center gap-2">
             KotoBase <Sparkles className="w-5 h-5 text-amber-500" />
