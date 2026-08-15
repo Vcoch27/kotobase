@@ -44,7 +44,7 @@ export default function LoginPage() {
         
         <div className="relative z-10 text-center mb-8">
           <div className="flex justify-center mb-6">
-            <AppLogo size="xl" className="shadow-2xl shadow-indigo-500/20" />
+            <AppLogo size="2xl" className="shadow-2xl shadow-indigo-500/20 hover:scale-105 transition-transform" />
           </div>
           <h1 className="text-2xl font-black text-slate-800 dark:text-white mb-2 flex items-center justify-center gap-2">
             KotoBase <Sparkles className="w-5 h-5 text-amber-500" />

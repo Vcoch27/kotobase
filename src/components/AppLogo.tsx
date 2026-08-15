@@ -4,7 +4,7 @@ import React, { useState } from "react";
 
 interface AppLogoProps {
   className?: string;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";
 }
 
 export function AppLogo({ className = "", size = "md" }: AppLogoProps) {
@@ -14,12 +14,16 @@ export function AppLogo({ className = "", size = "md" }: AppLogoProps) {
     size === "sm" ? "w-8 h-8" : 
     size === "lg" ? "w-12 h-12" : 
     size === "xl" ? "w-16 h-16" : 
+    size === "2xl" ? "w-24 h-24 md:w-28 md:h-28" :
+    size === "3xl" ? "w-32 h-32 md:w-36 md:h-36" :
     "w-8 h-8 md:w-10 md:h-10";
     
   const textSize = 
     size === "sm" ? "text-sm" : 
     size === "lg" ? "text-2xl" : 
     size === "xl" ? "text-3xl" : 
+    size === "2xl" ? "text-5xl" :
+    size === "3xl" ? "text-6xl" :
     "text-base md:text-xl";
 
   if (!hasError) {
