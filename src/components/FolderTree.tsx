@@ -2,8 +2,8 @@
 
 import React, { useState, useMemo } from "react";
 import { assignVocabularyToFolder } from "@/app/actions/vocabulary";
-import { deleteFolderAndVocabs } from "@/app/actions/folder";
-import { Folder, ChevronRight, ChevronDown, CheckCircle2, Trash2 } from "lucide-react";
+import { deleteFolderAndVocabs, renameFolder } from "@/app/actions/folder";
+import { Folder, ChevronRight, ChevronDown, CheckCircle2, Trash2, Pencil } from "lucide-react";
 
 interface FolderItem {
   id: string;
@@ -23,6 +23,7 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
+  const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
 
   // Build tree from flat list
   const tree = useMemo(() => {
@@ -90,6 +91,22 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
     }
   };
 
+  const handleRenameFolder = async (folderId: string, currentName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newName = window.prompt("Nhập tên mới cho thư mục:", currentName);
+    if (newName && newName.trim() && newName.trim() !== currentName) {
+      setRenamingFolderId(folderId);
+      const res = await renameFolder(folderId, newName.trim());
+      setRenamingFolderId(null);
+      
+      if (res.success) {
+        onRefresh();
+      } else {
+        alert(res.error || "Không thể đổi tên thư mục!");
+      }
+    }
+  };
+
   // Hàm tính tổng số từ vựng đệ quy (bao gồm cả thư mục con)
   const getRecursiveCount = (node: any): number => {
     let count = node._count?.folderVocabularies || 0;
@@ -143,8 +160,20 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
               {totalCount}
             </span>
             
-            {/* Delete button appears on hover over the item */}
-            <div className="shrink-0 group-hover:opacity-100 opacity-0 transition-opacity">
+            {/* Action buttons (Rename + Delete) appear on hover */}
+            <div className="shrink-0 group-hover:opacity-100 opacity-0 transition-opacity flex items-center gap-0.5">
+              <button
+                onClick={(e) => handleRenameFolder(node.id, node.name, e)}
+                disabled={renamingFolderId === node.id}
+                className="p-1 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition-colors disabled:opacity-50"
+                title="Đổi tên thư mục"
+              >
+                {renamingFolderId === node.id ? (
+                  <div className="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <Pencil className="w-3.5 h-3.5" />
+                )}
+              </button>
               <button
                 onClick={(e) => handleDeleteFolder(node.id, node.name, e)}
                 disabled={deletingFolderId === node.id}

@@ -58,6 +58,23 @@ export async function createFolder(name: string, parentId?: string) {
   }
 }
 
+export async function renameFolder(id: string, newName: string) {
+  if (!newName.trim()) return { success: false, error: "Tên thư mục không được để trống." };
+
+  try {
+    await adminDb.collection("folders").doc(id).update({
+      name: newName.trim(),
+      updatedAt: new Date().toISOString()
+    });
+
+    revalidatePath("/");
+    return { success: true };
+  } catch (error) {
+    console.error("Lỗi khi đổi tên thư mục:", error);
+    return { success: false, error: "Không thể đổi tên thư mục." };
+  }
+}
+
 export async function deleteFolderAndVocabs(id: string) {
   try {
     const allFoldersSnapshot = await adminDb.collection("folders").get();

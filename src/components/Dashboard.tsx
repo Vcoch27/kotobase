@@ -11,6 +11,7 @@ import { TypingQuizView } from "./TypingQuizView";
 import { FolderTree } from "./FolderTree";
 import { AnkiSettingsModal } from "./AnkiSettingsModal";
 import { TTSSettingsModal } from "./TTSSettingsModal";
+import { JishoSearchResults } from "./JishoSearchResults";
 import { getVocabularies } from "@/app/actions/vocabulary";
 import { getFolders, createFolder } from "@/app/actions/folder";
 import { LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, Volume2 } from "lucide-react";
@@ -343,6 +344,15 @@ export function Dashboard() {
               <TypingQuizView vocabularies={vocabularies} />
             ) : (
               <FlashcardView vocabularies={vocabularies} />
+            )}
+
+            {/* Tra cứu Từ điển Jisho mở rộng khi người dùng đang tìm kiếm */}
+            {searchQuery && searchQuery.trim() && (
+              <JishoSearchResults 
+                searchQuery={searchQuery} 
+                currentFolderId={selectedFolderId} 
+                onAddedSuccess={fetchData} 
+              />
             )}
           </div>
         </div>
