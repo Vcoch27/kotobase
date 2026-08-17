@@ -34,6 +34,14 @@ export function KanjiPageClient({ vocabularies, folders, currentUser }: KanjiPag
     setMounted(true);
   }, []);
 
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center pb-20">
+        <p className="text-sm font-semibold text-slate-500 animate-pulse">Đang tải dữ liệu...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased flex flex-col transition-colors duration-300">
       {/* Header */}
@@ -124,6 +132,8 @@ export function KanjiPageClient({ vocabularies, folders, currentUser }: KanjiPag
                       <button 
                         onClick={async () => {
                           setShowSettingsDropdown(false);
+                          const { auth } = await import('@/lib/firebase');
+                          await auth.signOut();
                           const { logoutGoogle } = await import('@/app/actions/auth');
                           await logoutGoogle();
                           window.location.reload();
@@ -136,6 +146,8 @@ export function KanjiPageClient({ vocabularies, folders, currentUser }: KanjiPag
                     <button
                       onClick={async () => {
                         setShowSettingsDropdown(false);
+                        const { auth } = await import('@/lib/firebase');
+                        await auth.signOut();
                         const { logoutApp } = await import('@/app/actions/auth');
                         await logoutApp();
                         window.location.href = '/login';

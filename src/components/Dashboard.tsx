@@ -14,7 +14,7 @@ import { getFolders, createFolder } from "@/app/actions/folder";
 import { 
   LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, 
   Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, Volume2, Loader2,
-  User, Lock
+  User, Lock, Folder
 } from "lucide-react";
 import { getFolderFullPath } from "@/lib/folder-utils";
 import { useTheme } from "next-themes";
@@ -52,14 +52,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [vocabularies, setVocabularies] = useState<any[]>([]);
   const [folders, setFolders] = useState<any[]>([]);
-  const [selectedFolderId, setSelectedFolderId] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        return localStorage.getItem("kotobase_selected_folder") || "all";
-      } catch (e) {}
-    }
-    return "all";
-  });
+  const [selectedFolderId, setSelectedFolderId] = useState<string>("all");
 
   const handleSelectFolder = (id: string) => {
     setSelectedFolderId(id);
@@ -102,10 +95,21 @@ export function Dashboard({ currentUser }: DashboardProps) {
     }
   };
 
+  // Khôi phục selectedFolderId từ localStorage ở Client
   useEffect(() => {
+    try {
+      const savedFolder = localStorage.getItem("kotobase_selected_folder");
+      if (savedFolder && savedFolder !== "all") {
+        setSelectedFolderId(savedFolder);
+      }
+    } catch (e) {}
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     fetchData();
-  }, [selectedFolderId, debouncedSearchQuery]);
+  }, [selectedFolderId, debouncedSearchQuery, mounted]);
 
   const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,6 +144,15 @@ export function Dashboard({ currentUser }: DashboardProps) {
       toast.error(res.error || "Không thể tạo thư mục!");
     }
   };
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center pb-20">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-500 mb-4" />
+        <p className="text-sm font-semibold text-slate-500 animate-pulse">Đang tải dữ liệu...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased pb-20 flex flex-col transition-colors duration-300">
@@ -260,6 +273,8 @@ export function Dashboard({ currentUser }: DashboardProps) {
                       <button 
                         onClick={async () => {
                           setShowSettingsDropdown(false);
+                          const { auth } = await import('@/lib/firebase');
+                          await auth.signOut();
                           const { logoutGoogle } = await import('@/app/actions/auth');
                           await logoutGoogle();
                           window.location.reload();
@@ -272,6 +287,8 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     <button 
                       onClick={async () => {
                         setShowSettingsDropdown(false);
+                        const { auth } = await import('@/lib/firebase');
+                        await auth.signOut();
                         const { logoutApp } = await import('@/app/actions/auth');
                         await logoutApp();
                         window.location.href = '/login';
@@ -340,6 +357,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 onSelectFolder={handleSelectFolder}
                 onRefresh={() => fetchData(true)}
                 currentUserId={currentUser?.uid || null}
+                currentUserEmail={currentUser?.email || null}
               />
             </div>
 
@@ -385,6 +403,27 @@ export function Dashboard({ currentUser }: DashboardProps) {
               )}
             </>
           ) : null}
+
+          {/* Breadcrumbs - Hiển thị đường dẫn và chủ sở hữu của thư mục đang chọn */}
+          <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Đang chọn:</span>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800/50 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/50">
+                <Folder className="w-4 h-4 text-amber-500" />
+                {selectedFolderId === 'all' ? (
+                  <span>Tất cả từ vựng</span>
+                ) : (
+                  <span>{getFolderFullPath(selectedFolderId, folders)}</span>
+                )}
+              </div>
+            </div>
+            {selectedFolderId !== 'all' && folders.find(f => f.id === selectedFolderId)?.ownerEmail && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20 rounded-full">
+                <User className="w-3 h-3" />
+                <span>Chủ sở hữu: {folders.find(f => f.id === selectedFolderId)?.ownerEmail}</span>
+              </div>
+            )}
+          </div>
 
           {/* View Modes */}
           <div className="bg-white dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 w-full overflow-x-auto custom-scrollbar transition-colors duration-300">

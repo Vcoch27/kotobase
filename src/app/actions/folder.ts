@@ -86,13 +86,14 @@ export async function renameFolder(id: string, newName: string) {
   if (!currentUser) {
     return { success: false, error: "Bạn cần đăng nhập bằng Google để thực hiện thao tác này." };
   }
+  const isAdmin = currentUser.email === "hoangtungmy123@gmail.com";
 
   // Kiểm tra owner
   const folderDoc = await adminDb.collection("folders").doc(id).get();
   if (!folderDoc.exists) return { success: false, error: "Thư mục không tồn tại." };
   
   const folderData = folderDoc.data();
-  if (folderData?.ownerId && folderData.ownerId !== currentUser.uid) {
+  if (!isAdmin && folderData?.ownerId && folderData.ownerId !== currentUser.uid) {
     return { success: false, error: "Bạn không có quyền đổi tên thư mục này." };
   }
 
@@ -116,13 +117,14 @@ export async function deleteFolderAndVocabs(id: string) {
   if (!currentUser) {
     return { success: false, error: "Bạn cần đăng nhập bằng Google để thực hiện thao tác này." };
   }
+  const isAdmin = currentUser.email === "hoangtungmy123@gmail.com";
 
   // Kiểm tra owner của thư mục gốc
   const folderDoc = await adminDb.collection("folders").doc(id).get();
   if (!folderDoc.exists) return { success: false, error: "Thư mục không tồn tại." };
   
   const folderData = folderDoc.data();
-  if (folderData?.ownerId && folderData.ownerId !== currentUser.uid) {
+  if (!isAdmin && folderData?.ownerId && folderData.ownerId !== currentUser.uid) {
     return { success: false, error: "Bạn không có quyền xóa thư mục này." };
   }
 

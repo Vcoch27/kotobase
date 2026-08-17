@@ -22,6 +22,7 @@ interface FolderTreeProps {
   onSelectFolder: (id: string) => void;
   onRefresh: () => void;
   currentUserId?: string | null;
+  currentUserEmail?: string | null;
 }
 
 export function FolderTree({
@@ -30,6 +31,7 @@ export function FolderTree({
   onSelectFolder,
   onRefresh,
   currentUserId,
+  currentUserEmail,
 }: FolderTreeProps) {
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>(() => {
     if (typeof window !== 'undefined') {
@@ -247,12 +249,13 @@ export function FolderTree({
       const totalCount = getRecursiveCount(node);
 
       // Phân quyền hiển thị
+      const isAdmin = currentUserEmail === "hoangtungmy123@gmail.com";
       const isOwner = currentUserId && node.ownerId && node.ownerId === currentUserId;
       const hasOwner = !!node.ownerId;
-      const canEdit = isOwner; // Chỉ chủ mới có thể sửa/xóa
+      const canEdit = isOwner || isAdmin; // Chủ hoặc Admin mới có thể sửa/xóa
 
       return (
-        <div key={node.id} className="w-full">
+        <div key={node.id} className="w-full relative">
           <div
             onClick={() => {
               onSelectFolder(node.id);
@@ -263,60 +266,64 @@ export function FolderTree({
             onDragOver={(e) => handleDragOver(e, node.id)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, node.id)}
-            style={{ paddingLeft: `${level * 12 + 8}px` }}
-            className={`group flex items-center gap-1.5 py-1.5 pr-2 my-0.5 rounded-lg cursor-pointer transition-all ${
+            style={{ paddingLeft: `${level * 16 + 8}px` }}
+            className={`group flex items-center gap-2 py-2 pr-2 my-1 rounded-xl cursor-pointer transition-all ${
               isSelected
-                ? 'bg-indigo-100 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-300 font-semibold border border-indigo-200 dark:border-indigo-500/30 shadow-sm'
+                ? 'bg-indigo-50 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-300 font-bold shadow-[0_0_0_1px_rgba(99,102,241,0.2)] dark:shadow-[0_0_0_1px_rgba(99,102,241,0.4)]'
                 : isDragOver
-                  ? 'bg-amber-100 dark:bg-amber-500/20 border-2 border-dashed border-amber-500 text-amber-700 dark:text-amber-300'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-slate-200 border border-transparent'
+                  ? 'bg-amber-50 dark:bg-amber-500/10 shadow-[0_0_0_2px_rgba(245,158,11,1)] text-amber-700 dark:text-amber-300'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
             <div
-              className={`w-4 h-4 flex items-center justify-center rounded-md shrink-0 ${hasChildren ? 'hover:bg-slate-200 dark:hover:bg-slate-700' : 'opacity-0'}`}
+              className={`w-5 h-5 flex items-center justify-center rounded-md shrink-0 transition-colors ${hasChildren ? 'hover:bg-slate-200 dark:hover:bg-slate-700' : 'opacity-0'}`}
               onClick={(e) => hasChildren && toggleExpand(node.id, e)}
             >
               {hasChildren &&
                 (isExpanded ? (
-                  <ChevronDown className="w-3.5 h-3.5" />
+                  <ChevronDown className="w-4 h-4 text-slate-400" />
                 ) : (
-                  <ChevronRight className="w-3.5 h-3.5" />
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
                 ))}
             </div>
 
-            {/* Icon thư mục với màu phân biệt */}
-            {isOwner ? (
+            {/* Icon thư mục */}
+            {isOwner || isAdmin ? (
               <Folder
-                className={`w-4 h-4 shrink-0 ${isSelected ? 'text-indigo-500 dark:text-indigo-400' : isDragOver ? 'text-amber-500' : 'text-indigo-400 dark:text-indigo-500'}`}
+                className={`w-4 h-4 shrink-0 ${isSelected ? 'text-indigo-600 dark:text-indigo-400 fill-indigo-100 dark:fill-indigo-500/20' : isDragOver ? 'text-amber-500 fill-amber-100' : 'text-indigo-500 dark:text-indigo-500'}`}
               />
             ) : (
               <Folder
-                className={`w-4 h-4 shrink-0 ${isSelected ? 'text-indigo-500 dark:text-indigo-400' : isDragOver ? 'text-amber-500 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}`}
+                className={`w-4 h-4 shrink-0 ${isSelected ? 'text-indigo-500 dark:text-indigo-400' : isDragOver ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500'}`}
               />
             )}
 
-            <span className="text-xs truncate flex-1">{node.name}</span>
+            <span className="text-sm truncate flex-1 leading-none pt-0.5">{node.name}</span>
 
-            {/* Badge "Của tôi" hoặc icon người dùng khác */}
-            {isOwner ? (
-              <span
-                className="shrink-0 text-[9px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-500/20 px-1.5 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-500/30 flex items-center gap-0.5 whitespace-nowrap"
-                title={`Thư mục của bạn (${node.ownerEmail || ''})`}
-              >
-                me
-              </span>
-            ) : hasOwner ? (
-              <span
-                className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-[9px] font-semibold text-slate-400 dark:text-slate-500 flex items-center gap-0.5"
-                title={`Chủ: ${node.ownerName || node.ownerEmail || 'Người dùng khác'}`}
-              >
-                <Users className="w-3 h-3" />
-              </span>
-            ) : null}
+            {/* Phần thông tin phụ bên phải */}
+            <div className="flex items-center gap-1.5 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity">
+              {/* Badge "Của tôi" hoặc icon người dùng khác */}
+              {isOwner ? (
+                <span
+                  className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-500/30 px-1.5 py-0.5 rounded-md"
+                  title={`Thư mục của bạn (${node.ownerEmail || ''})`}
+                >
+                  me
+                </span>
+              ) : hasOwner ? (
+                <span
+                  className="text-[10px] flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md text-slate-500"
+                  title={`Chủ: ${node.ownerName || node.ownerEmail || 'Người dùng khác'}`}
+                >
+                  <Users className="w-3 h-3" />
+                </span>
+              ) : null}
 
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-900/50 px-1.5 py-0.5 rounded shrink-0 mr-1">
-              {totalCount}
-            </span>
+              {/* Số lượng */}
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md min-w-[20px] text-center ${isSelected ? 'bg-indigo-100 dark:bg-indigo-500/30 text-indigo-700 dark:text-indigo-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                {totalCount}
+              </span>
+            </div>
 
             {/* Action buttons (Rename + Delete) - chỉ hiện cho chủ sở hữu */}
             {canEdit && (

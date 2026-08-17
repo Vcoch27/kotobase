@@ -15,15 +15,18 @@ export interface CreateVocabInput {
 }
 
 // Helper: kiểm tra user có quyền ghi vào folder không
-async function checkFolderPermission(folderId: string, currentUid: string): Promise<{ allowed: boolean; error?: string }> {
+async function checkFolderPermission(folderId: string, currentUid: string, currentUserEmail?: string): Promise<{ allowed: boolean; error?: string }> {
   if (!folderId) return { allowed: true }; // Không thuộc folder nào = không kiểm tra
+  
+  const isAdmin = currentUserEmail === "hoangtungmy123@gmail.com";
+  
   const folderDoc = await adminDb.collection("folders").doc(folderId).get();
   if (!folderDoc.exists) return { allowed: false, error: "Thư mục không tồn tại." };
   
   const data = folderDoc.data();
-  // Folder cũ không có ownerId => coi là public (không ai được sửa)
-  if (!data?.ownerId) return { allowed: false, error: "Thư mục này là dữ liệu công cộng, không thể chỉnh sửa." };
-  if (data.ownerId !== currentUid) return { allowed: false, error: "Bạn không có quyền chỉnh sửa thư mục này." };
+  // Folder cũ không có ownerId => coi là public (chỉ Admin mới được sửa)
+  if (!isAdmin && !data?.ownerId) return { allowed: false, error: "Thư mục này là dữ liệu công cộng, không thể chỉnh sửa." };
+  if (!isAdmin && data?.ownerId !== currentUid) return { allowed: false, error: "Bạn không có quyền chỉnh sửa thư mục này." };
   
   return { allowed: true };
 }
@@ -41,7 +44,7 @@ export async function createVocabulary(input: CreateVocabInput) {
   // Kiểm tra quyền trên folder mục tiêu (nếu có)
   if (input.folderIds && input.folderIds.length > 0) {
     for (const fid of input.folderIds) {
-      const perm = await checkFolderPermission(fid, currentUser.uid);
+      const perm = await checkFolderPermission(fid, currentUser.uid, currentUser.email);
       if (!perm.allowed) return { success: false, error: perm.error };
     }
   }
@@ -77,7 +80,7 @@ export async function createBulkVocabulary(jsonString: string, targetFolderId?: 
 
   // Kiểm tra quyền trên folder mục tiêu
   if (targetFolderId) {
-    const perm = await checkFolderPermission(targetFolderId, currentUser.uid);
+    const perm = await checkFolderPermission(targetFolderId, currentUser.uid, currentUser.email);
     if (!perm.allowed) return { success: false, error: perm.error };
   }
 
@@ -128,7 +131,7 @@ export async function assignVocabularyToFolder(vocabularyId: string, folderId: s
   }
 
   // Kiểm tra quyền trên folder đích
-  const perm = await checkFolderPermission(folderId, currentUser.uid);
+  const perm = await checkFolderPermission(folderId, currentUser.uid, currentUser.email);
   if (!perm.allowed) return { success: false, error: perm.error };
 
   try {
@@ -241,7 +244,7 @@ export async function deleteVocabulary(id: string) {
       // Kiểm tra quyền trên ít nhất 1 folder
       if (folderIds.length > 0) {
         for (const fid of folderIds) {
-          const perm = await checkFolderPermission(fid, currentUser.uid);
+          const perm = await checkFolderPermission(fid, currentUser.uid, currentUser.email);
           if (!perm.allowed) return { success: false, error: perm.error };
         }
       }
@@ -272,7 +275,7 @@ export async function updateVocabulary(id: string, input: Partial<CreateVocabInp
       
       if (folderIds.length > 0) {
         for (const fid of folderIds) {
-          const perm = await checkFolderPermission(fid, currentUser.uid);
+          const perm = await checkFolderPermission(fid, currentUser.uid, currentUser.email);
           if (!perm.allowed) return { success: false, error: perm.error };
         }
       }
