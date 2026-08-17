@@ -47,6 +47,10 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
   const [showSino, setShowSino] = useState(true);
   const [isShuffled, setIsShuffled] = useState(false);
 
+  // Swipe tracking
+  const [touchStart, setTouchStart] = useState<{x: number, y: number} | null>(null);
+  const [touchEnd, setTouchEnd] = useState<{x: number, y: number} | null>(null);
+
   // Progress tracking
   const [knownIds, setKnownIds] = useState<Set<string>>(new Set());
   const [unknownIds, setUnknownIds] = useState<Set<string>>(new Set());
@@ -197,6 +201,38 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
     }
   }, [currentIndex, mode, ankiHistory, isFinished]);
 
+  // Swipe Handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
+    setTouchEnd({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const deltaX = touchStart.x - touchEnd.x;
+    const deltaY = touchStart.y - touchEnd.y;
+    const threshold = 50; // minimum distance to be considered a swipe
+
+    // Chỉ tính là vuốt ngang nếu khoảng cách ngang lớn hơn khoảng cách dọc và vượt ngưỡng
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > threshold) {
+      if (deltaX > 0) {
+        // Swipe Left (Sang trái)
+        if (mode === "normal") handleNext();
+        else if (mode === "progress") handleProgress(false);
+      } else {
+        // Swipe Right (Sang phải)
+        if (mode === "normal") handlePrev();
+        else if (mode === "progress") handleProgress(true);
+      }
+    }
+    setTouchStart(null);
+    setTouchEnd(null);
+  };
+
   // Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -224,6 +260,11 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
           e.preventDefault();
           if (mode === "normal") handlePrev();
           else if (mode === "progress") handleProgress(false);
+          break;
+        case "h":
+        case "H":
+          e.preventDefault();
+          setShowSino(prev => !prev);
           break;
         case "1":
           if (mode === "anki" && isFlipped) { e.preventDefault(); handleAnkiRate("again"); }
@@ -439,9 +480,9 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
 
         <div className="flex items-center gap-2">
           <button 
-            onClick={() => setShowSino(!showSino)} 
+            onClick={() => setShowSino(prev => !prev)} 
             className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-all" 
-            title={showSino ? "Ẩn âm Hán Việt" : "Hiện âm Hán Việt"}
+            title={showSino ? "Ẩn âm Hán Việt (Phím H)" : "Hiện âm Hán Việt (Phím H)"}
           >
             {showSino ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
           </button>
@@ -503,10 +544,13 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
       {/* Flashcard 3D Container */}
       <div 
         key={currentVocab.id}
-        className={`relative w-full aspect-[4/3] md:aspect-[16/9] perspective-1000 cursor-pointer ${
+        className={`relative w-full aspect-[4/3] md:aspect-[16/9] perspective-1000 cursor-pointer select-none touch-pan-y ${
           isTransitioning ? "animate-fadeOut" : "animate-fadeIn"
         }`} 
         onClick={flipCard}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         <div 
           className={`w-full h-full relative transition-transform duration-500 transform-style-3d shadow-2xl rounded-3xl ${
