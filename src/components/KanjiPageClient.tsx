@@ -10,6 +10,7 @@ import { useEffect } from "react";
 import { auth } from "@/lib/firebase";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { loginWithGoogle, logout } from "@/app/actions/auth";
+import toast from "react-hot-toast";
 
 interface UserInfo {
   uid: string;
@@ -81,14 +82,15 @@ export function KanjiPageClient({ vocabularies, folders, currentUser }: KanjiPag
                     const idToken = await result.user.getIdToken();
                     const res = await loginWithGoogle(idToken);
                     if (res.success) {
-                      window.location.reload();
+                      toast.success('Đăng nhập thành công!');
+                      setTimeout(() => window.location.reload(), 1000);
                     } else {
-                      alert(res.error || 'Đăng nhập Google thất bại');
+                      toast.error(res.error || 'Đăng nhập Google thất bại');
                     }
                   } catch (error: any) {
                     console.error(error);
                     if (error.code !== "auth/popup-closed-by-user") {
-                      alert('Lỗi đăng nhập Google: ' + error.message);
+                      toast.error('Lỗi đăng nhập Google: ' + error.message);
                     }
                   }
                 }}

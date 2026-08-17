@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Library, Volume2, Plus, Check, ExternalLink } from "lucide-react";
+import toast from "react-hot-toast";
 import { playAudio } from "@/lib/tts-utils";
 import { upsertKanjiNote } from "@/app/actions/kanji";
 import { KanjiDetail } from "@/app/api/kanji/lookup/route";
@@ -60,10 +61,11 @@ export function KanjiLookupResults({ searchQuery, existingKanjiChars, onSaveSucc
 
     setSavingChar(null);
     if (res.success) {
+      toast.success("Đã lưu Hán tự vào kho!");
       setLocalSavedChars(prev => new Set(prev).add(item.kanji));
       if (onSaveSuccess) onSaveSuccess();
     } else {
-      alert("Không thể lưu Hán tự vào kho!");
+      toast.error("Không thể lưu Hán tự vào kho!");
     }
   };
 

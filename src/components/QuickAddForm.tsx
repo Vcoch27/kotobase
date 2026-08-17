@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { createVocabulary } from "@/app/actions/vocabulary";
+import toast from "react-hot-toast";
 import { Plus, AlertTriangle, Sparkles, Folder, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { getFolderFullPath } from "@/lib/folder-utils";
 
@@ -113,7 +114,7 @@ export function QuickAddForm({ folders, currentFolderId, onSuccess }: QuickAddFo
       setDuplicateInfo(null);
       if (onSuccess) onSuccess();
     } else {
-      alert(res.error || "Không thể thêm từ vựng!");
+      toast.error(res.error || "Không thể thêm từ vựng!");
     }
   };
 

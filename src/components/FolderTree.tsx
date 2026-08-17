@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import toast from 'react-hot-toast';
 import { assignVocabularyToFolder } from '@/app/actions/vocabulary';
 import { deleteFolderAndVocabs, renameFolder } from '@/app/actions/folder';
 import { Folder, ChevronRight, ChevronDown, Trash2, Pencil, Crown, Users } from 'lucide-react';
@@ -119,7 +120,7 @@ export function FolderTree({
     if (res.success) {
       onRefresh();
     } else {
-      alert(res.error || 'Lỗi khi chuyển thư mục!');
+        toast.error(res.error || 'Lỗi khi chuyển thư mục!');
     }
   };
 
@@ -144,10 +145,10 @@ export function FolderTree({
         onRefresh();
       } else {
         setLocalFolders(folders); // Rollback
-        alert(res.error || 'Không thể xóa thư mục!');
+        toast.error(res.error || 'Không thể xóa thư mục!');
       }
     } else if (confirmText !== null) {
-      alert('Xác nhận không đúng. Đã hủy thao tác xóa.');
+      toast.error('Xác nhận không đúng. Đã hủy thao tác xóa.');
     }
   };
 
@@ -170,7 +171,7 @@ export function FolderTree({
         onRefresh();
       } else {
         setLocalFolders(folders); // Rollback
-        alert(res.error || 'Không thể đổi tên thư mục!');
+        toast.error(res.error || 'Không thể đổi tên thư mục!');
       }
     }
   };

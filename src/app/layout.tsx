@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { Toaster } from "react-hot-toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -31,6 +32,33 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <Toaster 
+            position="top-center"
+            toastOptions={{
+              style: {
+                background: '#334155',
+                color: '#fff',
+                fontSize: '14px',
+                borderRadius: '12px',
+                fontWeight: '600'
+              },
+              success: {
+                iconTheme: {
+                  primary: '#10b981',
+                  secondary: '#fff',
+                },
+              },
+              error: {
+                style: {
+                  background: '#ef4444',
+                },
+                iconTheme: {
+                  primary: '#fff',
+                  secondary: '#ef4444',
+                },
+              }
+            }}
+          />
         </ThemeProvider>
       </body>
     </html>

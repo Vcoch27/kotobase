@@ -8,6 +8,7 @@ import { VocabularyEditModal } from "./VocabularyEditModal";
 import { KanjiLookupResults } from "./KanjiLookupResults";
 import { playAudio } from "@/lib/tts-utils";
 import { KanjiDetail } from "@/app/api/kanji/lookup/route";
+import toast from "react-hot-toast";
 
 interface KanjiNote {
   id: string;
@@ -140,7 +141,7 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
       setKanjiNotes(prev => prev.map(k => k.id === updatedKanji.id ? updatedKanji : k));
       setIsEditingKanji(false);
     } else if (!res.success) {
-      alert(res.error || "Có lỗi xảy ra khi lưu!");
+      toast.error(res.error || "Có lỗi xảy ra khi lưu!");
     }
   };
 

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
 import { Trash2, Folder as FolderIcon, BookOpen, Edit3, ChevronLeft, ChevronRight } from "lucide-react";
 import { deleteVocabulary } from "@/app/actions/vocabulary";
+import toast from "react-hot-toast";
 import { VocabularyEditModal } from "./VocabularyEditModal";
 import { getFolderFullPath } from "@/lib/folder-utils";
 
@@ -58,7 +59,7 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
         onRefresh();
       } else {
         setLocalVocabs(vocabularies); // Rollback
-        alert("Lỗi khi xóa từ vựng!");
+        toast.error("Lỗi khi xóa từ vựng!");
       }
     }
   };

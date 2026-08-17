@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { BookOpen, Volume2, Plus, Check, Globe, Sparkles, ExternalLink } from "lucide-react";
+import toast from "react-hot-toast";
 import { playAudio } from "@/lib/tts-utils";
 import { createVocabulary } from "@/app/actions/vocabulary";
 
@@ -94,9 +95,10 @@ export function JishoSearchResults({ searchQuery, currentFolderId, onAddedSucces
     setAddingSlug(null);
     if (res.success) {
       setAddedSlugs(prev => new Set(prev).add(item.slug));
+      toast.success("Đã lưu từ vựng vào kho!");
       if (onAddedSuccess) onAddedSuccess();
     } else {
-      alert("Không thể lưu từ vựng vào kho!");
+      toast.error(res.error || "Không thể lưu từ vựng vào kho!");
     }
   };
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Save, FileEdit, BookOpen, Volume2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { updateVocabulary } from '@/app/actions/vocabulary';
 import { getFolderFullPath } from '@/lib/folder-utils';
 import { playAudio } from '@/lib/tts-utils';
@@ -56,7 +57,7 @@ export function VocabularyEditModal({
 
   const handleSave = async () => {
     if (!formData.word.trim() || !formData.meaning.trim()) {
-      alert('Từ vựng và Nghĩa là bắt buộc!');
+      toast.error('Từ vựng và Nghĩa là bắt buộc!');
       return;
     }
 
@@ -65,9 +66,11 @@ export function VocabularyEditModal({
     setIsSaving(false);
 
     if (res.success) {
+      toast.success('Lưu từ vựng thành công!');
       onSuccess();
+      onClose();
     } else {
-      alert(res.error || 'Có lỗi xảy ra khi lưu.');
+      toast.error(res.error || 'Có lỗi xảy ra khi lưu.');
     }
   };
 
