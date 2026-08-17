@@ -256,15 +256,29 @@ export function Dashboard({ currentUser }: DashboardProps) {
                       <Volume2 className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                       Cài đặt Phát âm
                     </button>
+                    {isGoogleUser && (
+                      <button 
+                        onClick={async () => {
+                          setShowSettingsDropdown(false);
+                          const { logoutGoogle } = await import('@/app/actions/auth');
+                          await logoutGoogle();
+                          window.location.reload();
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors text-left border-b border-slate-100 dark:border-slate-800"
+                      >
+                        <LogOut className="w-4 h-4 text-amber-500" /> Đăng xuất Google
+                      </button>
+                    )}
                     <button 
                       onClick={async () => {
                         setShowSettingsDropdown(false);
-                        await logout();
+                        const { logoutApp } = await import('@/app/actions/auth');
+                        await logoutApp();
                         window.location.href = '/login';
                       }}
                       className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors text-left"
                     >
-                      <LogOut className="w-4 h-4" /> Đăng xuất
+                      <Lock className="w-4 h-4 text-rose-500" /> Khoá & Đăng xuất Web
                     </button>
                   </div>
                 </>

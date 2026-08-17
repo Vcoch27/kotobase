@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { KanjiDictionaryView } from "./KanjiDictionaryView";
 import { AppLogo } from "./AppLogo";
-import { ArrowLeft, Moon, Sun, User, LogOut, Settings2 } from "lucide-react";
+import { ArrowLeft, Moon, Sun, User, LogOut, Settings2, Lock } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useEffect } from "react";
@@ -120,16 +120,29 @@ export function KanjiPageClient({ vocabularies, folders, currentUser }: KanjiPag
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setShowSettingsDropdown(false)}></div>
                   <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-fadeIn">
+                    {currentUser && (
+                      <button 
+                        onClick={async () => {
+                          setShowSettingsDropdown(false);
+                          const { logoutGoogle } = await import('@/app/actions/auth');
+                          await logoutGoogle();
+                          window.location.reload();
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors text-left border-b border-slate-100 dark:border-slate-800"
+                      >
+                        <LogOut className="w-4 h-4 text-amber-500" /> Đăng xuất Google
+                      </button>
+                    )}
                     <button
                       onClick={async () => {
                         setShowSettingsDropdown(false);
-                        const { logout } = await import('@/app/actions/auth');
-                        await logout();
+                        const { logoutApp } = await import('@/app/actions/auth');
+                        await logoutApp();
                         window.location.href = '/login';
                       }}
                       className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors text-left"
                     >
-                      <LogOut className="w-4 h-4" /> Đăng xuất
+                      <Lock className="w-4 h-4 text-rose-500" /> Khoá & Đăng xuất Web
                     </button>
                   </div>
                 </>

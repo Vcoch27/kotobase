@@ -91,9 +91,17 @@ export async function loginWithGoogle(idToken: string) {
 }
 
 // ============================================================
-// Đăng xuất (xóa cả 2 loại cookie)
+// Đăng xuất Google (chỉ xóa cookie Google)
 // ============================================================
-export async function logout() {
+export async function logoutGoogle() {
+  cookies().delete(GOOGLE_SESSION_COOKIE);
+  return { success: true };
+}
+
+// ============================================================
+// Đăng xuất hoàn toàn khỏi ứng dụng (xóa cả 2 cookie)
+// ============================================================
+export async function logoutApp() {
   cookies().delete(AUTH_COOKIE_NAME);
   cookies().delete(GOOGLE_SESSION_COOKIE);
   return { success: true };
