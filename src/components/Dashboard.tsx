@@ -24,7 +24,7 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 import { auth } from "@/lib/firebase";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { loginWithGoogle, logout } from "@/app/actions/auth";
+import { loginWithGoogle } from "@/app/actions/auth";
 
 const FocusRecallView = dynamic(() => import("./FocusRecallView").then(m => m.FocusRecallView), {
   loading: () => <div className="flex items-center justify-center p-20"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
@@ -273,15 +273,18 @@ export function Dashboard({ currentUser }: DashboardProps) {
                       <button 
                         onClick={async () => {
                           setShowSettingsDropdown(false);
-                          toast.loading("Đang đăng xuất...");
-                          const { auth } = await import('@/lib/firebase');
-                          await auth.signOut();
-                          const { logoutGoogle } = await import('@/app/actions/auth');
-                          await logoutGoogle();
-                          document.cookie = "kotobase_google_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-                          setTimeout(() => {
-                            window.location.href = '/';
-                          }, 500);
+                          const toastId = toast.loading("Đang đăng xuất...");
+                          try {
+                            // Xóa Firebase IndexedDB token ở phía Client
+                            const { auth } = await import('@/lib/firebase');
+                            await auth.signOut();
+                            toast.dismiss(toastId);
+                            // API Route sẽ xóa cookie httpOnly và redirect trong 1 Response
+                            window.location.href = '/api/auth/logout-google';
+                          } catch (e) {
+                            toast.dismiss(toastId);
+                            toast.error("Đăng xuất thất bại, thử lại!");
+                          }
                         }}
                         className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors text-left border-b border-slate-100 dark:border-slate-800"
                       >
@@ -291,16 +294,16 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     <button 
                       onClick={async () => {
                         setShowSettingsDropdown(false);
-                        toast.loading("Đang đăng xuất toàn bộ...");
-                        const { auth } = await import('@/lib/firebase');
-                        await auth.signOut();
-                        const { logoutApp } = await import('@/app/actions/auth');
-                        await logoutApp();
-                        document.cookie = "kotobase_google_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-                        document.cookie = "kotobase_auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-                        setTimeout(() => {
-                          window.location.href = '/login';
-                        }, 500);
+                        const toastId = toast.loading("Đang khoá & đăng xuất...");
+                        try {
+                          const { auth } = await import('@/lib/firebase');
+                          await auth.signOut();
+                          toast.dismiss(toastId);
+                          window.location.href = '/api/auth/logout-app';
+                        } catch (e) {
+                          toast.dismiss(toastId);
+                          toast.error("Đăng xuất thất bại, thử lại!");
+                        }
                       }}
                       className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors text-left"
                     >
