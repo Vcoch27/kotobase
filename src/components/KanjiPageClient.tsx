@@ -7,6 +7,9 @@ import { ArrowLeft, Moon, Sun, User, LogOut, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useEffect } from "react";
+import { auth } from "@/lib/firebase";
+import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { loginWithGoogle, logout } from "@/app/actions/auth";
 
 interface UserInfo {
   uid: string;
@@ -73,9 +76,6 @@ export function KanjiPageClient({ vocabularies, folders, currentUser }: KanjiPag
               <button
                 onClick={async () => {
                   try {
-                    const { auth } = await import('@/lib/firebase');
-                    const { signInWithPopup, GoogleAuthProvider } = await import('firebase/auth');
-                    const { loginWithGoogle } = await import('@/app/actions/auth');
                     const provider = new GoogleAuthProvider();
                     const result = await signInWithPopup(auth, provider);
                     const idToken = await result.user.getIdToken();

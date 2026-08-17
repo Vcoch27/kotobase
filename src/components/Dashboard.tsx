@@ -21,6 +21,9 @@ import { useTheme } from "next-themes";
 import { useDebounce } from "@/hooks/useDebounce";
 import { AppLogo } from "./AppLogo";
 import Link from "next/link";
+import { auth } from "@/lib/firebase";
+import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { loginWithGoogle, logout } from "@/app/actions/auth";
 
 const FocusRecallView = dynamic(() => import("./FocusRecallView").then(m => m.FocusRecallView), {
   loading: () => <div className="flex items-center justify-center p-20"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
@@ -184,9 +187,6 @@ export function Dashboard({ currentUser }: DashboardProps) {
               <button
                 onClick={async () => {
                   try {
-                    const { auth } = await import('@/lib/firebase');
-                    const { signInWithPopup, GoogleAuthProvider } = await import('firebase/auth');
-                    const { loginWithGoogle } = await import('@/app/actions/auth');
                     const provider = new GoogleAuthProvider();
                     const result = await signInWithPopup(auth, provider);
                     const idToken = await result.user.getIdToken();
@@ -257,7 +257,6 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     <button 
                       onClick={async () => {
                         setShowSettingsDropdown(false);
-                        const { logout } = await import('@/app/actions/auth');
                         await logout();
                         window.location.href = '/login';
                       }}
