@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { assignVocabularyToFolder } from '@/app/actions/vocabulary';
 import { deleteFolderAndVocabs, renameFolder } from '@/app/actions/folder';
-import { Folder, ChevronRight, ChevronDown, Trash2, Pencil, Crown, Users } from 'lucide-react';
+import { Folder, ChevronRight, ChevronDown, Trash2, Pencil, Crown, Users, AlertTriangle, Type } from 'lucide-react';
 
 interface FolderItem {
   id: string;
@@ -45,9 +45,35 @@ export function FolderTree({
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
   const [localFolders, setLocalFolders] = useState<FolderItem[]>([]);
 
-  React.useEffect(() => {
+  // States cho Custom Prompt Modal
+  const [promptModal, setPromptModal] = useState<{
+    isOpen: boolean;
+    type: 'delete' | 'rename';
+    targetId: string;
+    targetName: string;
+  }>({
+    isOpen: false,
+    type: 'rename',
+    targetId: '',
+    targetName: ''
+  });
+  const [promptValue, setPromptValue] = useState('');
+  const promptInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
     setLocalFolders(folders);
   }, [folders]);
+
+  useEffect(() => {
+    if (promptModal.isOpen && promptInputRef.current) {
+      setTimeout(() => {
+        promptInputRef.current?.focus();
+        if (promptModal.type === 'rename') {
+          promptInputRef.current?.select();
+        }
+      }, 50);
+    }
+  }, [promptModal.isOpen, promptModal.type]);
 
   // Tự động mở các thư mục cha chứa thư mục đang được chọn
   React.useEffect(() => {
@@ -124,54 +150,78 @@ export function FolderTree({
     }
   };
 
-  const handleDeleteFolder = async (folderId: string, folderName: string, e: React.MouseEvent) => {
+  const handleDeleteFolder = (folderId: string, folderName: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const confirmText = window.prompt(
-      `CẢNH BÁO NGUY HIỂM: Hành động này sẽ XÓA VĨNH VIỄN thư mục "${folderName}", tất cả thư mục con, VÀ TOÀN BỘ TỪ VỰNG bên trong.\n\nHãy gõ chữ "XOA" (viết hoa, không dấu) để xác nhận:`
-    );
-
-    if (confirmText === 'XOA') {
-      // Optimistic update
-      setLocalFolders((prev) => prev.filter((f) => f.id !== folderId && f.parentId !== folderId));
-      if (selectedFolderId === folderId) {
-        onSelectFolder('all');
-      }
-      setDeletingFolderId(folderId);
-
-      const res = await deleteFolderAndVocabs(folderId);
-      setDeletingFolderId(null);
-
-      if (res.success) {
-        onRefresh();
-      } else {
-        setLocalFolders(folders); // Rollback
-        toast.error(res.error || 'Không thể xóa thư mục!');
-      }
-    } else if (confirmText !== null) {
-      toast.error('Xác nhận không đúng. Đã hủy thao tác xóa.');
-    }
+    setPromptValue('');
+    setPromptModal({
+      isOpen: true,
+      type: 'delete',
+      targetId: folderId,
+      targetName: folderName
+    });
   };
 
-  const handleRenameFolder = async (folderId: string, currentName: string, e: React.MouseEvent) => {
+  const handleRenameFolder = (folderId: string, currentName: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const newName = window.prompt('Nhập tên mới cho thư mục:', currentName);
-    if (newName && newName.trim() && newName.trim() !== currentName) {
-      const trimmedName = newName.trim();
+    setPromptValue(currentName);
+    setPromptModal({
+      isOpen: true,
+      type: 'rename',
+      targetId: folderId,
+      targetName: currentName
+    });
+  };
 
-      // Optimistic update
-      setLocalFolders((prev) =>
-        prev.map((f) => (f.id === folderId ? { ...f, name: trimmedName } : f))
-      );
-      setRenamingFolderId(folderId);
+  const handlePromptSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!promptModal.isOpen) return;
 
-      const res = await renameFolder(folderId, trimmedName);
-      setRenamingFolderId(null);
+    const { type, targetId, targetName } = promptModal;
+    const value = promptValue.trim();
 
-      if (res.success) {
-        onRefresh();
+    // Đóng Modal ngay khi submit
+    setPromptModal(prev => ({ ...prev, isOpen: false }));
+
+    if (type === 'delete') {
+      if (promptValue === 'XOA') {
+        // Optimistic update
+        setLocalFolders((prev) => prev.filter((f) => f.id !== targetId && f.parentId !== targetId));
+        if (selectedFolderId === targetId) {
+          onSelectFolder('all');
+        }
+        setDeletingFolderId(targetId);
+
+        const res = await deleteFolderAndVocabs(targetId);
+        setDeletingFolderId(null);
+
+        if (res.success) {
+          toast.success(`Đã xoá thư mục ${targetName}`);
+          onRefresh();
+        } else {
+          setLocalFolders(folders); // Rollback
+          toast.error(res.error || 'Không thể xóa thư mục!');
+        }
       } else {
-        setLocalFolders(folders); // Rollback
-        toast.error(res.error || 'Không thể đổi tên thư mục!');
+        toast.error('Xác nhận không đúng. Đã hủy thao tác xóa.');
+      }
+    } else if (type === 'rename') {
+      if (value && value !== targetName) {
+        // Optimistic update
+        setLocalFolders((prev) =>
+          prev.map((f) => (f.id === targetId ? { ...f, name: value } : f))
+        );
+        setRenamingFolderId(targetId);
+
+        const res = await renameFolder(targetId, value);
+        setRenamingFolderId(null);
+
+        if (res.success) {
+          toast.success(`Đã đổi tên thư mục thành ${value}`);
+          onRefresh();
+        } else {
+          setLocalFolders(folders); // Rollback
+          toast.error(res.error || 'Không thể đổi tên thư mục!');
+        }
       }
     }
   };
@@ -334,6 +384,79 @@ export function FolderTree({
         </div>
       ) : (
         <div className="custom-scrollbar overflow-y-auto max-h-[60vh] pr-1">{renderTree(tree)}</div>
+      )}
+
+      {/* Custom Prompt Modal (Thay thế window.prompt) */}
+      {promptModal.isOpen && (
+        <>
+          <div className="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/60 backdrop-blur-sm z-50 animate-fadeIn" onClick={() => setPromptModal(prev => ({ ...prev, isOpen: false }))}></div>
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 animate-zoomIn overflow-hidden">
+            <div className={`p-4 ${promptModal.type === 'delete' ? 'bg-rose-50 dark:bg-rose-500/10 border-b border-rose-100 dark:border-rose-500/20' : 'bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800'}`}>
+              <div className="flex items-center gap-3">
+                {promptModal.type === 'delete' ? (
+                  <div className="p-2 bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                ) : (
+                  <div className="p-2 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                    <Type className="w-5 h-5" />
+                  </div>
+                )}
+                <div>
+                  <h3 className={`font-bold ${promptModal.type === 'delete' ? 'text-rose-700 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}`}>
+                    {promptModal.type === 'delete' ? 'CẢNH BÁO NGUY HIỂM' : 'Đổi tên thư mục'}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    {promptModal.type === 'delete' ? 'Hành động này không thể hoàn tác!' : 'Nhập tên mới cho thư mục này'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handlePromptSubmit} className="p-5 space-y-4">
+              <div className="text-sm text-slate-600 dark:text-slate-300">
+                {promptModal.type === 'delete' ? (
+                  <>
+                    Hành động này sẽ <strong>XÓA VĨNH VIỄN</strong> thư mục <span className="font-bold text-rose-600 dark:text-rose-400">"{promptModal.targetName}"</span>, tất cả thư mục con, <strong>VÀ TOÀN BỘ TỪ VỰNG</strong> bên trong.
+                    <p className="mt-3 text-xs">Hãy gõ chữ <strong>"XOA"</strong> (viết hoa, không dấu) để xác nhận:</p>
+                  </>
+                ) : (
+                  <p className="mb-2">Tên cũ: <strong>{promptModal.targetName}</strong></p>
+                )}
+              </div>
+
+              <input
+                ref={promptInputRef}
+                type="text"
+                value={promptValue}
+                onChange={(e) => setPromptValue(e.target.value)}
+                placeholder={promptModal.type === 'delete' ? 'Gõ XOA vào đây...' : 'Nhập tên mới...'}
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 dark:focus:border-indigo-500 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-200 outline-none transition-all"
+              />
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setPromptModal(prev => ({ ...prev, isOpen: false }))}
+                  className="px-4 py-2 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={promptModal.type === 'delete' ? promptValue !== 'XOA' : (!promptValue.trim() || promptValue === promptModal.targetName)}
+                  className={`px-4 py-2 text-xs font-bold rounded-xl transition-all shadow-md ${
+                    promptModal.type === 'delete'
+                      ? (promptValue === 'XOA' ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/20' : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed')
+                      : ((promptValue.trim() && promptValue !== promptModal.targetName) ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20' : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed')
+                  }`}
+                >
+                  {promptModal.type === 'delete' ? 'Xóa Vĩnh Viễn' : 'Cập nhật'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </>
       )}
     </div>
   );
