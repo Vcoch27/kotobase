@@ -181,14 +181,34 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 </span>
               </div>
             ) : (
-              <Link
-                href="/login"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold border border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
+              <button
+                onClick={async () => {
+                  try {
+                    const { auth } = await import('@/lib/firebase');
+                    const { signInWithPopup, GoogleAuthProvider } = await import('firebase/auth');
+                    const { loginWithGoogle } = await import('@/app/actions/auth');
+                    const provider = new GoogleAuthProvider();
+                    const result = await signInWithPopup(auth, provider);
+                    const idToken = await result.user.getIdToken();
+                    const res = await loginWithGoogle(idToken);
+                    if (res.success) {
+                      window.location.reload();
+                    } else {
+                      alert(res.error || 'Đăng nhập Google thất bại');
+                    }
+                  } catch (error: any) {
+                    console.error(error);
+                    if (error.code !== "auth/popup-closed-by-user") {
+                      alert('Lỗi đăng nhập Google: ' + error.message);
+                    }
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold border border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors cursor-pointer"
                 title="Đăng nhập Google để quản lý thư mục cá nhân"
               >
                 <Lock className="w-3.5 h-3.5" />
                 <span className="hidden sm:block">Đăng nhập Google</span>
-              </Link>
+              </button>
             )}
 
             <button 

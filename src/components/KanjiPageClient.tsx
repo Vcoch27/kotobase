@@ -58,7 +58,7 @@ export function KanjiPageClient({ vocabularies, folders, currentUser }: KanjiPag
 
           <div className="flex items-center gap-2">
             {/* User info */}
-            {currentUser && (
+            {currentUser ? (
               <div className="flex items-center gap-2 px-2 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                 {currentUser.picture ? (
                   <img src={currentUser.picture} alt={currentUser.name} className="w-6 h-6 rounded-full" />
@@ -69,6 +69,34 @@ export function KanjiPageClient({ vocabularies, folders, currentUser }: KanjiPag
                   {currentUser.name || currentUser.email}
                 </span>
               </div>
+            ) : (
+              <button
+                onClick={async () => {
+                  try {
+                    const { auth } = await import('@/lib/firebase');
+                    const { signInWithPopup, GoogleAuthProvider } = await import('firebase/auth');
+                    const { loginWithGoogle } = await import('@/app/actions/auth');
+                    const provider = new GoogleAuthProvider();
+                    const result = await signInWithPopup(auth, provider);
+                    const idToken = await result.user.getIdToken();
+                    const res = await loginWithGoogle(idToken);
+                    if (res.success) {
+                      window.location.reload();
+                    } else {
+                      alert(res.error || 'Đăng nhập Google thất bại');
+                    }
+                  } catch (error: any) {
+                    console.error(error);
+                    if (error.code !== "auth/popup-closed-by-user") {
+                      alert('Lỗi đăng nhập Google: ' + error.message);
+                    }
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold border border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors cursor-pointer"
+                title="Đăng nhập Google"
+              >
+                <span className="hidden sm:block">Đăng nhập Google</span>
+              </button>
             )}
 
             <button
