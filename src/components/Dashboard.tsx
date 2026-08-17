@@ -273,11 +273,15 @@ export function Dashboard({ currentUser }: DashboardProps) {
                       <button 
                         onClick={async () => {
                           setShowSettingsDropdown(false);
+                          toast.loading("Đang đăng xuất...");
                           const { auth } = await import('@/lib/firebase');
                           await auth.signOut();
                           const { logoutGoogle } = await import('@/app/actions/auth');
                           await logoutGoogle();
-                          window.location.reload();
+                          document.cookie = "kotobase_google_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                          setTimeout(() => {
+                            window.location.href = '/';
+                          }, 500);
                         }}
                         className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors text-left border-b border-slate-100 dark:border-slate-800"
                       >
@@ -287,11 +291,16 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     <button 
                       onClick={async () => {
                         setShowSettingsDropdown(false);
+                        toast.loading("Đang đăng xuất toàn bộ...");
                         const { auth } = await import('@/lib/firebase');
                         await auth.signOut();
                         const { logoutApp } = await import('@/app/actions/auth');
                         await logoutApp();
-                        window.location.href = '/login';
+                        document.cookie = "kotobase_google_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                        document.cookie = "kotobase_auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                        setTimeout(() => {
+                          window.location.href = '/login';
+                        }, 500);
                       }}
                       className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors text-left"
                     >
@@ -413,7 +422,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 {selectedFolderId === 'all' ? (
                   <span>Tất cả từ vựng</span>
                 ) : (
-                  <span>{getFolderFullPath(selectedFolderId, folders)}</span>
+                  <span>{getFolderFullPath(folders.find(f => f.id === selectedFolderId) || { name: 'Thư mục không xác định' }, folders)}</span>
                 )}
               </div>
             </div>

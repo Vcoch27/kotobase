@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { signToken, signGoogleSession } from "@/lib/auth-utils";
 import { adminAuth } from "@/lib/firebase-admin";
 import { GOOGLE_SESSION_COOKIE } from "@/lib/session";
@@ -94,15 +95,54 @@ export async function loginWithGoogle(idToken: string) {
 // Đăng xuất Google (chỉ xóa cookie Google)
 // ============================================================
 export async function logoutGoogle() {
-  cookies().delete(GOOGLE_SESSION_COOKIE);
-  return { success: true };
+  cookies().set({
+    name: GOOGLE_SESSION_COOKIE,
+    value: "",
+    expires: new Date(0),
+    path: "/",
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+  cookies().delete({
+    name: GOOGLE_SESSION_COOKIE,
+    path: "/",
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+  revalidatePath('/');
 }
 
 // ============================================================
 // Đăng xuất hoàn toàn khỏi ứng dụng (xóa cả 2 cookie)
 // ============================================================
 export async function logoutApp() {
-  cookies().delete(AUTH_COOKIE_NAME);
-  cookies().delete(GOOGLE_SESSION_COOKIE);
-  return { success: true };
+  cookies().set({
+    name: AUTH_COOKIE_NAME,
+    value: "",
+    expires: new Date(0),
+    path: "/",
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+  cookies().set({
+    name: GOOGLE_SESSION_COOKIE,
+    value: "",
+    expires: new Date(0),
+    path: "/",
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+  cookies().delete({
+    name: AUTH_COOKIE_NAME,
+    path: "/",
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+  cookies().delete({
+    name: GOOGLE_SESSION_COOKIE,
+    path: "/",
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+  revalidatePath('/');
 }
