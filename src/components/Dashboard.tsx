@@ -368,24 +368,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 <QuickAddForm folders={folders} currentFolderId={selectedFolderId} onSuccess={() => fetchData(true)} />
               )}
             </>
-          ) : (
-            /* Banner nhắc đăng nhập Google */
-            <div className="bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 rounded-2xl p-4 flex items-center gap-3">
-              <Lock className="w-5 h-5 text-indigo-500 dark:text-indigo-400 shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">Chế độ Xem (Read-only)</p>
-                <p className="text-xs text-indigo-600/80 dark:text-indigo-400/80 mt-0.5">
-                  Đăng nhập bằng Google để tạo thư mục và thêm từ vựng cá nhân.
-                </p>
-              </div>
-              <Link
-                href="/login"
-                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-colors whitespace-nowrap"
-              >
-                Đăng nhập
-              </Link>
-            </div>
-          )}
+          ) : null}
 
           {/* View Modes */}
           <div className="bg-white dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 w-full overflow-x-auto custom-scrollbar transition-colors duration-300">
