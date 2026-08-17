@@ -11,11 +11,16 @@ import { TTSSettingsModal } from "./TTSSettingsModal";
 import { JishoSearchResults } from "./JishoSearchResults";
 import { getVocabularies } from "@/app/actions/vocabulary";
 import { getFolders, createFolder } from "@/app/actions/folder";
-import { LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, Volume2, Loader2 } from "lucide-react";
+import { 
+  LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, 
+  Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, Volume2, Loader2,
+  User, Lock
+} from "lucide-react";
 import { getFolderFullPath } from "@/lib/folder-utils";
 import { useTheme } from "next-themes";
 import { useDebounce } from "@/hooks/useDebounce";
 import { AppLogo } from "./AppLogo";
+import Link from "next/link";
 
 const FocusRecallView = dynamic(() => import("./FocusRecallView").then(m => m.FocusRecallView), {
   loading: () => <div className="flex items-center justify-center p-20"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
@@ -23,15 +28,23 @@ const FocusRecallView = dynamic(() => import("./FocusRecallView").then(m => m.Fo
 const FlashcardView = dynamic(() => import("./FlashcardView").then(m => m.FlashcardView), {
   loading: () => <div className="flex items-center justify-center p-20"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
 });
-const KanjiDictionaryView = dynamic(() => import("./KanjiDictionaryView").then(m => m.KanjiDictionaryView), {
-  loading: () => <div className="flex items-center justify-center p-20"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
-});
 const TypingQuizView = dynamic(() => import("./TypingQuizView").then(m => m.TypingQuizView), {
   loading: () => <div className="flex items-center justify-center p-20"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
 });
 
-export function Dashboard() {
-  const [viewMode, setViewMode] = useState<"overview" | "focus" | "flashcard" | "kanji" | "quiz">("overview");
+interface UserInfo {
+  uid: string;
+  email: string;
+  name: string;
+  picture?: string;
+}
+
+interface DashboardProps {
+  currentUser?: UserInfo | null;
+}
+
+export function Dashboard({ currentUser }: DashboardProps) {
+  const [viewMode, setViewMode] = useState<"overview" | "focus" | "flashcard" | "quiz">("overview");
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [vocabularies, setVocabularies] = useState<any[]>([]);
   const [folders, setFolders] = useState<any[]>([]);
@@ -67,8 +80,10 @@ export function Dashboard() {
 
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
 
+  // Xác định quyền: chỉ user đã đăng nhập Google mới được tạo/sửa/xóa
+  const isGoogleUser = !!currentUser?.uid;
+
   const fetchData = async (isBackground = false) => {
-    // Only set loading if not just typing (for smoother search UX) and not a background refresh
     if (!isBackground && !debouncedSearchQuery && searchQuery === "") {
       setLoading(true);
     }
@@ -94,7 +109,15 @@ export function Dashboard() {
     
     // Optimistic Update
     const optimisticId = `temp-${Date.now()}`;
-    const newFolder = { id: optimisticId, name: newFolderName.trim(), parentId: newFolderParentId || null, _count: { folderVocabularies: 0 } };
+    const newFolder = { 
+      id: optimisticId, 
+      name: newFolderName.trim(), 
+      parentId: newFolderParentId || null, 
+      ownerId: currentUser?.uid || null,
+      ownerEmail: currentUser?.email || null,
+      ownerName: currentUser?.name || null,
+      _count: { folderVocabularies: 0 } 
+    };
     setFolders(prev => [...prev, newFolder]);
     
     const submittedName = newFolderName.trim();
@@ -107,9 +130,9 @@ export function Dashboard() {
     const res = await createFolder(submittedName, submittedParentId || undefined);
     
     if (res.success) {
-      fetchData(true); // Cập nhật ngầm để lấy ID thật
+      fetchData(true);
     } else {
-      setFolders(prev => prev.filter(f => f.id !== optimisticId)); // Hoàn tác nếu lỗi
+      setFolders(prev => prev.filter(f => f.id !== optimisticId));
       alert(res.error || "Không thể tạo thư mục!");
     }
   };
@@ -143,8 +166,31 @@ export function Dashboard() {
             </div>
           </div>
           
-          {/* Settings & Theme */}
+          {/* Settings & Theme & User */}
           <div className="flex items-center gap-1 md:gap-2 shrink-0">
+            {/* User info hoặc login prompt */}
+            {isGoogleUser ? (
+              <div className="flex items-center gap-2 px-2 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                {currentUser?.picture ? (
+                  <img src={currentUser.picture} alt={currentUser.name} className="w-6 h-6 rounded-full" />
+                ) : (
+                  <User className="w-4 h-4 text-slate-500" />
+                )}
+                <span className="hidden sm:block text-xs font-semibold text-slate-700 dark:text-slate-300 max-w-[120px] truncate">
+                  {currentUser?.name || currentUser?.email}
+                </span>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold border border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
+                title="Đăng nhập Google để quản lý thư mục cá nhân"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span className="hidden sm:block">Đăng nhập Google</span>
+              </Link>
+            )}
+
             <button 
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="p-2 rounded-xl transition-colors text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-900"
@@ -197,8 +243,7 @@ export function Dashboard() {
                       }}
                       className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors text-left"
                     >
-                      <LogOut className="w-4 h-4" />
-                      Đăng xuất
+                      <LogOut className="w-4 h-4" /> Đăng xuất
                     </button>
                   </div>
                 </>
@@ -238,16 +283,19 @@ export function Dashboard() {
                   {isMobileFolderOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                 </span>
               </h2>
-              <button
-                onClick={() => {
-                  setNewFolderParentId(selectedFolderId !== "all" ? selectedFolderId : "");
-                  setShowFolderModal(true);
-                }}
-                title="Tạo thư mục mới"
-                className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-500/20 transition-colors shrink-0"
-              >
-                <FolderPlus className="w-4 h-4" />
-              </button>
+              {/* Nút tạo thư mục - chỉ hiển thị khi đã đăng nhập Google */}
+              {isGoogleUser && (
+                <button
+                  onClick={() => {
+                    setNewFolderParentId(selectedFolderId !== "all" ? selectedFolderId : "");
+                    setShowFolderModal(true);
+                  }}
+                  title="Tạo thư mục mới"
+                  className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-500/20 transition-colors shrink-0"
+                >
+                  <FolderPlus className="w-4 h-4" />
+                </button>
+              )}
             </div>
             
             <div className={`${isMobileFolderOpen ? 'block' : 'hidden'} md:block`}>
@@ -255,8 +303,21 @@ export function Dashboard() {
                 folders={folders} 
                 selectedFolderId={selectedFolderId} 
                 onSelectFolder={handleSelectFolder}
-                onRefresh={() => fetchData(true)} 
+                onRefresh={() => fetchData(true)}
+                currentUserId={currentUser?.uid || null}
               />
+            </div>
+
+            {/* Link sang trang Kanji */}
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <Link 
+                href="/kanji"
+                className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 transition-all"
+              >
+                <Library className="w-4 h-4 shrink-0" />
+                <span className="flex-1">Tra cứu Hán tự (Kanji)</span>
+                <ChevronRight className="w-3.5 h-3.5 opacity-50" />
+              </Link>
             </div>
           </div>
         </div>
@@ -264,29 +325,50 @@ export function Dashboard() {
         {/* RIGHT MAIN CONTENT */}
         <div className="flex-1 flex flex-col gap-6 min-w-0">
           
-          {/* Action Tabs: Quick Add & Bulk Import */}
-          <div className="flex items-center gap-2 mb-2">
-            <button
-              onClick={() => setShowBulkImport(false)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${!showBulkImport ? 'bg-slate-800 dark:bg-slate-800 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-900'}`}
-            >
-              Thêm Nhanh (Quick Add)
-            </button>
-            <button
-              onClick={() => setShowBulkImport(true)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${showBulkImport ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-900'}`}
-            >
-              Thêm Hàng Loạt (Bulk AI)
-            </button>
-          </div>
+          {/* Action Tabs: Quick Add & Bulk Import - Chỉ hiện khi đăng nhập Google */}
+          {isGoogleUser ? (
+            <>
+              <div className="flex items-center gap-2 mb-2">
+                <button
+                  onClick={() => setShowBulkImport(false)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${!showBulkImport ? 'bg-slate-800 dark:bg-slate-800 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-900'}`}
+                >
+                  Thêm Nhanh (Quick Add)
+                </button>
+                <button
+                  onClick={() => setShowBulkImport(true)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${showBulkImport ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-900'}`}
+                >
+                  Thêm Hàng Loạt (Bulk AI)
+                </button>
+              </div>
 
-          {showBulkImport ? (
-            <BulkImport folders={folders} currentFolderId={selectedFolderId} onSuccess={() => fetchData(true)} />
+              {showBulkImport ? (
+                <BulkImport folders={folders} currentFolderId={selectedFolderId} onSuccess={() => fetchData(true)} />
+              ) : (
+                <QuickAddForm folders={folders} currentFolderId={selectedFolderId} onSuccess={() => fetchData(true)} />
+              )}
+            </>
           ) : (
-            <QuickAddForm folders={folders} currentFolderId={selectedFolderId} onSuccess={() => fetchData(true)} />
+            /* Banner nhắc đăng nhập Google */
+            <div className="bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 rounded-2xl p-4 flex items-center gap-3">
+              <Lock className="w-5 h-5 text-indigo-500 dark:text-indigo-400 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">Chế độ Xem (Read-only)</p>
+                <p className="text-xs text-indigo-600/80 dark:text-indigo-400/80 mt-0.5">
+                  Đăng nhập bằng Google để tạo thư mục và thêm từ vựng cá nhân.
+                </p>
+              </div>
+              <Link
+                href="/login"
+                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-colors whitespace-nowrap"
+              >
+                Đăng nhập
+              </Link>
+            </div>
           )}
 
-          {/* View Modes & Vocabularies */}
+          {/* View Modes */}
           <div className="bg-white dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 w-full overflow-x-auto custom-scrollbar transition-colors duration-300">
             <div className="flex items-center w-max bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
               <button
@@ -320,16 +402,6 @@ export function Dashboard() {
                 <Layers className="w-3.5 h-3.5" /> Mode 3: Flashcard
               </button>
               <button
-                onClick={() => setViewMode("kanji")}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  viewMode === "kanji"
-                    ? "bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-md"
-                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-900"
-                }`}
-              >
-                <Library className="w-3.5 h-3.5" /> Mode 4: Tra cứu Kanji
-              </button>
-              <button
                 onClick={() => setViewMode("quiz")}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   viewMode === "quiz"
@@ -337,18 +409,17 @@ export function Dashboard() {
                     : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-900"
                 }`}
               >
-                <BrainCircuit className="w-3.5 h-3.5" /> Mode 5: Quiz
+                <BrainCircuit className="w-3.5 h-3.5" /> Mode 4: Quiz
               </button>
             </div>
           </div>
 
-          {/* Mode Description & Usage Guide Banner */}
+          {/* Mode Description Banner */}
           <div className="bg-white/60 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800/80 p-3.5 px-4 rounded-2xl flex items-start gap-3.5 transition-colors shadow-sm">
             <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 shadow-sm shrink-0">
               {viewMode === "overview" && <LayoutGrid className="w-4 h-4 text-amber-500" />}
               {viewMode === "focus" && <Eye className="w-4 h-4 text-indigo-500" />}
               {viewMode === "flashcard" && <Layers className="w-4 h-4 text-emerald-500" />}
-              {viewMode === "kanji" && <Library className="w-4 h-4 text-rose-500" />}
               {viewMode === "quiz" && <BrainCircuit className="w-4 h-4 text-purple-500" />}
             </div>
             <div className="space-y-0.5">
@@ -356,15 +427,13 @@ export function Dashboard() {
                 {viewMode === "overview" && "Mode 1: Quản lý & Danh sách Tổng quan"}
                 {viewMode === "focus" && "Mode 2: Ôn tập che đáp án (Active Recall)"}
                 {viewMode === "flashcard" && "Mode 3: Flashcard lặp lại ngắt quãng (SRS Anki)"}
-                {viewMode === "kanji" && "Mode 4: Tra cứu & Quản lý Hán tự (Kanji Dictionary)"}
-                {viewMode === "quiz" && "Mode 5: Kiểm tra gõ phím (Typing Quiz)"}
+                {viewMode === "quiz" && "Mode 4: Kiểm tra gõ phím (Typing Quiz)"}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                {viewMode === "overview" && "Xem toàn bộ từ vựng dưới dạng bảng. Bấm vào bất kỳ dòng nào để chỉnh sửa thông tin, hoặc kéo thả dòng vào thư mục bên trái để phân loại."}
-                {viewMode === "focus" && "Luyện nhớ nhanh bằng cách che bớt nghĩa và cách đọc. Bấm vào từng thẻ để lật mở đáp án hoặc bấm 'Ẩn tất cả' để bắt đầu tự dò bài."}
-                {viewMode === "flashcard" && "Luyện tập theo phương pháp lặp lại ngắt quãng (Spaced Repetition). Lật thẻ kiểm tra và chọn mức độ nhớ để hệ thống xếp lịch ôn tập tối ưu."}
-                {viewMode === "kanji" && "Tra cứu tất cả các Hán tự có trong từ vựng. Bấm trực tiếp vào nghĩa/mẹo nhớ để chỉnh sửa nhanh, hoặc bấm vào từ vựng liên quan để xem chi tiết."}
-                {viewMode === "quiz" && "Thử thách phản xạ bằng cách gõ trực tiếp đáp án tiếng Nhật. Hỗ trợ 2 dạng câu hỏi: Dạng 1 (Nhìn Kanji/Từ vựng → Gõ Cách đọc) và Dạng 2 (Nhìn Nghĩa tiếng Việt → Gõ Tiếng Nhật). Tự động tổng hợp danh sách từ đã bỏ qua để ôn lại ở cuối bài."}
+                {viewMode === "overview" && "Xem toàn bộ từ vựng dưới dạng bảng. Bấm vào bất kỳ dòng nào để chỉnh sửa, hoặc kéo thả vào thư mục bên trái để phân loại."}
+                {viewMode === "focus" && "Luyện nhớ nhanh bằng cách che bớt nghĩa và cách đọc. Bấm vào từng thẻ để lật mở đáp án."}
+                {viewMode === "flashcard" && "Luyện tập theo phương pháp lặp lại ngắt quãng (Spaced Repetition). Lật thẻ kiểm tra và chọn mức độ nhớ."}
+                {viewMode === "quiz" && "Thử thách phản xạ bằng cách gõ trực tiếp đáp án tiếng Nhật. Hỗ trợ 2 dạng câu hỏi."}
               </p>
             </div>
           </div>
@@ -379,8 +448,6 @@ export function Dashboard() {
               <OverviewView vocabularies={vocabularies} folders={folders} onRefresh={fetchData} />
             ) : viewMode === "focus" ? (
               <FocusRecallView vocabularies={vocabularies} onRefresh={fetchData} />
-            ) : viewMode === "kanji" ? (
-              <KanjiDictionaryView vocabularies={vocabularies} folders={folders} onRefreshVocab={fetchData} />
             ) : viewMode === "quiz" ? (
               <TypingQuizView vocabularies={vocabularies} />
             ) : (
@@ -427,7 +494,8 @@ export function Dashboard() {
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 text-sm text-slate-800 dark:text-slate-100 outline-none"
                 >
                   <option value="">-- Không có (Root) --</option>
-                  {folders.map((f) => (
+                  {/* Chỉ hiển thị folder của mình */}
+                  {folders.filter(f => !f.ownerId || f.ownerId === currentUser?.uid).map((f) => (
                     <option key={f.id} value={f.id}>{getFolderFullPath(f, folders)}</option>
                   ))}
                 </select>

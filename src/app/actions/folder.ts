@@ -1,6 +1,7 @@
 "use server";
 
 import { adminDb } from "@/lib/firebase-admin";
+import { getCurrentUser } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 
 export async function getFolders() {
@@ -8,16 +9,13 @@ export async function getFolders() {
     const snapshot = await adminDb.collection("folders").orderBy("name", "asc").get();
     
     // Đếm số lượng từ vựng cho mỗi thư mục
-    // (Trong thực tế nên lưu biến counter trong document của folder, nhưng ở đây ta query array-contains-any hoặc tính toán phía client/server)
-    // Để tối ưu, ta có thể lấy toàn bộ vocabularies để tính toán hoặc chỉ trả về folders.
-    // Lấy toàn bộ từ vựng để map đếm
     const vocabSnapshot = await adminDb.collection("vocabularies").get();
     const folderCountMap: Record<string, number> = {};
     
     vocabSnapshot.docs.forEach(doc => {
       const data = doc.data();
       if (data.folderIds && Array.isArray(data.folderIds)) {
-        data.folderIds.forEach(fId => {
+        data.folderIds.forEach((fId: string) => {
           folderCountMap[fId] = (folderCountMap[fId] || 0) + 1;
         });
       }
@@ -27,6 +25,9 @@ export async function getFolders() {
       id: doc.id,
       name: doc.data().name,
       parentId: doc.data().parentId || null,
+      ownerId: doc.data().ownerId || null,
+      ownerEmail: doc.data().ownerEmail || null,
+      ownerName: doc.data().ownerName || null,
       _count: {
         folderVocabularies: folderCountMap[doc.id] || 0
       }
@@ -42,16 +43,35 @@ export async function getFolders() {
 export async function createFolder(name: string, parentId?: string) {
   if (!name.trim()) return { success: false, error: "Tên thư mục không được trống." };
 
+  // Lấy thông tin user hiện tại
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return { success: false, error: "Bạn cần đăng nhập bằng Google để tạo thư mục." };
+  }
+
   try {
     const docRef = await adminDb.collection("folders").add({
       name: name.trim(),
       parentId: parentId || null,
+      ownerId: currentUser.uid,
+      ownerEmail: currentUser.email,
+      ownerName: currentUser.name,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
 
     revalidatePath("/");
-    return { success: true, folder: { id: docRef.id, name: name.trim(), parentId: parentId || null } };
+    return { 
+      success: true, 
+      folder: { 
+        id: docRef.id, 
+        name: name.trim(), 
+        parentId: parentId || null,
+        ownerId: currentUser.uid,
+        ownerEmail: currentUser.email,
+        ownerName: currentUser.name,
+      } 
+    };
   } catch (error) {
     console.error("Lỗi khi tạo thư mục:", error);
     return { success: false, error: "Không thể tạo thư mục." };
@@ -60,6 +80,21 @@ export async function createFolder(name: string, parentId?: string) {
 
 export async function renameFolder(id: string, newName: string) {
   if (!newName.trim()) return { success: false, error: "Tên thư mục không được để trống." };
+
+  // Kiểm tra quyền
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return { success: false, error: "Bạn cần đăng nhập bằng Google để thực hiện thao tác này." };
+  }
+
+  // Kiểm tra owner
+  const folderDoc = await adminDb.collection("folders").doc(id).get();
+  if (!folderDoc.exists) return { success: false, error: "Thư mục không tồn tại." };
+  
+  const folderData = folderDoc.data();
+  if (folderData?.ownerId && folderData.ownerId !== currentUser.uid) {
+    return { success: false, error: "Bạn không có quyền đổi tên thư mục này." };
+  }
 
   try {
     await adminDb.collection("folders").doc(id).update({
@@ -76,6 +111,21 @@ export async function renameFolder(id: string, newName: string) {
 }
 
 export async function deleteFolderAndVocabs(id: string) {
+  // Kiểm tra quyền
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return { success: false, error: "Bạn cần đăng nhập bằng Google để thực hiện thao tác này." };
+  }
+
+  // Kiểm tra owner của thư mục gốc
+  const folderDoc = await adminDb.collection("folders").doc(id).get();
+  if (!folderDoc.exists) return { success: false, error: "Thư mục không tồn tại." };
+  
+  const folderData = folderDoc.data();
+  if (folderData?.ownerId && folderData.ownerId !== currentUser.uid) {
+    return { success: false, error: "Bạn không có quyền xóa thư mục này." };
+  }
+
   try {
     const allFoldersSnapshot = await adminDb.collection("folders").get();
     const allFolders = allFoldersSnapshot.docs.map(doc => ({ id: doc.id, parentId: doc.data().parentId }));
@@ -97,7 +147,7 @@ export async function deleteFolderAndVocabs(id: string) {
 
     const folderIdsArray = Array.from(folderIdsToDelete);
 
-    // Lấy tất cả từ vựng
+    // Lấy tất cả từ vựng để xóa
     const vocabSnapshot = await adminDb.collection("vocabularies").get();
     const vocabsToDelete: string[] = [];
     

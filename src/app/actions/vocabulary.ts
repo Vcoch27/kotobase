@@ -1,6 +1,7 @@
 "use server";
 
 import { adminDb } from "@/lib/firebase-admin";
+import { getCurrentUser } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 
 export interface CreateVocabInput {
@@ -13,9 +14,37 @@ export interface CreateVocabInput {
   folderIds?: string[];
 }
 
+// Helper: kiểm tra user có quyền ghi vào folder không
+async function checkFolderPermission(folderId: string, currentUid: string): Promise<{ allowed: boolean; error?: string }> {
+  if (!folderId) return { allowed: true }; // Không thuộc folder nào = không kiểm tra
+  const folderDoc = await adminDb.collection("folders").doc(folderId).get();
+  if (!folderDoc.exists) return { allowed: false, error: "Thư mục không tồn tại." };
+  
+  const data = folderDoc.data();
+  // Folder cũ không có ownerId => coi là public (không ai được sửa)
+  if (!data?.ownerId) return { allowed: false, error: "Thư mục này là dữ liệu công cộng, không thể chỉnh sửa." };
+  if (data.ownerId !== currentUid) return { allowed: false, error: "Bạn không có quyền chỉnh sửa thư mục này." };
+  
+  return { allowed: true };
+}
+
 export async function createVocabulary(input: CreateVocabInput) {
   if (!input.word.trim()) return { success: false, error: "Từ vựng là bắt buộc." };
   if (!input.meaning.trim()) return { success: false, error: "Nghĩa là bắt buộc." };
+
+  // Kiểm tra đăng nhập Google
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return { success: false, error: "Bạn cần đăng nhập bằng Google để thêm từ vựng." };
+  }
+
+  // Kiểm tra quyền trên folder mục tiêu (nếu có)
+  if (input.folderIds && input.folderIds.length > 0) {
+    for (const fid of input.folderIds) {
+      const perm = await checkFolderPermission(fid, currentUser.uid);
+      if (!perm.allowed) return { success: false, error: perm.error };
+    }
+  }
 
   try {
     const docRef = await adminDb.collection("vocabularies").add({
@@ -26,6 +55,7 @@ export async function createVocabulary(input: CreateVocabInput) {
       example: input.example?.trim() || null,
       note: input.note?.trim() || null,
       folderIds: input.folderIds || [],
+      createdBy: currentUser.uid,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
@@ -39,6 +69,18 @@ export async function createVocabulary(input: CreateVocabInput) {
 }
 
 export async function createBulkVocabulary(jsonString: string, targetFolderId?: string) {
+  // Kiểm tra đăng nhập Google
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return { success: false, error: "Bạn cần đăng nhập bằng Google để nhập từ vựng hàng loạt." };
+  }
+
+  // Kiểm tra quyền trên folder mục tiêu
+  if (targetFolderId) {
+    const perm = await checkFolderPermission(targetFolderId, currentUser.uid);
+    if (!perm.allowed) return { success: false, error: perm.error };
+  }
+
   try {
     const dataList = JSON.parse(jsonString);
     if (!Array.isArray(dataList)) {
@@ -61,6 +103,7 @@ export async function createBulkVocabulary(jsonString: string, targetFolderId?: 
         example: item.example || null,
         note: item.note || null,
         folderIds: targetFolderId ? [targetFolderId] : [],
+        createdBy: currentUser.uid,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
@@ -78,6 +121,16 @@ export async function createBulkVocabulary(jsonString: string, targetFolderId?: 
 }
 
 export async function assignVocabularyToFolder(vocabularyId: string, folderId: string) {
+  // Kiểm tra đăng nhập Google
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return { success: false, error: "Bạn cần đăng nhập bằng Google để chuyển thư mục." };
+  }
+
+  // Kiểm tra quyền trên folder đích
+  const perm = await checkFolderPermission(folderId, currentUser.uid);
+  if (!perm.allowed) return { success: false, error: perm.error };
+
   try {
     const docRef = adminDb.collection("vocabularies").doc(vocabularyId);
     
@@ -172,7 +225,28 @@ export async function getVocabularies(folderId?: string, searchQuery?: string) {
 }
 
 export async function deleteVocabulary(id: string) {
+  // Kiểm tra đăng nhập Google
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return { success: false, error: "Bạn cần đăng nhập bằng Google để xóa từ vựng." };
+  }
+
   try {
+    // Lấy vocab để kiểm tra folder
+    const vocabDoc = await adminDb.collection("vocabularies").doc(id).get();
+    if (vocabDoc.exists) {
+      const vocabData = vocabDoc.data();
+      const folderIds: string[] = vocabData?.folderIds || [];
+      
+      // Kiểm tra quyền trên ít nhất 1 folder
+      if (folderIds.length > 0) {
+        for (const fid of folderIds) {
+          const perm = await checkFolderPermission(fid, currentUser.uid);
+          if (!perm.allowed) return { success: false, error: perm.error };
+        }
+      }
+    }
+
     await adminDb.collection("vocabularies").doc(id).delete();
     revalidatePath("/");
     return { success: true };
@@ -183,7 +257,27 @@ export async function deleteVocabulary(id: string) {
 }
 
 export async function updateVocabulary(id: string, input: Partial<CreateVocabInput>) {
+  // Kiểm tra đăng nhập Google
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return { success: false, error: "Bạn cần đăng nhập bằng Google để chỉnh sửa từ vựng." };
+  }
+
   try {
+    // Lấy vocab để kiểm tra folder
+    const vocabDoc = await adminDb.collection("vocabularies").doc(id).get();
+    if (vocabDoc.exists) {
+      const vocabData = vocabDoc.data();
+      const folderIds: string[] = vocabData?.folderIds || [];
+      
+      if (folderIds.length > 0) {
+        for (const fid of folderIds) {
+          const perm = await checkFolderPermission(fid, currentUser.uid);
+          if (!perm.allowed) return { success: false, error: perm.error };
+        }
+      }
+    }
+
     const updateData: any = {
       updatedAt: new Date().toISOString(),
     };

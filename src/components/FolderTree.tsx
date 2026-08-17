@@ -3,12 +3,15 @@
 import React, { useState, useMemo } from "react";
 import { assignVocabularyToFolder } from "@/app/actions/vocabulary";
 import { deleteFolderAndVocabs, renameFolder } from "@/app/actions/folder";
-import { Folder, ChevronRight, ChevronDown, CheckCircle2, Trash2, Pencil } from "lucide-react";
+import { Folder, ChevronRight, ChevronDown, Trash2, Pencil, Crown, Users } from "lucide-react";
 
 interface FolderItem {
   id: string;
   name: string;
   parentId: string | null;
+  ownerId?: string | null;
+  ownerEmail?: string | null;
+  ownerName?: string | null;
   _count?: { folderVocabularies: number };
 }
 
@@ -17,9 +20,10 @@ interface FolderTreeProps {
   selectedFolderId: string;
   onSelectFolder: (id: string) => void;
   onRefresh: () => void;
+  currentUserId?: string | null;
 }
 
-export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefresh }: FolderTreeProps) {
+export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefresh, currentUserId }: FolderTreeProps) {
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -91,7 +95,7 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
   };
 
   const handleDragOver = (e: React.DragEvent, folderId: string) => {
-    e.preventDefault(); // Phải có để cho phép Drop
+    e.preventDefault();
     if (dragOverFolderId !== folderId) setDragOverFolderId(folderId);
   };
 
@@ -109,7 +113,7 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
     if (res.success) {
       onRefresh();
     } else {
-      alert("Lỗi khi chuyển thư mục!");
+      alert(res.error || "Lỗi khi chuyển thư mục!");
     }
   };
 
@@ -180,6 +184,11 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
       const hasChildren = node.children.length > 0;
       const isDragOver = dragOverFolderId === node.id;
       const totalCount = getRecursiveCount(node);
+      
+      // Phân quyền hiển thị
+      const isOwner = currentUserId && node.ownerId && node.ownerId === currentUserId;
+      const hasOwner = !!node.ownerId;
+      const canEdit = isOwner; // Chỉ chủ mới có thể sửa/xóa
 
       return (
         <div key={node.id} className="w-full">
@@ -207,40 +216,65 @@ export function FolderTree({ folders, selectedFolderId, onSelectFolder, onRefres
               {hasChildren && (isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />)}
             </div>
             
-            <Folder className={`w-4 h-4 shrink-0 ${isSelected ? "text-indigo-500 dark:text-indigo-400" : isDragOver ? "text-amber-500 dark:text-amber-400" : "text-slate-400 dark:text-slate-500"}`} />
+            {/* Icon thư mục với màu phân biệt */}
+            {isOwner ? (
+              <Folder className={`w-4 h-4 shrink-0 ${isSelected ? "text-indigo-500 dark:text-indigo-400" : isDragOver ? "text-amber-500" : "text-indigo-400 dark:text-indigo-500"}`} />
+            ) : (
+              <Folder className={`w-4 h-4 shrink-0 ${isSelected ? "text-indigo-500 dark:text-indigo-400" : isDragOver ? "text-amber-500 dark:text-amber-400" : "text-slate-400 dark:text-slate-500"}`} />
+            )}
             
             <span className="text-xs truncate flex-1">{node.name}</span>
+
+            {/* Badge "Của tôi" hoặc icon người dùng khác */}
+            {isOwner ? (
+              <span 
+                className="shrink-0 text-[9px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-500/20 px-1.5 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-500/30 flex items-center gap-0.5 whitespace-nowrap"
+                title={`Thư mục của bạn (${node.ownerEmail || ''})`}
+              >
+                <Crown className="w-2.5 h-2.5" /> Của tôi
+              </span>
+            ) : hasOwner ? (
+              <span 
+                className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-[9px] font-semibold text-slate-400 dark:text-slate-500 flex items-center gap-0.5"
+                title={`Chủ: ${node.ownerName || node.ownerEmail || 'Người dùng khác'}`}
+              >
+                <Users className="w-3 h-3" />
+              </span>
+            ) : null}
+
             <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-900/50 px-1.5 py-0.5 rounded shrink-0 mr-1">
               {totalCount}
             </span>
             
-            {/* Action buttons (Rename + Delete) appear on hover */}
-            <div className="shrink-0 group-hover:opacity-100 opacity-0 transition-opacity flex items-center gap-0.5">
-              <button
-                onClick={(e) => handleRenameFolder(node.id, node.name, e)}
-                disabled={renamingFolderId === node.id}
-                className="p-1 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition-colors disabled:opacity-50"
-                title="Đổi tên thư mục"
-              >
-                {renamingFolderId === node.id ? (
-                  <div className="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <Pencil className="w-3.5 h-3.5" />
-                )}
-              </button>
-              <button
-                onClick={(e) => handleDeleteFolder(node.id, node.name, e)}
-                disabled={deletingFolderId === node.id}
-                className="p-1 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded transition-colors disabled:opacity-50"
-                title="Xóa thư mục và toàn bộ từ vựng bên trong"
-              >
-                {deletingFolderId === node.id ? (
-                  <div className="w-3.5 h-3.5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <Trash2 className="w-3.5 h-3.5" />
-                )}
-              </button>
-            </div>
+            {/* Action buttons (Rename + Delete) - chỉ hiện cho chủ sở hữu */}
+            {canEdit && (
+              <div className="shrink-0 group-hover:opacity-100 opacity-0 transition-opacity flex items-center gap-0.5">
+                <button
+                  onClick={(e) => handleRenameFolder(node.id, node.name, e)}
+                  disabled={renamingFolderId === node.id}
+                  className="p-1 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition-colors disabled:opacity-50"
+                  title="Đổi tên thư mục"
+                >
+                  {renamingFolderId === node.id ? (
+                    <div className="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <Pencil className="w-3.5 h-3.5" />
+                  )}
+                </button>
+                <button
+                  onClick={(e) => handleDeleteFolder(node.id, node.name, e)}
+                  disabled={deletingFolderId === node.id}
+                  className="p-1 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded transition-colors disabled:opacity-50"
+                  title="Xóa thư mục và toàn bộ từ vựng bên trong"
+                >
+                  {deletingFolderId === node.id ? (
+                    <div className="w-3.5 h-3.5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <Trash2 className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              </div>
+            )}
           </div>
           
           {hasChildren && isExpanded && (
