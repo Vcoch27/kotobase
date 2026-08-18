@@ -138,7 +138,7 @@ export async function getBulkKanjiNotes(characters: string[]) {
   }
 }
 
-export async function getAllKanjiNotes() {
+export async function fetchAllKanjiNotes() {
   noStore();
   try {
     const snapshot = await adminDb.collection("kanji_notes").get();

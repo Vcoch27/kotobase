@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Search, Library, FileText, BookOpen, Edit3, Loader2, Type, Volume2, Wand2, X } from "lucide-react";
-import { getAllKanjiNotes, upsertKanjiNote } from "@/app/actions/kanji";
+import { fetchAllKanjiNotes, upsertKanjiNote } from "@/app/actions/kanji";
 import { getVocabulariesByKanji } from "@/app/actions/vocabulary";
 import { VocabularyEditModal } from "./VocabularyEditModal";
 import { KanjiLookupResults } from "./KanjiLookupResults";
@@ -56,7 +56,7 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
     const fetchKanji = async () => {
       setLoading(true);
       try {
-        const notes = await getAllKanjiNotes();
+        const notes = await fetchAllKanjiNotes();
         if (isMounted) {
           setKanjiNotes(Array.isArray(notes) ? notes : []);
           setLoading(false);
