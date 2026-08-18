@@ -39,31 +39,31 @@ npm install
 
 ## 3. Cấu Hình Biến Môi Trường (Environment Variables)
 
-Tạo file `.env.local` tại thư mục gốc của dự án (`c:\mydata\ForkProject\kotobase\.env.local`) và cấu hình các biến tương ứng với dự án Firebase của bạn:
+Tạo file `.env.local` tại thư mục gốc của dự án (`.env.local`) và cấu hình các biến tương ứng với dự án Firebase của bạn:
 
 ```env
 # ===================================================================
 # FIREBASE CLIENT CONFIGURATION (Frontend / React)
 # Lấy từ Firebase Console -> Project Settings -> General -> Your apps
 # ===================================================================
-NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSy...
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-app.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-app.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789012
-NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789012:web:abcdef123456
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id
 
 # ===================================================================
 # FIREBASE ADMIN SDK CONFIGURATION (Server Actions / API Routes)
 # Lấy từ Firebase Console -> Project Settings -> Service accounts
 # ===================================================================
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project-id.iam.gserviceaccount.com
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC...\n-----END PRIVATE KEY-----\n"
+FIREBASE_CLIENT_EMAIL=your-service-account@your-project-id.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nyour_private_key_content_here\n-----END PRIVATE KEY-----\n"
 ```
 
 > **Lưu ý quan trọng về `FIREBASE_PRIVATE_KEY`:**
 > - Giữ nguyên dấu ngoặc kép bọc toàn bộ chuỗi private key.
-> - Ký tự xuống dòng `\n` trong private key sẽ được xử lý tự động trong [src/lib/firebase-admin.ts](file:///c:/mydata/ForkProject/kotobase/src/lib/firebase-admin.ts).
+> - Ký tự xuống dòng `\n` trong private key sẽ được xử lý tự động trong [src/lib/firebase-admin.ts](../src/lib/firebase-admin.ts).
 
 ---
 

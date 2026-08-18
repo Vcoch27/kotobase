@@ -104,10 +104,10 @@ kotobase/
 
 ### 3.1. Quản lý Thư Mục Lồng Nhau (Nested Folders & Hierarchy)
 * **Cấu trúc dữ liệu:** Mỗi folder chứa `id`, `name`, `userId`, và `parentId` (đối với folder con) hoặc `null` (đối với folder gốc).
-* **Hiệu năng & Trải nghiệm:** [FolderTree.tsx](file:///c:/mydata/ForkProject/kotobase/src/components/FolderTree.tsx) áp dụng cơ chế **Optimistic UI**, cập nhật giao diện cây thư mục tức thì trước khi nhận phản hồi từ server action [folder.ts](file:///c:/mydata/ForkProject/kotobase/src/app/actions/folder.ts).
+* **Hiệu năng & Trải nghiệm:** [FolderTree.tsx](../src/components/FolderTree.tsx) áp dụng cơ chế **Optimistic UI**, cập nhật giao diện cây thư mục tức thì trước khi nhận phản hồi từ server action [folder.ts](../src/app/actions/folder.ts).
 
 ### 3.2. Thuật Toán Lặp Lại Ngắt Quãng (Spaced Repetition System - SM-2)
-Module [src/lib/anki-utils.ts](file:///c:/mydata/ForkProject/kotobase/src/lib/anki-utils.ts) hiện thực hóa thuật toán SuperMemo SM-2 cải tiến (tương tự Anki):
+Module [src/lib/anki-utils.ts](../src/lib/anki-utils.ts) hiện thực hóa thuật toán SuperMemo SM-2 cải tiến (tương tự Anki):
 
 * **4 mức đánh giá (Ratings):**
   * `again`: Quên từ, đặt lại khoảng cách ôn tập (`interval = 0`), giảm hệ số dễ nhớ `easeFactor`.
@@ -120,11 +120,11 @@ Module [src/lib/anki-utils.ts](file:///c:/mydata/ForkProject/kotobase/src/lib/an
 * **Lưu trữ tiến độ:** Được lưu cục bộ trong `localStorage` với key `kotobase_anki_progress` để tối ưu tốc độ đọc/ghi khi ôn tập thẻ.
 
 ### 3.3. Xử Lý Ngôn Ngữ Tiếng Nhật & Hán Tự (Japanese NLP & Parsing)
-* **Trích xuất Kanji:** [kanji-parser.ts](file:///c:/mydata/ForkProject/kotobase/src/lib/kanji-parser.ts) sử dụng dải mã Unicode Hán tự `[\u4e00-\u9faf\u3400-\u4dbf]` để bóc tách tự động toàn bộ chữ Hán từ danh sách từ vựng hiện có.
-* **Tương tác trực quan:** [ClickableKanjiString.tsx](file:///c:/mydata/ForkProject/kotobase/src/components/ClickableKanjiString.tsx) phân tích chuỗi ký tự, tách riêng các chữ Hán và gắn sự kiện click để mở popup tra cứu nhanh âm Hán Việt, số nét, âm On/Kun và mẹo nhớ từ Mazii API.
+* **Trích xuất Kanji:** [kanji-parser.ts](../src/lib/kanji-parser.ts) sử dụng dải mã Unicode Hán tự `[\u4e00-\u9faf\u3400-\u4dbf]` để bóc tách tự động toàn bộ chữ Hán từ danh sách từ vựng hiện có.
+* **Tương tác trực quan:** [ClickableKanjiString.tsx](../src/components/ClickableKanjiString.tsx) phân tích chuỗi ký tự, tách riêng các chữ Hán và gắn sự kiện click để mở popup tra cứu nhanh âm Hán Việt, số nét, âm On/Kun và mẹo nhớ từ Mazii API.
 
 ### 3.4. Hệ Thống Phát Âm (Audio TTS)
-* Quản lý qua [src/lib/tts-utils.ts](file:///c:/mydata/ForkProject/kotobase/src/lib/tts-utils.ts) dựa trên **Web Speech API** (`window.speechSynthesis`).
+* Quản lý qua [src/lib/tts-utils.ts](../src/lib/tts-utils.ts) dựa trên **Web Speech API** (`window.speechSynthesis`).
 * Tự động lọc danh sách giọng đọc tiếng Nhật (`ja-JP`), cho phép tùy chỉnh `rate` (tốc độ đọc), `pitch` (cao độ) và lưu cấu hình vào `localStorage`.
 
 ---
