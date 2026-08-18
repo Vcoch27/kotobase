@@ -613,8 +613,15 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
           {mode === "listening" ? (
             /* Listening Mode Front: Chỉ hiện âm thanh */
             <div 
-              className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-violet-50 to-slate-50 dark:from-violet-950/40 dark:to-slate-950 border border-violet-200 dark:border-violet-700/40 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center transition-colors"
-              style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+              className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-violet-50 to-slate-50 dark:from-violet-950/40 dark:to-slate-950 border border-violet-200 dark:border-violet-700/40 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center transition-all duration-300 ${
+                isFlipped ? "opacity-0 pointer-events-none invisible" : "opacity-100 pointer-events-auto visible"
+              }`}
+              style={{ 
+                backfaceVisibility: 'hidden', 
+                WebkitBackfaceVisibility: 'hidden',
+                transform: 'rotateY(0deg) translateZ(1px)',
+                WebkitTransform: 'rotateY(0deg) translateZ(1px)'
+              }}
             >
               <span className="absolute top-3 left-3 sm:top-6 sm:left-6 text-[10px] sm:text-xs font-bold text-violet-400 dark:text-violet-500 uppercase tracking-wider flex items-center gap-1">
                 <Headphones className="w-3 h-3 sm:w-4 sm:h-4" /> Chế độ Nghe — Bấm để lật
@@ -622,9 +629,13 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
               
               {/* Vòng sóng âm thanh pulsing */}
               <div className="relative flex items-center justify-center mb-4 sm:mb-6">
-                {/* Pulse rings */}
-                <div className={`absolute w-28 h-28 sm:w-32 sm:h-32 rounded-full border-2 border-violet-400/30 dark:border-violet-500/20 ${isPlayingAudio ? 'animate-ping' : 'opacity-0'}`} style={{ animationDuration: '1.2s' }}></div>
-                <div className={`absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-violet-400/40 dark:border-violet-500/30 ${isPlayingAudio ? 'animate-ping' : 'opacity-0'}`} style={{ animationDuration: '1.5s' }}></div>
+                {/* Pulse rings - chỉ animate khi đang ở mặt trước để tránh tách GPU layer khi lật */}
+                {!isFlipped && isPlayingAudio && (
+                  <>
+                    <div className="absolute w-28 h-28 sm:w-32 sm:h-32 rounded-full border-2 border-violet-400/30 dark:border-violet-500/20 animate-ping" style={{ animationDuration: '1.2s' }}></div>
+                    <div className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-violet-400/40 dark:border-violet-500/30 animate-ping" style={{ animationDuration: '1.5s' }}></div>
+                  </>
+                )}
                 
                 {/* Nút play trung tâm */}
                 <button
@@ -635,7 +646,7 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
                     playAudio(textToPlay);
                     setTimeout(() => setIsPlayingAudio(false), 3000);
                   }}
-                  className={`relative z-10 w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95 ${
+                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95 ${
                     isPlayingAudio
                       ? 'bg-violet-500 dark:bg-violet-600 shadow-violet-500/40 scale-110'
                       : 'bg-white dark:bg-slate-800 border-2 border-violet-300 dark:border-violet-600 hover:border-violet-500 hover:scale-105 shadow-violet-200 dark:shadow-violet-900/50'
@@ -653,8 +664,15 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
           ) : (
             /* Normal / Progress / Anki Front: Hiển thị từ vựng */
             <div 
-              className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-6 sm:p-8 text-center transition-colors"
-              style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+              className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-6 sm:p-8 text-center transition-all duration-300 ${
+                isFlipped ? "opacity-0 pointer-events-none invisible" : "opacity-100 pointer-events-auto visible"
+              }`}
+              style={{ 
+                backfaceVisibility: 'hidden', 
+                WebkitBackfaceVisibility: 'hidden',
+                transform: 'rotateY(0deg) translateZ(1px)',
+                WebkitTransform: 'rotateY(0deg) translateZ(1px)'
+              }}
             >
               <span className="absolute top-3 left-3 sm:top-6 sm:left-6 text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
                 <Rotate3D className="w-3 h-3 sm:w-4 sm:h-4" /> Bấm để lật
@@ -672,12 +690,14 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
 
           {/* Back */}
           <div 
-            className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center transition-colors"
+            className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center transition-all duration-300 ${
+              !isFlipped ? "opacity-0 pointer-events-none invisible" : "opacity-100 pointer-events-auto visible"
+            }`}
             style={{ 
               backfaceVisibility: 'hidden', 
               WebkitBackfaceVisibility: 'hidden',
-              transform: 'rotateY(180deg)',
-              WebkitTransform: 'rotateY(180deg)',
+              transform: 'rotateY(180deg) translateZ(1px)',
+              WebkitTransform: 'rotateY(180deg) translateZ(1px)',
             }}
           >
             <span className="absolute top-3 left-3 sm:top-6 sm:left-6 text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
