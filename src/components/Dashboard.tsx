@@ -71,27 +71,66 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const [newFolderParentId, setNewFolderParentId] = useState<string>("");
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [isMobileFolderOpen, setIsMobileFolderOpen] = useState(false);
+  const [quotaExceeded, setQuotaExceeded] = useState(false);
 
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
+  // Bộ nhớ đệm (Cache) siêu tiết kiệm Reads
+  const vocabCache = React.useRef<Record<string, any[]>>({});
+  const foldersCache = React.useRef<any[] | null>(null);
+  
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
 
   // Xác định quyền: chỉ user đã đăng nhập Google mới được tạo/sửa/xóa
   const isGoogleUser = !!currentUser?.uid;
 
   const fetchData = async (isBackground = false) => {
-    if (!isBackground && !debouncedSearchQuery && searchQuery === "") {
+    if (!isBackground) {
       setLoading(true);
     }
-    const [vocabData, folderData] = await Promise.all([
-      getVocabularies(selectedFolderId, debouncedSearchQuery),
-      getFolders(),
-    ]);
-    setVocabularies(Array.isArray(vocabData) ? vocabData : []);
-    setFolders(Array.isArray(folderData) ? folderData : []);
-    if (!isBackground) {
-      setLoading(false);
+    setQuotaExceeded(false);
+    try {
+      let vocabData: any;
+      let folderData: any;
+
+      // Tái sử dụng dữ liệu từ RAM Cache nếu đã tải rồi và không có sự thay đổi
+      if (!isBackground && vocabCache.current[selectedFolderId] && foldersCache.current) {
+        vocabData = vocabCache.current[selectedFolderId];
+        folderData = foldersCache.current;
+      } else {
+        // Chỉ tải mới từ Firebase khi chưa có cache hoặc vừa có thay đổi dữ liệu (isBackground)
+        const [vData, fData] = await Promise.all([
+          getVocabularies(selectedFolderId),
+          getFolders(),
+        ]);
+        
+        if (vData && (vData as any).error === "QUOTA_EXCEEDED") throw new Error("QUOTA_EXCEEDED");
+        if (fData && (fData as any).error === "QUOTA_EXCEEDED") throw new Error("QUOTA_EXCEEDED");
+
+        vocabData = vData;
+        folderData = fData;
+        
+        // Lưu lại vào Cache
+        vocabCache.current[selectedFolderId] = Array.isArray(vData) ? vData : [];
+        foldersCache.current = Array.isArray(fData) ? fData : [];
+      }
+
+      setVocabularies(Array.isArray(vocabData) ? vocabData : []);
+      setFolders(Array.isArray(folderData) ? folderData : []);
+    } catch (error: any) {
+      console.error("Lỗi khi tải dữ liệu:", error);
+      if (error.message === "QUOTA_EXCEEDED") {
+        setQuotaExceeded(true);
+      } else {
+        toast.error("Lỗi tải dữ liệu, vui lòng thử lại sau.");
+      }
+      setVocabularies([]);
+      setFolders([]);
+    } finally {
+      if (!isBackground) {
+        setLoading(false);
+      }
     }
   };
 
@@ -109,7 +148,19 @@ export function Dashboard({ currentUser }: DashboardProps) {
   useEffect(() => {
     if (!mounted) return;
     fetchData();
-  }, [selectedFolderId, debouncedSearchQuery, mounted]);
+  }, [selectedFolderId, mounted]); // ĐÃ BỎ debouncedSearchQuery khỏi đây!
+
+  // Client-side Filtering cực nhanh và 0 tốn read của Firebase
+  const filteredVocabularies = React.useMemo(() => {
+    if (!debouncedSearchQuery.trim()) return vocabularies;
+    const q = debouncedSearchQuery.trim().toLowerCase();
+    return vocabularies.filter(v => 
+      (v.word && v.word.toLowerCase().includes(q)) ||
+      (v.meaning && v.meaning.toLowerCase().includes(q)) ||
+      (v.reading && v.reading.toLowerCase().includes(q)) ||
+      (v.sinoVietnamese && v.sinoVietnamese.toLowerCase().includes(q))
+    );
+  }, [vocabularies, debouncedSearchQuery]);
 
   const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -508,19 +559,29 @@ export function Dashboard({ currentUser }: DashboardProps) {
           </div>
 
           <div className="pb-10">
-            {loading ? (
+            {quotaExceeded ? (
+              <div className="p-8 my-8 text-center bg-rose-50 dark:bg-rose-900/10 rounded-2xl border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400">
+                <BrainCircuit className="w-12 h-12 mx-auto mb-4 text-rose-500 opacity-80" />
+                <h3 className="text-xl font-bold mb-2">Đã hết hạn mức Firebase (Quota Exceeded)</h3>
+                <p className="text-sm font-medium opacity-90 max-w-lg mx-auto leading-relaxed">
+                  Ứng dụng đang dùng gói Firebase miễn phí và dự án của bạn đã sử dụng hết 50.000 lượt đọc trong hôm nay. 
+                  <br /><br />
+                  Vui lòng chờ đến <strong>14:00 (2h chiều) theo giờ Việt Nam</strong> để hạn mức được thiết lập lại về 0, hoặc nâng cấp gói Firebase của bạn để sử dụng tiếp.
+                </p>
+              </div>
+            ) : loading ? (
               <div className="p-16 text-center text-slate-500 dark:text-slate-400">
                 <div className="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                 <p className="text-sm font-medium">Đang tải dữ liệu từ vựng...</p>
               </div>
             ) : viewMode === "overview" ? (
-              <OverviewView vocabularies={vocabularies} folders={folders} onRefresh={fetchData} />
+              <OverviewView vocabularies={filteredVocabularies} folders={folders} onRefresh={() => fetchData(true)} />
             ) : viewMode === "focus" ? (
-              <FocusRecallView vocabularies={vocabularies} onRefresh={fetchData} />
+              <FocusRecallView vocabularies={filteredVocabularies} onRefresh={fetchData} />
             ) : viewMode === "quiz" ? (
-              <TypingQuizView vocabularies={vocabularies} />
+              <TypingQuizView vocabularies={filteredVocabularies} />
             ) : (
-              <FlashcardView vocabularies={vocabularies} />
+              <FlashcardView vocabularies={filteredVocabularies} />
             )}
 
             {/* Tra cứu Từ điển Jisho mở rộng khi người dùng đang tìm kiếm */}

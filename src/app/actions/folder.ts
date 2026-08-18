@@ -8,19 +8,7 @@ export async function getFolders() {
   try {
     const snapshot = await adminDb.collection("folders").orderBy("name", "asc").get();
     
-    // Đếm số lượng từ vựng cho mỗi thư mục
-    const vocabSnapshot = await adminDb.collection("vocabularies").get();
-    const folderCountMap: Record<string, number> = {};
-    
-    vocabSnapshot.docs.forEach(doc => {
-      const data = doc.data();
-      if (data.folderIds && Array.isArray(data.folderIds)) {
-        data.folderIds.forEach((fId: string) => {
-          folderCountMap[fId] = (folderCountMap[fId] || 0) + 1;
-        });
-      }
-    });
-
+    // Map data
     const folders = snapshot.docs.map(doc => ({
       id: doc.id,
       name: doc.data().name,
@@ -29,13 +17,30 @@ export async function getFolders() {
       ownerEmail: doc.data().ownerEmail || null,
       ownerName: doc.data().ownerName || null,
       _count: {
-        folderVocabularies: folderCountMap[doc.id] || 0
+        folderVocabularies: 0
+      }
+    }));
+
+    // Tối ưu hoá: Dùng count() để đếm số lượng từ vựng trong mỗi thư mục 
+    // Thay vì get() toàn bộ vocabularies, mỗi lệnh count() chỉ tốn đúng 1 read
+    await Promise.all(folders.map(async (folder) => {
+      try {
+        const countSnap = await adminDb.collection("vocabularies")
+          .where("folderIds", "array-contains", folder.id)
+          .count()
+          .get();
+        folder._count.folderVocabularies = countSnap.data().count;
+      } catch (e) {
+        folder._count.folderVocabularies = 0;
       }
     }));
     
     return folders;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Lỗi khi lấy danh sách thư mục:", error);
+    if (error.message?.includes("RESOURCE_EXHAUSTED") || error.message?.includes("Quota exceeded")) {
+      return { error: "QUOTA_EXCEEDED" };
+    }
     return [];
   }
 }

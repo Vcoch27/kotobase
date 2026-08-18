@@ -10,7 +10,7 @@ import { KanjiDetail } from "@/app/api/kanji/lookup/route";
 interface KanjiLookupResultsProps {
   searchQuery: string;
   existingKanjiChars: Set<string>;
-  onSaveSuccess?: () => void;
+  onSaveSuccess?: (data?: any) => void;
 }
 
 export function KanjiLookupResults({ searchQuery, existingKanjiChars, onSaveSuccess }: KanjiLookupResultsProps) {
@@ -61,9 +61,10 @@ export function KanjiLookupResults({ searchQuery, existingKanjiChars, onSaveSucc
 
     setSavingChar(null);
     if (res.success) {
-      toast.success("Đã lưu Hán tự vào kho!");
+      toast.success("Đã thêm Kanji vào bộ nhớ!");
       setLocalSavedChars(prev => new Set(prev).add(item.kanji));
-      if (onSaveSuccess) onSaveSuccess();
+      if (onSaveSuccess && res.data) onSaveSuccess(res.data);
+      else if (onSaveSuccess) onSaveSuccess();
     } else {
       toast.error("Không thể lưu Hán tự vào kho!");
     }

@@ -225,9 +225,18 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
       <KanjiLookupResults
         searchQuery={searchQuery}
         existingKanjiChars={new Set((kanjiNotes || []).map(k => k.character))}
-        onSaveSuccess={async () => {
-          const notes = await getAllKanjiNotes();
-          setKanjiNotes(Array.isArray(notes) ? notes : []);
+        onSaveSuccess={async (newNote) => {
+          if (newNote) {
+            setKanjiNotes(prev => {
+              const existing = prev.findIndex(k => k.character === newNote.character);
+              if (existing >= 0) {
+                const next = [...prev];
+                next[existing] = { ...next[existing], ...newNote };
+                return next;
+              }
+              return [newNote, ...prev];
+            });
+          }
           if (onRefreshVocab) onRefreshVocab();
         }}
       />

@@ -180,9 +180,29 @@ export async function getVocabularies(folderId?: string, searchQuery?: string) {
     }
 
     // 3. Lấy tất cả từ vựng từ collection
-    const snapshot = await adminDb.collection("vocabularies").get();
+    let snapshotDocs: any[] = [];
 
-    let vocabs = snapshot.docs
+    if (folderId && folderId !== "all") {
+      // Nếu có chọn thư mục, thực hiện query riêng cho từng folderId con
+      const promises = Array.from(targetFolderIds).map(fid => 
+        adminDb.collection("vocabularies").where("folderIds", "array-contains", fid).get()
+      );
+      const snapshots = await Promise.all(promises);
+      
+      const docMap = new Map();
+      snapshots.forEach(snap => {
+        snap.docs.forEach(doc => {
+          docMap.set(doc.id, doc);
+        });
+      });
+      snapshotDocs = Array.from(docMap.values());
+    } else {
+      // Nếu là tất cả thư mục, buộc phải get(). Để tránh vượt quota và load nhanh, giới hạn 100 từ vựng gần nhất
+      const snapshot = await adminDb.collection("vocabularies").orderBy("createdAt", "desc").limit(100).get();
+      snapshotDocs = snapshot.docs;
+    }
+
+    let vocabs = snapshotDocs
       .map(doc => {
         const data = doc.data();
         const folderVocabularies = (data.folderIds || []).map((fId: string) => ({
@@ -195,11 +215,6 @@ export async function getVocabularies(folderId?: string, searchQuery?: string) {
           ...data,
           folderVocabularies
         };
-      })
-      .filter((v: any) => {
-        if (!folderId || folderId === "all") return true;
-        const vFolderIds: string[] = v.folderIds || [];
-        return vFolderIds.some(fId => targetFolderIds.has(fId));
       });
 
     // 4. Lọc tìm kiếm nếu có
@@ -221,8 +236,11 @@ export async function getVocabularies(folderId?: string, searchQuery?: string) {
     });
 
     return vocabs;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Lỗi khi lấy danh sách từ vựng:", error);
+    if (error.message?.includes("RESOURCE_EXHAUSTED") || error.message?.includes("Quota exceeded")) {
+      return { error: "QUOTA_EXCEEDED" };
+    }
     return [];
   }
 }
