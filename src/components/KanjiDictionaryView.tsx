@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Search, Library, FileText, BookOpen, Edit3, Loader2, Type, Volume2, Wand2, X } from "lucide-react";
-import { fetchAllKanjiNotes, upsertKanjiNote } from "@/app/actions/kanji";
+import { upsertKanjiNote } from "@/app/actions/kanji";
 import { getVocabulariesByKanji } from "@/app/actions/vocabulary";
 import { VocabularyEditModal } from "./VocabularyEditModal";
 import { KanjiLookupResults } from "./KanjiLookupResults";
@@ -32,12 +32,14 @@ interface VocabularyData {
 interface KanjiDictionaryViewProps {
   vocabularies: VocabularyData[];
   folders: any[];
+  initialKanjiNotes: KanjiNote[];
   onRefreshVocab?: () => void;
 }
 
-export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: KanjiDictionaryViewProps) {
-  const [kanjiNotes, setKanjiNotes] = useState<KanjiNote[]>([]);
-  const [loading, setLoading] = useState(true);
+export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, onRefreshVocab }: KanjiDictionaryViewProps) {
+  // Khởi tạo state trực tiếp từ initialKanjiNotes (không cần fetch nữa)
+  const [kanjiNotes, setKanjiNotes] = useState<KanjiNote[]>(initialKanjiNotes || []);
+  const [loading] = useState(false); // Không cần loading vì dữ liệu đã có sẵn từ Server
   const [searchQuery, setSearchQuery] = useState("");
   
   const [selectedKanji, setSelectedKanji] = useState<KanjiNote | null>(null);
@@ -50,28 +52,6 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
   const [isEditingKanji, setIsEditingKanji] = useState(false);
   const [editKanjiForm, setEditKanjiForm] = useState({ hanviet: "", meaning: "", mnemonic: "" });
   const [savingKanji, setSavingKanji] = useState(false);
-
-  useEffect(() => {
-    let isMounted = true;
-    const fetchKanji = async () => {
-      setLoading(true);
-      try {
-        const notes = await fetchAllKanjiNotes();
-        if (isMounted) {
-          setKanjiNotes(Array.isArray(notes) ? notes : []);
-          setLoading(false);
-        }
-      } catch (err) {
-        console.error("Lỗi tải danh sách Hán tự:", err);
-        if (isMounted) {
-          setKanjiNotes([]);
-          setLoading(false);
-        }
-      }
-    };
-    fetchKanji();
-    return () => { isMounted = false; };
-  }, []);
 
   // Khi chọn Kanji, lấy danh sách từ vựng từ server & thông tin từ điển
   useEffect(() => {

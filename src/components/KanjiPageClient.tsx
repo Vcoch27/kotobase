@@ -22,10 +22,11 @@ interface UserInfo {
 interface KanjiPageClientProps {
   vocabularies: any[];
   folders: any[];
+  initialKanjiNotes: any[];
   currentUser?: UserInfo | null;
 }
 
-export function KanjiPageClient({ vocabularies, folders, currentUser }: KanjiPageClientProps) {
+export function KanjiPageClient({ vocabularies, folders, initialKanjiNotes, currentUser }: KanjiPageClientProps) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
@@ -179,6 +180,7 @@ export function KanjiPageClient({ vocabularies, folders, currentUser }: KanjiPag
         <KanjiDictionaryView
           vocabularies={vocabularies}
           folders={folders}
+          initialKanjiNotes={initialKanjiNotes}
         />
       </main>
     </div>
