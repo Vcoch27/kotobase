@@ -248,7 +248,10 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
           onClick={() => setSelectedKanji(null)}
         >
           <div 
-            className="w-full max-w-2xl bg-white dark:bg-slate-900 b            {/* Header / Đóng */}
+            className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header / Đóng */}
             <div className="absolute top-4 right-4 z-20">
               <button 
                 onClick={() => {
