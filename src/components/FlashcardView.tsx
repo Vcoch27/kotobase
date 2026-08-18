@@ -477,67 +477,71 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
   return (
     <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 animate-fadeIn">
       {/* Top Controls Bar */}
-      <div className="flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl shadow-lg transition-colors">
-        <div className="flex items-center bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 sm:p-3 rounded-2xl shadow-lg transition-colors">
+        {/* Mode buttons - scroll ngang trên mobile */}
+        <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800 overflow-x-auto scrollbar-hide">
           <button
             onClick={() => setMode("normal")}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
               mode === "normal"
                 ? "bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 shadow"
                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
-            <LayoutList className="w-4 h-4" /> Bình thường
+            <LayoutList className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="hidden xs:inline sm:inline">Bình thường</span>
+            <span className="xs:hidden sm:hidden">Bình thường</span>
           </button>
           <button
             onClick={() => setMode("progress")}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
               mode === "progress"
                 ? "bg-indigo-100 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-400 shadow border border-indigo-200 dark:border-indigo-500/20"
                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
-            <GraduationCap className="w-4 h-4" /> Tiến độ
+            <GraduationCap className="w-3.5 h-3.5 flex-shrink-0" /> Tiến độ
           </button>
           <button
             onClick={() => setMode("anki")}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
               mode === "anki"
                 ? "bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 shadow border border-rose-200 dark:border-rose-500/20"
                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
-            <BrainCircuit className="w-4 h-4" /> Anki (SRS)
+            <BrainCircuit className="w-3.5 h-3.5 flex-shrink-0" /> Anki (SRS)
           </button>
           <button
             onClick={() => setMode("listening")}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
               mode === "listening"
                 ? "bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400 shadow border border-violet-200 dark:border-violet-500/20"
                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
-            <Headphones className="w-4 h-4" /> Nghe
+            <Headphones className="w-3.5 h-3.5 flex-shrink-0" /> Nghe
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Action buttons */}
+        <div className="flex items-center justify-end gap-1">
           <button 
             onClick={() => setShowSino(prev => !prev)} 
             className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-all" 
-            title={showSino ? "Ẩn âm Hán Việt (Phím H)" : "Hiện âm Hán Việt (Phím H)"}
+            title={showSino ? "Ẩn âm Hán Việt" : "Hiện âm Hán Việt"}
           >
-            {showSino ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+            {showSino ? <Eye className="w-4 h-4 sm:w-5 sm:h-5" /> : <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
           
           {mode !== "normal" && (
             <button 
               onClick={handleUndo} 
               disabled={currentIndex === 0 && !isFinished}
-              className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-all disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:bg-transparent" 
-              title="Quay lại (Undo) - Phím Backspace"
+              className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-all disabled:opacity-30" 
+              title="Quay lại"
             >
-              <Undo2 className="w-5 h-5" />
+              <Undo2 className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           )}
           {mode !== "anki" && (
@@ -545,16 +549,16 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
               onClick={toggleShuffle} 
               className={`p-2 rounded-lg transition-all ${
                 isShuffled
-                  ? "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-500/40 shadow-sm"
+                  ? "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-500/40"
                   : "text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10"
               }`} 
-              title={isShuffled ? "Tắt trộn thẻ (Về thứ tự ban đầu)" : "Trộn ngẫu nhiên (Shuffle)"}
+              title={isShuffled ? "Tắt trộn thẻ" : "Trộn ngẫu nhiên"}
             >
-              <Shuffle className="w-5 h-5" />
+              <Shuffle className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           )}
-          <button onClick={restartAll} className="p-2 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-all" title="Bắt đầu lại / Refresh">
-            <RotateCcw className="w-5 h-5" />
+          <button onClick={restartAll} className="p-2 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-all" title="Bắt đầu lại">
+            <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
       </div>
@@ -587,32 +591,40 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
       {/* Flashcard 3D Container */}
       <div 
         key={currentVocab.id}
-        className={`relative w-full aspect-[4/3] md:aspect-[16/9] perspective-1000 cursor-pointer select-none touch-pan-y ${
+        className={`relative w-full perspective-1000 cursor-pointer select-none touch-pan-y ${
           isTransitioning ? "animate-fadeOut" : "animate-fadeIn"
-        }`} 
+        }`}
+        style={{ aspectRatio: '4/3' }}
         onClick={flipCard}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
         <div 
-          className={`w-full h-full relative transition-transform duration-500 transform-style-3d shadow-2xl rounded-3xl ${
-            isFlipped ? "rotate-y-180" : ""
-          }`}
+          className="w-full h-full relative transform-style-3d shadow-2xl rounded-3xl"
+          style={{ 
+            transition: 'transform 0.5s',
+            WebkitTransition: '-webkit-transform 0.5s',
+            transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+            WebkitTransform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+          }}
         >
           {/* Front */}
           {mode === "listening" ? (
             /* Listening Mode Front: Chỉ hiện âm thanh */
-            <div className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-violet-50 to-slate-50 dark:from-violet-950/40 dark:to-slate-950 border border-violet-200 dark:border-violet-700/40 rounded-3xl flex flex-col items-center justify-center p-8 text-center transition-colors">
-              <span className="absolute top-6 left-6 text-xs font-bold text-violet-400 dark:text-violet-500 uppercase tracking-wider flex items-center gap-1.5">
-                <Headphones className="w-4 h-4" /> Chế độ Nghe — Bấm để lật xem đáp án
+            <div 
+              className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-violet-50 to-slate-50 dark:from-violet-950/40 dark:to-slate-950 border border-violet-200 dark:border-violet-700/40 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center transition-colors"
+              style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+            >
+              <span className="absolute top-3 left-3 sm:top-6 sm:left-6 text-[10px] sm:text-xs font-bold text-violet-400 dark:text-violet-500 uppercase tracking-wider flex items-center gap-1">
+                <Headphones className="w-3 h-3 sm:w-4 sm:h-4" /> Chế độ Nghe — Bấm để lật
               </span>
               
               {/* Vòng sóng âm thanh pulsing */}
-              <div className="relative flex items-center justify-center mb-6">
+              <div className="relative flex items-center justify-center mb-4 sm:mb-6">
                 {/* Pulse rings */}
-                <div className={`absolute w-32 h-32 rounded-full border-2 border-violet-400/30 dark:border-violet-500/20 ${isPlayingAudio ? 'animate-ping' : 'opacity-0'}`} style={{ animationDuration: '1.2s' }}></div>
-                <div className={`absolute w-24 h-24 rounded-full border-2 border-violet-400/40 dark:border-violet-500/30 ${isPlayingAudio ? 'animate-ping' : 'opacity-0'}`} style={{ animationDuration: '1.5s' }}></div>
+                <div className={`absolute w-28 h-28 sm:w-32 sm:h-32 rounded-full border-2 border-violet-400/30 dark:border-violet-500/20 ${isPlayingAudio ? 'animate-ping' : 'opacity-0'}`} style={{ animationDuration: '1.2s' }}></div>
+                <div className={`absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-violet-400/40 dark:border-violet-500/30 ${isPlayingAudio ? 'animate-ping' : 'opacity-0'}`} style={{ animationDuration: '1.5s' }}></div>
                 
                 {/* Nút play trung tâm */}
                 <button
@@ -623,33 +635,35 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
                     playAudio(textToPlay);
                     setTimeout(() => setIsPlayingAudio(false), 3000);
                   }}
-                  className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95 ${
+                  className={`relative z-10 w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95 ${
                     isPlayingAudio
                       ? 'bg-violet-500 dark:bg-violet-600 shadow-violet-500/40 scale-110'
                       : 'bg-white dark:bg-slate-800 border-2 border-violet-300 dark:border-violet-600 hover:border-violet-500 hover:scale-105 shadow-violet-200 dark:shadow-violet-900/50'
                   }`}
                   title="Phát âm (nhấn lại để nghe)"
                 >
-                  <Volume2 className={`w-8 h-8 ${isPlayingAudio ? 'text-white' : 'text-violet-500 dark:text-violet-400'}`} />
+                  <Volume2 className={`w-7 h-7 sm:w-8 sm:h-8 ${isPlayingAudio ? 'text-white' : 'text-violet-500 dark:text-violet-400'}`} />
                 </button>
               </div>
 
-              <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 max-w-xs">
-                {isPlayingAudio ? "Đang phát âm thanh..." : "Nhấn nút để nghe lại — Bấm thẻ để lật xem đáp án"}
+              <p className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 max-w-xs px-2 text-center">
+                {isPlayingAudio ? "Đang phát âm thanh..." : "Nhấn nút để nghe lại • Bấm thẻ để xem đáp án"}
               </p>
-              <p className="text-xs text-violet-500 dark:text-violet-400 mt-2 font-medium">Thẻ {currentIndex + 1} / {deck.length}</p>
             </div>
           ) : (
             /* Normal / Progress / Anki Front: Hiển thị từ vựng */
-            <div className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-8 text-center transition-colors">
-              <span className="absolute top-6 left-6 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                <Rotate3D className="w-4 h-4" /> Bấm để lật
+            <div 
+              className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-6 sm:p-8 text-center transition-colors"
+              style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+            >
+              <span className="absolute top-3 left-3 sm:top-6 sm:left-6 text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                <Rotate3D className="w-3 h-3 sm:w-4 sm:h-4" /> Bấm để lật
               </span>
-              <div className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-wide" onClick={(e) => e.stopPropagation()}>
+              <div className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-wide" onClick={(e) => e.stopPropagation()}>
                 <ClickableKanjiString text={currentVocab.word} />
               </div>
               {currentVocab.sinoVietnamese && showSino && (
-                <div className="mt-8 text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] animate-fadeIn">
+                <div className="mt-4 sm:mt-8 text-xs sm:text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] animate-fadeIn">
                   {currentVocab.sinoVietnamese}
                 </div>
               )}
@@ -657,8 +671,16 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
           )}
 
           {/* Back */}
-          <div className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-8 text-center rotate-y-180 transition-colors">
-            <span className="absolute top-6 left-6 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+          <div 
+            className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center transition-colors"
+            style={{ 
+              backfaceVisibility: 'hidden', 
+              WebkitBackfaceVisibility: 'hidden',
+              transform: 'rotateY(180deg)',
+              WebkitTransform: 'rotateY(180deg)',
+            }}
+          >
+            <span className="absolute top-3 left-3 sm:top-6 sm:left-6 text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
               <Rotate3D className="w-4 h-4" /> Bấm để lật
             </span>
             <button
@@ -670,26 +692,26 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
                   : (currentVocab.reading || currentVocab.word);
                 playAudio(textToPlayBtn);
               }}
-              className="absolute top-4 right-4 p-3 rounded-xl text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
+              className="absolute top-2 right-2 sm:top-4 sm:right-4 p-2 sm:p-3 rounded-xl text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
               title="Phát âm thanh"
             >
-              <Volume2 className="w-5 h-5" />
+              <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
             
             {currentVocab.reading && (
-              <div className="text-xl md:text-2xl font-bold text-amber-600 dark:text-amber-400 mb-2">
+              <div className="text-lg sm:text-xl md:text-2xl font-bold text-amber-600 dark:text-amber-400 mb-1 sm:mb-2">
                 {currentVocab.reading}
               </div>
             )}
             
-            <div className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white mb-6">
+            <div className="text-2xl sm:text-3xl md:text-5xl font-black text-slate-900 dark:text-white mb-3 sm:mb-6 leading-tight">
               {currentVocab.meaning}
             </div>
 
             {currentVocab.example && (
-              <div className="mt-4 p-4 bg-white/50 dark:bg-slate-950/50 rounded-2xl border border-slate-200 dark:border-slate-700/50 w-full max-w-lg">
-                <span className="block text-xs font-bold text-slate-500 uppercase mb-1">Ví dụ minh họa</span>
-                <p className="text-base text-slate-700 dark:text-slate-300 italic">{currentVocab.example}</p>
+              <div className="p-3 sm:p-4 bg-white/50 dark:bg-slate-950/50 rounded-2xl border border-slate-200 dark:border-slate-700/50 w-full max-w-lg">
+                <span className="block text-[10px] sm:text-xs font-bold text-slate-500 uppercase mb-1">Ví dụ minh họa</span>
+                <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 italic leading-relaxed">{currentVocab.example}</p>
               </div>
             )}
           </div>
