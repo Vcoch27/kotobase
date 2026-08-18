@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   Cloud, RefreshCw, DownloadCloud, UploadCloud, 
-  X, CheckCircle2, AlertTriangle, ShieldCheck, KeyRound, ChevronDown, 
-  ChevronUp, ExternalLink, HardDrive, User, LogOut, Check
+  X, CheckCircle2, ShieldCheck, User, LogOut
 } from "lucide-react";
 import { syncManager, SyncState } from "@/lib/sync-manager";
 import { googleDriveService } from "@/lib/google-drive";
@@ -19,40 +18,24 @@ interface GoogleDriveSyncModalProps {
 export function GoogleDriveSyncModal({ isOpen, onClose, onDataRestored }: GoogleDriveSyncModalProps) {
   const [syncState, setSyncState] = useState<SyncState>(syncManager.getState());
   const [isSyncing, setIsSyncing] = useState(false);
-  const [showConfig, setShowConfig] = useState(false);
-  const [customClientId, setCustomClientId] = useState("");
-  const [savedClientIdSuccess, setSavedClientIdSuccess] = useState(false);
 
   useEffect(() => {
     const unsubscribe = syncManager.subscribe((state) => {
       setSyncState(state);
     });
-    setCustomClientId(googleDriveService.getClientId());
     return () => unsubscribe();
   }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleConnect = async () => {
-    const clientId = googleDriveService.getClientId();
-    if (!clientId) {
-      setShowConfig(true);
-      toast.error("Vui lòng nhập Google Client ID trước khi kết nối!");
-      return;
-    }
-
     setIsSyncing(true);
     try {
       await syncManager.connectGoogleDrive();
       toast.success("Đã kết nối thành công với Google Drive!");
       if (onDataRestored) onDataRestored();
     } catch (err: any) {
-      if (err.message === "CLIENT_ID_MISSING") {
-        setShowConfig(true);
-        toast.error("Vui lòng nhập Google Client ID!");
-      } else {
-        toast.error(err.message || "Không thể kết nối với Google Drive");
-      }
+      toast.error(err.message || "Không thể kết nối với Google Drive");
     } finally {
       setIsSyncing(false);
     }
@@ -85,14 +68,6 @@ export function GoogleDriveSyncModal({ isOpen, onClose, onDataRestored }: Google
     } finally {
       setIsSyncing(false);
     }
-  };
-
-  const handleSaveClientId = (e: React.FormEvent) => {
-    e.preventDefault();
-    googleDriveService.setCustomClientId(customClientId);
-    setSavedClientIdSuccess(true);
-    setTimeout(() => setSavedClientIdSuccess(false), 2500);
-    toast.success("Đã lưu Google Client ID!");
   };
 
   const isConnected = syncState.status !== "disconnected";
@@ -154,7 +129,7 @@ export function GoogleDriveSyncModal({ isOpen, onClose, onDataRestored }: Google
                 </div>
                 <button
                   onClick={() => syncManager.disconnectGoogleDrive()}
-                  className="px-2.5 py-1.5 rounded-lg text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors flex items-center gap-1.5"
+                  className="px-2.5 py-1.5 rounded-lg text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   Đăng xuất
@@ -168,7 +143,7 @@ export function GoogleDriveSyncModal({ isOpen, onClose, onDataRestored }: Google
                 <button
                   onClick={handleConnect}
                   disabled={isSyncing}
-                  className="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all disabled:opacity-50"
+                  className="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {isSyncing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Cloud className="w-4 h-4" />}
                   Đăng nhập & Kết nối Google Drive
@@ -195,7 +170,7 @@ export function GoogleDriveSyncModal({ isOpen, onClose, onDataRestored }: Google
               <button
                 onClick={handleBackup}
                 disabled={isSyncing}
-                className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-amber-500/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-left space-y-1 transition-all group disabled:opacity-50"
+                className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-amber-500/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-left space-y-1 transition-all group disabled:opacity-50 cursor-pointer"
               >
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-amber-500">
                   <UploadCloud className="w-4 h-4 text-amber-500" />
@@ -207,7 +182,7 @@ export function GoogleDriveSyncModal({ isOpen, onClose, onDataRestored }: Google
               <button
                 onClick={handleRestore}
                 disabled={isSyncing}
-                className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-amber-500/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-left space-y-1 transition-all group disabled:opacity-50"
+                className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-amber-500/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-left space-y-1 transition-all group disabled:opacity-50 cursor-pointer"
               >
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-amber-500">
                   <DownloadCloud className="w-4 h-4 text-amber-500" />
@@ -228,57 +203,13 @@ export function GoogleDriveSyncModal({ isOpen, onClose, onDataRestored }: Google
               Mọi dữ liệu từ vựng được lưu trực tiếp trên máy của bạn (IndexedDB) với tốc độ tức thì &lt;2ms, học offline không cần mạng. Google Drive chỉ dùng để sao lưu và đồng bộ đa thiết bị khi bạn muốn.
             </p>
           </div>
-
-          {/* Google OAuth Client ID Configuration Accordion */}
-          <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
-            <button
-              onClick={() => setShowConfig(!showConfig)}
-              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/60 flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-amber-500 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <KeyRound className="w-4 h-4 text-slate-400" />
-                Cấu hình Google OAuth Client ID
-              </div>
-              {showConfig ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
-
-            {showConfig && (
-              <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 space-y-3">
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Nhập <strong>Google OAuth 2.0 Web Client ID</strong> từ Google Cloud Console của bạn để kết nối trực tiếp không qua trung gian:
-                </p>
-
-                <form onSubmit={handleSaveClientId} className="space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={customClientId}
-                      onChange={(e) => setCustomClientId(e.target.value)}
-                      placeholder="xxxx-xxxx.apps.googleusercontent.com"
-                      className="flex-1 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-amber-500 font-mono"
-                    />
-                    <button
-                      type="submit"
-                      className="px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold hover:bg-slate-800 dark:hover:bg-white transition-colors shrink-0"
-                    >
-                      {savedClientIdSuccess ? <Check className="w-4 h-4 text-emerald-500" /> : "Lưu"}
-                    </button>
-                  </div>
-                </form>
-
-                <div className="pt-2 text-[11px] text-slate-400 flex items-center justify-between">
-                  <span>Hoặc cấu hình qua biến <code className="text-amber-500">NEXT_PUBLIC_GOOGLE_CLIENT_ID</code></span>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Footer */}
         <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors"
+            className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
           >
             Đóng
           </button>
