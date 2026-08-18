@@ -1,9 +1,10 @@
 "use server";
 
 import { adminDb } from "@/lib/firebase-admin";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, unstable_noStore as noStore } from "next/cache";
 
 export async function getKanjiNote(character: string): Promise<{ id: string; hanviet?: string; mnemonic?: string; meaning?: string; character: string } | null> {
+  noStore();
   if (!character) return null;
   const trimmed = character.trim();
   try {
@@ -138,6 +139,7 @@ export async function getBulkKanjiNotes(characters: string[]) {
 }
 
 export async function getAllKanjiNotes() {
+  noStore();
   try {
     const snapshot = await adminDb.collection("kanji_notes").get();
     const notes: any[] = [];
