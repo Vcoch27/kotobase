@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { createBulkVocabulary } from "@/app/actions/vocabulary";
+import { localDB } from "@/lib/db";
+import { syncManager } from "@/lib/sync-manager";
 import { Upload, Copy, CheckCircle, Sparkles, Folder } from "lucide-react";
 import { getFolderFullPath } from "@/lib/folder-utils";
 
@@ -68,15 +69,32 @@ Ví dụ:
     setLoading(true);
     setMessage(null);
     
-    const res = await createBulkVocabulary(jsonText, selectedFolderId || undefined);
-    setLoading(false);
-    
-    if (res.success) {
-      setMessage({ type: "success", text: `Đã nhập thành công ${res.count} từ vựng!` });
+    try {
+      let parsed = JSON.parse(jsonText.trim());
+      if (!Array.isArray(parsed)) {
+        if (typeof parsed === "object" && parsed !== null) {
+          // Trường hợp user copy bọc trong 1 object key "vocabularies"
+          const possibleArr = Object.values(parsed).find(v => Array.isArray(v));
+          if (possibleArr) {
+            parsed = possibleArr as any[];
+          } else {
+            parsed = [parsed];
+          }
+        } else {
+          throw new Error("Dữ liệu JSON phải là một mảng danh sách từ vựng.");
+        }
+      }
+
+      const count = await localDB.saveBulkVocabularies(parsed, selectedFolderId || undefined);
+      syncManager.notifyDataChanged();
+
+      setMessage({ type: "success", text: `Đã nhập thành công ${count} từ vựng vào kho!` });
       setJsonText("");
       if (onSuccess) onSuccess();
-    } else {
-      setMessage({ type: "error", text: res.error || "Lỗi khi import." });
+    } catch (err: any) {
+      setMessage({ type: "error", text: err.message || "Định dạng JSON không hợp lệ." });
+    } finally {
+      setLoading(false);
     }
   };
 

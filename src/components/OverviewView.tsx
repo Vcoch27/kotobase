@@ -10,7 +10,8 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { deleteVocabulary } from '@/app/actions/vocabulary';
+import { localDB } from '@/lib/db';
+import { syncManager } from '@/lib/sync-manager';
 import toast from 'react-hot-toast';
 import { VocabularyEditModal } from './VocabularyEditModal';
 import { getFolderFullPath } from '@/lib/folder-utils';
@@ -64,10 +65,12 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
       // Optimistic delete
       setLocalVocabs((prev) => prev.filter((v) => v.id !== id));
 
-      const res = await deleteVocabulary(id);
-      if (res.success && onRefresh) {
-        onRefresh();
-      } else {
+      try {
+        await localDB.deleteVocabulary(id);
+        syncManager.notifyDataChanged();
+        toast.success(`Đã xóa từ "${word}"`);
+        if (onRefresh) onRefresh();
+      } catch (err: any) {
         setLocalVocabs(vocabularies); // Rollback
         toast.error('Lỗi khi xóa từ vựng!');
       }
