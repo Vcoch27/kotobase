@@ -2,8 +2,8 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { assignVocabularyToFolder } from '@/app/actions/vocabulary';
-import { deleteFolderAndVocabs, renameFolder } from '@/app/actions/folder';
+import { localDB } from '@/lib/db';
+import { syncManager } from '@/lib/sync-manager';
 import { Folder, ChevronRight, ChevronDown, Trash2, Pencil, Crown, Users, AlertTriangle, Type } from 'lucide-react';
 
 interface FolderItem {
@@ -144,11 +144,13 @@ export function FolderTree({
     const vocabId = e.dataTransfer.getData('vocabId');
     if (!vocabId) return;
 
-    const res = await assignVocabularyToFolder(vocabId, targetFolderId);
-    if (res.success) {
+    try {
+      await localDB.moveVocabulariesToFolder([vocabId], targetFolderId);
+      syncManager.notifyDataChanged();
       onRefresh();
-    } else {
-        toast.error(res.error || 'Lỗi khi chuyển thư mục!');
+      toast.success('Đã chuyển từ vựng vào thư mục');
+    } catch (err: any) {
+      toast.error('Lỗi khi chuyển thư mục!');
     }
   };
 
@@ -193,15 +195,16 @@ export function FolderTree({
         }
         setDeletingFolderId(targetId);
 
-        const res = await deleteFolderAndVocabs(targetId);
-        setDeletingFolderId(null);
-
-        if (res.success) {
+        try {
+          await localDB.deleteFolder(targetId);
+          syncManager.notifyDataChanged();
           toast.success(`Đã xoá thư mục ${targetName}`);
           onRefresh();
-        } else {
+        } catch (err: any) {
           setLocalFolders(folders); // Rollback
-          toast.error(res.error || 'Không thể xóa thư mục!');
+          toast.error('Không thể xóa thư mục!');
+        } finally {
+          setDeletingFolderId(null);
         }
       } else {
         toast.error('Xác nhận không đúng. Đã hủy thao tác xóa.');
@@ -214,15 +217,21 @@ export function FolderTree({
         );
         setRenamingFolderId(targetId);
 
-        const res = await renameFolder(targetId, value);
-        setRenamingFolderId(null);
-
-        if (res.success) {
+        try {
+          const existingFolder = folders.find(f => f.id === targetId);
+          await localDB.saveFolder({
+            id: targetId,
+            name: value,
+            parentId: existingFolder ? existingFolder.parentId : null,
+          });
+          syncManager.notifyDataChanged();
           toast.success(`Đã đổi tên thư mục thành ${value}`);
           onRefresh();
-        } else {
+        } catch (err: any) {
           setLocalFolders(folders); // Rollback
-          toast.error(res.error || 'Không thể đổi tên thư mục!');
+          toast.error('Không thể đổi tên thư mục!');
+        } finally {
+          setRenamingFolderId(null);
         }
       }
     }

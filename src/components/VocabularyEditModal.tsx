@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, FileEdit, BookOpen, Volume2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { updateVocabulary } from '@/app/actions/vocabulary';
+import { localDB } from '@/lib/db';
+import { syncManager } from '@/lib/sync-manager';
 import { getFolderFullPath } from '@/lib/folder-utils';
 import { playAudio } from '@/lib/tts-utils';
 
@@ -62,15 +63,20 @@ export function VocabularyEditModal({
     }
 
     setIsSaving(true);
-    const res = await updateVocabulary(vocabulary.id, formData);
-    setIsSaving(false);
-
-    if (res.success) {
+    try {
+      await localDB.saveVocabulary({
+        ...vocabulary,
+        ...formData,
+        id: vocabulary.id,
+      });
+      syncManager.notifyDataChanged();
       toast.success('Lưu từ vựng thành công!');
       onSuccess();
       onClose();
-    } else {
-      toast.error(res.error || 'Có lỗi xảy ra khi lưu.');
+    } catch (err: any) {
+      toast.error('Có lỗi xảy ra khi lưu.');
+    } finally {
+      setIsSaving(false);
     }
   };
 

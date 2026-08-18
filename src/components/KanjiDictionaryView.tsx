@@ -60,21 +60,10 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
       setLoadingRelated(true);
       setApiDetail(null);
 
-      // 1. Tải từ vựng liên quan
-      getVocabulariesByKanji(selectedKanji.character)
-        .then(vocabs => {
-          if (isMounted) {
-            setRelatedVocabularies(Array.isArray(vocabs) ? vocabs : []);
-            setLoadingRelated(false);
-          }
-        })
-        .catch(err => {
-          console.error("Lỗi tải từ vựng liên quan:", err);
-          if (isMounted) {
-            setRelatedVocabularies([]);
-            setLoadingRelated(false);
-          }
-        });
+      // 1. Tải từ vựng liên quan trực tiếp từ bộ nhớ cục bộ
+      const related = (vocabularies || []).filter(v => v.word && v.word.includes(selectedKanji.character));
+      setRelatedVocabularies(related);
+      setLoadingRelated(false);
 
       // 2. Tải thông tin từ điển chi tiết (JLPT, On/Kun, nghĩa chuẩn)
       fetch(`/api/kanji/lookup?query=${encodeURIComponent(selectedKanji.character)}`)

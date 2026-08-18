@@ -8,13 +8,14 @@ import { OverviewView } from "./OverviewView";
 import { FolderTree } from "./FolderTree";
 import { AnkiSettingsModal } from "./AnkiSettingsModal";
 import { TTSSettingsModal } from "./TTSSettingsModal";
+import { GoogleDriveSyncModal } from "./GoogleDriveSyncModal";
 import { JishoSearchResults } from "./JishoSearchResults";
-import { getVocabularies } from "@/app/actions/vocabulary";
-import { getFolders, createFolder } from "@/app/actions/folder";
+import { localDB } from "@/lib/db";
+import { syncManager, SyncState } from "@/lib/sync-manager";
 import { 
   LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, 
   Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, Volume2, Loader2,
-  User, Lock, Folder
+  User, Lock, Folder, Cloud, CheckCircle2, RefreshCw
 } from "lucide-react";
 import { getFolderFullPath } from "@/lib/folder-utils";
 import { useTheme } from "next-themes";
@@ -22,9 +23,6 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { AppLogo } from "./AppLogo";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { auth } from "@/lib/firebase";
-import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { loginWithGoogle } from "@/app/actions/auth";
 
 const FocusRecallView = dynamic(() => import("./FocusRecallView").then(m => m.FocusRecallView), {
   loading: () => <div className="flex items-center justify-center p-20"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
@@ -67,64 +65,42 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showTTSSettingsModal, setShowTTSSettingsModal] = useState(false);
+  const [showDriveSyncModal, setShowDriveSyncModal] = useState(false);
+  const [syncState, setSyncState] = useState<SyncState>(syncManager.getState());
+
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderParentId, setNewFolderParentId] = useState<string>("");
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [isMobileFolderOpen, setIsMobileFolderOpen] = useState(false);
-  const [quotaExceeded, setQuotaExceeded] = useState(false);
 
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // Bộ nhớ đệm (Cache) siêu tiết kiệm Reads
-  const vocabCache = React.useRef<Record<string, any[]>>({});
-  const foldersCache = React.useRef<any[] | null>(null);
-  
-  const debouncedSearchQuery = useDebounce(searchQuery, 400);
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  // Xác định quyền: chỉ user đã đăng nhập Google mới được tạo/sửa/xóa
-  const isGoogleUser = !!currentUser?.uid;
+  // Lắng nghe thay đổi trạng thái đồng bộ Google Drive
+  useEffect(() => {
+    const unsubscribe = syncManager.subscribe((state) => {
+      setSyncState(state);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const fetchData = async (isBackground = false) => {
     if (!isBackground) {
       setLoading(true);
     }
-    setQuotaExceeded(false);
     try {
-      let vocabData: any;
-      let folderData: any;
+      const [vocabData, folderData] = await Promise.all([
+        localDB.getVocabularies(selectedFolderId),
+        localDB.getFolders(),
+      ]);
 
-      // Tái sử dụng dữ liệu từ RAM Cache nếu đã tải rồi và không có sự thay đổi
-      if (!isBackground && vocabCache.current[selectedFolderId] && foldersCache.current) {
-        vocabData = vocabCache.current[selectedFolderId];
-        folderData = foldersCache.current;
-      } else {
-        // Chỉ tải mới từ Firebase khi chưa có cache hoặc vừa có thay đổi dữ liệu (isBackground)
-        const [vData, fData] = await Promise.all([
-          getVocabularies(selectedFolderId),
-          getFolders(),
-        ]);
-        
-        if (vData && (vData as any).error === "QUOTA_EXCEEDED") throw new Error("QUOTA_EXCEEDED");
-        if (fData && (fData as any).error === "QUOTA_EXCEEDED") throw new Error("QUOTA_EXCEEDED");
-
-        vocabData = vData;
-        folderData = fData;
-        
-        // Lưu lại vào Cache
-        vocabCache.current[selectedFolderId] = Array.isArray(vData) ? vData : [];
-        foldersCache.current = Array.isArray(fData) ? fData : [];
-      }
-
-      setVocabularies(Array.isArray(vocabData) ? vocabData : []);
-      setFolders(Array.isArray(folderData) ? folderData : []);
+      setVocabularies(vocabData);
+      setFolders(folderData);
     } catch (error: any) {
       console.error("Lỗi khi tải dữ liệu:", error);
-      if (error.message === "QUOTA_EXCEEDED") {
-        setQuotaExceeded(true);
-      } else {
-        toast.error("Lỗi tải dữ liệu, vui lòng thử lại sau.");
-      }
+      toast.error("Lỗi tải dữ liệu cục bộ.");
       setVocabularies([]);
       setFolders([]);
     } finally {
@@ -166,33 +142,22 @@ export function Dashboard({ currentUser }: DashboardProps) {
     e.preventDefault();
     if (!newFolderName.trim()) return;
     
-    // Optimistic Update
-    const optimisticId = `temp-${Date.now()}`;
-    const newFolder = { 
-      id: optimisticId, 
-      name: newFolderName.trim(), 
-      parentId: newFolderParentId || null, 
-      ownerId: currentUser?.uid || null,
-      ownerEmail: currentUser?.email || null,
-      ownerName: currentUser?.name || null,
-      _count: { folderVocabularies: 0 } 
-    };
-    setFolders(prev => [...prev, newFolder]);
-    
-    const submittedName = newFolderName.trim();
-    const submittedParentId = newFolderParentId;
-    
-    setNewFolderName("");
-    setNewFolderParentId("");
-    setShowFolderModal(false);
-
-    const res = await createFolder(submittedName, submittedParentId || undefined);
-    
-    if (res.success) {
+    setCreatingFolder(true);
+    try {
+      await localDB.saveFolder({
+        name: newFolderName.trim(),
+        parentId: newFolderParentId || null,
+      });
+      syncManager.notifyDataChanged();
+      setNewFolderName("");
+      setNewFolderParentId("");
+      setShowFolderModal(false);
+      toast.success("Đã tạo thư mục thành công!");
       fetchData(true);
-    } else {
-      setFolders(prev => prev.filter(f => f.id !== optimisticId));
-      toast.error(res.error || "Không thể tạo thư mục!");
+    } catch (err: any) {
+      toast.error("Không thể tạo thư mục!");
+    } finally {
+      setCreatingFolder(false);
     }
   };
 
@@ -234,48 +199,39 @@ export function Dashboard({ currentUser }: DashboardProps) {
             </div>
           </div>
           
-          {/* Settings & Theme & User */}
-          <div className="flex items-center gap-1 md:gap-2 shrink-0">
-            {/* User info hoặc login prompt */}
-            {isGoogleUser ? (
-              <div className="flex items-center gap-2 px-2 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                {currentUser?.picture ? (
-                  <img src={currentUser.picture} alt={currentUser.name} className="w-6 h-6 rounded-full" />
-                ) : (
-                  <User className="w-4 h-4 text-slate-500" />
-                )}
-                <span className="hidden sm:block text-xs font-semibold text-slate-700 dark:text-slate-300 max-w-[120px] truncate">
-                  {currentUser?.name || currentUser?.email}
-                </span>
-              </div>
-            ) : (
-              <button
-                onClick={async () => {
-                  try {
-                    const provider = new GoogleAuthProvider();
-                    const result = await signInWithPopup(auth, provider);
-                    const idToken = await result.user.getIdToken();
-                    const res = await loginWithGoogle(idToken);
-                    if (res.success) {
-                      toast.success('Đăng nhập thành công!');
-                      setTimeout(() => window.location.reload(), 1000);
-                    } else {
-                      toast.error(res.error || 'Đăng nhập Google thất bại');
-                    }
-                  } catch (error: any) {
-                    console.error(error);
-                    if (error.code !== "auth/popup-closed-by-user") {
-                      toast.error('Lỗi đăng nhập Google: ' + error.message);
-                    }
-                  }
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold border border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors cursor-pointer"
-                title="Đăng nhập Google để quản lý thư mục cá nhân"
-              >
-                <Lock className="w-3.5 h-3.5" />
-                <span className="hidden sm:block">Đăng nhập Google</span>
-              </button>
-            )}
+          {/* Settings & Theme & Google Drive Sync Button */}
+          <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+            {/* Google Drive Sync Status Button */}
+            <button
+              onClick={() => setShowDriveSyncModal(true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                syncState.status === "synced"
+                  ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100"
+                  : syncState.status === "syncing"
+                  ? "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20"
+                  : syncState.status === "error"
+                  ? "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/20"
+                  : "bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-amber-500/50 hover:text-amber-600"
+              }`}
+              title="Cài đặt & Trạng thái đồng bộ Google Drive"
+            >
+              {syncState.status === "synced" ? (
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              ) : syncState.status === "syncing" ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-500" />
+              ) : (
+                <Cloud className="w-3.5 h-3.5 text-amber-500" />
+              )}
+              <span className="hidden sm:inline">
+                {syncState.status === "synced"
+                  ? "Đã đồng bộ Drive"
+                  : syncState.status === "syncing"
+                  ? "Đang lưu..."
+                  : syncState.status === "disconnected"
+                  ? "Google Drive"
+                  : "Lưu trữ đám mây"}
+              </span>
+            </button>
 
             <button 
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -299,7 +255,17 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     className="fixed inset-0 z-40" 
                     onClick={() => setShowSettingsDropdown(false)}
                   ></div>
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-fadeIn">
+                  <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-fadeIn">
+                    <button 
+                      onClick={() => {
+                        setShowSettingsDropdown(false);
+                        setShowDriveSyncModal(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-b border-slate-100 dark:border-slate-800"
+                    >
+                      <Cloud className="w-4 h-4 text-amber-500" />
+                      Đồng bộ Google Drive
+                    </button>
                     <button 
                       onClick={() => {
                         setShowSettingsDropdown(false);
@@ -315,50 +281,10 @@ export function Dashboard({ currentUser }: DashboardProps) {
                         setShowSettingsDropdown(false);
                         setShowTTSSettingsModal(true);
                       }}
-                      className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-b border-slate-100 dark:border-slate-800"
+                      className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
                     >
                       <Volume2 className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                       Cài đặt Phát âm
-                    </button>
-                    {isGoogleUser && (
-                      <button 
-                        onClick={async () => {
-                          setShowSettingsDropdown(false);
-                          const toastId = toast.loading("Đang đăng xuất...");
-                          try {
-                            // Xóa Firebase IndexedDB token ở phía Client
-                            const { auth } = await import('@/lib/firebase');
-                            await auth.signOut();
-                            toast.dismiss(toastId);
-                            // API Route sẽ xóa cookie httpOnly và redirect trong 1 Response
-                            window.location.href = '/api/auth/logout-google';
-                          } catch (e) {
-                            toast.dismiss(toastId);
-                            toast.error("Đăng xuất thất bại, thử lại!");
-                          }
-                        }}
-                        className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors text-left border-b border-slate-100 dark:border-slate-800"
-                      >
-                        <LogOut className="w-4 h-4 text-amber-500" /> Đăng xuất Google
-                      </button>
-                    )}
-                    <button 
-                      onClick={async () => {
-                        setShowSettingsDropdown(false);
-                        const toastId = toast.loading("Đang khoá & đăng xuất...");
-                        try {
-                          const { auth } = await import('@/lib/firebase');
-                          await auth.signOut();
-                          toast.dismiss(toastId);
-                          window.location.href = '/api/auth/logout-app';
-                        } catch (e) {
-                          toast.dismiss(toastId);
-                          toast.error("Đăng xuất thất bại, thử lại!");
-                        }
-                      }}
-                      className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors text-left"
-                    >
-                      <Lock className="w-4 h-4 text-rose-500" /> Khoá & Đăng xuất Web
                     </button>
                   </div>
                 </>
@@ -398,19 +324,17 @@ export function Dashboard({ currentUser }: DashboardProps) {
                   {isMobileFolderOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                 </span>
               </h2>
-              {/* Nút tạo thư mục - chỉ hiển thị khi đã đăng nhập Google */}
-              {isGoogleUser && (
-                <button
-                  onClick={() => {
-                    setNewFolderParentId(selectedFolderId !== "all" ? selectedFolderId : "");
-                    setShowFolderModal(true);
-                  }}
-                  title="Tạo thư mục mới"
-                  className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-500/20 transition-colors shrink-0"
-                >
-                  <FolderPlus className="w-4 h-4" />
-                </button>
-              )}
+              {/* Nút tạo thư mục */}
+              <button
+                onClick={() => {
+                  setNewFolderParentId(selectedFolderId !== "all" ? selectedFolderId : "");
+                  setShowFolderModal(true);
+                }}
+                title="Tạo thư mục mới"
+                className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-500/20 transition-colors shrink-0"
+              >
+                <FolderPlus className="w-4 h-4" />
+              </button>
             </div>
             
             <div className={`${isMobileFolderOpen ? 'block' : 'hidden'} md:block`}>
@@ -441,31 +365,27 @@ export function Dashboard({ currentUser }: DashboardProps) {
         {/* RIGHT MAIN CONTENT */}
         <div className="flex-1 flex flex-col gap-6 min-w-0">
           
-          {/* Action Tabs: Quick Add & Bulk Import - Chỉ hiện khi đăng nhập Google */}
-          {isGoogleUser ? (
-            <>
-              <div className="flex items-center gap-2 mb-2">
-                <button
-                  onClick={() => setShowBulkImport(false)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${!showBulkImport ? 'bg-slate-800 dark:bg-slate-800 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-900'}`}
-                >
-                  Thêm Nhanh (Quick Add)
-                </button>
-                <button
-                  onClick={() => setShowBulkImport(true)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${showBulkImport ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-900'}`}
-                >
-                  Thêm Hàng Loạt (Bulk AI)
-                </button>
-              </div>
+          {/* Action Tabs: Quick Add & Bulk Import */}
+          <div className="flex items-center gap-2 mb-2">
+            <button
+              onClick={() => setShowBulkImport(false)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${!showBulkImport ? 'bg-slate-800 dark:bg-slate-800 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-900'}`}
+            >
+              Thêm Nhanh (Quick Add)
+            </button>
+            <button
+              onClick={() => setShowBulkImport(true)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${showBulkImport ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-900'}`}
+            >
+              Thêm Hàng Loạt (Bulk AI)
+            </button>
+          </div>
 
-              {showBulkImport ? (
-                <BulkImport folders={folders} currentFolderId={selectedFolderId} onSuccess={() => fetchData(true)} />
-              ) : (
-                <QuickAddForm folders={folders} currentFolderId={selectedFolderId} onSuccess={() => fetchData(true)} />
-              )}
-            </>
-          ) : null}
+          {showBulkImport ? (
+            <BulkImport folders={folders} currentFolderId={selectedFolderId} onSuccess={() => fetchData(true)} />
+          ) : (
+            <QuickAddForm folders={folders} currentFolderId={selectedFolderId} onSuccess={() => fetchData(true)} />
+          )}
 
           {/* Breadcrumbs - Hiển thị đường dẫn và chủ sở hữu của thư mục đang chọn */}
           <div className="flex flex-wrap items-center justify-between gap-3 px-1">
@@ -559,17 +479,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
           </div>
 
           <div className="pb-10">
-            {quotaExceeded ? (
-              <div className="p-8 my-8 text-center bg-rose-50 dark:bg-rose-900/10 rounded-2xl border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400">
-                <BrainCircuit className="w-12 h-12 mx-auto mb-4 text-rose-500 opacity-80" />
-                <h3 className="text-xl font-bold mb-2">Đã hết hạn mức Firebase (Quota Exceeded)</h3>
-                <p className="text-sm font-medium opacity-90 max-w-lg mx-auto leading-relaxed">
-                  Ứng dụng đang dùng gói Firebase miễn phí và dự án của bạn đã sử dụng hết 50.000 lượt đọc trong hôm nay. 
-                  <br /><br />
-                  Vui lòng chờ đến <strong>14:00 (2h chiều) theo giờ Việt Nam</strong> để hạn mức được thiết lập lại về 0, hoặc nâng cấp gói Firebase của bạn để sử dụng tiếp.
-                </p>
-              </div>
-            ) : loading ? (
+            {loading ? (
               <div className="p-16 text-center text-slate-500 dark:text-slate-400">
                 <div className="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                 <p className="text-sm font-medium">Đang tải dữ liệu từ vựng...</p>
@@ -660,6 +570,15 @@ export function Dashboard({ currentUser }: DashboardProps) {
       {/* Modal Cài đặt Phát âm (TTS) */}
       {showTTSSettingsModal && (
         <TTSSettingsModal onClose={() => setShowTTSSettingsModal(false)} />
+      )}
+
+      {/* Modal Đồng bộ Google Drive */}
+      {showDriveSyncModal && (
+        <GoogleDriveSyncModal 
+          isOpen={showDriveSyncModal} 
+          onClose={() => setShowDriveSyncModal(false)} 
+          onDataRestored={() => fetchData(true)}
+        />
       )}
     </div>
   );

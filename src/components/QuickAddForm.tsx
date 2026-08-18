@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { createVocabulary } from "@/app/actions/vocabulary";
+import { localDB } from "@/lib/db";
+import { syncManager } from "@/lib/sync-manager";
 import toast from "react-hot-toast";
 import { Plus, AlertTriangle, Sparkles, Folder, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { getFolderFullPath } from "@/lib/folder-utils";
@@ -47,7 +48,7 @@ export function QuickAddForm({ folders, currentFolderId, onSuccess }: QuickAddFo
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Auto-check duplication khi người dùng gõ từ vựng
+  // Auto-check duplication siêu tốc trực tiếp trong IndexedDB
   useEffect(() => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
@@ -62,13 +63,13 @@ export function QuickAddForm({ folders, currentFolderId, onSuccess }: QuickAddFo
     setChecking(true);
     debounceTimerRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/vocabulary/check-duplicate?word=${encodeURIComponent(word.trim())}`);
-        const data = await res.json();
-        if (data.exists || (data.kanjiNotes && data.kanjiNotes.length > 0)) {
+        const allVocabs = await localDB.getVocabularies();
+        const trimmedWord = word.trim().toLowerCase();
+        const dup = allVocabs.find(v => v.word.toLowerCase() === trimmedWord);
+        if (dup) {
           setDuplicateInfo({
-            exists: data.exists,
-            vocab: data.duplicateVocab,
-            kanjiNotes: data.kanjiNotes,
+            exists: true,
+            vocab: dup,
           });
         } else {
           setDuplicateInfo(null);
@@ -78,7 +79,7 @@ export function QuickAddForm({ folders, currentFolderId, onSuccess }: QuickAddFo
       } finally {
         setChecking(false);
       }
-    }, 350);
+    }, 200);
 
     return () => {
       if (debounceTimerRef.current) {
@@ -92,18 +93,19 @@ export function QuickAddForm({ folders, currentFolderId, onSuccess }: QuickAddFo
     if (!word.trim() || !meaning.trim()) return;
 
     setLoading(true);
-    const res = await createVocabulary({
-      word,
-      meaning,
-      reading,
-      sinoVietnamese,
-      example,
-      note,
-      folderIds: selectedFolderIds,
-    });
-    setLoading(false);
+    try {
+      await localDB.saveVocabulary({
+        word,
+        meaning,
+        reading,
+        sinoVietnamese,
+        example,
+        note,
+        folderIds: selectedFolderIds,
+      });
+      syncManager.notifyDataChanged();
+      toast.success("Đã thêm từ vựng mới thành công!");
 
-    if (res.success) {
       // Reset form
       setWord("");
       setMeaning("");
@@ -113,8 +115,10 @@ export function QuickAddForm({ folders, currentFolderId, onSuccess }: QuickAddFo
       setNote("");
       setDuplicateInfo(null);
       if (onSuccess) onSuccess();
-    } else {
-      toast.error(res.error || "Không thể thêm từ vựng!");
+    } catch (err: any) {
+      toast.error("Không thể thêm từ vựng!");
+    } finally {
+      setLoading(false);
     }
   };
 
