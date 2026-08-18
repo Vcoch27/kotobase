@@ -1,9 +1,8 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
+import { getFirestore, type Firestore } from "firebase/firestore";
+import { getAuth, type Auth } from "firebase/auth";
 
 // Cấu hình Firebase Client (Dành cho Frontend / React)
-// Lấy các biến môi trường từ .env
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -13,11 +12,19 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Đảm bảo Firebase chỉ được khởi tạo 1 lần (Tránh lỗi HMR trong Next.js)
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+let app: FirebaseApp | null = null;
+let db: Firestore = {} as Firestore;
+let auth: Auth = {} as Auth;
 
-// Khởi tạo các dịch vụ
-const db = getFirestore(app);
-const auth = getAuth(app);
+// Chỉ khởi tạo Firebase nếu có cấu hình apiKey hợp lệ
+if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "undefined") {
+  try {
+    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
+  } catch (error) {
+    console.warn("Cảnh báo: Không thể khởi tạo Firebase Client:", error);
+  }
+}
 
 export { app, db, auth };
