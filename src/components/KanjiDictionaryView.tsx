@@ -462,18 +462,12 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
                   )}
                 </h4>
                 
-                {loadingRelated ? (sName="text-xs font-medium text-slate-500 bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-full">
-                    {(relatedVocabularies || []).length} từ
-                  </span>
-                )}
-              </h4>
-              
-              {loadingRelated ? (
-                <div className="text-center p-8 text-slate-500 flex flex-col items-center">
-                  <Loader2 className="w-6 h-6 animate-spin mb-2 text-indigo-500" />
-                  <span className="text-xs">Đang tìm từ vựng trong CSDL...</span>
-                </div>
-              ) : (relatedVocabularies || []).length === 0 ? (
+                {loadingRelated ? (
+                  <div className="text-center p-8 text-slate-500 flex flex-col items-center">
+                    <Loader2 className="w-6 h-6 animate-spin mb-2 text-indigo-500" />
+                    <span className="text-xs">Đang tìm từ vựng trong CSDL...</span>
+                  </div>
+                ) : (relatedVocabularies || []).length === 0 ? (
                 <div className="text-center p-8 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl text-slate-500 dark:text-slate-400 text-sm">
                   Chưa có từ vựng nào trong CSDL chứa Hán tự này.
                 </div>
