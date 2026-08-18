@@ -144,7 +144,15 @@ export async function getAllKanjiNotes() {
     const snapshot = await adminDb.collection("kanji_notes").get();
     const notes: any[] = [];
     snapshot.docs.forEach((doc) => {
-      notes.push({ id: doc.id, ...doc.data() });
+      const data = doc.data() as any;
+      notes.push({ 
+        id: doc.id, 
+        character: data.character || "",
+        hanviet: data.hanviet || "",
+        meaning: data.meaning || "",
+        mnemonic: data.mnemonic || "",
+        updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : (data.updatedAt?.toDate?.().toISOString() || new Date().toISOString())
+      });
     });
     // Sort by updated time desc (optional)
     notes.sort((a, b) => {

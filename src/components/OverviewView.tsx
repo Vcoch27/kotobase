@@ -1,12 +1,19 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { ClickableKanjiString } from "./ClickableKanjiString";
-import { Trash2, Folder as FolderIcon, BookOpen, Edit3, ChevronLeft, ChevronRight } from "lucide-react";
-import { deleteVocabulary } from "@/app/actions/vocabulary";
-import toast from "react-hot-toast";
-import { VocabularyEditModal } from "./VocabularyEditModal";
-import { getFolderFullPath } from "@/lib/folder-utils";
+import React, { useState, useEffect } from 'react';
+import { ClickableKanjiString } from './ClickableKanjiString';
+import {
+  Trash2,
+  Folder as FolderIcon,
+  BookOpen,
+  Edit3,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
+import { deleteVocabulary } from '@/app/actions/vocabulary';
+import toast from 'react-hot-toast';
+import { VocabularyEditModal } from './VocabularyEditModal';
+import { getFolderFullPath } from '@/lib/folder-utils';
 
 interface FolderVocabItem {
   folderId: string;
@@ -33,7 +40,7 @@ interface OverviewViewProps {
 export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewProps) {
   const [editingVocab, setEditingVocab] = useState<VocabularyData | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 30;
+  const ITEMS_PER_PAGE = 40;
 
   useEffect(() => {
     setCurrentPage(1);
@@ -46,35 +53,42 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
   }, [vocabularies]);
 
   const totalPages = Math.ceil(localVocabs.length / ITEMS_PER_PAGE);
-  const paginatedVocabularies = localVocabs.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const paginatedVocabularies = localVocabs.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const handleDelete = async (e: React.MouseEvent, id: string, word: string) => {
     e.stopPropagation();
     if (confirm(`Bạn có chắc chắn muốn xóa từ "${word}" không?`)) {
       // Optimistic delete
-      setLocalVocabs(prev => prev.filter(v => v.id !== id));
-      
+      setLocalVocabs((prev) => prev.filter((v) => v.id !== id));
+
       const res = await deleteVocabulary(id);
       if (res.success && onRefresh) {
         onRefresh();
       } else {
         setLocalVocabs(vocabularies); // Rollback
-        toast.error("Lỗi khi xóa từ vựng!");
+        toast.error('Lỗi khi xóa từ vựng!');
       }
     }
   };
 
   const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>, vocabId: string) => {
-    e.dataTransfer.setData("vocabId", vocabId);
-    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData('vocabId', vocabId);
+    e.dataTransfer.effectAllowed = 'move';
   };
 
   if (vocabularies.length === 0) {
     return (
       <div className="p-12 text-center bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 transition-colors duration-300">
         <BookOpen className="w-10 h-10 mx-auto mb-3 text-slate-400 dark:text-slate-600" />
-        <p className="text-base font-semibold text-slate-700 dark:text-slate-300">Chưa có từ vựng nào</p>
-        <p className="text-xs text-slate-500 mt-1">Sử dụng Quick Add ở trên để thêm từ mới vào kho dữ liệu</p>
+        <p className="text-base font-semibold text-slate-700 dark:text-slate-300">
+          Chưa có từ vựng nào
+        </p>
+        <p className="text-xs text-slate-500 mt-1">
+          Sử dụng Quick Add ở trên để thêm từ mới vào kho dữ liệu
+        </p>
       </div>
     );
   }
@@ -95,8 +109,8 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-sm text-slate-700 dark:text-slate-200 transition-colors duration-300">
             {paginatedVocabularies.map((item) => (
-              <tr 
-                key={item.id} 
+              <tr
+                key={item.id}
                 draggable
                 onDragStart={(e) => handleDragStart(e, item.id)}
                 onClick={() => setEditingVocab(item)}
@@ -134,7 +148,8 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
                 <td className="py-4 px-5 align-top text-xs space-y-2 max-w-xs">
                   {item.example ? (
                     <p className="text-slate-600 dark:text-slate-400 italic">
-                      <strong className="text-slate-800 dark:text-slate-300 not-italic">VD:</strong> {item.example}
+                      <strong className="text-slate-800 dark:text-slate-300 not-italic">VD:</strong>{' '}
+                      {item.example}
                     </p>
                   ) : (
                     <span className="text-slate-400 dark:text-slate-600 italic">---</span>
@@ -150,11 +165,14 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
                           key={fv.folderId}
                           className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 whitespace-nowrap"
                         >
-                          <FolderIcon className="w-3 h-3 text-indigo-500 dark:text-indigo-400" /> {getFolderFullPath(fv.folder, folders)}
+                          <FolderIcon className="w-3 h-3 text-indigo-500 dark:text-indigo-400" />{' '}
+                          {getFolderFullPath(fv.folder, folders)}
                         </span>
                       ))
                     ) : (
-                      <span className="text-xs text-slate-400 dark:text-slate-600 italic">Chưa xếp thư mục</span>
+                      <span className="text-xs text-slate-400 dark:text-slate-600 italic">
+                        Chưa xếp thư mục
+                      </span>
                     )}
                   </div>
                 </td>
@@ -178,11 +196,23 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
       {totalPages > 1 && (
         <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl mt-4 shadow-sm transition-colors duration-300">
           <div className="text-sm text-slate-500 dark:text-slate-400">
-            Hiển thị <span className="font-bold text-slate-700 dark:text-slate-200">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> - <span className="font-bold text-slate-700 dark:text-slate-200">{Math.min(currentPage * ITEMS_PER_PAGE, vocabularies.length)}</span> trên <span className="font-bold text-slate-700 dark:text-slate-200">{vocabularies.length}</span> từ vựng
+            Hiển thị{' '}
+            <span className="font-bold text-slate-700 dark:text-slate-200">
+              {(currentPage - 1) * ITEMS_PER_PAGE + 1}
+            </span>{' '}
+            -{' '}
+            <span className="font-bold text-slate-700 dark:text-slate-200">
+              {Math.min(currentPage * ITEMS_PER_PAGE, vocabularies.length)}
+            </span>{' '}
+            trên{' '}
+            <span className="font-bold text-slate-700 dark:text-slate-200">
+              {vocabularies.length}
+            </span>{' '}
+            từ vựng
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
               className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
             >
@@ -192,7 +222,7 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
               {currentPage} / {totalPages}
             </div>
             <button
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
               className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
             >
@@ -203,14 +233,14 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
       )}
 
       {editingVocab && (
-        <VocabularyEditModal 
+        <VocabularyEditModal
           vocabulary={editingVocab}
           folders={folders}
-          onClose={() => setEditingVocab(null)} 
+          onClose={() => setEditingVocab(null)}
           onSuccess={() => {
             setEditingVocab(null);
             if (onRefresh) onRefresh();
-          }} 
+          }}
         />
       )}
     </>

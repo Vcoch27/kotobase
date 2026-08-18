@@ -1,10 +1,19 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { ClickableKanjiString } from "./ClickableKanjiString";
-import { Eye, EyeOff, Folder as FolderIcon, Trash2, HelpCircle, ChevronLeft, ChevronRight, Volume2 } from "lucide-react";
-import { deleteVocabulary } from "@/app/actions/vocabulary";
-import { playAudio } from "@/lib/tts-utils";
+import React, { useState, useEffect } from 'react';
+import { ClickableKanjiString } from './ClickableKanjiString';
+import {
+  Eye,
+  EyeOff,
+  Folder as FolderIcon,
+  Trash2,
+  HelpCircle,
+  ChevronLeft,
+  ChevronRight,
+  Volume2,
+} from 'lucide-react';
+import { deleteVocabulary } from '@/app/actions/vocabulary';
+import { playAudio } from '@/lib/tts-utils';
 
 interface VocabularyData {
   id: string;
@@ -24,14 +33,17 @@ interface FocusRecallViewProps {
 export function FocusRecallView({ vocabularies, onRefresh }: FocusRecallViewProps) {
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 30;
+  const ITEMS_PER_PAGE = 40;
 
   useEffect(() => {
     setCurrentPage(1);
   }, [vocabularies]);
 
   const totalPages = Math.ceil(vocabularies.length / ITEMS_PER_PAGE);
-  const paginatedVocabularies = vocabularies.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const paginatedVocabularies = vocabularies.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) => ({
@@ -59,15 +71,17 @@ export function FocusRecallView({ vocabularies, onRefresh }: FocusRecallViewProp
   };
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, vocabId: string) => {
-    e.dataTransfer.setData("vocabId", vocabId);
-    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData('vocabId', vocabId);
+    e.dataTransfer.effectAllowed = 'move';
   };
 
   if (vocabularies.length === 0) {
     return (
       <div className="p-12 text-center bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 transition-colors">
         <HelpCircle className="w-10 h-10 mx-auto mb-3 text-slate-400 dark:text-slate-600" />
-        <p className="text-base font-semibold text-slate-700 dark:text-slate-300">Không có dữ liệu ôn tập</p>
+        <p className="text-base font-semibold text-slate-700 dark:text-slate-300">
+          Không có dữ liệu ôn tập
+        </p>
       </div>
     );
   }
@@ -108,8 +122,8 @@ export function FocusRecallView({ vocabularies, onRefresh }: FocusRecallViewProp
               onClick={() => toggleExpand(item.id)}
               className={`group relative cursor-pointer overflow-hidden rounded-2xl border transition-all duration-300 cursor-grab active:cursor-grabbing ${
                 isExpanded
-                  ? "bg-white dark:bg-slate-900 border-indigo-300 dark:border-indigo-500/50 shadow-xl shadow-indigo-100 dark:shadow-indigo-950/40"
-                  : "bg-white dark:bg-slate-900/90 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900"
+                  ? 'bg-white dark:bg-slate-900 border-indigo-300 dark:border-indigo-500/50 shadow-xl shadow-indigo-100 dark:shadow-indigo-950/40'
+                  : 'bg-white dark:bg-slate-900/90 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900'
               }`}
               title="Kéo thả Card này vào Thư mục ở cột trái để di chuyển"
             >
@@ -146,8 +160,8 @@ export function FocusRecallView({ vocabularies, onRefresh }: FocusRecallViewProp
                   <div
                     className={`p-2 rounded-xl border transition-all ${
                       isExpanded
-                        ? "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/30"
-                        : "bg-slate-50 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700"
+                        ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/30'
+                        : 'bg-slate-50 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'
                     }`}
                   >
                     {isExpanded ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -174,14 +188,20 @@ export function FocusRecallView({ vocabularies, onRefresh }: FocusRecallViewProp
 
                   {/* Meaning */}
                   <div>
-                    <span className="text-[11px] font-semibold text-slate-500 block uppercase">Nghĩa tiếng Việt</span>
-                    <p className="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{item.meaning}</p>
+                    <span className="text-[11px] font-semibold text-slate-500 block uppercase">
+                      Nghĩa tiếng Việt
+                    </span>
+                    <p className="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                      {item.meaning}
+                    </p>
                   </div>
 
                   {/* Example */}
                   {item.example && (
                     <div className="text-xs text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
-                      <strong className="text-slate-500 dark:text-slate-400 block mb-0.5">Ví dụ:</strong>
+                      <strong className="text-slate-500 dark:text-slate-400 block mb-0.5">
+                        Ví dụ:
+                      </strong>
                       <p className="italic text-slate-700 dark:text-slate-300">{item.example}</p>
                     </div>
                   )}
@@ -194,7 +214,8 @@ export function FocusRecallView({ vocabularies, onRefresh }: FocusRecallViewProp
                           key={fv.folderId}
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-800 text-[10px] text-slate-700 dark:text-slate-300"
                         >
-                          <FolderIcon className="w-2.5 h-2.5 text-indigo-500 dark:text-indigo-400" /> {fv.folder.name}
+                          <FolderIcon className="w-2.5 h-2.5 text-indigo-500 dark:text-indigo-400" />{' '}
+                          {fv.folder.name}
                         </span>
                       ))}
                     </div>
@@ -209,11 +230,23 @@ export function FocusRecallView({ vocabularies, onRefresh }: FocusRecallViewProp
       {totalPages > 1 && (
         <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl mt-4 shadow-sm transition-colors duration-300">
           <div className="text-sm text-slate-500 dark:text-slate-400">
-            Hiển thị <span className="font-bold text-slate-700 dark:text-slate-200">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> - <span className="font-bold text-slate-700 dark:text-slate-200">{Math.min(currentPage * ITEMS_PER_PAGE, vocabularies.length)}</span> trên <span className="font-bold text-slate-700 dark:text-slate-200">{vocabularies.length}</span> từ vựng
+            Hiển thị{' '}
+            <span className="font-bold text-slate-700 dark:text-slate-200">
+              {(currentPage - 1) * ITEMS_PER_PAGE + 1}
+            </span>{' '}
+            -{' '}
+            <span className="font-bold text-slate-700 dark:text-slate-200">
+              {Math.min(currentPage * ITEMS_PER_PAGE, vocabularies.length)}
+            </span>{' '}
+            trên{' '}
+            <span className="font-bold text-slate-700 dark:text-slate-200">
+              {vocabularies.length}
+            </span>{' '}
+            từ vựng
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
               className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
             >
@@ -223,7 +256,7 @@ export function FocusRecallView({ vocabularies, onRefresh }: FocusRecallViewProp
               {currentPage} / {totalPages}
             </div>
             <button
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
               className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
             >
