@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
 import { 
   RotateCcw, Shuffle, ArrowLeft, ArrowRight, X, Check, 
-  Rotate3D, GraduationCap, LayoutList, RefreshCcw, BrainCircuit, Undo2, Eye, EyeOff, Volume2
+  Rotate3D, GraduationCap, LayoutList, RefreshCcw, BrainCircuit, Undo2, Eye, EyeOff, Volume2, Headphones
 } from "lucide-react";
 import { playAudio } from "@/lib/tts-utils";
 import { 
@@ -25,7 +25,7 @@ interface FlashcardViewProps {
   vocabularies: VocabularyData[];
 }
 
-type StudyMode = "normal" | "progress" | "anki";
+type StudyMode = "normal" | "progress" | "anki" | "listening";
 
 // Fisher-Yates Shuffle
 const shuffleArray = <T,>(array: T[]): T[] => {
@@ -46,6 +46,10 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showSino, setShowSino] = useState(true);
   const [isShuffled, setIsShuffled] = useState(false);
+
+  // Listening mode states
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const autoPlayedRef = useRef<Set<number>>(new Set()); // Track which card indexes have been auto-played
 
   // Swipe tracking
   const [touchStart, setTouchStart] = useState<{x: number, y: number} | null>(null);
@@ -99,6 +103,33 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
       setIsShuffled(false);
     }
   }, [vocabularies, mode]);
+
+  // Auto-play audio khi ở chế độ Nghe & chuyển sang thẻ mới
+  useEffect(() => {
+    if (mode !== "listening") return;
+    if (isFinished || deck.length === 0) return;
+    const currentVocab = deck[currentIndex];
+    if (!currentVocab) return;
+    // Chỉ auto-play nếu thẻ này chưa được play lần nào trong session hiện tại
+    if (autoPlayedRef.current.has(currentIndex)) return;
+    
+    autoPlayedRef.current.add(currentIndex);
+    setIsPlayingAudio(true);
+    const textToPlay = currentVocab.reading || currentVocab.word;
+    // Thêm delay nhỏ để animation thẻ mới có thời gian load
+    const timer = setTimeout(() => {
+      playAudio(textToPlay);
+      // Reset trạng thái playing sau 3 giây (ước lượng)
+      setTimeout(() => setIsPlayingAudio(false), 3000);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [mode, currentIndex, deck, isFinished]);
+
+  // Reset autoPlayed ref khi đổi mode hoặc restart
+  useEffect(() => {
+    autoPlayedRef.current = new Set();
+    setIsPlayingAudio(false);
+  }, [mode, deck]);
 
   // Actions
   const flipCard = useCallback(() => {
@@ -255,11 +286,13 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
           e.preventDefault();
           if (mode === "normal") handleNext();
           else if (mode === "progress") handleProgress(true);
+          else if (mode === "listening" && isFlipped) handleNext();
           break;
         case "ArrowLeft":
           e.preventDefault();
           if (mode === "normal") handlePrev();
           else if (mode === "progress") handleProgress(false);
+          else if (mode === "listening" && !isFlipped) flipCard();
           break;
         case "h":
         case "H":
@@ -476,6 +509,16 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
           >
             <BrainCircuit className="w-4 h-4" /> Anki (SRS)
           </button>
+          <button
+            onClick={() => setMode("listening")}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              mode === "listening"
+                ? "bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400 shadow border border-violet-200 dark:border-violet-500/20"
+                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+            }`}
+          >
+            <Headphones className="w-4 h-4" /> Nghe
+          </button>
         </div>
 
         <div className="flex items-center gap-2">
@@ -558,19 +601,60 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
           }`}
         >
           {/* Front */}
-          <div className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-8 text-center transition-colors">
-            <span className="absolute top-6 left-6 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-              <Rotate3D className="w-4 h-4" /> Bấm để lật
-            </span>
-            <div className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-wide" onClick={(e) => e.stopPropagation()}>
-              <ClickableKanjiString text={currentVocab.word} />
-            </div>
-            {currentVocab.sinoVietnamese && showSino && (
-              <div className="mt-8 text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] animate-fadeIn">
-                {currentVocab.sinoVietnamese}
+          {mode === "listening" ? (
+            /* Listening Mode Front: Chỉ hiện âm thanh */
+            <div className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-violet-50 to-slate-50 dark:from-violet-950/40 dark:to-slate-950 border border-violet-200 dark:border-violet-700/40 rounded-3xl flex flex-col items-center justify-center p-8 text-center transition-colors">
+              <span className="absolute top-6 left-6 text-xs font-bold text-violet-400 dark:text-violet-500 uppercase tracking-wider flex items-center gap-1.5">
+                <Headphones className="w-4 h-4" /> Chế độ Nghe — Bấm để lật xem đáp án
+              </span>
+              
+              {/* Vòng sóng âm thanh pulsing */}
+              <div className="relative flex items-center justify-center mb-6">
+                {/* Pulse rings */}
+                <div className={`absolute w-32 h-32 rounded-full border-2 border-violet-400/30 dark:border-violet-500/20 ${isPlayingAudio ? 'animate-ping' : 'opacity-0'}`} style={{ animationDuration: '1.2s' }}></div>
+                <div className={`absolute w-24 h-24 rounded-full border-2 border-violet-400/40 dark:border-violet-500/30 ${isPlayingAudio ? 'animate-ping' : 'opacity-0'}`} style={{ animationDuration: '1.5s' }}></div>
+                
+                {/* Nút play trung tâm */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const textToPlay = currentVocab.reading || currentVocab.word;
+                    setIsPlayingAudio(true);
+                    playAudio(textToPlay);
+                    setTimeout(() => setIsPlayingAudio(false), 3000);
+                  }}
+                  className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95 ${
+                    isPlayingAudio
+                      ? 'bg-violet-500 dark:bg-violet-600 shadow-violet-500/40 scale-110'
+                      : 'bg-white dark:bg-slate-800 border-2 border-violet-300 dark:border-violet-600 hover:border-violet-500 hover:scale-105 shadow-violet-200 dark:shadow-violet-900/50'
+                  }`}
+                  title="Phát âm (nhấn lại để nghe)"
+                >
+                  <Volume2 className={`w-8 h-8 ${isPlayingAudio ? 'text-white' : 'text-violet-500 dark:text-violet-400'}`} />
+                </button>
               </div>
-            )}
-          </div>
+
+              <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 max-w-xs">
+                {isPlayingAudio ? "Đang phát âm thanh..." : "Nhấn nút để nghe lại — Bấm thẻ để lật xem đáp án"}
+              </p>
+              <p className="text-xs text-violet-500 dark:text-violet-400 mt-2 font-medium">Thẻ {currentIndex + 1} / {deck.length}</p>
+            </div>
+          ) : (
+            /* Normal / Progress / Anki Front: Hiển thị từ vựng */
+            <div className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-8 text-center transition-colors">
+              <span className="absolute top-6 left-6 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <Rotate3D className="w-4 h-4" /> Bấm để lật
+              </span>
+              <div className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-wide" onClick={(e) => e.stopPropagation()}>
+                <ClickableKanjiString text={currentVocab.word} />
+              </div>
+              {currentVocab.sinoVietnamese && showSino && (
+                <div className="mt-8 text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] animate-fadeIn">
+                  {currentVocab.sinoVietnamese}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Back */}
           <div className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-8 text-center rotate-y-180 transition-colors">
@@ -648,6 +732,33 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
                 </>
               )
             })()}
+          </div>
+        ) : mode === "listening" ? (
+          /* Listening Mode controls */
+          <div className="flex items-center gap-4">
+            {!isFlipped ? (
+              <button
+                onClick={flipCard}
+                className="flex items-center gap-2 px-8 py-3 rounded-2xl font-bold transition-all text-white bg-violet-500 hover:bg-violet-600 shadow-lg shadow-violet-500/20 active:scale-95"
+              >
+                <Rotate3D className="w-5 h-5" /> Lật xem đáp án (Space)
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={flipCard}
+                  className="flex items-center gap-2 px-4 py-3 rounded-2xl font-bold transition-all text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 shadow-sm"
+                >
+                  <Rotate3D className="w-5 h-5" /> Xem lại âm thanh
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="flex items-center gap-2 px-8 py-3 rounded-2xl font-bold transition-all text-white bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95"
+                >
+                  Tiếp theo <ArrowRight className="w-5 h-5" />
+                </button>
+              </>
+            )}
           </div>
         ) : mode === "normal" ? (
           <>
