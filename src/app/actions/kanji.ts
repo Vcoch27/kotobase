@@ -5,16 +5,40 @@ import { revalidatePath } from "next/cache";
 
 export async function getKanjiNote(character: string): Promise<{ id: string; hanviet?: string; mnemonic?: string; meaning?: string; character: string } | null> {
   if (!character) return null;
+  const trimmed = character.trim();
   try {
-    const docRef = await adminDb.collection("kanji_notes").doc(character).get();
-    if (!docRef.exists) {
-      return null;
+    // 1. Thử tìm trực tiếp theo Doc ID = character
+    const docRef = await adminDb.collection("kanji_notes").doc(trimmed).get();
+    if (docRef.exists) {
+      const data = docRef.data() as any;
+      return {
+        id: docRef.id,
+        character: data.character || trimmed,
+        hanviet: data.hanviet || "",
+        meaning: data.meaning || "",
+        mnemonic: data.mnemonic || "",
+      };
     }
-    const data = docRef.data() as { hanviet?: string; mnemonic?: string; meaning?: string; character: string };
-    return {
-      id: docRef.id,
-      ...data
-    };
+
+    // 2. Fallback: Tìm theo field character
+    const snapshot = await adminDb.collection("kanji_notes")
+      .where("character", "==", trimmed)
+      .limit(1)
+      .get();
+
+    if (!snapshot.empty) {
+      const doc = snapshot.docs[0];
+      const data = doc.data() as any;
+      return {
+        id: doc.id,
+        character: data.character || trimmed,
+        hanviet: data.hanviet || "",
+        meaning: data.meaning || "",
+        mnemonic: data.mnemonic || "",
+      };
+    }
+
+    return null;
   } catch (error) {
     console.error("Lỗi khi lấy thông tin Hán tự:", error);
     return null;
@@ -29,24 +53,57 @@ export async function upsertKanjiNote(
     mnemonic?: string;
   }
 ): Promise<{ success: true; data: { character: string; hanviet?: string; meaning?: string; mnemonic?: string } } | { success: false; error: string }> {
-  if (!character) throw new Error("Ký tự Hán tự không được để trống.");
+  if (!character || !character.trim()) {
+    return { success: false, error: "Ký tự Hán tự không được để trống." };
+  }
+
+  const trimmed = character.trim();
 
   try {
-    const docRef = adminDb.collection("kanji_notes").doc(character);
-    
-    await docRef.set({
-      character,
-      hanviet: data.hanviet || null,
-      meaning: data.meaning || null,
-      mnemonic: data.mnemonic || null,
-      updatedAt: new Date().toISOString()
-    }, { merge: true }); // Merge true is equivalent to Upsert in Firestore
+    // Tìm xem đã có bản ghi nào của character này chưa
+    const snapshot = await adminDb.collection("kanji_notes")
+      .where("character", "==", trimmed)
+      .limit(1)
+      .get();
+
+    let docRef;
+    let existingData: any = {};
+
+    if (!snapshot.empty) {
+      docRef = snapshot.docs[0].ref;
+      existingData = snapshot.docs[0].data();
+    } else {
+      docRef = adminDb.collection("kanji_notes").doc(trimmed);
+      const directDoc = await docRef.get();
+      if (directDoc.exists) {
+        existingData = directDoc.data();
+      }
+    }
+
+    const payload: any = {
+      character: trimmed,
+      hanviet: data.hanviet !== undefined ? (data.hanviet?.trim() || null) : (existingData.hanviet || null),
+      meaning: data.meaning !== undefined ? (data.meaning?.trim() || null) : (existingData.meaning || null),
+      mnemonic: data.mnemonic !== undefined ? (data.mnemonic?.trim() || null) : (existingData.mnemonic || null),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await docRef.set(payload, { merge: true });
 
     revalidatePath("/");
-    return { success: true, data: { character, ...data } };
-  } catch (error) {
+    revalidatePath("/kanji");
+    return {
+      success: true,
+      data: {
+        character: trimmed,
+        hanviet: payload.hanviet || "",
+        meaning: payload.meaning || "",
+        mnemonic: payload.mnemonic || "",
+      }
+    };
+  } catch (error: any) {
     console.error("Lỗi khi lưu Hán tự:", error);
-    return { success: false, error: "Không thể lưu ghi chú Hán tự." };
+    return { success: false, error: error.message || "Không thể lưu ghi chú Hán tự." };
   }
 }
 

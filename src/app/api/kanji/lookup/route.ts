@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractKanji } from "@/lib/kanji-parser";
+import { adminDb } from "@/lib/firebase-admin";
 
 export interface KanjiDetail {
   kanji: string;
@@ -11,6 +12,70 @@ export interface KanjiDetail {
   stroke_count?: number;
   jlpt?: string | number;
   detail?: string;
+  mnemonic?: string;
+  isSaved?: boolean;
+  savedNote?: {
+    hanviet?: string;
+    meaning?: string;
+    mnemonic?: string;
+  };
+}
+
+async function attachSavedNotes(list: KanjiDetail[]): Promise<KanjiDetail[]> {
+  if (!list || list.length === 0) return [];
+  try {
+    const chars = list.map((item) => item.kanji).filter(Boolean);
+    const notesMap = new Map<string, any>();
+
+    // 1. Thử truy vấn hàng loạt qua 'in' query
+    const chunkSize = 10;
+    for (let i = 0; i < chars.length; i += chunkSize) {
+      const chunk = chars.slice(i, i + chunkSize);
+      const snapshot = await adminDb.collection("kanji_notes")
+        .where("character", "in", chunk)
+        .get();
+      snapshot.docs.forEach((doc) => {
+        const d = doc.data();
+        if (d.character) notesMap.set(d.character, d);
+      });
+    }
+
+    // 2. Thử tìm thêm theo doc ID trực tiếp nếu chưa có trong map
+    await Promise.all(
+      chars.map(async (char) => {
+        if (!notesMap.has(char)) {
+          try {
+            const directDoc = await adminDb.collection("kanji_notes").doc(char).get();
+            if (directDoc.exists) {
+              notesMap.set(char, directDoc.data());
+            }
+          } catch (e) {}
+        }
+      })
+    );
+
+    return list.map((item) => {
+      const saved = notesMap.get(item.kanji);
+      if (saved) {
+        return {
+          ...item,
+          hanviet: saved.hanviet || item.hanviet,
+          mean: saved.meaning || item.mean,
+          mnemonic: saved.mnemonic || "",
+          isSaved: true,
+          savedNote: {
+            hanviet: saved.hanviet || "",
+            meaning: saved.meaning || "",
+            mnemonic: saved.mnemonic || "",
+          },
+        };
+      }
+      return item;
+    });
+  } catch (err) {
+    console.error("Lỗi khi đính kèm ghi chú Hán tự từ DB:", err);
+    return list;
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -118,7 +183,8 @@ export async function GET(request: NextRequest) {
             };
           });
 
-          return NextResponse.json({ data: formatted });
+          const enriched = await attachSavedNotes(formatted);
+          return NextResponse.json({ data: enriched });
         }
       }
     } catch (err) {
@@ -177,8 +243,9 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    const validDetails = details.filter(Boolean);
-    return NextResponse.json({ data: validDetails });
+    const validDetails = details.filter(Boolean) as KanjiDetail[];
+    const enriched = await attachSavedNotes(validDetails);
+    return NextResponse.json({ data: enriched });
   } catch (error: any) {
     console.error("Lỗi khi tra cứu Kanji:", error);
     return NextResponse.json({ data: [], error: error.message });

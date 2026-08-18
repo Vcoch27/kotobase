@@ -6,6 +6,7 @@ import { getKanjiNote, upsertKanjiNote } from "@/app/actions/kanji";
 import { X, Save, Sparkles, BookOpen, FileText, Type, Volume2, Wand2 } from "lucide-react";
 import { playAudio } from "@/lib/tts-utils";
 import { KanjiDetail } from "@/app/api/kanji/lookup/route";
+import toast from "react-hot-toast";
 
 interface KanjiModalProps {
   character: string | null;
@@ -34,30 +35,28 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
       setApiDetail(null);
 
       Promise.all([
-        getKanjiNote(character),
-        fetch(`/api/kanji/lookup?query=${encodeURIComponent(character)}`).then(r => r.json()).catch(() => ({ data: [] }))
+        getKanjiNote(character).catch(() => null),
+        fetch(`/api/kanji/lookup?query=${encodeURIComponent(character.trim())}`)
+          .then((r) => r.json())
+          .catch(() => ({ data: [] })),
       ]).then(([dbRes, apiRes]) => {
-        const apiData: KanjiDetail | null = (apiRes?.data && apiRes.data.length > 0) ? apiRes.data[0] : null;
+        const apiData: KanjiDetail | null =
+          apiRes?.data && apiRes.data.length > 0 ? apiRes.data[0] : null;
         setApiDetail(apiData);
 
-        if (dbRes) {
-          let finalHanviet = dbRes.hanviet || "";
-          let finalMeaning = dbRes.meaning || "";
+        // Nguồn ưu tiên: dữ liệu đã lưu từ DB (getKanjiNote hoặc apiData.savedNote)
+        const savedData = dbRes || (apiData?.isSaved ? apiData.savedNote : null);
 
-          // Tự động hoán đổi/sửa lại nếu âm Hán Việt bị lưu nhầm vào trường meaning trước đó
-          if (finalMeaning && apiData?.hanviet && finalMeaning.toUpperCase() === apiData.hanviet) {
-            finalHanviet = apiData.hanviet;
-            finalMeaning = apiData.mean || "";
-          } else {
-            if (!finalHanviet && apiData?.hanviet) finalHanviet = apiData.hanviet;
-            if (!finalMeaning && apiData?.mean) finalMeaning = apiData.mean;
-          }
+        if (savedData) {
+          const finalHanviet = savedData.hanviet || apiData?.hanviet || "";
+          const finalMeaning = savedData.meaning || apiData?.mean || "";
+          const finalMnemonic = savedData.mnemonic || "";
 
-          setMnemonic(dbRes.mnemonic || "");
+          setMnemonic(finalMnemonic);
           setMeaning(finalMeaning);
           setHanviet(finalHanviet);
         } else {
-          setMnemonic("");
+          setMnemonic(apiData?.mnemonic || "");
           setMeaning(apiData?.mean || "");
           setHanviet(apiData?.hanviet || "");
         }
@@ -80,17 +79,25 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
     e.preventDefault();
     setSaving(true);
     setMessage(null);
-    const res = await upsertKanjiNote(character, {
-      mnemonic,
-      meaning,
-      hanviet,
-    });
-    setSaving(false);
-    if (res.success) {
-      setMessage({ type: "success", text: "Đã cập nhật Hán tự thành công!" });
-      setTimeout(() => setMessage(null), 3000);
-    } else {
-      setMessage({ type: "error", text: res.error || "Lỗi khi lưu!" });
+    try {
+      const res = await upsertKanjiNote(character, {
+        mnemonic: mnemonic.trim(),
+        meaning: meaning.trim(),
+        hanviet: hanviet.trim(),
+      });
+      setSaving(false);
+      if (res.success) {
+        toast.success("Đã lưu ghi chú Hán tự thành công!");
+        setMessage({ type: "success", text: "Đã cập nhật Hán tự thành công!" });
+        setTimeout(() => setMessage(null), 3000);
+      } else {
+        toast.error(res.error || "Lỗi khi lưu!");
+        setMessage({ type: "error", text: res.error || "Lỗi khi lưu!" });
+      }
+    } catch (err: any) {
+      setSaving(false);
+      toast.error("Lỗi khi kết nối máy chủ để lưu!");
+      setMessage({ type: "error", text: "Lỗi kết nối máy chủ!" });
     }
   };
 
@@ -98,6 +105,7 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
     if (apiDetail) {
       if (apiDetail.hanviet) setHanviet(apiDetail.hanviet);
       if (apiDetail.mean) setMeaning(apiDetail.mean);
+      toast.success("Đã khôi phục nghĩa & âm đọc từ từ điển!");
     }
   };
 
@@ -136,6 +144,11 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
                 {apiDetail?.stroke_count && (
                   <span className="text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
                     {apiDetail.stroke_count} nét
+                  </span>
+                )}
+                {(mnemonic || apiDetail?.isSaved) && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
+                    ✓ Đã có ghi chú
                   </span>
                 )}
               </div>
