@@ -160,14 +160,13 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
     return (
       <div className="p-16 text-center text-slate-500 dark:text-slate-400">
         <div className="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-        <p className="text-sm font-medium">Đang tải từ điển Hán tự...</p>
+        <p className="text-sm font-medium">Đang tải dữ liệu Hán tự...</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6 animate-fadeIn transition-colors">
-      {/* Thanh tìm kiếm */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 shrink-0 flex items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">
@@ -496,6 +495,7 @@ export function KanjiDictionaryView({ vocabularies, folders, onRefreshVocab }: K
             </div>
           </div>
         </div>
+      </div>
       )}
 
       {/* Tái sử dụng VocabularyEditModal */}
