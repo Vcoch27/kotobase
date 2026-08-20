@@ -31,7 +31,46 @@ export const saveTTSSettings = (settings: TTSSettings) => {
   }
 };
 
+// Phát âm qua VOICEVOX Local GPU (Chạy trên máy tính qua cổng 50021)
+const playVoicevoxLocal = async (text: string, speakerId = 14): Promise<boolean> => {
+  try {
+    const queryUrl = `http://127.0.0.1:50021/audio_query?text=${encodeURIComponent(text)}&speaker=${speakerId}`;
+    const queryRes = await fetch(queryUrl, {
+      method: "POST",
+      signal: AbortSignal.timeout(1500), // Timeout 1.5s nếu Local Engine chưa bật
+    });
+
+    if (!queryRes.ok) return false;
+    const queryJson = await queryRes.json();
+
+    const synthUrl = `http://127.0.0.1:50021/synthesis?speaker=${speakerId}`;
+    const synthRes = await fetch(synthUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(queryJson),
+    });
+
+    if (synthRes.ok) {
+      const blob = await synthRes.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      await audio.play();
+      console.log("⚡ Đã phát âm siêu tốc qua VOICEVOX Local GPU!");
+      return true;
+    }
+  } catch (e) {
+    // Không log lỗi nếu engine chưa chạy, tự động fallback
+  }
+  return false;
+};
+
+// Phát âm qua VOICEVOX Cloud (Dự phòng)
 const playVoicevox = async (text: string): Promise<boolean> => {
+  // 1. Ưu tiên số 1: VOICEVOX Local GPU
+  const localSuccess = await playVoicevoxLocal(text);
+  if (localSuccess) return true;
+
+  // 2. Dự phòng số 2: VOICEVOX Cloud API
   try {
     const voicevoxUrl = `https://api.tts.quest/v3/voicevox/synthesis?text=${encodeURIComponent(text)}&speaker=14`;
     const queryRes = await fetch(voicevoxUrl);
@@ -44,7 +83,7 @@ const playVoicevox = async (text: string): Promise<boolean> => {
       }
     }
   } catch (error) {
-    console.log('Voicevox failed:', error);
+    console.log('Voicevox Cloud failed:', error);
   }
   return false;
 };
