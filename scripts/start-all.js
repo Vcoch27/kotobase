@@ -28,9 +28,26 @@ const nextProcess = spawn("cmd.exe", ["/c", "npx next dev"], {
   shell: true,
 });
 
-process.on("SIGINT", () => {
-  console.log("\n🛑 Đang dừng toàn bộ tiến trình Kotobase...");
-  aiProcess.kill();
-  nextProcess.kill();
+const { execSync } = require("child_process");
+
+function killProcessTree(pid) {
+  if (!pid) return;
+  try {
+    if (process.platform === "win32") {
+      execSync(`taskkill /pid ${pid} /T /F`, { stdio: "ignore" });
+    } else {
+      process.kill(-pid, "SIGKILL");
+    }
+  } catch (e) {}
+}
+
+const cleanExit = () => {
+  console.log("\n🛑 Đang dừng toàn bộ tiến trình Kotobase & AI Backend...");
+  if (aiProcess && aiProcess.pid) killProcessTree(aiProcess.pid);
+  if (nextProcess && nextProcess.pid) killProcessTree(nextProcess.pid);
   process.exit(0);
-});
+};
+
+process.on("SIGINT", cleanExit);
+process.on("SIGTERM", cleanExit);
+process.on("exit", cleanExit);
