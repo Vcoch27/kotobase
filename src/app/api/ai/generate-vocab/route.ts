@@ -92,32 +92,63 @@ export async function POST(req: NextRequest) {
     let lastError: any = null;
 
     // -------------------------------------------------------------
-    // Provider 1: Pollinations OpenAI-compatible Free Gateway (GPT-4o / Qwen)
+    // Provider 0: Local chatgpt2api (C:\mydata\DevTools\chatgpt2api)
     // -------------------------------------------------------------
+    const localChatGptUrl = process.env.CHATGPT2API_URL || "http://127.0.0.1:5005/v1/chat/completions";
     try {
-      const res = await fetch("https://text.pollinations.ai/openai/chat/completions", {
+      const res = await fetch(localChatGptUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.CHATGPT2API_KEY || "dummy-key"}`,
         },
         body: JSON.stringify({
-          model: "openai",
+          model: "gpt-4o",
           messages,
           temperature: 0.3,
-          response_format: { type: "json_object" },
-          seed: Math.floor(Math.random() * 100000),
         }),
+        signal: AbortSignal.timeout(15000), // timeout 15s nếu local server chưa bật
       });
 
       if (res.ok) {
         const data = await res.json();
         aiContent = data.choices?.[0]?.message?.content || "";
-      } else {
-        throw new Error(`Pollinations OpenAI gateway returned HTTP ${res.status}`);
+        console.log("-> Đã tạo từ vựng thành công qua chatgpt2api local!");
       }
     } catch (e: any) {
-      console.warn("Provider 1 lỗi, thử Provider 2 Fallback:", e.message);
-      lastError = e;
+      // Nếu chatgpt2api chưa chạy thì tự động fallback sang Provider Online
+      console.log("chatgpt2api local không khả dụng, chuyển sang Free AI Gateway.");
+    }
+
+    // -------------------------------------------------------------
+    // Provider 1: Pollinations OpenAI-compatible Free Gateway (GPT-4o / Qwen)
+    // -------------------------------------------------------------
+    if (!aiContent) {
+      try {
+        const res = await fetch("https://text.pollinations.ai/openai/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "openai",
+            messages,
+            temperature: 0.3,
+            response_format: { type: "json_object" },
+            seed: Math.floor(Math.random() * 100000),
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          aiContent = data.choices?.[0]?.message?.content || "";
+        } else {
+          throw new Error(`Pollinations OpenAI gateway returned HTTP ${res.status}`);
+        }
+      } catch (e: any) {
+        console.warn("Provider 1 lỗi, thử Provider 2 Fallback:", e.message);
+        lastError = e;
+      }
     }
 
     // -------------------------------------------------------------
