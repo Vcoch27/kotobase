@@ -288,8 +288,8 @@ export class GoogleDriveService {
     const blob = new Blob([jsonContent], { type: "application/json" });
 
     if (fileMeta) {
-      // Cập nhật file đã có (Update content)
-      const uploadUrl = `https://www.googleapis.com/upload/drive/v3/files/${fileMeta.id}?uploadType=media`;
+      // Cập nhật file đã có và đảm bảo file nằm trong thư mục Kotobase
+      const uploadUrl = `https://www.googleapis.com/upload/drive/v3/files/${fileMeta.id}?addParents=${folderId}&uploadType=media`;
       const res = await fetch(uploadUrl, {
         method: "PATCH",
         headers: {
