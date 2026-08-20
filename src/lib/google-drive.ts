@@ -224,6 +224,14 @@ export class GoogleDriveService {
     });
 
     if (!createRes.ok) {
+      const errData = await createRes.json().catch(() => ({}));
+      console.error("Lỗi Google Drive API tạo thư mục Kotobase:", createRes.status, errData);
+      if (errData.error?.message) {
+        if (errData.error.message.includes("Google Drive API has not been used") || errData.error.message.includes("disabled")) {
+          throw new Error("Bạn cần BẬT (Enable) 'Google Drive API' trên Google Cloud Console trước khi đồng bộ.");
+        }
+        throw new Error(`Google Drive: ${errData.error.message}`);
+      }
       throw new Error("Không thể tạo thư mục Kotobase trên Google Drive");
     }
 
@@ -244,7 +252,12 @@ export class GoogleDriveService {
     });
 
     if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      console.error("Lỗi tìm kiếm file trên Google Drive:", res.status, errData);
       if (res.status === 401) throw new Error("UNAUTHORIZED");
+      if (errData.error?.message?.includes("Google Drive API has not been used") || errData.error?.message?.includes("disabled")) {
+        throw new Error("Bạn cần BẬT (Enable) 'Google Drive API' trên Google Cloud Console trước khi đồng bộ.");
+      }
       throw new Error("Lỗi tìm kiếm file trên Google Drive");
     }
 
@@ -280,16 +293,25 @@ export class GoogleDriveService {
     const token = this.getValidToken();
     if (!token) throw new Error("UNAUTHORIZED");
 
-    // Lấy hoặc tạo thư mục Kotobase
-    const folderId = await this.getOrCreateKotobaseFolder();
+    // Lấy hoặc tạo thư mục Kotobase (nếu lỗi sẽ fallback lưu ở root)
+    let folderId: string | null = null;
+    try {
+      folderId = await this.getOrCreateKotobaseFolder();
+    } catch (e: any) {
+      console.warn("Không thể tạo folder Kotobase, sẽ lưu tại root:", e.message);
+      if (e.message.includes("Google Drive API")) {
+        throw e; // Ném lỗi nếu chưa enable Google Drive API
+      }
+    }
 
     const fileMeta = await this.findBackupFile();
     const jsonContent = JSON.stringify(data, null, 2);
     const blob = new Blob([jsonContent], { type: "application/json" });
 
     if (fileMeta) {
-      // Cập nhật file đã có và đảm bảo file nằm trong thư mục Kotobase
-      const uploadUrl = `https://www.googleapis.com/upload/drive/v3/files/${fileMeta.id}?addParents=${folderId}&uploadType=media`;
+      // Cập nhật file đã có
+      const addParam = folderId ? `&addParents=${folderId}` : "";
+      const uploadUrl = `https://www.googleapis.com/upload/drive/v3/files/${fileMeta.id}?uploadType=media${addParam}`;
       const res = await fetch(uploadUrl, {
         method: "PATCH",
         headers: {
@@ -310,13 +332,16 @@ export class GoogleDriveService {
         modifiedTime: new Date().toISOString(),
       };
     } else {
-      // Tạo file mới bên trong thư mục Kotobase
-      const metadata = {
+      // Tạo file mới bên trong thư mục Kotobase (hoặc root nếu chưa có folderId)
+      const metadata: any = {
         name: BACKUP_FILE_NAME,
         mimeType: "application/json",
-        parents: [folderId],
         description: "Kotobase Japanese Vocabulary Backup Package",
       };
+
+      if (folderId) {
+        metadata.parents = [folderId];
+      }
 
       const form = new FormData();
       form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
