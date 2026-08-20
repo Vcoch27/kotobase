@@ -324,16 +324,17 @@ export function Dashboard({ currentUser }: DashboardProps) {
                   {isMobileFolderOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                 </span>
               </h2>
-              {/* Nút tạo thư mục */}
+              {/* Nút lưu bài học / tạo thư mục */}
               <button
                 onClick={() => {
                   setNewFolderParentId(selectedFolderId !== "all" ? selectedFolderId : "");
                   setShowFolderModal(true);
                 }}
-                title="Tạo thư mục mới"
-                className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-500/20 transition-colors shrink-0"
+                title="Lưu bài học / Tạo thư mục mới"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all shrink-0 cursor-pointer"
               >
                 <FolderPlus className="w-4 h-4" />
+                <span className="hidden sm:inline">Lưu bài học</span>
               </button>
             </div>
             
@@ -343,6 +344,10 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 selectedFolderId={selectedFolderId} 
                 onSelectFolder={handleSelectFolder}
                 onRefresh={() => fetchData(true)}
+                onCreateSubFolder={(parentId) => {
+                  setNewFolderParentId(parentId);
+                  setShowFolderModal(true);
+                }}
                 currentUserId={currentUser?.uid || null}
                 currentUserEmail={currentUser?.email || null}
               />
@@ -506,36 +511,35 @@ export function Dashboard({ currentUser }: DashboardProps) {
         </div>
       </main>
 
-      {/* Modal Tạo Thư Mục */}
+      {/* Modal Lưu Bài Học / Tạo Thư Mục Mới */}
       {showFolderModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-transparent animate-fadeIn">
-          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4">
             <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-              <FolderPlus className="w-5 h-5 text-indigo-500 dark:text-indigo-400" /> Tạo Thư mục mới
+              <FolderPlus className="w-5 h-5 text-indigo-500 dark:text-indigo-400" /> Lưu Bài Học / Thư Mục Mới
             </h3>
             <form onSubmit={handleCreateFolder} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Tên thư mục</label>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Tên bài học / thư mục</label>
                 <input
                   type="text"
                   required
                   value={newFolderName}
                   onChange={(e) => setNewFolderName(e.target.value)}
-                  placeholder="VD: N3 Kanji, Bài 1 Minna..."
+                  placeholder="VD: Bài 1 Minna, N3 Từ vựng..."
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none"
                 />
               </div>
               
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Thuộc thư mục cha (Optional)</label>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Chọn thư mục cha muốn lưu vào</label>
                 <select
                   value={newFolderParentId}
                   onChange={(e) => setNewFolderParentId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 text-sm text-slate-800 dark:text-slate-100 outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 text-sm text-slate-800 dark:text-slate-100 outline-none cursor-pointer"
                 >
-                  <option value="">-- Không có (Root) --</option>
-                  {/* Chỉ hiển thị folder của mình */}
-                  {folders.filter(f => !f.ownerId || f.ownerId === currentUser?.uid).map((f) => (
+                  <option value="">-- Lưu ở cấp gốc (Root) --</option>
+                  {folders.map((f) => (
                     <option key={f.id} value={f.id}>{getFolderFullPath(f, folders)}</option>
                   ))}
                 </select>
@@ -545,16 +549,16 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 <button
                   type="button"
                   onClick={() => setShowFolderModal(false)}
-                  className="px-4 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                  className="px-4 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={creatingFolder || !newFolderName.trim()}
-                  className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl disabled:opacity-50"
+                  className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl disabled:opacity-50 shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
                 >
-                  {creatingFolder ? "Đang tạo..." : "Tạo thư mục"}
+                  {creatingFolder ? "Đang lưu..." : "Lưu bài học"}
                 </button>
               </div>
             </form>
