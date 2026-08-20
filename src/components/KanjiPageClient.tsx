@@ -12,6 +12,8 @@ import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { loginWithGoogle } from "@/app/actions/auth";
 import toast from "react-hot-toast";
 
+import { localDB } from "@/lib/db";
+
 interface UserInfo {
   uid: string;
   email: string;
@@ -20,19 +22,34 @@ interface UserInfo {
 }
 
 interface KanjiPageClientProps {
-  vocabularies: any[];
-  folders: any[];
-  initialKanjiNotes: any[];
+  vocabularies?: any[];
+  folders?: any[];
+  initialKanjiNotes?: any[];
   currentUser?: UserInfo | null;
 }
 
-export function KanjiPageClient({ vocabularies, folders, initialKanjiNotes, currentUser }: KanjiPageClientProps) {
+export function KanjiPageClient({ vocabularies = [], folders = [], initialKanjiNotes = [], currentUser }: KanjiPageClientProps) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const [localVocabs, setLocalVocabs] = useState<any[]>(vocabularies);
+  const [localFolders, setLocalFolders] = useState<any[]>(folders);
 
   useEffect(() => {
     setMounted(true);
+    const loadData = async () => {
+      try {
+        const [v, f] = await Promise.all([
+          localDB.getVocabularies(),
+          localDB.getFolders(),
+        ]);
+        setLocalVocabs(v);
+        setLocalFolders(f);
+      } catch (err) {
+        console.error("Lỗi nạp dữ liệu localDB cho trang Kanji:", err);
+      }
+    };
+    loadData();
   }, []);
 
   if (!mounted) {
@@ -178,8 +195,8 @@ export function KanjiPageClient({ vocabularies, folders, initialKanjiNotes, curr
       {/* Main content */}
       <main className="flex-1 max-w-screen-2xl w-full mx-auto px-4 lg:px-6 pt-6 pb-12">
         <KanjiDictionaryView
-          vocabularies={vocabularies}
-          folders={folders}
+          vocabularies={localVocabs}
+          folders={localFolders}
           initialKanjiNotes={initialKanjiNotes}
         />
       </main>
