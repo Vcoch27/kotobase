@@ -23,6 +23,11 @@ export interface KanjiDetail {
 
 async function attachSavedNotes(list: KanjiDetail[]): Promise<KanjiDetail[]> {
   if (!list || list.length === 0) return [];
+  // Nếu không có Firebase Admin credentials thì bỏ qua truy vấn Firestore
+  if (!process.env.FIREBASE_PROJECT_ID && !process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+    return list;
+  }
+
   try {
     const chars = list.map((item) => item.kanji).filter(Boolean);
     const notesMap = new Map<string, any>();
@@ -72,8 +77,8 @@ async function attachSavedNotes(list: KanjiDetail[]): Promise<KanjiDetail[]> {
       }
       return item;
     });
-  } catch (err) {
-    console.error("Lỗi khi đính kèm ghi chú Hán tự từ DB:", err);
+  } catch (error) {
+    // Không ném lỗi ra ngoài làm sập app hay spam terminal
     return list;
   }
 }

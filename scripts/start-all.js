@@ -10,8 +10,12 @@ const aiDir = path.join(rootDir, "services", "chatgpt2api");
 
 // 1. Khởi động AI Backend (ChatGPT2API Python)
 console.log("[1/2] 🤖 Đang khởi động AI Backend Service (Port 8001)...");
-const aiProcess = spawn("cmd.exe", ["/c", "set CHATGPT2API_AUTH_KEY=16022005 && uv run main.py"], {
+const aiProcess = spawn("cmd.exe", ["/c", "uv run main.py"], {
   cwd: aiDir,
+  env: {
+    ...process.env,
+    CHATGPT2API_AUTH_KEY: "16022005",
+  },
   stdio: "inherit",
   shell: true,
 });
