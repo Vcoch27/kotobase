@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:ai": "cd services/chatgpt2api && uv run main.py",
+    "dev:all": "node scripts/start-all.js",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

@@ -40,3 +40,13 @@ next-env.d.ts
 
 # Legacy folders
 /prisma/
+
+# Python / ChatGPT2API
+.venv/
+__pycache__/
+*.pyc
+services/chatgpt2api/.venv/
+services/chatgpt2api/__pycache__/
+services/chatgpt2api/data/
+services/chatgpt2api/web/node_modules/
+services/chatgpt2api/web/.next/
