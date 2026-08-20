@@ -95,7 +95,8 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
 
   return (
     <>
-      <div className="w-full overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 shadow-xl transition-colors duration-300">
+      {/* 1. DESKTOP VIEW (Table - Hiện từ màn hình md trở lên) */}
+      <div className="hidden md:block w-full overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 shadow-xl transition-colors duration-300">
         <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr className="bg-slate-50 dark:bg-slate-950/80 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
@@ -193,9 +194,89 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
         </table>
       </div>
 
+      {/* 2. MOBILE VIEW (Card List - Hiện trên điện thoại < md) */}
+      <div className="md:hidden flex flex-col gap-3">
+        {paginatedVocabularies.map((item) => (
+          <div
+            key={item.id}
+            onClick={() => setEditingVocab(item)}
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:border-amber-500/40 active:scale-[0.99] transition-all cursor-pointer space-y-3"
+          >
+            {/* Header: Từ vựng + Hán Việt + Nút xóa */}
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="text-2xl font-black text-slate-900 dark:text-white tracking-wide" onClick={(e) => e.stopPropagation()}>
+                  <ClickableKanjiString text={item.word} />
+                </div>
+                {item.sinoVietnamese && (
+                  <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-500/20">
+                    {item.sinoVietnamese}
+                  </span>
+                )}
+              </div>
+
+              <button
+                onClick={(e) => handleDelete(e, item.id, item.word)}
+                className="p-1.5 text-slate-400 hover:text-rose-500 active:bg-rose-50 dark:active:bg-rose-500/20 rounded-lg -mr-1 -mt-1 transition-colors"
+                title="Xóa từ vựng"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Cách đọc Furigana */}
+            {item.reading && (
+              <div className="w-fit">
+                <span className="inline-block text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-500/10 px-2.5 py-0.5 rounded-md border border-amber-300 dark:border-amber-500/20">
+                  {item.reading}
+                </span>
+              </div>
+            )}
+
+            {/* Nghĩa */}
+            <div className="text-base font-bold text-emerald-600 dark:text-emerald-400 leading-snug">
+              {item.meaning}
+            </div>
+
+            {/* Ví dụ (nếu có) */}
+            {item.example && (
+              <div className="text-xs bg-slate-50 dark:bg-slate-950/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 text-slate-600 dark:text-slate-400 italic">
+                <span className="font-bold text-slate-700 dark:text-slate-300 not-italic mr-1">VD:</span>
+                {item.example}
+              </div>
+            )}
+
+            {/* Footer: Thư mục & Gợi ý chạm để sửa */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/60 text-xs">
+              <div className="flex flex-wrap gap-1 max-w-[70%]">
+                {item.folderVocabularies && item.folderVocabularies.length > 0 ? (
+                  item.folderVocabularies.map((fv: any) => (
+                    <span
+                      key={fv.folderId}
+                      className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 truncate max-w-full"
+                    >
+                      <FolderIcon className="w-2.5 h-2.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                      <span className="truncate">{getFolderFullPath(fv.folder, folders)}</span>
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-[10px] text-slate-400 dark:text-slate-600 italic">
+                    Chưa xếp thư mục
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 flex items-center gap-1 shrink-0">
+                <Edit3 className="w-3 h-3" /> Chạm để sửa
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 3. PAGINATION BAR (Tối ưu responsive) */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl mt-4 shadow-sm transition-colors duration-300">
-          <div className="text-sm text-slate-500 dark:text-slate-400">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl mt-4 shadow-sm transition-colors duration-300">
+          <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 text-center sm:text-left">
             Hiển thị{' '}
             <span className="font-bold text-slate-700 dark:text-slate-200">
               {(currentPage - 1) * ITEMS_PER_PAGE + 1}
