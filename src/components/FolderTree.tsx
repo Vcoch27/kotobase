@@ -40,7 +40,7 @@ export function FolderTree({
       try {
         const saved = localStorage.getItem('kotobase_expanded_folders');
         if (saved) return JSON.parse(saved);
-      } catch (e) {}
+      } catch (e) { }
     }
     return {};
   });
@@ -97,7 +97,7 @@ export function FolderTree({
           const updated = { ...prev, ...newExpanded };
           try {
             localStorage.setItem('kotobase_expanded_folders', JSON.stringify(updated));
-          } catch (e) {}
+          } catch (e) { }
           return updated;
         });
       }
@@ -126,7 +126,7 @@ export function FolderTree({
       const updated = { ...prev, [id]: !prev[id] };
       try {
         localStorage.setItem('kotobase_expanded_folders', JSON.stringify(updated));
-      } catch (e) {}
+      } catch (e) { }
       return updated;
     });
   };
@@ -275,13 +275,12 @@ export function FolderTree({
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, node.id)}
             style={{ paddingLeft: `${level * 16 + 8}px` }}
-            className={`group flex items-center gap-2 py-2 pr-2 my-1 rounded-xl cursor-pointer transition-all ${
-              isSelected
+            className={`group flex items-center gap-2 py-2 pr-2 my-1 rounded-xl cursor-pointer transition-all ${isSelected
                 ? 'bg-indigo-50 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-300 font-bold shadow-[0_0_0_1px_rgba(99,102,241,0.2)] dark:shadow-[0_0_0_1px_rgba(99,102,241,0.4)]'
                 : isDragOver
                   ? 'bg-amber-50 dark:bg-amber-500/10 shadow-[0_0_0_2px_rgba(245,158,11,1)] text-amber-700 dark:text-amber-300'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
+              }`}
           >
             <div
               className={`w-5 h-5 flex items-center justify-center rounded-md shrink-0 transition-colors ${hasChildren ? 'hover:bg-slate-200 dark:hover:bg-slate-700' : 'opacity-0'}`}
@@ -368,28 +367,40 @@ export function FolderTree({
 
   return (
     <div className="w-full">
+      {/* Mục 1: Tất cả từ vựng */}
       <div
         onClick={() => onSelectFolder('all')}
-        className={`flex items-center gap-2 px-2 py-2 mb-2 rounded-lg cursor-pointer transition-all ${
-          selectedFolderId === 'all'
+        className={`flex items-center gap-2 px-2.5 py-2 mb-1.5 rounded-xl cursor-pointer transition-all ${selectedFolderId === 'all'
             ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-500/30 shadow-sm'
             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent'
-        }`}
+          }`}
       >
-        <Folder className="w-4 h-4" />
+        <Folder className="w-4 h-4 text-amber-500 shrink-0" />
         <span className="text-xs flex-1">Tất cả từ vựng</span>
-        <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-900 px-1.5 py-0.5 rounded">
+        <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded-md font-bold">
           {folders.reduce((acc, f) => acc + (f._count?.folderVocabularies || 0), 0)}
         </span>
       </div>
 
+      {/* Mục 2: Từ chưa phân loại (vừa thêm vào) */}
+      <div
+        onClick={() => onSelectFolder('unassigned')}
+        className={`flex items-center gap-2 px-2.5 py-2 mb-3 rounded-xl cursor-pointer transition-all ${selectedFolderId === 'unassigned'
+            ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-500/30 shadow-sm'
+            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent'
+          }`}
+      >
+        <Folder className="w-4 h-4 text-indigo-500 shrink-0" />
+        <span className="text-xs flex-1">Từ chưa phân loại (Mới thêm)</span>
+      </div>
+
       <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 px-1">
-        Cây Thư Mục (Kéo thả vào đây)
+        Cây Thư Mục Bài Học
       </div>
 
       {folders.length === 0 ? (
         <div className="text-xs text-slate-400 dark:text-slate-500 italic px-2">
-          Chưa có thư mục nào.
+          Chưa có thư mục bài học nào.
         </div>
       ) : (
         <div className="custom-scrollbar overflow-y-auto max-h-[60vh] pr-1">{renderTree(tree)}</div>
@@ -454,11 +465,10 @@ export function FolderTree({
                 <button
                   type="submit"
                   disabled={promptModal.type === 'delete' ? promptValue !== 'XOA' : (!promptValue.trim() || promptValue === promptModal.targetName)}
-                  className={`px-4 py-2 text-xs font-bold rounded-xl transition-all shadow-md ${
-                    promptModal.type === 'delete'
+                  className={`px-4 py-2 text-xs font-bold rounded-xl transition-all shadow-md ${promptModal.type === 'delete'
                       ? (promptValue === 'XOA' ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/20' : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed')
                       : ((promptValue.trim() && promptValue !== promptModal.targetName) ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20' : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed')
-                  }`}
+                    }`}
                 >
                   {promptModal.type === 'delete' ? 'Xóa Vĩnh Viễn' : 'Cập nhật'}
                 </button>

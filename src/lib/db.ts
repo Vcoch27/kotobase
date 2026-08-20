@@ -208,7 +208,9 @@ class KotobaseDB {
 
       req.onsuccess = () => {
         let list: LocalVocabulary[] = req.result || [];
-        if (folderId && folderId !== "all") {
+        if (folderId === "unassigned" || folderId === "uncategorized") {
+          list = list.filter((v) => !v.folderIds || v.folderIds.length === 0);
+        } else if (folderId && folderId !== "all") {
           list = list.filter((v) => v.folderIds && v.folderIds.includes(folderId));
         }
         resolve(list);

@@ -12,8 +12,8 @@ import { GoogleDriveSyncModal } from "./GoogleDriveSyncModal";
 import { JishoSearchResults } from "./JishoSearchResults";
 import { localDB } from "@/lib/db";
 import { syncManager, SyncState } from "@/lib/sync-manager";
-import { 
-  LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, 
+import {
+  LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit,
   Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, Volume2, Loader2,
   User, Lock, Folder, Cloud, CheckCircle2, RefreshCw
 } from "lucide-react";
@@ -56,7 +56,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
     setSelectedFolderId(id);
     try {
       localStorage.setItem("kotobase_selected_folder", id);
-    } catch (e) {}
+    } catch (e) { }
   };
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -117,7 +117,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
       if (savedFolder && savedFolder !== "all") {
         setSelectedFolderId(savedFolder);
       }
-    } catch (e) {}
+    } catch (e) { }
     setMounted(true);
   }, []);
 
@@ -130,7 +130,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const filteredVocabularies = React.useMemo(() => {
     if (!debouncedSearchQuery.trim()) return vocabularies;
     const q = debouncedSearchQuery.trim().toLowerCase();
-    return vocabularies.filter(v => 
+    return vocabularies.filter(v =>
       (v.word && v.word.toLowerCase().includes(q)) ||
       (v.meaning && v.meaning.toLowerCase().includes(q)) ||
       (v.reading && v.reading.toLowerCase().includes(q)) ||
@@ -141,7 +141,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFolderName.trim()) return;
-    
+
     setCreatingFolder(true);
     try {
       await localDB.saveFolder({
@@ -198,21 +198,20 @@ export function Dashboard({ currentUser }: DashboardProps) {
               />
             </div>
           </div>
-          
+
           {/* Settings & Theme & Google Drive Sync Button */}
           <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
             {/* Google Drive Sync Status Button */}
             <button
               onClick={() => setShowDriveSyncModal(true)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                syncState.status === "synced"
-                  ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100"
-                  : syncState.status === "syncing"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${syncState.status === "synced"
+                ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100"
+                : syncState.status === "syncing"
                   ? "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20"
                   : syncState.status === "error"
-                  ? "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/20"
-                  : "bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-amber-500/50 hover:text-amber-600"
-              }`}
+                    ? "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/20"
+                    : "bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-amber-500/50 hover:text-amber-600"
+                }`}
               title="Cài đặt & Trạng thái đồng bộ Google Drive"
             >
               {syncState.status === "synced" ? (
@@ -226,14 +225,14 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 {syncState.status === "synced"
                   ? "Đã đồng bộ Drive"
                   : syncState.status === "syncing"
-                  ? "Đang lưu..."
-                  : syncState.status === "disconnected"
-                  ? "Google Drive"
-                  : "Lưu trữ đám mây"}
+                    ? "Đang lưu..."
+                    : syncState.status === "disconnected"
+                      ? "Google Drive"
+                      : "Lưu trữ đám mây"}
               </span>
             </button>
 
-            <button 
+            <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="p-2 rounded-xl transition-colors text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-900"
               title="Đổi giao diện Sáng/Tối"
@@ -241,22 +240,22 @@ export function Dashboard({ currentUser }: DashboardProps) {
               {mounted && theme === "dark" ? <Sun className="w-4 h-4 md:w-5 md:h-5" /> : <Moon className="w-4 h-4 md:w-5 md:h-5" />}
             </button>
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
                 className={`p-2 rounded-xl transition-colors ${showSettingsDropdown ? 'bg-slate-100 dark:bg-slate-800 text-amber-500 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-900'}`}
                 title="Cài đặt hệ thống"
               >
                 <Settings2 className="w-4 h-4 md:w-5 md:h-5" />
               </button>
-              
+
               {showSettingsDropdown && (
                 <>
-                  <div 
-                    className="fixed inset-0 z-40" 
+                  <div
+                    className="fixed inset-0 z-40"
                     onClick={() => setShowSettingsDropdown(false)}
                   ></div>
                   <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-fadeIn">
-                    <button 
+                    <button
                       onClick={() => {
                         setShowSettingsDropdown(false);
                         setShowDriveSyncModal(true);
@@ -266,7 +265,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                       <Cloud className="w-4 h-4 text-amber-500" />
                       Đồng bộ Google Drive
                     </button>
-                    <button 
+                    <button
                       onClick={() => {
                         setShowSettingsDropdown(false);
                         setShowSettingsModal(true);
@@ -276,7 +275,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                       <BrainCircuit className="w-4 h-4 text-rose-500 dark:text-rose-400" />
                       Cài đặt Anki
                     </button>
-                    <button 
+                    <button
                       onClick={() => {
                         setShowSettingsDropdown(false);
                         setShowTTSSettingsModal(true);
@@ -291,7 +290,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
               )}
             </div>
           </div>
-          
+
           {/* Mobile Search */}
           <div className="w-full md:hidden order-last mt-1">
             <div className="relative w-full">
@@ -310,12 +309,12 @@ export function Dashboard({ currentUser }: DashboardProps) {
 
       {/* Main Layout (2 Columns) */}
       <main className="flex-1 max-w-screen-2xl w-full mx-auto px-4 lg:px-6 pt-6 flex flex-col md:flex-row gap-6">
-        
+
         {/* LEFT SIDEBAR: Folder Tree */}
         <div className="w-full md:w-64 lg:w-72 shrink-0 space-y-4 md:sticky md:top-20 md:self-start">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl transition-colors duration-300 md:max-h-[calc(100vh-6rem)] md:overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
-              <h2 
+              <h2
                 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between w-full md:w-auto cursor-pointer md:cursor-default"
                 onClick={() => setIsMobileFolderOpen(!isMobileFolderOpen)}
               >
@@ -337,11 +336,11 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 <span className="hidden sm:inline">Lưu bài học</span>
               </button>
             </div>
-            
+
             <div className={`${isMobileFolderOpen ? 'block' : 'hidden'} md:block`}>
-              <FolderTree 
-                folders={folders} 
-                selectedFolderId={selectedFolderId} 
+              <FolderTree
+                folders={folders}
+                selectedFolderId={selectedFolderId}
                 onSelectFolder={handleSelectFolder}
                 onRefresh={() => fetchData(true)}
                 onCreateSubFolder={(parentId) => {
@@ -355,7 +354,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
 
             {/* Link sang trang Kanji */}
             <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
-              <Link 
+              <Link
                 href="/kanji"
                 className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 transition-all"
               >
@@ -369,7 +368,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
 
         {/* RIGHT MAIN CONTENT */}
         <div className="flex-1 flex flex-col gap-6 min-w-0">
-          
+
           {/* Action Tabs: Quick Add & Bulk Import */}
           <div className="flex items-center gap-2 mb-2">
             <button
@@ -392,7 +391,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
             <QuickAddForm folders={folders} currentFolderId={selectedFolderId} onSuccess={() => fetchData(true)} />
           )}
 
-          {/* Breadcrumbs - Hiển thị đường dẫn và chủ sở hữu của thư mục đang chọn */}
+          {/* Breadcrumbs - Hiển thị đường dẫn của thư mục đang chọn */}
           <div className="flex flex-wrap items-center justify-between gap-3 px-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Đang chọn:</span>
@@ -400,6 +399,8 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 <Folder className="w-4 h-4 text-amber-500" />
                 {selectedFolderId === 'all' ? (
                   <span>Tất cả từ vựng</span>
+                ) : selectedFolderId === 'unassigned' ? (
+                  <span>Từ chưa phân loại (Mới thêm)</span>
                 ) : (
                   <span>{getFolderFullPath(folders.find(f => f.id === selectedFolderId) || { name: 'Thư mục không xác định' }, folders)}</span>
                 )}
@@ -418,41 +419,37 @@ export function Dashboard({ currentUser }: DashboardProps) {
             <div className="flex items-center w-max bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
               <button
                 onClick={() => setViewMode("overview")}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  viewMode === "overview"
-                    ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white dark:text-slate-950 shadow-md"
-                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-900"
-                }`}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "overview"
+                  ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white dark:text-slate-950 shadow-md"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-900"
+                  }`}
               >
                 <LayoutGrid className="w-3.5 h-3.5" /> Mode 1: Tổng quan
               </button>
               <button
                 onClick={() => setViewMode("focus")}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  viewMode === "focus"
-                    ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md"
-                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-900"
-                }`}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "focus"
+                  ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-900"
+                  }`}
               >
                 <Eye className="w-3.5 h-3.5" /> Mode 2: Ôn tập (Focus)
               </button>
               <button
                 onClick={() => setViewMode("flashcard")}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  viewMode === "flashcard"
-                    ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white dark:text-slate-950 shadow-md"
-                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-900"
-                }`}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "flashcard"
+                  ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white dark:text-slate-950 shadow-md"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-900"
+                  }`}
               >
                 <Layers className="w-3.5 h-3.5" /> Mode 3: Flashcard
               </button>
               <button
                 onClick={() => setViewMode("quiz")}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  viewMode === "quiz"
-                    ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md"
-                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-900"
-                }`}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "quiz"
+                  ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-900"
+                  }`}
               >
                 <BrainCircuit className="w-3.5 h-3.5" /> Mode 4: Quiz
               </button>
@@ -501,10 +498,10 @@ export function Dashboard({ currentUser }: DashboardProps) {
 
             {/* Tra cứu Từ điển Jisho mở rộng khi người dùng đang tìm kiếm */}
             {searchQuery && searchQuery.trim() && (
-              <JishoSearchResults 
-                searchQuery={searchQuery} 
-                currentFolderId={selectedFolderId} 
-                onAddedSuccess={fetchData} 
+              <JishoSearchResults
+                searchQuery={searchQuery}
+                currentFolderId={selectedFolderId}
+                onAddedSuccess={fetchData}
               />
             )}
           </div>
@@ -530,7 +527,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Chọn thư mục cha muốn lưu vào</label>
                 <select
@@ -578,9 +575,9 @@ export function Dashboard({ currentUser }: DashboardProps) {
 
       {/* Modal Đồng bộ Google Drive */}
       {showDriveSyncModal && (
-        <GoogleDriveSyncModal 
-          isOpen={showDriveSyncModal} 
-          onClose={() => setShowDriveSyncModal(false)} 
+        <GoogleDriveSyncModal
+          isOpen={showDriveSyncModal}
+          onClose={() => setShowDriveSyncModal(false)}
           onDataRestored={() => fetchData(true)}
         />
       )}
