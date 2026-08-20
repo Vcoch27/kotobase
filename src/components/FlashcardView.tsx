@@ -718,16 +718,52 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
               <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
             
-            {currentVocab.reading && (
-              <div className="text-lg sm:text-xl md:text-2xl font-bold text-amber-600 dark:text-amber-400 mb-1 sm:mb-2">
-                {currentVocab.reading}
-              </div>
-            )}
-            
-            <div className="text-2xl sm:text-3xl md:text-5xl font-black text-slate-900 dark:text-white mb-3 sm:mb-6 leading-tight">
-              {currentVocab.meaning}
-            </div>
+            {/* Nếu là chế độ Nghe (Listening Mode): Cần hiển thị đầy đủ Từ vựng gốc + Hán Việt vì mặt trước chưa có */}
+            {mode === "listening" ? (
+              <>
+                {/* Từ vựng gốc (Kanji) */}
+                <div 
+                  className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-wide mb-1" 
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ClickableKanjiString text={currentVocab.word} />
+                </div>
 
+                {/* Âm Hán Việt */}
+                {currentVocab.sinoVietnamese && showSino && (
+                  <div className="text-xs sm:text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] mb-2 animate-fadeIn">
+                    {currentVocab.sinoVietnamese}
+                  </div>
+                )}
+
+                {/* Cách đọc Hiragana/Katakana */}
+                {currentVocab.reading && currentVocab.reading !== currentVocab.word && (
+                  <div className="text-base sm:text-lg md:text-xl font-bold text-amber-600 dark:text-amber-400 mb-2">
+                    {currentVocab.reading}
+                  </div>
+                )}
+                
+                {/* Nghĩa */}
+                <div className="text-xl sm:text-2xl md:text-4xl font-black text-emerald-600 dark:text-emerald-400 mb-3 sm:mb-5 leading-tight">
+                  {currentVocab.meaning}
+                </div>
+              </>
+            ) : (
+              /* Các chế độ thông thường (Mặt trước đã có chữ gốc) */
+              <>
+                {currentVocab.reading && (
+                  <div className="text-lg sm:text-xl md:text-2xl font-bold text-amber-600 dark:text-amber-400 mb-1 sm:mb-2">
+                    {currentVocab.reading}
+                  </div>
+                )}
+                
+                <div className="text-2xl sm:text-3xl md:text-5xl font-black text-slate-900 dark:text-white mb-3 sm:mb-6 leading-tight">
+                  {currentVocab.meaning}
+                </div>
+              </>
+            )}
+
+            {/* Ví dụ minh họa */}
             {currentVocab.example && (
               <div className="p-3 sm:p-4 bg-white/50 dark:bg-slate-950/50 rounded-2xl border border-slate-200 dark:border-slate-700/50 w-full max-w-lg">
                 <span className="block text-[10px] sm:text-xs font-bold text-slate-500 uppercase mb-1">Ví dụ minh họa</span>
