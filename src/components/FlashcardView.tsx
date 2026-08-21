@@ -251,12 +251,12 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
     // Chỉ tính là vuốt ngang nếu khoảng cách ngang lớn hơn khoảng cách dọc và vượt ngưỡng
     if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > threshold) {
       if (deltaX > 0) {
-        // Swipe Left (Sang trái)
-        if (mode === "normal") handleNext();
+        // Swipe Left (Sang trái) -> Tiếp theo
+        if (mode === "normal" || mode === "listening") handleNext();
         else if (mode === "progress") handleProgress(false);
       } else {
-        // Swipe Right (Sang phải)
-        if (mode === "normal") handlePrev();
+        // Swipe Right (Sang phải) -> Quay lại
+        if (mode === "normal" || mode === "listening") handlePrev();
         else if (mode === "progress") handleProgress(true);
       }
     }
@@ -319,11 +319,22 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
         case "V":
           e.preventDefault();
           const card = deck[currentIndex];
-          const exampleTextKey = card.example ? card.example.replace(/[\(（].*?[\)）]/g, '').trim() : '';
-          const textToPlayKey = exampleTextKey 
-            ? `${card.reading || card.word}。 …… ${exampleTextKey}`
-            : (card.reading || card.word);
-          playAudio(textToPlayKey);
+          if (!card) break;
+          
+          if (mode === "listening") {
+            // Chế độ Nghe: Chỉ phát âm từ vựng (không phát ví dụ) + kích hoạt hiệu ứng sóng âm
+            const textToPlayKey = card.reading || card.word;
+            setIsPlayingAudio(true);
+            playAudio(textToPlayKey);
+            setTimeout(() => setIsPlayingAudio(false), 3000);
+          } else {
+            // Các chế độ khác: Phát từ vựng + ví dụ (nếu có)
+            const exampleTextKey = card.example ? card.example.replace(/[\(（].*?[\)）]/g, '').trim() : '';
+            const textToPlayKey = exampleTextKey 
+              ? `${card.reading || card.word}。 …… ${exampleTextKey}`
+              : (card.reading || card.word);
+            playAudio(textToPlayKey);
+          }
           break;
       }
     };
