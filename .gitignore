@@ -1,19 +1,24 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
-/.pnp
+node_modules/
+**/node_modules/
+.pnp
 .pnp.js
 
 # testing
-/coverage
+coverage/
+**/coverage/
 
 # next.js
-/.next/
-/out/
+.next/
+**/.next/
+out/
+**/out/
 
 # production
-/build
+build/
+**/build/
 
 # misc
 .DS_Store
@@ -39,14 +44,13 @@ yarn-error.log*
 next-env.d.ts
 
 # Legacy folders
-/prisma/
+prisma/
 
 # Python / ChatGPT2API
 .venv/
+**/.venv/
 __pycache__/
+**/__pycache__/
 *.pyc
-services/chatgpt2api/.venv/
-services/chatgpt2api/__pycache__/
 services/chatgpt2api/data/
-services/chatgpt2api/web/node_modules/
-services/chatgpt2api/web/.next/
+services/chatgpt2api/web_dist/
