@@ -1,143 +1,120 @@
-# KotoBase - Nền tảng Quản lý và Học Từ vựng Tiếng Nhật Thông minh
+# 🌸 KotoBase - Japanese Vocabulary & Kanji Learning Platform
 
-KotoBase là ứng dụng web hiện đại hỗ trợ người học tiếng Nhật xây dựng, tổ chức và ghi nhớ hệ thống từ vựng, chữ Hán (Kanji) theo cấu trúc thư mục lồng nhau, kết hợp các phương pháp ghi nhớ khoa học (Spaced Repetition System - Anki SM-2, Active Recall).
+<div align="center">
 
----
+![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=for-the-badge&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue?style=for-the-badge&logo=typescript)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css)
+![IndexedDB](https://img.shields.io/badge/Storage-IndexedDB_Local--First-orange?style=for-the-badge)
+![Google Drive](https://img.shields.io/badge/Cloud_Sync-Google_Drive_API_v3-4285F4?style=for-the-badge&logo=google-drive)
+![VOICEVOX](https://img.shields.io/badge/TTS-VOICEVOX_GPU-A5D6A7?style=for-the-badge)
 
-## 1. Giới thiệu tổng quan
+**Nền tảng học từ vựng và chữ Hán (Kanji) tiếng Nhật hiện đại với kiến trúc Local-First, đồng bộ Google Drive cá nhân, tạo từ vựng tự động bằng AI và phát âm chuẩn bản xứ bằng GPU.**
 
-KotoBase được thiết kế nhằm giải quyết bài toán phân mảnh dữ liệu khi học tiếng Nhật:
-- Quản lý từ vựng theo cây thư mục nhiều cấp (Nested Folders), hỗ trợ thao tác kéo thả.
-- Tự động tích hợp từ điển trực tuyến (Jisho, Mazii) để tra cứu nhanh ngữ nghĩa, âm Hán Việt, cách đọc On/Kun, cấp độ JLPT và số nét.
-- Đa dạng hóa hình thức ôn tập thông qua các chế độ: Flashcard SRS, Focus Recall và Trắc nghiệm gõ phím (Typing Quiz).
-- Hỗ trợ phát âm chuẩn tiếng Nhật qua Web Speech API / TTS.
+[🌟 Tính Năng](#-tính-năng-nổi-bật) • [🏛️ Kiến Trúc](#-kiến-trúc-local-first) • [🚀 Cài Đặt](#-cài-đặt--khởi-chạy) • [📚 Tài Liệu Kỹ Thuật](#-tài-liệu-kỹ-thuật-chi-tiết)
 
----
-
-## 2. Các tính năng chính
-
-### 2.1. Quản lý kho từ vựng và Thư mục
-- Cây thư mục đa cấp: Tạo, đổi tên, phân cấp và xóa thư mục với cơ chế cập nhật giao diện tức thì (Optimistic UI).
-- Kéo thả trực quan: Kéo từ vựng thả trực tiếp vào thư mục trên thanh điều hướng bên trái.
-- Thêm nhanh (Quick Add): Tự động kiểm tra trùng lặp từ vựng trong cơ sở dữ liệu khi nhập liệu.
-- Nhập dữ liệu hàng loạt (Bulk Import): Hỗ trợ nhập liệu nhanh danh sách từ vựng theo định dạng phân tách.
-
-### 2.2. Các chế độ học tập và ôn tập
-- Chế độ Tổng quan (Overview): Hiển thị toàn bộ từ vựng theo bảng, hỗ trợ phân trang, lọc theo thư mục và tương tác nhanh với từng chữ Hán.
-- Chế độ Tập trung (Focus Recall): Ẩn nghĩa và cách đọc để rèn luyện phản xạ nhớ chủ động, hỗ trợ phát âm từng từ.
-- Thẻ ghi nhớ (Flashcard):
-  - Chế độ Thường (Normal): Lật thẻ hai chiều, xáo trộn thứ tự (Shuffle) và hoàn tác.
-  - Chế độ Tiến độ (Progress): Đánh dấu Đã thuộc / Chưa thuộc để lọc danh sách cần ôn lại.
-  - Chế độ Anki SRS: Áp dụng thuật toán lặp lại ngắt quãng (Spaced Repetition System), tự động tính toán chu kỳ ôn tập tiếp theo (Again, Hard, Good, Easy) dựa trên độ khó của từng từ.
-- Sổ tay Hán tự (Kanji Dictionary):
-  - Tự động bóc tách các chữ Hán có trong kho từ vựng.
-  - Hiển thị âm Hán Việt in hoa nổi bật dưới từng chữ Hán.
-  - Tra cứu trực tiếp từ API từ điển Mazii: số nét, cấp độ JLPT, âm On, âm Kun, nghĩa tiếng Việt và mẹo nhớ (Mnemonic).
-- Trắc nghiệm gõ phím (Typing Quiz): Luyện gõ cách đọc từ vựng bằng bàn phím, kiểm tra độ chính xác theo thời gian thực và tổng kết danh sách từ cần củng cố.
-
-### 2.3. Tối ưu hóa hiệu năng và Trải nghiệm người dùng
-- Cơ chế Debounce thanh tìm kiếm: Giảm thiểu số lượng truy vấn tới máy chủ khi nhập từ khóa.
-- Tải động thành phần (Dynamic Imports): Phân tách các module nặng để tối ưu hóa thời gian hiển thị ban đầu (TTI).
-- Giao diện Sáng / Tối (Dark / Light Mode): Hỗ trợ chuyển đổi chủ đề màu sắc mượt mà.
+</div>
 
 ---
 
-## 3. Công nghệ sử dụng
+## 🌟 Tính Năng Nổi Bật
 
-- Framework: Next.js 14 (App Router, Server Actions)
-- Ngôn ngữ: TypeScript
-- Thư viện giao diện: React 18, Tailwind CSS, Lucide Icons
-- Cơ sở dữ liệu: Google Firebase / Cloud Firestore
-- Quản trị giao diện & Chủ đề: Next Themes, Tailwind Merge, CLSX
-- API bên thứ ba: Jisho API, Mazii API
+### 1. 🗄️ Kiến Trúc Local-First (Tốc Độ Tức Thì & 100% Offline)
+* Dữ liệu được lưu trữ trực tiếp trong **IndexedDB** của trình duyệt.
+* Tốc độ truy xuất và phản hồi **< 2ms**, không phụ thuộc vào mạng, không lo nghẽn server.
+* Không bao giờ chạm trần giới hạn đọc/ghi (Zero Quota Limit).
+
+### 2. ☁️ Đồng Bộ Hai Chiều Với Google Drive
+* Toàn bộ bài học được sao lưu vào thư mục riêng biệt **`Kotobase/`** trên Google Drive của người dùng (`kotobase_backup.json`).
+* Cơ chế **Debounced Auto-Sync (3.5s)**: Tự động lưu ngầm sau khi học xong.
+* Thuật toán **Two-Way Smart Merge**: Tự động so khớp `updatedAt` khi chuyển đổi thiết bị mà không bị mất dữ liệu hay tiến độ SRS.
+
+### 3. 🤖 Tạo Từ Vựng Hàng Loạt Bằng AI (Bulk AI Generator)
+* Nhập câu lệnh tự nhiên (VD: *"30 từ vựng N3 chủ đề Du lịch"* hoặc dán danh sách từ thô / đoạn văn).
+* Tự động sinh đầy đủ: **Kanji $\rightarrow$ Hiragana $\rightarrow$ Âm Hán Việt viết HOA $\rightarrow$ Nghĩa tiếng Việt $\rightarrow$ Ví dụ song ngữ**.
+* Tích hợp **Free GPT-4o Gateway** (Miễn phí 100%, không cần key) và hỗ trợ kết nối `chatgpt2api` local.
+
+### 4. 🎙️ Hệ Thống Phát Âm 3 Tầng (VOICEVOX GPU Local)
+* **Ưu tiên số 1:** Kết nối trực tiếp **VOICEVOX GPU Engine (`http://127.0.0.1:50021`)** trên card đồ họa NVIDIA (RTX) với thời gian phản hồi **30ms**.
+* **Chuẩn trọng âm Tokyo (Pitch Accent):** Giọng đọc Seiyuu tự nhiên chuẩn người bản xứ.
+* **Fallback thông minh:** Tự động chuyển sang Voicevox Cloud API hoặc Web Speech API nếu offline.
+
+### 5. 🧠 Ôn Tập Khoa Học Với Anki SRS (SuperMemo SM-2)
+* Thuật toán lặp lại ngắt quãng SM-2 tự động tính toán chu kỳ lặp lại (Again, Hard, Good, Easy) dựa trên độ khó.
+* Hàng đợi thông minh lọc các từ vựng đến hạn ôn tập hàng ngày (Due Cards Queue).
+
+### 6. 📁 Cây Thư Mục Đa Cấp & Phân Loại Thông Minh
+* Tạo, đổi tên, phân cấp thư mục con (`+`), xóa bài học an toàn.
+* Tách biệt rõ ràng: **"Tất cả từ vựng"** và **"Từ chưa phân loại (Mới thêm)"**.
+* Hỗ trợ kéo thả (Drag & Drop) từ vựng vào từng bài học.
 
 ---
 
-## 4. Cấu trúc thư mục dự án
+## 🏛️ Kiến Trúc Local-First
 
-```text
-KotoBase/
-├── src/
-│   ├── app/
-│   │   ├── actions/          # Server Actions xử lý dữ liệu (Vocabulary, Folder, Kanji)
-│   │   ├── api/              # API Route Handlers (Jisho Proxy, Kanji Lookup)
-│   │   ├── layout.tsx        # Layout chính của ứng dụng
-│   │   └── page.tsx          # Trang chủ Dashboard
-│   ├── components/           # Các thành phần giao diện người dùng (UI Components)
-│   │   ├── Dashboard.tsx     # Bảng điều khiển trung tâm
-│   │   ├── FolderTree.tsx    # Cây quản lý thư mục
-│   │   ├── OverviewView.tsx  # Bảng tổng quan danh sách từ
-│   │   ├── FocusRecallView.tsx # Giao diện ôn tập phản xạ
-│   │   ├── FlashcardView.tsx # Giao diện Flashcard & Anki SRS
-│   │   ├── KanjiDictionaryView.tsx # Quản lý và tra cứu Hán tự
-│   │   ├── TypingQuizView.tsx # Giao diện trắc nghiệm gõ phím
-│   │   ├── QuickAddForm.tsx  # Form thêm nhanh từ vựng
-│   │   └── ...
-│   ├── hooks/                # Custom React Hooks (useDebounce, ...)
-│   └── lib/                  # Tiện ích bổ trợ (TTS, Anki Algorithm, Firebase Config)
-├── public/                   # Tài nguyên tĩnh
-├── package.json              # Cấu hình phụ thuộc và scripts
-├── tailwind.config.ts        # Cấu hình Tailwind CSS
-└── tsconfig.json             # Cấu hình TypeScript
+```
++---------------------------------------------------------+
+|                  Kotobase Next.js Web                   |
++---------------------------------------------------------+
+        |                                       |
+  (Read/Write < 2ms)                    (Audio Playback 30ms)
+        v                                       v
++------------------+                    +--------------------+
+| IndexedDB Local  |                    | VOICEVOX Local GPU |
+| Browser Storage  |                    | (Port 50021 - CUDA)|
++------------------+                    +--------------------+
+        |
+  (Auto Sync 3.5s)
+        v
++---------------------------------------------------------+
+|   Google Drive API v3 (Folder: Kotobase/backup.json)    |
++---------------------------------------------------------+
 ```
 
 ---
 
-## 5. Hướng dẫn cài đặt và chạy môi trường cục bộ
+## 📚 Tài Liệu Kỹ Thuật Chi Tiết (Documentation Suite)
 
-### 5.1. Yêu cầu hệ thống
-- Node.js phiên bản 18.17.0 trở lên.
-- Trình quản lý gói: npm hoặc yarn hoặc pnpm.
+Dự án đi kèm bộ tài liệu kỹ thuật toàn diện trong thư mục [`docs/`](./docs/):
 
-### 5.2. Các bước cài đặt
-
-1. Sao chép mã nguồn về máy:
-   ```bash
-   git clone <URL_REPOSITORY>
-   cd KotoBase
-   ```
-
-2. Cài đặt các gói phụ thuộc:
-   ```bash
-   npm install
-   ```
-
-3. Cấu hình biến môi trường:
-   Tạo file `.env.local` tại thư mục gốc và khai báo các khóa kết nối Firebase:
-   ```env
-   NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
-   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-   NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
-   ```
-
-4. Khởi chạy máy chủ phát triển (Development Server):
-   ```bash
-   npm run dev
-   ```
-   Mở trình duyệt và truy cập: `http://localhost:3000`
+| Tài liệu | Nội dung chi tiết |
+| :--- | :--- |
+| 🏛️ [**ARCHITECTURE.md**](./docs/ARCHITECTURE.md) | Kiến trúc tổng quan, mô hình Local-First, Schema IndexedDB, Data Flow |
+| ☁️ [**GOOGLE_DRIVE_SYNC.md**](./docs/GOOGLE_DRIVE_SYNC.md) | Cơ chế đồng bộ Drive API v3, Two-Way Smart Merge, bảo mật OAuth |
+| 🤖 [**AI_FEATURES.md**](./docs/AI_FEATURES.md) | Tự động hóa từ vựng bằng AI, chuẩn Prompt Engineering, Multi-Provider |
+| 🎙️ [**TTS_ENGINE.md**](./docs/TTS_ENGINE.md) | Động cơ phát âm 3 tầng, tích hợp VOICEVOX GPU, ElevenLabs |
+| 🧠 [**ANKI_SRS.md**](./docs/ANKI_SRS.md) | Thuật toán ôn tập ngắt quãng SuperMemo SM-2, công thức toán học |
+| 🚀 [**SETUP_GUIDE.md**](./docs/SETUP_GUIDE.md) | Hướng dẫn cài đặt, cấu hình `.env.local`, các lệnh chạy & build |
 
 ---
 
-## 6. Lệnh xây dựng dự án
+## 🚀 Cài Đặt & Khởi Chạy
 
-- Kiểm tra lỗi TypeScript:
+### 1. Cài đặt thư viện
+```bash
+git clone https://github.com/NhatPrv/kotobase.git
+cd kotobase
+npm install
+```
+
+### 2. Cấu hình biến môi trường (`.env.local`)
+```env
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id_here
+CHATGPT2API_URL=http://127.0.0.1:8001/v1/chat/completions
+CHATGPT2API_KEY=16022005
+```
+
+### 3. Khởi chạy
+* **Khởi động 1-Click (Windows):** Click đúp vào file `start_all.bat`.
+* **Khởi động qua dòng lệnh:**
   ```bash
-  npm run lint
+  npm run dev:all   # Chạy cả Web App (3000) và AI Backend (8001)
+  npm run dev       # Chỉ chạy Web App (Dùng Free AI Gateway Online)
   ```
-- Đóng gói dự án (Production Build):
-  ```bash
-  npm run build
-  ```
-- Khởi chạy bản đóng gói:
-  ```bash
-  npm run start
-  ```
+* Mở trình duyệt tại: `http://localhost:3000`
 
 ---
 
-## 7. Giấy phép
+## 📄 Giấy Phép
 
-Dự án được phát triển phục vụ mục đích học tập và nghiên cứu cá nhân.
+Dự án mã nguồn mở phục vụ mục đích học tập và nghiên cứu.
