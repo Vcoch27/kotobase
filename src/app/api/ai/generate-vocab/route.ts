@@ -94,13 +94,14 @@ export async function POST(req: NextRequest) {
     // -------------------------------------------------------------
     // Provider 0: Local chatgpt2api (C:\mydata\DevTools\chatgpt2api)
     // -------------------------------------------------------------
-    const localChatGptUrl = process.env.CHATGPT2API_URL || "http://127.0.0.1:5005/v1/chat/completions";
+    const localChatGptUrl = process.env.CHATGPT2API_URL || "http://127.0.0.1:8001/v1/chat/completions";
+    const localChatGptKey = process.env.CHATGPT2API_KEY || "16022005";
     try {
       const res = await fetch(localChatGptUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.CHATGPT2API_KEY || "dummy-key"}`,
+          "Authorization": `Bearer ${localChatGptKey}`,
         },
         body: JSON.stringify({
           model: "gpt-4o",

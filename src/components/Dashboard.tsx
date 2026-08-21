@@ -391,7 +391,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
             <QuickAddForm folders={folders} currentFolderId={selectedFolderId} onSuccess={() => fetchData(true)} />
           )}
 
-          {/* Breadcrumbs - Hiển thị đường dẫn của thư mục đang chọn */}
+          {/* Breadcrumbs - Hiển thị đường dẫn và chủ sở hữu của thư mục đang chọn */}
           <div className="flex flex-wrap items-center justify-between gap-3 px-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Đang chọn:</span>
