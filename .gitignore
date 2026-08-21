@@ -1,19 +1,24 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
-/.pnp
+node_modules/
+**/node_modules/
+.pnp
 .pnp.js
 
 # testing
-/coverage
+coverage/
+**/coverage/
 
 # next.js
-/.next/
-/out/
+.next/
+**/.next/
+out/
+**/out/
 
 # production
-/build
+build/
+**/build/
 
 # misc
 .DS_Store
@@ -39,4 +44,11 @@ yarn-error.log*
 next-env.d.ts
 
 # Legacy folders
-/prisma/
+prisma/
+
+# Local services & tools
+services/
+.venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
