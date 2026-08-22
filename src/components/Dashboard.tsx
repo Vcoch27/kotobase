@@ -13,8 +13,8 @@ import { getVocabularies } from "@/app/actions/vocabulary";
 import { getFolders, createFolder } from "@/app/actions/folder";
 import { 
   LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, 
-  Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, Volume2, Loader2,
-  User, Lock, Folder
+  Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, ChevronUp, Volume2, Loader2,
+  User, Lock, Folder, X, FolderTree as FolderTreeIcon
 } from "lucide-react";
 import { getFolderFullPath } from "@/lib/folder-utils";
 import { useTheme } from "next-themes";
@@ -64,6 +64,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const [loading, setLoading] = useState(true);
 
   const [showFolderModal, setShowFolderModal] = useState(false);
+  const [showMobileFolderDrawer, setShowMobileFolderDrawer] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showTTSSettingsModal, setShowTTSSettingsModal] = useState(false);
@@ -660,6 +661,106 @@ export function Dashboard({ currentUser }: DashboardProps) {
       {/* Modal Cài đặt Phát âm (TTS) */}
       {showTTSSettingsModal && (
         <TTSSettingsModal onClose={() => setShowTTSSettingsModal(false)} />
+      )}
+
+      {/* 🚀 MOBILE ONLY: Nút nổi Floating Button chuyển nhanh Thư mục */}
+      <div className="fixed bottom-5 right-4 z-40 md:hidden animate-fadeIn">
+        <button
+          onClick={() => setShowMobileFolderDrawer(true)}
+          className="flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 text-white shadow-2xl shadow-amber-500/40 border border-amber-400/30 active:scale-95 transition-all"
+          title="Chuyển nhanh thư mục"
+        >
+          <Folder className="w-4 h-4 text-white shrink-0" />
+          <span className="text-xs font-black max-w-[120px] truncate">
+            {selectedFolderId === 'all' 
+              ? 'Tất cả từ vựng' 
+              : (folders.find(f => f.id === selectedFolderId)?.name || 'Thư mục')}
+          </span>
+          <ChevronUp className="w-3.5 h-3.5 opacity-80 shrink-0" />
+        </button>
+      </div>
+
+      {/* 🚀 MOBILE ONLY: Bottom Sheet Drawer Cây Thư Mục */}
+      {showMobileFolderDrawer && (
+        <div className="fixed inset-0 z-50 md:hidden flex flex-col justify-end">
+          {/* Backdrop mờ tối */}
+          <div 
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity animate-fadeIn" 
+            onClick={() => setShowMobileFolderDrawer(false)}
+          />
+          
+          {/* Drawer Panel trượt từ dưới lên */}
+          <div className="relative z-10 w-full max-h-[85vh] bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 rounded-t-3xl shadow-2xl flex flex-col overflow-hidden animate-slideUp">
+            {/* Handle bar vuốt kéo */}
+            <div 
+              className="w-full pt-3 pb-1 flex justify-center cursor-pointer" 
+              onClick={() => setShowMobileFolderDrawer(false)}
+            >
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full" />
+            </div>
+
+            {/* Header Drawer */}
+            <div className="px-5 py-3 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Folder className="w-5 h-5 text-amber-500" />
+                <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">
+                  Chuyển nhanh Thư mục
+                </h3>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {isGoogleUser && (
+                  <button
+                    onClick={() => {
+                      setShowMobileFolderDrawer(false);
+                      setNewFolderParentId(selectedFolderId !== "all" ? selectedFolderId : "");
+                      setShowFolderModal(true);
+                    }}
+                    className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg border border-indigo-200 dark:border-indigo-500/20"
+                  >
+                    <FolderPlus className="w-3.5 h-3.5" /> Tạo mới
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowMobileFolderDrawer(false)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Body: Cây thư mục đầy đủ */}
+            <div className="p-4 overflow-y-auto flex-1 custom-scrollbar max-h-[60vh]">
+              <FolderTree 
+                folders={folders} 
+                selectedFolderId={selectedFolderId} 
+                onSelectFolder={(id) => {
+                  handleSelectFolder(id);
+                  setShowMobileFolderDrawer(false);
+                }}
+                onRefresh={() => fetchData(true)}
+                currentUserId={currentUser?.uid || null}
+                currentUserEmail={currentUser?.email || null}
+              />
+            </div>
+
+            {/* Footer Drawer: Link sang Tra cứu Hán tự */}
+            <div className="p-3.5 px-5 bg-slate-50 dark:bg-slate-950/80 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <Link 
+                href="/kanji"
+                onClick={() => setShowMobileFolderDrawer(false)}
+                className="flex items-center gap-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline"
+              >
+                <Library className="w-4 h-4" />
+                <span>Tra cứu Hán tự (Kanji)</span>
+              </Link>
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                {folders.length} thư mục
+              </span>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
