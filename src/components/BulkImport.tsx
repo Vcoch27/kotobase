@@ -1,9 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createBulkVocabulary } from "@/app/actions/vocabulary";
-import { Upload, Copy, CheckCircle, Sparkles, Folder, ArrowRight, ArrowLeft, Check, AlertCircle } from "lucide-react";
+import { 
+  Upload, Copy, CheckCircle, Sparkles, Folder, ArrowRight, ArrowLeft, Check, 
+  AlertCircle, Bot, FileCode, Key, ExternalLink, Loader2, RefreshCw, Cpu, Settings2 
+} from "lucide-react";
 import { getFolderFullPath } from "@/lib/folder-utils";
+import { 
+  loadGeminiSettings, saveGeminiSettings, generateVocabulariesFromRawText, 
+  GeminiSettings, AVAILABLE_GEMINI_MODELS 
+} from "@/lib/gemini-utils";
 
 interface FolderItem {
   id: string;
@@ -14,6 +21,7 @@ interface BulkImportProps {
   folders: FolderItem[];
   currentFolderId?: string;
   onSuccess?: () => void;
+  onOpenGeminiSettings?: () => void;
 }
 
 interface ParsedVocabItem {
@@ -25,18 +33,35 @@ interface ParsedVocabItem {
   note?: string | null;
 }
 
-export function BulkImport({ folders, currentFolderId, onSuccess }: BulkImportProps) {
+export function BulkImport({ folders, currentFolderId, onSuccess, onOpenGeminiSettings }: BulkImportProps) {
   const [step, setStep] = useState<"input" | "preview">("input");
+  const [inputMode, setInputMode] = useState<"ai" | "json">("ai");
+  const [rawText, setRawText] = useState("");
   const [jsonText, setJsonText] = useState("");
   const [previewList, setPreviewList] = useState<ParsedVocabItem[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string>(
     currentFolderId && currentFolderId !== "all" ? currentFolderId : ""
   );
   const [loading, setLoading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [geminiConfig, setGeminiConfig] = useState<GeminiSettings>({ apiKey: "", model: "gemini-3.6-flash" });
 
-  React.useEffect(() => {
+  useEffect(() => {
+    setGeminiConfig(loadGeminiSettings());
+  }, []);
+
+  // Lắng nghe khi focus trở lại để cập nhật nếu vừa lưu key
+  useEffect(() => {
+    const handleFocus = () => {
+      setGeminiConfig(loadGeminiSettings());
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, []);
+
+  useEffect(() => {
     if (currentFolderId && currentFolderId !== "all") {
       setSelectedFolderId(currentFolderId);
     } else {
@@ -70,15 +95,50 @@ Ví dụ:
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Bước 1: Phân tích JSON và chuyển sang màn hình Preview
-  const handleProceedToPreview = () => {
+  // Bước 1A: Xử lý bằng Gemini AI từ văn bản thô
+  const handleProcessWithAI = async () => {
+    if (!rawText.trim()) {
+      setMessage({ type: "error", text: "Vui lòng nhập văn bản hoặc danh sách từ vựng cần AI phân tích." });
+      return;
+    }
+
+    const currentSettings = loadGeminiSettings();
+    if (!currentSettings.apiKey || !currentSettings.apiKey.trim()) {
+      setMessage({ 
+        type: "error", 
+        text: "Bạn chưa cài đặt Gemini API Key. Vui lòng bấm vào 'Cài đặt Gemini AI' để thêm API Key miễn phí." 
+      });
+      return;
+    }
+
+    setAiLoading(true);
+    setMessage(null);
+
+    const res = await generateVocabulariesFromRawText(
+      rawText,
+      currentSettings.apiKey,
+      currentSettings.model
+    );
+
+    setAiLoading(false);
+
+    if (res.success && res.data && res.data.length > 0) {
+      setPreviewList(res.data);
+      setMessage(null);
+      setStep("preview");
+    } else {
+      setMessage({ type: "error", text: res.error || "Không thể phân tích từ vựng bằng AI. Vui lòng thử lại." });
+    }
+  };
+
+  // Bước 1B: Phân tích JSON thủ công
+  const handleProceedToPreviewJSON = () => {
     if (!jsonText.trim()) {
-      setMessage({ type: "error", text: "Vui lòng nhập JSON từ vựng." });
+      setMessage({ type: "error", text: "Vui lòng nhập mã JSON từ vựng." });
       return;
     }
 
     try {
-      // Làm sạch chuỗi JSON nếu có dính markdown code block ```json ... ```
       let cleanedJson = jsonText.trim();
       if (cleanedJson.startsWith("```")) {
         cleanedJson = cleanedJson.replace(/^```(json)?\n?/, "").replace(/```$/, "").trim();
@@ -93,7 +153,7 @@ Ví dụ:
       const validItems: ParsedVocabItem[] = dataList.filter((item: any) => item && item.word && item.meaning);
 
       if (validItems.length === 0) {
-        setMessage({ type: "error", text: "Không tìm thấy từ vựng hợp lệ nào trong JSON (mỗi từ cần có ít nhất trường 'word' và 'meaning')." });
+        setMessage({ type: "error", text: "Không tìm thấy từ vựng hợp lệ nào trong JSON." });
         return;
       }
 
@@ -104,7 +164,7 @@ Ví dụ:
       console.error("Lỗi parse JSON:", err);
       setMessage({ 
         type: "error", 
-        text: `Cú pháp JSON không hợp lệ! Vui lòng kiểm tra lại dấu ngoặc, dấu phẩy (${err.message}).` 
+        text: `Cú pháp JSON không hợp lệ! Vui lòng kiểm tra lại (${err.message}).` 
       });
     }
   };
@@ -114,12 +174,12 @@ Ví dụ:
     setLoading(true);
     setMessage(null);
     
-    // Gửi chuỗi JSON của previewList đã được làm sạch
     const res = await createBulkVocabulary(JSON.stringify(previewList), selectedFolderId || undefined);
     setLoading(false);
     
     if (res.success) {
       setMessage({ type: "success", text: `🎉 Đã thêm thành công ${res.count} từ vựng vào kho dữ liệu!` });
+      setRawText("");
       setJsonText("");
       setPreviewList([]);
       setStep("input");
@@ -133,28 +193,36 @@ Ví dụ:
     ? getFolderFullPath(folders.find(f => f.id === selectedFolderId) || { name: 'Thư mục đã chọn' }, folders)
     : "Không xếp thư mục (Root)";
 
+  const hasApiKey = !!geminiConfig.apiKey?.trim();
+
   return (
     <div className="bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-500/30 rounded-2xl p-5 shadow-xl animate-fadeIn transition-colors">
-      <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+      {/* Header Panel */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30">
+          <div className="p-2 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 text-white shadow-md shadow-indigo-500/20 shrink-0">
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-              Nhập liệu hàng loạt bằng AI (Bulk Import)
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 flex-wrap">
+              <span>Nhập liệu hàng loạt (Bulk AI)</span>
+              {hasApiKey && (
+                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20 px-2 py-0.5 rounded-full">
+                  Gemini AI Active
+                </span>
+              )}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               {step === "input" 
-                ? "Dán kết quả JSON từ AI vào đây để kiểm tra trước khi thêm." 
+                ? "Dán danh sách từ vựng thô để AI tự động phân tích hoặc dán JSON có sẵn." 
                 : `Xem trước ${previewList.length} từ vựng chuẩn bị thêm vào "${targetFolderName}"`}
             </p>
           </div>
         </div>
 
-        {/* Step indicator badge */}
-        <div className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-          <span className={step === "input" ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"}>1. Nhập JSON</span>
+        {/* Step indicator */}
+        <div className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 shrink-0">
+          <span className={step === "input" ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"}>1. Nhập liệu</span>
           <span>→</span>
           <span className={step === "preview" ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400"}>2. Xem trước & Lưu</span>
         </div>
@@ -163,54 +231,198 @@ Ví dụ:
       {step === "input" ? (
         /* ================= BƯỚC 1: NHẬP LIỆU ================= */
         <div className="flex flex-col gap-4 animate-fadeIn">
-          {/* Nút Copy Prompt */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-slate-50 dark:bg-slate-950/50 p-3 rounded-xl border border-slate-200 dark:border-slate-800 transition-colors">
-            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-              Copy Prompt này để yêu cầu ChatGPT/Claude tạo danh sách từ vựng chuẩn JSON:
-            </span>
+          {/* Tabs chuyển đổi giữa AI và JSON */}
+          <div className="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-950 rounded-xl w-fit border border-slate-200 dark:border-slate-800 text-xs">
             <button
-              onClick={copyPrompt}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase rounded-lg bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-500 dark:hover:bg-indigo-400 text-white shadow-sm transition-all whitespace-nowrap"
+              type="button"
+              onClick={() => {
+                setInputMode("ai");
+                setMessage(null);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all ${
+                inputMode === "ai"
+                  ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-800"
+              }`}
             >
-              {copied ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? "Đã copy!" : "Copy Prompt"}
+              <Bot className="w-3.5 h-3.5" />
+              <span>🤖 Tự động bằng Gemini AI</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setInputMode("json");
+                setMessage(null);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all ${
+                inputMode === "json"
+                  ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-800"
+              }`}
+            >
+              <FileCode className="w-3.5 h-3.5" />
+              <span>📋 Dán JSON thủ công</span>
             </button>
           </div>
 
-          {/* Khung nhập JSON và chọn Folder */}
-          <div className="space-y-3">
-            <textarea
-              value={jsonText}
-              onChange={(e) => setJsonText(e.target.value)}
-              placeholder="Dán mã JSON trả về từ AI vào đây... (ví dụ: [ { 'word': '...', 'meaning': '...' } ])"
-              className="w-full h-36 px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-xs text-slate-700 dark:text-slate-200 font-mono outline-none custom-scrollbar transition-colors"
-            ></textarea>
+          {inputMode === "ai" ? (
+            /* --- Chế độ 1: Tự động bằng Gemini AI --- */
+            <div className="space-y-3 animate-fadeIn">
+              {!hasApiKey && (
+                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
+                    <Key className="w-4 h-4 shrink-0 text-amber-600" />
+                    <span>Bạn chưa thêm Gemini API Key để dùng tính năng AI tự động.</span>
+                  </div>
+                  {onOpenGeminiSettings && (
+                    <button
+                      type="button"
+                      onClick={onOpenGeminiSettings}
+                      className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg shadow-sm whitespace-nowrap text-xs"
+                    >
+                      Cài đặt API Key
+                    </button>
+                  )}
+                </div>
+              )}
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2 flex-1">
-                <Folder className="w-4 h-4 text-amber-500 shrink-0" />
-                <select
-                  value={selectedFolderId}
-                  onChange={(e) => setSelectedFolderId(e.target.value)}
-                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-2 text-xs text-slate-700 dark:text-slate-300 outline-none focus:border-indigo-500 transition-colors"
-                >
-                  <option value="">-- Không xếp thư mục (Root) --</option>
-                  {folders.map(f => (
-                    <option key={f.id} value={f.id}>{getFolderFullPath(f, folders)}</option>
-                  ))}
-                </select>
+              {/* Thanh chọn nhanh Model linh hoạt khi bị giới hạn Quota */}
+              <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 dark:bg-slate-950/60 p-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Cpu className="w-4 h-4 text-indigo-500 shrink-0" />
+                  <span className="font-bold text-slate-700 dark:text-slate-300">Model AI:</span>
+                  <select
+                    value={geminiConfig.model || "gemini-3.6-flash"}
+                    onChange={(e) => {
+                      const newModel = e.target.value;
+                      const newSettings = { ...geminiConfig, model: newModel };
+                      setGeminiConfig(newSettings);
+                      saveGeminiSettings(newSettings);
+                    }}
+                    className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 outline-none focus:border-indigo-500 cursor-pointer shadow-sm"
+                  >
+                    {AVAILABLE_GEMINI_MODELS.map(m => (
+                      <option key={m.id} value={m.id}>
+                        {m.name} {m.badge ? `(${m.badge})` : ''}
+                      </option>
+                    ))}
+                    {!AVAILABLE_GEMINI_MODELS.some(m => m.id === geminiConfig.model) && geminiConfig.model && (
+                      <option value={geminiConfig.model}>{geminiConfig.model} (Custom)</option>
+                    )}
+                  </select>
+                </div>
+
+                {onOpenGeminiSettings && (
+                  <button
+                    type="button"
+                    onClick={onOpenGeminiSettings}
+                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-semibold ml-auto"
+                  >
+                    <Settings2 className="w-3.5 h-3.5" />
+                    <span>Tùy chỉnh model khác</span>
+                  </button>
+                )}
               </div>
-              
-              <button
-                onClick={handleProceedToPreview}
-                disabled={!jsonText.trim()}
-                className="flex items-center justify-center gap-2 px-6 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl disabled:opacity-50 transition-all shadow-md shadow-indigo-600/20 active:scale-95"
-              >
-                <span>Tiếp tục kiểm tra</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+
+              <textarea
+                value={rawText}
+                onChange={(e) => setRawText(e.target.value)}
+                placeholder="Dán bất kỳ văn bản, ghi chú hoặc danh sách từ vựng nào vào đây...
+Ví dụ:
+1. 逃げる (にげる) : chạy trốn
+2. 捕まえる : bắt giữ
+3. 抱く (いだく) : ôm ấp ước mơ
+(AI sẽ tự động tìm từ vựng, Hiragana, Hán Việt, Nghĩa và đặt câu ví dụ Nhật - Việt chuẩn xác)"
+                className="w-full h-40 px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-xs text-slate-700 dark:text-slate-200 outline-none custom-scrollbar transition-colors leading-relaxed"
+              ></textarea>
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2 flex-1">
+                  <Folder className="w-4 h-4 text-amber-500 shrink-0" />
+                  <select
+                    value={selectedFolderId}
+                    onChange={(e) => setSelectedFolderId(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-2 text-xs text-slate-700 dark:text-slate-300 outline-none focus:border-indigo-500 transition-colors"
+                  >
+                    <option value="">-- Không xếp thư mục (Root) --</option>
+                    {folders.map(f => (
+                      <option key={f.id} value={f.id}>{getFolderFullPath(f, folders)}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={handleProcessWithAI}
+                  disabled={aiLoading || !rawText.trim()}
+                  className="flex items-center justify-center gap-2 px-6 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-600 hover:to-indigo-700 rounded-xl disabled:opacity-50 transition-all shadow-md shadow-indigo-500/20 active:scale-95 shrink-0"
+                >
+                  {aiLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Gemini AI đang phân tích...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      <span>AI Phân tích & Tạo từ vựng →</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* --- Chế độ 2: Dán JSON thủ công --- */
+            <div className="space-y-3 animate-fadeIn">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-slate-50 dark:bg-slate-950/50 p-3 rounded-xl border border-slate-200 dark:border-slate-800 transition-colors">
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                  Copy Prompt chuẩn để dán vào ChatGPT/Claude:
+                </span>
+                <button
+                  type="button"
+                  onClick={copyPrompt}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase rounded-lg bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-500 text-white shadow-sm transition-all whitespace-nowrap"
+                >
+                  {copied ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? "Đã copy!" : "Copy Prompt"}
+                </button>
+              </div>
+
+              <textarea
+                value={jsonText}
+                onChange={(e) => setJsonText(e.target.value)}
+                placeholder="Dán mã JSON trả về từ AI vào đây... (ví dụ: [ { 'word': '...', 'meaning': '...' } ])"
+                className="w-full h-36 px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-xs text-slate-700 dark:text-slate-200 font-mono outline-none custom-scrollbar transition-colors"
+              ></textarea>
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2 flex-1">
+                  <Folder className="w-4 h-4 text-amber-500 shrink-0" />
+                  <select
+                    value={selectedFolderId}
+                    onChange={(e) => setSelectedFolderId(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-2 text-xs text-slate-700 dark:text-slate-300 outline-none focus:border-indigo-500 transition-colors"
+                  >
+                    <option value="">-- Không xếp thư mục (Root) --</option>
+                    {folders.map(f => (
+                      <option key={f.id} value={f.id}>{getFolderFullPath(f, folders)}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={handleProceedToPreviewJSON}
+                  disabled={!jsonText.trim()}
+                  className="flex items-center justify-center gap-2 px-6 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl disabled:opacity-50 transition-all shadow-md shadow-indigo-600/20 active:scale-95 shrink-0"
+                >
+                  <span>Tiếp tục kiểm tra</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         /* ================= BƯỚC 2: XEM TRƯỚC (PREVIEW) ================= */
@@ -271,6 +483,7 @@ Ví dụ:
           {/* Nút hành động */}
           <div className="flex items-center justify-between gap-3 pt-2">
             <button
+              type="button"
               onClick={() => {
                 setStep("input");
                 setMessage(null);
@@ -278,10 +491,11 @@ Ví dụ:
               disabled={loading}
               className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-all disabled:opacity-50"
             >
-              <ArrowLeft className="w-4 h-4" /> Quay lại sửa JSON
+              <ArrowLeft className="w-4 h-4" /> Quay lại chỉnh sửa
             </button>
 
             <button
+              type="button"
               onClick={handleConfirmImport}
               disabled={loading}
               className="flex items-center gap-2 px-6 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-lg shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-50"

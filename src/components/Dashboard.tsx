@@ -8,13 +8,15 @@ import { OverviewView } from "./OverviewView";
 import { FolderTree } from "./FolderTree";
 import { AnkiSettingsModal } from "./AnkiSettingsModal";
 import { TTSSettingsModal } from "./TTSSettingsModal";
+import { GeminiSettingsModal } from "./GeminiSettingsModal";
 import { JishoSearchResults } from "./JishoSearchResults";
 import { getVocabularies } from "@/app/actions/vocabulary";
 import { getFolders, createFolder } from "@/app/actions/folder";
 import { 
   LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, 
   Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, ChevronUp, Volume2, Loader2,
-  User, Lock, Folder, X, FolderTree as FolderTreeIcon, ArrowDownNarrowWide, ArrowUpNarrowWide
+  User, Lock, Folder, X, FolderTree as FolderTreeIcon, ArrowDownNarrowWide, ArrowUpNarrowWide,
+  Sparkles
 } from "lucide-react";
 import { getFolderFullPath } from "@/lib/folder-utils";
 import { useTheme } from "next-themes";
@@ -77,6 +79,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showTTSSettingsModal, setShowTTSSettingsModal] = useState(false);
+  const [showGeminiSettingsModal, setShowGeminiSettingsModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderParentId, setNewFolderParentId] = useState<string>("");
   const [creatingFolder, setCreatingFolder] = useState(false);
@@ -359,6 +362,16 @@ export function Dashboard({ currentUser }: DashboardProps) {
                       <Volume2 className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                       Cài đặt Phát âm
                     </button>
+                    <button 
+                      onClick={() => {
+                        setShowSettingsDropdown(false);
+                        setShowGeminiSettingsModal(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-b border-slate-100 dark:border-slate-800"
+                    >
+                      <Sparkles className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                      Cài đặt Gemini AI
+                    </button>
                     {isGoogleUser && (
                       <button 
                         onClick={async () => {
@@ -499,7 +512,12 @@ export function Dashboard({ currentUser }: DashboardProps) {
               </div>
 
               {showBulkImport ? (
-                <BulkImport folders={folders} currentFolderId={selectedFolderId} onSuccess={() => fetchData(true)} />
+                <BulkImport 
+                  folders={folders} 
+                  currentFolderId={selectedFolderId} 
+                  onSuccess={() => fetchData(true)} 
+                  onOpenGeminiSettings={() => setShowGeminiSettingsModal(true)}
+                />
               ) : (
                 <QuickAddForm folders={folders} currentFolderId={selectedFolderId} onSuccess={() => fetchData(true)} />
               )}
@@ -731,6 +749,11 @@ export function Dashboard({ currentUser }: DashboardProps) {
       {/* Modal Cài đặt Phát âm (TTS) */}
       {showTTSSettingsModal && (
         <TTSSettingsModal onClose={() => setShowTTSSettingsModal(false)} />
+      )}
+
+      {/* Modal Cài đặt Gemini AI */}
+      {showGeminiSettingsModal && (
+        <GeminiSettingsModal onClose={() => setShowGeminiSettingsModal(false)} />
       )}
 
       {/* 🚀 MOBILE ONLY: Nút nổi Floating Button chuyển nhanh Thư mục */}
