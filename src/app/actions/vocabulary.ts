@@ -92,23 +92,28 @@ export async function createBulkVocabulary(jsonString: string, targetFolderId?: 
 
     const batch = adminDb.batch();
     const vocabRef = adminDb.collection("vocabularies");
+    const baseTime = Date.now();
     
     let count = 0;
-    for (const item of dataList) {
+    for (let i = 0; i < dataList.length; i++) {
+      const item = dataList[i];
       if (!item.word || !item.meaning) continue;
 
       const newDocRef = vocabRef.doc();
+      // Gán thời gian tịnh tiến 100ms để đảm bảo thứ tự từ trên xuống dưới của file JSON được bảo toàn 100%
+      const itemTime = new Date(baseTime + count * 100).toISOString();
+
       batch.set(newDocRef, {
-        word: item.word,
-        meaning: item.meaning,
-        reading: item.reading || null,
-        sinoVietnamese: item.sinoVietnamese || null,
-        example: item.example || null,
-        note: item.note || null,
+        word: item.word.trim(),
+        meaning: item.meaning.trim(),
+        reading: item.reading?.trim() || null,
+        sinoVietnamese: item.sinoVietnamese?.trim() || null,
+        example: item.example?.trim() || null,
+        note: item.note?.trim() || null,
         folderIds: targetFolderId ? [targetFolderId] : [],
         createdBy: currentUser.uid,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: itemTime,
+        updatedAt: itemTime,
       });
       count++;
     }
@@ -228,11 +233,11 @@ export async function getVocabularies(folderId?: string, searchQuery?: string) {
       );
     }
 
-    // 5. Sort by createdAt desc
+    // 5. Sắp xếp mặc định theo đúng thứ tự thêm vào (Cũ trước -> Mới sau: dateA - dateB)
     vocabs.sort((a: any, b: any) => {
       const dateA = new Date(a.createdAt || 0).getTime();
       const dateB = new Date(b.createdAt || 0).getTime();
-      return dateB - dateA;
+      return dateA - dateB;
     });
 
     return vocabs;

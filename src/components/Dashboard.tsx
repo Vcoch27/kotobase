@@ -14,7 +14,7 @@ import { getFolders, createFolder } from "@/app/actions/folder";
 import { 
   LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, 
   Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, ChevronUp, Volume2, Loader2,
-  User, Lock, Folder, X, FolderTree as FolderTreeIcon
+  User, Lock, Folder, X, FolderTree as FolderTreeIcon, ArrowDownNarrowWide, ArrowUpNarrowWide
 } from "lucide-react";
 import { getFolderFullPath } from "@/lib/folder-utils";
 import { useTheme } from "next-themes";
@@ -53,6 +53,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const [vocabularies, setVocabularies] = useState<any[]>([]);
   const [folders, setFolders] = useState<any[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string>("all");
+  const [sortOrder, setSortOrder] = useState<"created_asc" | "created_desc" | "alphabetical">("created_asc");
 
   const handleSelectFolder = (id: string) => {
     setSelectedFolderId(id);
@@ -60,6 +61,14 @@ export function Dashboard({ currentUser }: DashboardProps) {
       localStorage.setItem("kotobase_selected_folder", id);
     } catch (e) {}
   };
+
+  const handleSortChange = (newSort: "created_asc" | "created_desc" | "alphabetical") => {
+    setSortOrder(newSort);
+    try {
+      localStorage.setItem("kotobase_sort_order", newSort);
+    } catch (e) {}
+  };
+
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -92,10 +101,10 @@ export function Dashboard({ currentUser }: DashboardProps) {
     }
     setQuotaExceeded(false);
     try {
-      let vocabData: any;
-      let folderData: any;
+      let vocabData: any[];
+      let folderData: any[];
 
-      // Tái sử dụng dữ liệu từ RAM Cache nếu đã tải rồi và không có sự thay đổi
+      // Kiểm tra xem trong cache đã có folder này chưa
       if (!isBackground && vocabCache.current[selectedFolderId] && foldersCache.current) {
         vocabData = vocabCache.current[selectedFolderId];
         folderData = foldersCache.current;
@@ -109,12 +118,12 @@ export function Dashboard({ currentUser }: DashboardProps) {
         if (vData && (vData as any).error === "QUOTA_EXCEEDED") throw new Error("QUOTA_EXCEEDED");
         if (fData && (fData as any).error === "QUOTA_EXCEEDED") throw new Error("QUOTA_EXCEEDED");
 
-        vocabData = vData;
-        folderData = fData;
+        vocabData = vData as any[];
+        folderData = fData as any[];
         
         // Lưu lại vào Cache
-        vocabCache.current[selectedFolderId] = Array.isArray(vData) ? vData : [];
-        foldersCache.current = Array.isArray(fData) ? fData : [];
+        vocabCache.current[selectedFolderId] = Array.isArray(vocabData) ? vocabData : [];
+        foldersCache.current = Array.isArray(folderData) ? folderData : [];
       }
 
       setVocabularies(Array.isArray(vocabData) ? vocabData : []);
@@ -135,12 +144,16 @@ export function Dashboard({ currentUser }: DashboardProps) {
     }
   };
 
-  // Khôi phục selectedFolderId từ localStorage ở Client
+  // Khôi phục selectedFolderId & sortOrder từ localStorage ở Client
   useEffect(() => {
     try {
       const savedFolder = localStorage.getItem("kotobase_selected_folder");
       if (savedFolder && savedFolder !== "all") {
         setSelectedFolderId(savedFolder);
+      }
+      const savedSort = localStorage.getItem("kotobase_sort_order") as any;
+      if (savedSort && ["created_asc", "created_desc", "alphabetical"].includes(savedSort)) {
+        setSortOrder(savedSort);
       }
     } catch (e) {}
     setMounted(true);
@@ -151,17 +164,42 @@ export function Dashboard({ currentUser }: DashboardProps) {
     fetchData();
   }, [selectedFolderId, mounted]); // ĐÃ BỎ debouncedSearchQuery khỏi đây!
 
-  // Client-side Filtering cực nhanh và 0 tốn read của Firebase
+  // Client-side Filtering & Sorting cực nhanh và 0 tốn read của Firebase
   const filteredVocabularies = React.useMemo(() => {
-    if (!debouncedSearchQuery.trim()) return vocabularies;
-    const q = debouncedSearchQuery.trim().toLowerCase();
-    return vocabularies.filter(v => 
-      (v.word && v.word.toLowerCase().includes(q)) ||
-      (v.meaning && v.meaning.toLowerCase().includes(q)) ||
-      (v.reading && v.reading.toLowerCase().includes(q)) ||
-      (v.sinoVietnamese && v.sinoVietnamese.toLowerCase().includes(q))
-    );
-  }, [vocabularies, debouncedSearchQuery]);
+    let result = vocabularies;
+    if (debouncedSearchQuery.trim()) {
+      const q = debouncedSearchQuery.trim().toLowerCase();
+      result = result.filter(v => 
+        (v.word && v.word.toLowerCase().includes(q)) ||
+        (v.meaning && v.meaning.toLowerCase().includes(q)) ||
+        (v.reading && v.reading.toLowerCase().includes(q)) ||
+        (v.sinoVietnamese && v.sinoVietnamese.toLowerCase().includes(q))
+      );
+    }
+
+    const sorted = [...result];
+    if (sortOrder === "created_asc") {
+      sorted.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateA - dateB;
+      });
+    } else if (sortOrder === "created_desc") {
+      sorted.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA;
+      });
+    } else if (sortOrder === "alphabetical") {
+      sorted.sort((a, b) => {
+        const textA = (a.reading || a.word || "").toLowerCase();
+        const textB = (b.reading || b.word || "").toLowerCase();
+        return textA.localeCompare(textB);
+      });
+    }
+
+    return sorted;
+  }, [vocabularies, debouncedSearchQuery, sortOrder]);
 
   const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -468,7 +506,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
             </>
           ) : null}
 
-          {/* Breadcrumbs - Hiển thị đường dẫn và chủ sở hữu của thư mục đang chọn */}
+          {/* Breadcrumbs & Bộ chọn sắp xếp linh hoạt */}
           <div className="flex flex-wrap items-center justify-between gap-3 px-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Đang chọn:</span>
@@ -481,12 +519,44 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 )}
               </div>
             </div>
-            {selectedFolderId !== 'all' && folders.find(f => f.id === selectedFolderId)?.ownerEmail && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20 rounded-full">
-                <User className="w-3 h-3" />
-                <span>Chủ sở hữu: {folders.find(f => f.id === selectedFolderId)?.ownerEmail}</span>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              {selectedFolderId !== 'all' && folders.find(f => f.id === selectedFolderId)?.ownerEmail && (
+                <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20 rounded-full">
+                  <User className="w-3 h-3" />
+                  <span>Chủ sở hữu: {folders.find(f => f.id === selectedFolderId)?.ownerEmail}</span>
+                </div>
+              )}
+
+              {/* Sort Order Selector */}
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/60 p-1 rounded-xl border border-slate-200 dark:border-slate-700/60 text-xs">
+                <button
+                  onClick={() => handleSortChange("created_asc")}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-bold transition-all ${
+                    sortOrder === "created_asc"
+                      ? "bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-sm"
+                      : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                  }`}
+                  title="Hiển thị theo đúng thứ tự thêm vào (Bài học từ trên xuống dưới)"
+                >
+                  <ArrowDownNarrowWide className="w-3.5 h-3.5" />
+                  <span>Thứ tự thêm</span>
+                </button>
+
+                <button
+                  onClick={() => handleSortChange("created_desc")}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-bold transition-all ${
+                    sortOrder === "created_desc"
+                      ? "bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-sm"
+                      : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                  }`}
+                  title="Từ mới nhất lên đầu"
+                >
+                  <ArrowUpNarrowWide className="w-3.5 h-3.5" />
+                  <span>Mới nhất</span>
+                </button>
               </div>
-            )}
+            </div>
           </div>
 
           {/* View Modes */}
