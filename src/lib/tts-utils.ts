@@ -63,9 +63,9 @@ const playVoicevox = async (text: string): Promise<boolean> => {
       const queryRes = await fetch(voicevoxUrl);
       if (queryRes.ok) {
         const data = await queryRes.json();
-        if (data.success && data.wavDownloadUrl) {
+        if (data.success && typeof data.wavDownloadUrl === 'string' && data.wavDownloadUrl) {
           audioUrl = data.wavDownloadUrl;
-          audioBlobCache.set(cacheKey, audioUrl);
+          audioBlobCache.set(cacheKey, data.wavDownloadUrl);
         }
       }
     }
@@ -148,8 +148,9 @@ export const playAudio = async (text: string, tempSettings?: TTSSettings) => {
 
         if (res.ok) {
           const blob = await res.blob();
-          audioUrl = URL.createObjectURL(blob);
-          audioBlobCache.set(cacheKey, audioUrl);
+          const url = URL.createObjectURL(blob);
+          audioUrl = url;
+          audioBlobCache.set(cacheKey, url);
         } else {
           toast.error('ElevenLabs báo lỗi (hết token hoặc sai key). Chuyển sang dự phòng...', { id: 'tts-el-fail' });
         }
