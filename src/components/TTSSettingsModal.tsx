@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Save, Volume2, Key, Info, Sparkles, Check, Gauge } from "lucide-react";
+import { X, Save, Volume2, Key, Info, Check, Monitor } from "lucide-react";
 import { 
   TTSSettings, loadTTSSettings, saveTTSSettings, 
-  DEFAULT_TTS_SETTINGS, playAudio, JAPANESE_EDGE_VOICES 
+  DEFAULT_TTS_SETTINGS, playAudio 
 } from "@/lib/tts-utils";
 
 interface TTSSettingsModalProps {
@@ -68,33 +68,7 @@ export function TTSSettingsModal({ onClose }: TTSSettingsModalProps) {
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               
-              {/* Option 1: Microsoft Edge TTS (Recommended) */}
-              <button
-                type="button"
-                onClick={() => setSettings({ ...settings, provider: "edge" })}
-                className={`p-3.5 rounded-2xl border-2 text-left transition-all relative flex flex-col justify-between ${
-                  settings.provider === "edge"
-                    ? "border-emerald-500 bg-emerald-50/70 dark:bg-emerald-500/10 shadow-sm shadow-emerald-500/10"
-                    : "border-slate-200 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-800 bg-slate-50/50 dark:bg-slate-900/50"
-                }`}
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100 flex items-center gap-1">
-                      <Sparkles className="w-3.5 h-3.5 text-emerald-500" /> Edge TTS
-                    </span>
-                    {settings.provider === "edge" && <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
-                  </div>
-                  <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
-                    Khuyên dùng
-                  </span>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug pt-1">
-                    Miễn phí 100%, chuẩn NHK, giọng Azure Neural cực tự nhiên.
-                  </p>
-                </div>
-              </button>
-
-              {/* Option 2: Voicevox */}
+              {/* Option 1: Voicevox */}
               <button
                 type="button"
                 onClick={() => setSettings({ ...settings, provider: "voicevox" })}
@@ -115,12 +89,12 @@ export function TTSSettingsModal({ onClose }: TTSSettingsModalProps) {
                     Public Server
                   </span>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug pt-1">
-                    Giọng Mei (Anime), miễn phí, đôi khi độ trễ cao hơn.
+                    Giọng Mei (Anime), tự nhiên, miễn phí.
                   </p>
                 </div>
               </button>
-              
-              {/* Option 3: ElevenLabs */}
+
+              {/* Option 2: ElevenLabs */}
               <button
                 type="button"
                 onClick={() => setSettings({ ...settings, provider: "elevenlabs" })}
@@ -141,7 +115,33 @@ export function TTSSettingsModal({ onClose }: TTSSettingsModalProps) {
                     Cần API Key
                   </span>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug pt-1">
-                    Chuyên nghiệp, chất lượng cao, tự fallback khi hết token.
+                    Chuyên nghiệp, AI cao cấp, ngữ điệu thực tế.
+                  </p>
+                </div>
+              </button>
+
+              {/* Option 3: Browser Default */}
+              <button
+                type="button"
+                onClick={() => setSettings({ ...settings, provider: "browser" })}
+                className={`p-3.5 rounded-2xl border-2 text-left transition-all relative flex flex-col justify-between ${
+                  settings.provider === "browser"
+                    ? "border-emerald-500 bg-emerald-50/70 dark:bg-emerald-500/10 shadow-sm shadow-emerald-500/10"
+                    : "border-slate-200 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-800 bg-slate-50/50 dark:bg-slate-900/50"
+                }`}
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100 flex items-center gap-1">
+                      <Monitor className="w-3.5 h-3.5" /> Thiết bị
+                    </span>
+                    {settings.provider === "browser" && <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
+                  </div>
+                  <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                    Offline 100%
+                  </span>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug pt-1">
+                    Giọng mặc định máy tính, không cần internet.
                   </p>
                 </div>
               </button>
@@ -149,81 +149,12 @@ export function TTSSettingsModal({ onClose }: TTSSettingsModalProps) {
             </div>
           </div>
 
-          {/* Config Detail for Edge TTS */}
-          {settings.provider === "edge" && (
-            <div className="space-y-4 animate-fadeIn p-4 sm:p-5 rounded-2xl bg-emerald-50/40 dark:bg-slate-800/50 border border-emerald-100 dark:border-slate-700/60">
-              
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between">
-                  <span>Giọng đọc Tiếng Nhật (Azure Neural Voice)</span>
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {JAPANESE_EDGE_VOICES.map((v) => {
-                    const isSelected = settings.edgeVoice === v.id;
-                    return (
-                      <button
-                        type="button"
-                        key={v.id}
-                        onClick={() => setSettings({ ...settings, edgeVoice: v.id })}
-                        className={`p-3 rounded-xl border text-left transition-all ${
-                          isSelected
-                            ? "bg-white dark:bg-slate-900 border-emerald-500 shadow-sm ring-1 ring-emerald-500"
-                            : "bg-white/60 dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800 hover:border-emerald-300"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-0.5">
-                          <span className={`text-xs font-bold ${isSelected ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-200'}`}>
-                            {v.name}
-                          </span>
-                          {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
-                        </div>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
-                          {v.desc}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Tốc độ đọc */}
-              <div className="space-y-2 pt-2 border-t border-emerald-100 dark:border-slate-700/60">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                  <Gauge className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>Tốc độ đọc (Speech Speed)</span>
-                </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {[
-                    { label: "Chậm (-15%)", value: "-15%" },
-                    { label: "Vừa (-5%)", value: "-5%" },
-                    { label: "Tự nhiên (0%)", value: "0%" },
-                    { label: "Nhanh (+10%)", value: "+10%" },
-                  ].map((rate) => (
-                    <button
-                      type="button"
-                      key={rate.value}
-                      onClick={() => setSettings({ ...settings, edgeRate: rate.value })}
-                      className={`py-2 px-1 rounded-xl text-xs font-bold border text-center transition-all ${
-                        settings.edgeRate === rate.value
-                          ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                          : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-emerald-300"
-                      }`}
-                    >
-                      {rate.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-            </div>
-          )}
-
           {/* Config Detail for ElevenLabs */}
           {settings.provider === "elevenlabs" && (
             <div className="space-y-4 animate-fadeIn p-5 rounded-2xl bg-indigo-50/40 dark:bg-slate-800/50 border border-indigo-100 dark:border-slate-700">
               <div className="flex items-start gap-3 text-xs text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-500/10 p-3 rounded-xl">
                 <Info className="w-4 h-4 shrink-0 mt-0.5 text-indigo-500" />
-                <p>Hệ thống sẽ tự động chuyển sang Edge TTS nếu API Key của bạn hết Token hoặc gặp lỗi kết nối.</p>
+                <p>Hệ thống sẽ tự động chuyển sang Voicevox hoặc giọng thiết bị nếu API Key hết Token hoặc gặp lỗi.</p>
               </div>
 
               <div className="space-y-1.5">
@@ -262,7 +193,17 @@ export function TTSSettingsModal({ onClose }: TTSSettingsModalProps) {
             <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-slate-800/50 border border-amber-100 dark:border-slate-700 text-xs text-amber-800 dark:text-amber-300 space-y-1 animate-fadeIn">
               <p className="font-bold">Đang sử dụng Voicevox Public Engine</p>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Sử dụng giọng Mei. Không cần cấu hình gì thêm.
+                Sử dụng giọng Mei (Anime). Miễn phí 100%, không cần cài đặt API Key.
+              </p>
+            </div>
+          )}
+
+          {/* Config Detail for Browser */}
+          {settings.provider === "browser" && (
+            <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-slate-800/50 border border-emerald-100 dark:border-slate-700 text-xs text-emerald-800 dark:text-emerald-300 space-y-1 animate-fadeIn">
+              <p className="font-bold">Đang sử dụng Giọng đọc mặc định của máy</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Sử dụng bộ tổng hợp giọng nói Web Speech API của trình duyệt/hệ điều hành. Hoạt động offline 100%, phản hồi tức thì.
               </p>
             </div>
           )}
