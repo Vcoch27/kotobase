@@ -476,8 +476,17 @@ export function Dashboard({ currentUser }: DashboardProps) {
               />
             </div>
 
-            {/* Link sang trang Kanji */}
-            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+            {/* Các công cụ khác (Kanji, Mẫu câu) */}
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-1.5">
+              <Link 
+                href="/sentences"
+                className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 border border-transparent hover:border-emerald-200 dark:hover:border-emerald-500/20 transition-all"
+              >
+                <Library className="w-4 h-4 shrink-0" />
+                <span className="flex-1">Mẫu câu giao tiếp</span>
+                <ChevronRight className="w-3.5 h-3.5 opacity-50" />
+              </Link>
+              
               <Link 
                 href="/kanji"
                 className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 transition-all"

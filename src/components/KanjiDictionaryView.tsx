@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Search, Library, FileText, BookOpen, Edit3, Loader2, Type, Volume2, Wand2, X } from "lucide-react";
+import Link from "next/link";
 import { upsertKanjiNote } from "@/app/actions/kanji";
 import { getVocabulariesByKanji } from "@/app/actions/vocabulary";
 import { VocabularyEditModal } from "./VocabularyEditModal";
@@ -156,6 +157,15 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
             <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">Tra cứu Hán tự</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">Có tổng cộng {(kanjiNotes || []).length} Hán tự đã lưu ghi chú</p>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Link href="/" className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 rounded-xl transition-colors">
+            Từ vựng
+          </Link>
+          <Link href="/sentences" className="px-4 py-2 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20 rounded-xl transition-colors">
+            Mẫu câu
+          </Link>
         </div>
 
         <div className="relative w-full max-w-none sm:max-w-sm">
