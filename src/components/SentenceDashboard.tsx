@@ -61,8 +61,8 @@ export function SentenceDashboard({ currentUser }: SentenceDashboardProps) {
         getSentenceFolders(),
         getSentencesByFolder(selectedFolderId)
       ]);
-      if (fData.success) setFolders(fData.data);
-      if (sData.success) setSentences(sData.data);
+      if (fData.success && Array.isArray(fData.data)) setFolders(fData.data);
+      if (sData.success && Array.isArray(sData.data)) setSentences(sData.data);
     } catch (err) {
       toast.error('Lỗi khi tải dữ liệu');
     } finally {

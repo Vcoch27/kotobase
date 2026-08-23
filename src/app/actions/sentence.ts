@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache";
 // THƯ MỤC MẪU CÂU (SENTENCE FOLDER)
 // =========================================
 
-export async function getSentenceFolders() {
+export async function getSentenceFolders(): Promise<{ success: boolean; data?: any[]; error?: string }> {
   try {
     const snapshot = await adminDb.collection("sentence_folders").orderBy("name", "asc").get();
     
@@ -142,7 +142,7 @@ export async function deleteSentenceFolder(id: string) {
 // MẪU CÂU (SENTENCE)
 // =========================================
 
-export async function getSentencesByFolder(folderId: string | "all") {
+export async function getSentencesByFolder(folderId: string | "all"): Promise<{ success: boolean; data?: any[]; error?: string }> {
   try {
     let snapshot;
     const collection = adminDb.collection("sentences");
