@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Volume2, ArrowRight, ArrowLeft, RefreshCw, Layers } from 'lucide-react';
+import { playAudio as playTTSAudio } from '@/lib/tts-utils';
 
 interface Vocab { word: string; reading?: string; meaning: string; }
 interface Grammar { grammar: string; meaning: string; }
@@ -111,15 +112,14 @@ export function SentenceFlashcard({ sentences, mode }: SentenceFlashcardProps) {
     }
   }, [currentIndex]);
 
-  const playAudio = useCallback(() => {
+  const playAudio = useCallback(async () => {
     if (!currentCard) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(currentCard.japanese);
-    u.lang = 'ja-JP';
-    u.rate = 0.85;
     setIsPlayingAudio(true);
-    u.onend = () => setIsPlayingAudio(false);
-    window.speechSynthesis.speak(u);
+    try {
+      await playTTSAudio(currentCard.japanese);
+    } finally {
+      setTimeout(() => setIsPlayingAudio(false), 2500);
+    }
   }, [currentCard]);
 
   // Auto-play khi Chế độ Nghe
@@ -127,14 +127,13 @@ export function SentenceFlashcard({ sentences, mode }: SentenceFlashcardProps) {
     if (mode !== 'listening' || !currentCard) return;
     if (autoPlayedRef.current.has(currentIndex)) return;
     autoPlayedRef.current.add(currentIndex);
-    const timer = setTimeout(() => {
-      window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(currentCard.japanese);
-      u.lang = 'ja-JP';
-      u.rate = 0.85;
+    const timer = setTimeout(async () => {
       setIsPlayingAudio(true);
-      u.onend = () => setIsPlayingAudio(false);
-      window.speechSynthesis.speak(u);
+      try {
+        await playTTSAudio(currentCard.japanese);
+      } finally {
+        setTimeout(() => setIsPlayingAudio(false), 2500);
+      }
     }, 400);
     return () => clearTimeout(timer);
   }, [mode, currentIndex, currentCard]);

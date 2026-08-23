@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Pencil, Trash2, Volume2, Plus, Loader2 } from 'lucide-react';
+import { playAudio } from '@/lib/tts-utils';
 
 interface SentenceItem {
   id: string;
@@ -70,17 +71,17 @@ export function SentenceList({ sentences, onEdit, onDelete }: SentenceListProps)
             </div>
             
             <div className="flex items-center gap-2 shrink-0">
-              <button onClick={() => {
-                 const u = new SpeechSynthesisUtterance(sentence.japanese);
-                 u.lang = 'ja-JP';
-                 window.speechSynthesis.speak(u);
-              }} className="p-2 text-slate-400 hover:text-indigo-500 bg-slate-100 dark:bg-slate-800 rounded-xl">
+              <button 
+                onClick={() => playAudio(sentence.japanese)} 
+                className="p-2 text-slate-400 hover:text-indigo-500 bg-slate-100 dark:bg-slate-800 rounded-xl transition-colors"
+                title="Phát âm thanh"
+              >
                 <Volume2 className="w-4 h-4" />
               </button>
-              <button onClick={() => onEdit(sentence)} className="p-2 text-slate-400 hover:text-blue-500 bg-slate-100 dark:bg-slate-800 rounded-xl">
+              <button onClick={() => onEdit(sentence)} className="p-2 text-slate-400 hover:text-blue-500 bg-slate-100 dark:bg-slate-800 rounded-xl transition-colors">
                 <Pencil className="w-4 h-4" />
               </button>
-              <button onClick={() => onDelete(sentence.id)} className="p-2 text-slate-400 hover:text-rose-500 bg-slate-100 dark:bg-slate-800 rounded-xl">
+              <button onClick={() => onDelete(sentence.id)} className="p-2 text-slate-400 hover:text-rose-500 bg-slate-100 dark:bg-slate-800 rounded-xl transition-colors">
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
