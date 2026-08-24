@@ -71,16 +71,21 @@ export async function createVocabulary(input: CreateVocabInput) {
   }
 }
 
-export async function createBulkVocabulary(jsonString: string, targetFolderId?: string) {
+export async function createBulkVocabulary(jsonString: string, targetFolderIds?: string | string[]) {
   // Kiểm tra đăng nhập Google
   const currentUser = await getCurrentUser();
   if (!currentUser) {
     return { success: false, error: "Bạn cần đăng nhập bằng Google để nhập từ vựng hàng loạt." };
   }
 
-  // Kiểm tra quyền trên folder mục tiêu
-  if (targetFolderId) {
-    const perm = await checkFolderPermission(targetFolderId, currentUser.uid, currentUser.email);
+  // Chuẩn hóa mảng folderIds
+  const fIds: string[] = Array.isArray(targetFolderIds)
+    ? targetFolderIds.filter(Boolean)
+    : targetFolderIds ? [targetFolderIds] : [];
+
+  // Kiểm tra quyền trên tất cả folder mục tiêu
+  for (const fid of fIds) {
+    const perm = await checkFolderPermission(fid, currentUser.uid, currentUser.email);
     if (!perm.allowed) return { success: false, error: perm.error };
   }
 
@@ -110,7 +115,7 @@ export async function createBulkVocabulary(jsonString: string, targetFolderId?: 
         sinoVietnamese: item.sinoVietnamese?.trim() || null,
         example: item.example?.trim() || null,
         note: item.note?.trim() || null,
-        folderIds: targetFolderId ? [targetFolderId] : [],
+        folderIds: fIds,
         createdBy: currentUser.uid,
         createdAt: itemTime,
         updatedAt: itemTime,
