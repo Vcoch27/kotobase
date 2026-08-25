@@ -197,7 +197,8 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
                   </button>
                 </td>
               </tr>
-            ))}
+            );
+          })}
           </tbody>
         </table>
       </div>
