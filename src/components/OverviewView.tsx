@@ -100,6 +100,7 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
         <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr className="bg-slate-50 dark:bg-slate-950/80 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
+              <th className="py-4 px-3 text-center w-12">STT</th>
               <th className="py-4 px-5">Từ vựng (Word)</th>
               <th className="py-4 px-4">Cách đọc / Hán Việt</th>
               <th className="py-4 px-5">Nghĩa (Meaning)</th>
@@ -109,22 +110,29 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-sm text-slate-700 dark:text-slate-200 transition-colors duration-300">
-            {paginatedVocabularies.map((item) => (
-              <tr
-                key={item.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, item.id)}
-                onClick={() => setEditingVocab(item)}
-                className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer"
-                title="Bấm để xem và sửa chi tiết"
-              >
-                {/* Word & Interactive Kanji */}
-                <td className="py-4 px-5 align-top">
-                  <div className="text-xl font-extrabold text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
-                    <ClickableKanjiString text={item.word} />
-                    <Edit3 className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                </td>
+            {paginatedVocabularies.map((item, index) => {
+              const stt = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
+              return (
+                <tr
+                  key={item.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, item.id)}
+                  onClick={() => setEditingVocab(item)}
+                  className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer"
+                  title="Bấm để xem và sửa chi tiết"
+                >
+                  {/* STT */}
+                  <td className="py-4 px-3 align-top text-center font-mono text-xs font-bold text-slate-400 dark:text-slate-500 select-none">
+                    {stt}
+                  </td>
+
+                  {/* Word & Interactive Kanji */}
+                  <td className="py-4 px-5 align-top">
+                    <div className="text-xl font-extrabold text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
+                      <ClickableKanjiString text={item.word} />
+                      <Edit3 className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </td>
 
                 {/* Reading & Sino-Vietnamese */}
                 <td className="py-4 px-4 align-top space-y-1">
@@ -196,24 +204,29 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
 
       {/* 2. MOBILE VIEW (Card List - Hiện trên điện thoại < md) */}
       <div className="md:hidden flex flex-col gap-3">
-        {paginatedVocabularies.map((item) => (
-          <div
-            key={item.id}
-            onClick={() => setEditingVocab(item)}
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:border-amber-500/40 active:scale-[0.99] transition-all cursor-pointer space-y-3"
-          >
-            {/* Header: Từ vựng + Hán Việt + Nút xóa */}
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="text-2xl font-black text-slate-900 dark:text-white tracking-wide" onClick={(e) => e.stopPropagation()}>
-                  <ClickableKanjiString text={item.word} />
-                </div>
-                {item.sinoVietnamese && (
-                  <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-500/20">
-                    {item.sinoVietnamese}
+        {paginatedVocabularies.map((item, index) => {
+          const stt = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
+          return (
+            <div
+              key={item.id}
+              onClick={() => setEditingVocab(item)}
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:border-amber-500/40 active:scale-[0.99] transition-all cursor-pointer space-y-3"
+            >
+              {/* Header: STT + Từ vựng + Hán Việt + Nút xóa */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono font-bold text-xs text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg select-none">
+                    #{stt}
                   </span>
-                )}
-              </div>
+                  <div className="text-2xl font-black text-slate-900 dark:text-white tracking-wide" onClick={(e) => e.stopPropagation()}>
+                    <ClickableKanjiString text={item.word} />
+                  </div>
+                  {item.sinoVietnamese && (
+                    <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-500/20">
+                      {item.sinoVietnamese}
+                    </span>
+                  )}
+                </div>
 
               <button
                 onClick={(e) => handleDelete(e, item.id, item.word)}
@@ -270,7 +283,8 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
               </span>
             </div>
           </div>
-        ))}
+        );
+      })}
       </div>
 
       {/* 3. PAGINATION BAR (Tối ưu responsive) */}
