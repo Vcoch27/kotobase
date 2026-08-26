@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { deleteVocabulary } from '@/app/actions/vocabulary';
 import { playAudio } from '@/lib/tts-utils';
+import { StudyScopeSelector } from './StudyScopeSelector';
 
 interface VocabularyData {
   id: string;
@@ -27,20 +28,26 @@ interface VocabularyData {
 
 interface FocusRecallViewProps {
   vocabularies: VocabularyData[];
+  selectedVocabIds?: string[];
   onRefresh?: () => void;
 }
 
-export function FocusRecallView({ vocabularies, onRefresh }: FocusRecallViewProps) {
+export function FocusRecallView({ vocabularies, selectedVocabIds = [], onRefresh }: FocusRecallViewProps) {
+  const [scopedVocabs, setScopedVocabs] = useState<VocabularyData[]>(vocabularies);
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 40;
 
   useEffect(() => {
-    setCurrentPage(1);
+    setScopedVocabs(vocabularies);
   }, [vocabularies]);
 
-  const totalPages = Math.ceil(vocabularies.length / ITEMS_PER_PAGE);
-  const paginatedVocabularies = vocabularies.slice(
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [scopedVocabs]);
+
+  const totalPages = Math.ceil(scopedVocabs.length / ITEMS_PER_PAGE);
+  const paginatedVocabularies = scopedVocabs.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -54,7 +61,7 @@ export function FocusRecallView({ vocabularies, onRefresh }: FocusRecallViewProp
 
   const toggleAll = (reveal: boolean) => {
     const nextState: Record<string, boolean> = {};
-    vocabularies.forEach((item) => {
+    scopedVocabs.forEach((item) => {
       nextState[item.id] = reveal;
     });
     setExpandedIds(nextState);
@@ -88,6 +95,17 @@ export function FocusRecallView({ vocabularies, onRefresh }: FocusRecallViewProp
 
   return (
     <div className="space-y-4">
+      {/* Bộ chọn linh hoạt phạm vi học (Study Scope Selector) */}
+      <StudyScopeSelector
+        allVocabularies={vocabularies}
+        selectedVocabIds={selectedVocabIds}
+        onScopeChange={(scoped) => {
+          setScopedVocabs(scoped);
+        }}
+        activeCount={scopedVocabs.length}
+        modeTheme="indigo"
+      />
+
       {/* Control Bar: Quick Reveal / Hide All */}
       <div className="flex items-center justify-between px-2">
         <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">

@@ -11,6 +11,7 @@ import {
   AnkiRating, AnkiCardData, DEFAULT_ANKI_DATA, 
   calculateNextReview, loadAnkiProgress, saveAnkiProgress, formatInterval 
 } from "@/lib/anki-utils";
+import { StudyScopeSelector } from "./StudyScopeSelector";
 
 interface VocabularyData {
   id: string;
@@ -23,6 +24,7 @@ interface VocabularyData {
 
 interface FlashcardViewProps {
   vocabularies: VocabularyData[];
+  selectedVocabIds?: string[];
 }
 
 type StudyMode = "normal" | "progress" | "anki" | "listening";
@@ -37,7 +39,8 @@ const shuffleArray = <T,>(array: T[]): T[] => {
   return newArr;
 };
 
-export function FlashcardView({ vocabularies }: FlashcardViewProps) {
+export function FlashcardView({ vocabularies, selectedVocabIds = [] }: FlashcardViewProps) {
+  const [scopedVocabs, setScopedVocabs] = useState<VocabularyData[]>(vocabularies);
   const [mode, setMode] = useState<StudyMode>("normal");
   const [deck, setDeck] = useState<VocabularyData[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -46,6 +49,10 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showSino, setShowSino] = useState(true);
   const [isShuffled, setIsShuffled] = useState(false);
+
+  useEffect(() => {
+    setScopedVocabs(vocabularies);
+  }, [vocabularies]);
 
   // Listening mode states
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
@@ -66,13 +73,13 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
 
   // Initialization
   useEffect(() => {
-    if (vocabularies.length > 0) {
+    if (scopedVocabs.length > 0) {
       if (mode === "anki") {
         const progress = loadAnkiProgress();
         setAnkiProgress(progress);
         
         const now = Date.now();
-        const ankiDeck = vocabularies.filter(v => {
+        const ankiDeck = scopedVocabs.filter(v => {
           const p = progress[v.id];
           if (!p) return true; // New card
           if (p.nextReview <= now) return true; // Due card
@@ -89,7 +96,7 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
         });
         setAnkiStats({ new: newCount, due: dueCount });
       } else {
-        setDeck(vocabularies);
+        setDeck(scopedVocabs);
       }
       
       setCurrentIndex(0);
@@ -102,7 +109,7 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
       setDeck([]);
       setIsShuffled(false);
     }
-  }, [vocabularies, mode]);
+  }, [scopedVocabs, mode]);
 
   // Auto-play audio khi ở chế độ Nghe & chuyển sang thẻ mới
   useEffect(() => {
@@ -486,7 +493,18 @@ export function FlashcardView({ vocabularies }: FlashcardViewProps) {
   const progressPercent = ((currentIndex) / deck.length) * 100;
 
   return (
-    <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 animate-fadeIn">
+    <div className="w-full max-w-3xl mx-auto flex flex-col gap-4 animate-fadeIn">
+      {/* Bộ chọn linh hoạt phạm vi học (Study Scope Selector) */}
+      <StudyScopeSelector
+        allVocabularies={vocabularies}
+        selectedVocabIds={selectedVocabIds}
+        onScopeChange={(scoped) => {
+          setScopedVocabs(scoped);
+        }}
+        activeCount={deck.length}
+        modeTheme="emerald"
+      />
+
       {/* Top Controls Bar */}
       <div className="flex flex-col gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 sm:p-3 rounded-2xl shadow-lg transition-colors">
         {/* Mode buttons - scroll ngang trên mobile */}

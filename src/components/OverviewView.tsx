@@ -9,6 +9,18 @@ import {
   Edit3,
   ChevronLeft,
   ChevronRight,
+  CheckSquare,
+  Square,
+  MinusSquare,
+  SlidersHorizontal,
+  Sparkles,
+  Layers,
+  BrainCircuit,
+  Eye,
+  Hash,
+  Shuffle,
+  Check,
+  X,
 } from 'lucide-react';
 import { deleteVocabulary } from '@/app/actions/vocabulary';
 import toast from 'react-hot-toast';
@@ -35,9 +47,19 @@ interface OverviewViewProps {
   vocabularies: VocabularyData[];
   folders: any[];
   onRefresh?: () => void;
+  selectedVocabIds?: string[];
+  onSelectionChange?: (ids: string[]) => void;
+  onNavigateToStudyMode?: (mode: 'focus' | 'flashcard' | 'quiz', selectedIds?: string[]) => void;
 }
 
-export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewProps) {
+export function OverviewView({ 
+  vocabularies, 
+  folders, 
+  onRefresh,
+  selectedVocabIds,
+  onSelectionChange,
+  onNavigateToStudyMode,
+}: OverviewViewProps) {
   const [editingVocab, setEditingVocab] = useState<VocabularyData | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 40;
@@ -52,11 +74,90 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
     setLocalVocabs(vocabularies);
   }, [vocabularies]);
 
+  // Quản lý trạng thái từ vựng được chọn
+  const [internalSelectedIds, setInternalSelectedIds] = useState<string[]>([]);
+  const selectedIds = selectedVocabIds ?? internalSelectedIds;
+
+  const handleSelectionChange = (newIds: string[]) => {
+    if (onSelectionChange) {
+      onSelectionChange(newIds);
+    }
+    setInternalSelectedIds(newIds);
+  };
+
+  const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null);
+  const [showRangeInput, setShowRangeInput] = useState(false);
+  const [rangeStart, setRangeStart] = useState(1);
+  const [rangeEnd, setRangeEnd] = useState(Math.min(30, localVocabs.length || 30));
+
   const totalPages = Math.ceil(localVocabs.length / ITEMS_PER_PAGE);
   const paginatedVocabularies = localVocabs.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
+
+  // Toggle chọn 1 item (hỗ trợ Shift + Click chọn nhanh 1 dải)
+  const handleToggleSelect = (id: string, globalIndex: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (e.shiftKey && lastClickedIndex !== null) {
+      const start = Math.min(lastClickedIndex, globalIndex);
+      const end = Math.max(lastClickedIndex, globalIndex);
+      const rangeIds = localVocabs.slice(start, end + 1).map(v => v.id);
+      
+      const newSet = new Set(selectedIds);
+      rangeIds.forEach(item => newSet.add(item));
+      handleSelectionChange(Array.from(newSet));
+    } else {
+      if (selectedIds.includes(id)) {
+        handleSelectionChange(selectedIds.filter(i => i !== id));
+      } else {
+        handleSelectionChange([...selectedIds, id]);
+      }
+      setLastClickedIndex(globalIndex);
+    }
+  };
+
+  // Toggle chọn tất cả từ vựng trang hiện tại
+  const currentPageIds = paginatedVocabularies.map(v => v.id);
+  const isAllCurrentPageSelected = currentPageIds.length > 0 && currentPageIds.every(id => selectedIds.includes(id));
+  const isSomeCurrentPageSelected = currentPageIds.some(id => selectedIds.includes(id)) && !isAllCurrentPageSelected;
+
+  const handleToggleCurrentPage = () => {
+    if (isAllCurrentPageSelected) {
+      handleSelectionChange(selectedIds.filter(id => !currentPageIds.includes(id)));
+    } else {
+      const newSet = new Set([...selectedIds, ...currentPageIds]);
+      handleSelectionChange(Array.from(newSet));
+    }
+  };
+
+  // Chọn nhanh N từ đầu tiên
+  const handleSelectFirstN = (n: number) => {
+    const targetIds = localVocabs.slice(0, n).map(v => v.id);
+    handleSelectionChange(targetIds);
+  };
+
+  // Chọn ngẫu nhiên N từ
+  const handleSelectRandomN = (n: number) => {
+    const shuffled = [...localVocabs].sort(() => 0.5 - Math.random());
+    const targetIds = shuffled.slice(0, n).map(v => v.id);
+    handleSelectionChange(targetIds);
+  };
+
+  // Chọn dải STT tùy chỉnh
+  const handleSelectRange = () => {
+    const s = Math.max(1, Math.min(rangeStart, localVocabs.length));
+    const e = Math.max(s, Math.min(rangeEnd, localVocabs.length));
+    const targetIds = localVocabs.slice(s - 1, e).map(v => v.id);
+    handleSelectionChange(targetIds);
+    setShowRangeInput(false);
+  };
+
+  // Xóa toàn bộ lựa chọn
+  const handleClearSelection = () => {
+    handleSelectionChange([]);
+  };
 
   const handleDelete = async (e: React.MouseEvent, id: string, word: string) => {
     e.stopPropagation();
@@ -94,13 +195,154 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
   }
 
   return (
-    <>
+    <div className="relative space-y-4">
+      {/* TOOLBAR CHỌN TỪ VỰNG LINH HOẠT */}
+      <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 p-3 px-4 rounded-2xl shadow-sm backdrop-blur-md transition-all flex flex-col gap-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20">
+              <SlidersHorizontal className="w-4 h-4" />
+            </span>
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+              Chọn từ vựng để học:
+            </span>
+            {selectedIds.length > 0 ? (
+              <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 animate-fadeIn">
+                Đã chọn {selectedIds.length} / {localVocabs.length} từ
+              </span>
+            ) : (
+              <span className="text-xs text-slate-400 dark:text-slate-500">
+                (Chưa chọn từ nào - mặc định học tất cả {localVocabs.length} từ)
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {selectedIds.length > 0 && (
+              <button
+                type="button"
+                onClick={handleClearSelection}
+                className="text-xs font-semibold text-rose-500 hover:text-rose-600 dark:text-rose-400 hover:underline transition-colors"
+              >
+                Bỏ chọn tất cả
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Quick Selection Pills */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+          <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mr-1">
+            Chọn nhanh:
+          </span>
+
+          {[10, 20, 30, 50].filter(n => n <= localVocabs.length).map(n => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => handleSelectFirstN(n)}
+              className={`px-2.5 py-1 rounded-xl font-bold transition-all ${
+                selectedIds.length === n
+                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              {n} từ đầu
+            </button>
+          ))}
+
+          <button
+            type="button"
+            onClick={() => handleSelectFirstN(localVocabs.length)}
+            className={`px-2.5 py-1 rounded-xl font-bold transition-all ${
+              selectedIds.length === localVocabs.length && localVocabs.length > 0
+                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+            }`}
+          >
+            Tất cả ({localVocabs.length})
+          </button>
+
+          {/* Random 30 */}
+          <button
+            type="button"
+            onClick={() => handleSelectRandomN(Math.min(30, localVocabs.length))}
+            className="px-2.5 py-1 rounded-xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center gap-1 transition-all"
+          >
+            <Shuffle className="w-3 h-3 text-amber-500" />
+            <span>🎲 Random 30</span>
+          </button>
+
+          {/* Custom Range button */}
+          <button
+            type="button"
+            onClick={() => setShowRangeInput(!showRangeInput)}
+            className={`px-2.5 py-1 rounded-xl font-bold flex items-center gap-1 transition-all ${
+              showRangeInput
+                ? 'bg-amber-500 text-white shadow-sm'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+            }`}
+          >
+            <Hash className="w-3 h-3" />
+            <span>Dải STT (Từ... đến...)</span>
+          </button>
+        </div>
+
+        {/* Custom Range Inline Form */}
+        {showRangeInput && (
+          <div className="flex flex-wrap items-center gap-2 p-2.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/30 text-xs animate-fadeIn">
+            <span className="font-semibold text-slate-700 dark:text-slate-300">Từ STT:</span>
+            <input
+              type="number"
+              min={1}
+              max={localVocabs.length}
+              value={rangeStart}
+              onChange={e => setRangeStart(parseInt(e.target.value) || 1)}
+              className="w-16 px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-center font-bold outline-none focus:border-amber-500"
+            />
+            <span className="font-semibold text-slate-700 dark:text-slate-300">Đến STT:</span>
+            <input
+              type="number"
+              min={rangeStart}
+              max={localVocabs.length}
+              value={rangeEnd}
+              onChange={e => setRangeEnd(parseInt(e.target.value) || rangeStart)}
+              className="w-16 px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-center font-bold outline-none focus:border-amber-500"
+            />
+            <button
+              type="button"
+              onClick={handleSelectRange}
+              className="px-3 py-1 rounded-lg font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition-all"
+            >
+              Chọn dải này
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* 1. DESKTOP VIEW (Table - Hiện từ màn hình md trở lên) */}
       <div className="hidden md:block w-full overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 shadow-xl transition-colors duration-300">
         <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr className="bg-slate-50 dark:bg-slate-950/80 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
-              <th className="py-4 px-3 text-center w-12">STT</th>
+              {/* Checkbox Header */}
+              <th className="py-4 px-3 w-10 text-center">
+                <button
+                  type="button"
+                  onClick={handleToggleCurrentPage}
+                  className="p-1 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                  title={isAllCurrentPageSelected ? "Bỏ chọn trang này" : "Chọn tất cả trang này"}
+                >
+                  {isAllCurrentPageSelected ? (
+                    <CheckSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  ) : isSomeCurrentPageSelected ? (
+                    <MinusSquare className="w-4 h-4 text-indigo-500" />
+                  ) : (
+                    <Square className="w-4 h-4" />
+                  )}
+                </button>
+              </th>
+              <th className="py-4 px-2 text-center w-12">STT</th>
               <th className="py-4 px-5">Từ vựng (Word)</th>
               <th className="py-4 px-4">Cách đọc / Hán Việt</th>
               <th className="py-4 px-5">Nghĩa (Meaning)</th>
@@ -111,18 +353,39 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-sm text-slate-700 dark:text-slate-200 transition-colors duration-300">
             {paginatedVocabularies.map((item, index) => {
-              const stt = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
+              const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + index;
+              const stt = globalIndex + 1;
+              const isSelected = selectedIds.includes(item.id);
+
               return (
                 <tr
                   key={item.id}
                   draggable
                   onDragStart={(e) => handleDragStart(e, item.id)}
                   onClick={() => setEditingVocab(item)}
-                  className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer"
+                  className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer ${
+                    isSelected ? 'bg-indigo-50/50 dark:bg-indigo-950/20' : ''
+                  }`}
                   title="Bấm để xem và sửa chi tiết"
                 >
+                  {/* Checkbox */}
+                  <td className="py-4 px-3 align-top text-center" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={(e) => handleToggleSelect(item.id, globalIndex, e)}
+                      className="p-1 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                      title="Chọn từ này (Giữ Shift để chọn dải)"
+                    >
+                      {isSelected ? (
+                        <CheckSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      ) : (
+                        <Square className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-slate-400" />
+                      )}
+                    </button>
+                  </td>
+
                   {/* STT */}
-                  <td className="py-4 px-3 align-top text-center font-mono text-xs font-bold text-slate-400 dark:text-slate-500 select-none">
+                  <td className="py-4 px-2 align-top text-center font-mono text-xs font-bold text-slate-400 dark:text-slate-500 select-none">
                     {stt}
                   </td>
 
@@ -134,71 +397,71 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
                     </div>
                   </td>
 
-                {/* Reading & Sino-Vietnamese */}
-                <td className="py-4 px-4 align-top space-y-1">
-                  {item.reading && (
-                    <span className="block text-xs font-medium text-amber-700 dark:text-amber-300/90 bg-amber-100 dark:bg-amber-500/10 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-500/20 w-fit">
-                      {item.reading}
-                    </span>
-                  )}
-                  {item.sinoVietnamese && (
-                    <span className="block text-xs font-semibold text-indigo-600 dark:text-indigo-300 uppercase tracking-wide">
-                      {item.sinoVietnamese}
-                    </span>
-                  )}
-                </td>
-
-                {/* Meaning */}
-                <td className="py-4 px-5 align-top font-semibold text-emerald-600 dark:text-emerald-400">
-                  {item.meaning}
-                </td>
-
-                {/* Example */}
-                <td className="py-4 px-5 align-top text-xs space-y-2 max-w-xs">
-                  {item.example ? (
-                    <p className="text-slate-600 dark:text-slate-400 italic">
-                      <strong className="text-slate-800 dark:text-slate-300 not-italic">VD:</strong>{' '}
-                      {item.example}
-                    </p>
-                  ) : (
-                    <span className="text-slate-400 dark:text-slate-600 italic">---</span>
-                  )}
-                </td>
-
-                {/* Folders */}
-                <td className="py-4 px-4 align-top">
-                  <div className="flex flex-wrap gap-1">
-                    {item.folderVocabularies && item.folderVocabularies.length > 0 ? (
-                      item.folderVocabularies.map((fv: any) => (
-                        <span
-                          key={fv.folderId}
-                          className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 whitespace-nowrap"
-                        >
-                          <FolderIcon className="w-3 h-3 text-indigo-500 dark:text-indigo-400" />{' '}
-                          {getFolderFullPath(fv.folder, folders)}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-xs text-slate-400 dark:text-slate-600 italic">
-                        Chưa xếp thư mục
+                  {/* Reading & Sino-Vietnamese */}
+                  <td className="py-4 px-4 align-top space-y-1">
+                    {item.reading && (
+                      <span className="block text-xs font-medium text-amber-700 dark:text-amber-300/90 bg-amber-100 dark:bg-amber-500/10 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-500/20 w-fit">
+                        {item.reading}
                       </span>
                     )}
-                  </div>
-                </td>
+                    {item.sinoVietnamese && (
+                      <span className="block text-xs font-semibold text-indigo-600 dark:text-indigo-300 uppercase tracking-wide">
+                        {item.sinoVietnamese}
+                      </span>
+                    )}
+                  </td>
 
-                {/* Actions */}
-                <td className="py-4 px-4 align-top text-right">
-                  <button
-                    onClick={(e) => handleDelete(e, item.id, item.word)}
-                    title="Xóa từ vựng"
-                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
+                  {/* Meaning */}
+                  <td className="py-4 px-5 align-top font-semibold text-emerald-600 dark:text-emerald-400">
+                    {item.meaning}
+                  </td>
+
+                  {/* Example */}
+                  <td className="py-4 px-5 align-top text-xs space-y-2 max-w-xs">
+                    {item.example ? (
+                      <p className="text-slate-600 dark:text-slate-400 italic">
+                        <strong className="text-slate-800 dark:text-slate-300 not-italic">VD:</strong>{' '}
+                        {item.example}
+                      </p>
+                    ) : (
+                      <span className="text-slate-400 dark:text-slate-600 italic">---</span>
+                    )}
+                  </td>
+
+                  {/* Folders */}
+                  <td className="py-4 px-4 align-top">
+                    <div className="flex flex-wrap gap-1">
+                      {item.folderVocabularies && item.folderVocabularies.length > 0 ? (
+                        item.folderVocabularies.map((fv: any) => (
+                          <span
+                            key={fv.folderId}
+                            className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 whitespace-nowrap"
+                          >
+                            <FolderIcon className="w-3 h-3 text-indigo-500 dark:text-indigo-400" />{' '}
+                            {getFolderFullPath(fv.folder, folders)}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-slate-400 dark:text-slate-600 italic">
+                          Chưa xếp thư mục
+                        </span>
+                      )}
+                    </div>
+                  </td>
+
+                  {/* Actions */}
+                  <td className="py-4 px-4 align-top text-right">
+                    <button
+                      onClick={(e) => handleDelete(e, item.id, item.word)}
+                      title="Xóa từ vựng"
+                      className="p-2 text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -206,16 +469,36 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
       {/* 2. MOBILE VIEW (Card List - Hiện trên điện thoại < md) */}
       <div className="md:hidden flex flex-col gap-3">
         {paginatedVocabularies.map((item, index) => {
-          const stt = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
+          const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + index;
+          const stt = globalIndex + 1;
+          const isSelected = selectedIds.includes(item.id);
+
           return (
             <div
               key={item.id}
               onClick={() => setEditingVocab(item)}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:border-amber-500/40 active:scale-[0.99] transition-all cursor-pointer space-y-3"
+              className={`bg-white dark:bg-slate-900 border rounded-2xl p-4 shadow-sm active:scale-[0.99] transition-all cursor-pointer space-y-3 ${
+                isSelected
+                  ? 'border-indigo-500 bg-indigo-50/20 dark:bg-indigo-950/20 shadow-indigo-500/10'
+                  : 'border-slate-200 dark:border-slate-800 hover:border-amber-500/40'
+              }`}
             >
-              {/* Header: STT + Từ vựng + Hán Việt + Nút xóa */}
+              {/* Header: Checkbox + STT + Từ vựng + Hán Việt + Nút xóa */}
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2 flex-wrap">
+                  {/* Mobile Checkbox */}
+                  <button
+                    type="button"
+                    onClick={(e) => handleToggleSelect(item.id, globalIndex, e)}
+                    className="p-1 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+                  >
+                    {isSelected ? (
+                      <CheckSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    ) : (
+                      <Square className="w-4 h-4 text-slate-400" />
+                    )}
+                  </button>
+
                   <span className="font-mono font-bold text-xs text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg select-none">
                     #{stt}
                   </span>
@@ -229,64 +512,114 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
                   )}
                 </div>
 
-              <button
-                onClick={(e) => handleDelete(e, item.id, item.word)}
-                className="p-1.5 text-slate-400 hover:text-rose-500 active:bg-rose-50 dark:active:bg-rose-500/20 rounded-lg -mr-1 -mt-1 transition-colors"
-                title="Xóa từ vựng"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+                <button
+                  onClick={(e) => handleDelete(e, item.id, item.word)}
+                  className="p-1.5 text-slate-400 hover:text-rose-500 active:bg-rose-50 dark:active:bg-rose-500/20 rounded-lg -mr-1 -mt-1 transition-colors"
+                  title="Xóa từ vựng"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
 
-            {/* Cách đọc Furigana */}
-            {item.reading && (
-              <div className="w-fit">
-                <span className="inline-block text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-500/10 px-2.5 py-0.5 rounded-md border border-amber-300 dark:border-amber-500/20">
-                  {item.reading}
+              {/* Cách đọc Furigana */}
+              {item.reading && (
+                <div className="w-fit">
+                  <span className="inline-block text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-500/10 px-2.5 py-0.5 rounded-md border border-amber-300 dark:border-amber-500/20">
+                    {item.reading}
+                  </span>
+                </div>
+              )}
+
+              {/* Nghĩa */}
+              <div className="text-base font-bold text-emerald-600 dark:text-emerald-400 leading-snug">
+                {item.meaning}
+              </div>
+
+              {/* Ví dụ (nếu có) */}
+              {item.example && (
+                <div className="text-xs bg-slate-50 dark:bg-slate-950/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 text-slate-600 dark:text-slate-400 italic">
+                  <span className="font-bold text-slate-700 dark:text-slate-300 not-italic mr-1">VD:</span>
+                  {item.example}
+                </div>
+              )}
+
+              {/* Footer: Thư mục & Gợi ý chạm để sửa */}
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/60 text-xs">
+                <div className="flex flex-wrap gap-1 max-w-[70%]">
+                  {item.folderVocabularies && item.folderVocabularies.length > 0 ? (
+                    item.folderVocabularies.map((fv: any) => (
+                      <span
+                        key={fv.folderId}
+                        className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 truncate max-w-full"
+                      >
+                        <FolderIcon className="w-2.5 h-2.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                        <span className="truncate">{getFolderFullPath(fv.folder, folders)}</span>
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-[10px] text-slate-400 dark:text-slate-600 italic">
+                      Chưa xếp thư mục
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 flex items-center gap-1 shrink-0">
+                  <Edit3 className="w-3 h-3" /> Chạm để sửa
                 </span>
               </div>
-            )}
-
-            {/* Nghĩa */}
-            <div className="text-base font-bold text-emerald-600 dark:text-emerald-400 leading-snug">
-              {item.meaning}
             </div>
-
-            {/* Ví dụ (nếu có) */}
-            {item.example && (
-              <div className="text-xs bg-slate-50 dark:bg-slate-950/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 text-slate-600 dark:text-slate-400 italic">
-                <span className="font-bold text-slate-700 dark:text-slate-300 not-italic mr-1">VD:</span>
-                {item.example}
-              </div>
-            )}
-
-            {/* Footer: Thư mục & Gợi ý chạm để sửa */}
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/60 text-xs">
-              <div className="flex flex-wrap gap-1 max-w-[70%]">
-                {item.folderVocabularies && item.folderVocabularies.length > 0 ? (
-                  item.folderVocabularies.map((fv: any) => (
-                    <span
-                      key={fv.folderId}
-                      className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 truncate max-w-full"
-                    >
-                      <FolderIcon className="w-2.5 h-2.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
-                      <span className="truncate">{getFolderFullPath(fv.folder, folders)}</span>
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-[10px] text-slate-400 dark:text-slate-600 italic">
-                    Chưa xếp thư mục
-                  </span>
-                )}
-              </div>
-              <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 flex items-center gap-1 shrink-0">
-                <Edit3 className="w-3 h-3" /> Chạm để sửa
-              </span>
-            </div>
-          </div>
-        );
-      })}
+          );
+        })}
       </div>
+
+      {/* 3. FLOATING ACTION BAR (Hiện khi có từ được chọn) */}
+      {selectedIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex flex-wrap items-center justify-center gap-2 bg-slate-900/95 dark:bg-slate-950/95 text-white p-2.5 px-4 rounded-2xl shadow-2xl border border-slate-700/80 backdrop-blur-md animate-slideUp max-w-[95vw]">
+          <div className="flex items-center gap-2 pr-2 border-r border-slate-700/80">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="text-xs font-bold whitespace-nowrap">
+              Đã chọn <strong className="text-emerald-400">{selectedIds.length}</strong> từ
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              type="button"
+              onClick={() => onNavigateToStudyMode?.('flashcard', selectedIds)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/30 transition-all active:scale-95 whitespace-nowrap"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Học Flashcard ({selectedIds.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onNavigateToStudyMode?.('quiz', selectedIds)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-md shadow-purple-600/30 transition-all active:scale-95 whitespace-nowrap"
+            >
+              <BrainCircuit className="w-3.5 h-3.5" />
+              <span>Làm Quiz ({selectedIds.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onNavigateToStudyMode?.('focus', selectedIds)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition-all active:scale-95 whitespace-nowrap"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>Ôn Focus ({selectedIds.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleClearSelection}
+              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors ml-1"
+              title="Bỏ chọn tất cả"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 3. PAGINATION BAR (Tối ưu responsive) */}
       {totalPages > 1 && (
@@ -339,6 +672,6 @@ export function OverviewView({ vocabularies, folders, onRefresh }: OverviewViewP
           }}
         />
       )}
-    </>
+    </div>
   );
 }

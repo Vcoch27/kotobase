@@ -55,10 +55,12 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const [vocabularies, setVocabularies] = useState<any[]>([]);
   const [folders, setFolders] = useState<any[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string>("all");
+  const [selectedVocabIds, setSelectedVocabIds] = useState<string[]>([]);
   const [sortOrder, setSortOrder] = useState<"created_asc" | "created_desc" | "alphabetical">("created_asc");
 
   const handleSelectFolder = (id: string) => {
     setSelectedFolderId(id);
+    setSelectedVocabIds([]);
     try {
       localStorage.setItem("kotobase_selected_folder", id);
     } catch (e) {}
@@ -673,13 +675,33 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 <p className="text-sm font-medium">Đang tải dữ liệu từ vựng...</p>
               </div>
             ) : viewMode === "overview" ? (
-              <OverviewView vocabularies={filteredVocabularies} folders={folders} onRefresh={() => fetchData(true)} />
+              <OverviewView 
+                vocabularies={filteredVocabularies} 
+                folders={folders} 
+                onRefresh={() => fetchData(true)} 
+                selectedVocabIds={selectedVocabIds}
+                onSelectionChange={setSelectedVocabIds}
+                onNavigateToStudyMode={(mode, ids) => {
+                  if (ids) setSelectedVocabIds(ids);
+                  setViewMode(mode);
+                }}
+              />
             ) : viewMode === "focus" ? (
-              <FocusRecallView vocabularies={filteredVocabularies} onRefresh={fetchData} />
+              <FocusRecallView 
+                vocabularies={filteredVocabularies} 
+                onRefresh={fetchData}
+                selectedVocabIds={selectedVocabIds}
+              />
             ) : viewMode === "quiz" ? (
-              <TypingQuizView vocabularies={filteredVocabularies} />
+              <TypingQuizView 
+                vocabularies={filteredVocabularies}
+                selectedVocabIds={selectedVocabIds}
+              />
             ) : (
-              <FlashcardView vocabularies={filteredVocabularies} />
+              <FlashcardView 
+                vocabularies={filteredVocabularies}
+                selectedVocabIds={selectedVocabIds}
+              />
             )}
 
             {/* Tra cứu Từ điển Jisho mở rộng khi người dùng đang tìm kiếm */}

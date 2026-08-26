@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { HelpCircle, CheckCircle2, XCircle, SkipForward, Info, RotateCcw, Shuffle } from "lucide-react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
+import { StudyScopeSelector } from "./StudyScopeSelector";
 
 interface VocabularyData {
   id: string;
@@ -15,6 +16,7 @@ interface VocabularyData {
 
 interface TypingQuizViewProps {
   vocabularies: VocabularyData[];
+  selectedVocabIds?: string[];
 }
 
 type QuizType = 1 | 2; // 1: Xem Từ -> Gõ Cách đọc, 2: Xem Nghĩa -> Gõ Từ/Cách đọc
@@ -38,7 +40,8 @@ function cleanString(str: string): string {
   return str.toLowerCase().replace(/\s+/g, "");
 }
 
-export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
+export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQuizViewProps) {
+  const [scopedVocabs, setScopedVocabs] = useState<VocabularyData[]>(vocabularies);
   const [quizList, setQuizList] = useState<QuizItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userInput, setUserInput] = useState("");
@@ -55,6 +58,10 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
   // Ref cho ô input để tự động focus
   const inputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    setScopedVocabs(vocabularies);
+  }, [vocabularies]);
+
   const buildQuizList = (list: VocabularyData[], mode: "mix" | "type1" | "type2"): QuizItem[] => {
     return list.map(v => {
       let qType: QuizType = 1;
@@ -69,14 +76,14 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
     });
   };
 
-  // Khởi tạo quiz khi vocabularies hoặc quizMode thay đổi
+  // Khởi tạo quiz khi scopedVocabs hoặc quizMode thay đổi
   useEffect(() => {
-    startNewQuiz(undefined, false);
+    startNewQuiz(scopedVocabs, false);
     setIsShuffled(false);
-  }, [vocabularies, quizMode]);
+  }, [scopedVocabs, quizMode]);
 
   const startNewQuiz = (customVocabs?: VocabularyData[], forceShuffle?: boolean) => {
-    const sourceList = customVocabs && customVocabs.length > 0 ? customVocabs : vocabularies;
+    const sourceList = customVocabs && customVocabs.length > 0 ? customVocabs : scopedVocabs;
     
     if (sourceList.length === 0) {
       setQuizList([]);
@@ -333,7 +340,18 @@ export function TypingQuizView({ vocabularies }: TypingQuizViewProps) {
   const progressPercentage = ((currentIndex + 1) / quizList.length) * 100;
 
   return (
-    <div className="max-w-3xl mx-auto w-full space-y-6">
+    <div className="max-w-3xl mx-auto w-full space-y-4">
+      {/* Bộ chọn linh hoạt phạm vi học (Study Scope Selector) */}
+      <StudyScopeSelector
+        allVocabularies={vocabularies}
+        selectedVocabIds={selectedVocabIds}
+        onScopeChange={(scoped) => {
+          setScopedVocabs(scoped);
+        }}
+        activeCount={quizList.length}
+        modeTheme="purple"
+      />
+
       {/* Thanh Tiến độ và Cài đặt */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm transition-colors">
         <div className="flex-1 w-full">
