@@ -8,13 +8,39 @@ export interface TTSSettings {
   elevenLabsApiKey: string;
   elevenLabsVoiceId: string;
   hfToken: string; // Token Hugging Face để tăng giới hạn ZeroGPU
+  // KotoBase AI Options
+  kotobaseVoiceName?: string;
+  kotobaseSpeed?: number;
+  kotobaseStyle?: string;
+  kotobaseStyleWeight?: number;
 }
+
+export const KOTOBASE_VOICE_OPTIONS = [
+  { value: "JVNV-F1 - Giọng nữ 1 (Chuẩn, trong trẻo, tự nhiên)", label: "JVNV-F1 - Giọng nữ 1 (Chuẩn, trong trẻo, tự nhiên)" },
+  { value: "JVNV-F2 - Giọng nữ 2 (Dịu dàng, biểu cảm phong phú)", label: "JVNV-F2 - Giọng nữ 2 (Dịu dàng, biểu cảm phong phú)" },
+  { value: "JVNV-M1 - Giọng nam 1 (Rõ ràng, đĩnh đạc, chuẩn ngữ điệu)", label: "JVNV-M1 - Giọng nam 1 (Rõ ràng, đĩnh đạc, chuẩn ngữ điệu)" },
+  { value: "JVNV-M2 - Giọng nam 2 (Trầm ấm, tự nhiên)", label: "JVNV-M2 - Giọng nam 2 (Trầm ấm, tự nhiên)" },
+];
+
+export const KOTOBASE_STYLE_OPTIONS = [
+  { value: "Neutral", label: "Neutral (Tự nhiên / Chuẩn)" },
+  { value: "Happy", label: "Happy (Vui tươi)" },
+  { value: "Sad", label: "Sad (Buồn bã)" },
+  { value: "Angry", label: "Angry (Giận dữ)" },
+  { value: "Fear", label: "Fear (Sợ hãi)" },
+  { value: "Surprise", label: "Surprise (Bất ngờ)" },
+  { value: "Disgust", label: "Disgust (Chán ghét)" },
+];
 
 export const DEFAULT_TTS_SETTINGS: TTSSettings = {
   provider: 'kotobase-ai',
   elevenLabsApiKey: '',
   elevenLabsVoiceId: 'EXAVITQu4vr4xnSDxMaL',
   hfToken: '',
+  kotobaseVoiceName: 'JVNV-F1 - Giọng nữ 1 (Chuẩn, trong trẻo, tự nhiên)',
+  kotobaseSpeed: 1.0,
+  kotobaseStyle: 'Neutral',
+  kotobaseStyleWeight: 1.0,
 };
 
 // Bộ nhớ đệm âm thanh trong phiên (Audio Cache)
@@ -55,34 +81,70 @@ const stopCurrentAudio = () => {
   }
 };
 
-const playKotobaseAI = async (text: string, hfToken?: string): Promise<boolean> => {
+export async function fetchKotoBaseTTS(
+  text: string,
+  options?: {
+    voiceName?: string;
+    speed?: number;
+    style?: string;
+    styleWeight?: number;
+  },
+  hfToken: string = ""
+) {
+  try {
+    const connectConfig = hfToken && hfToken.startsWith('hf_') ? { hf_token: hfToken as `hf_${string}` } : {};
+    const client = await Client.connect("Vcoch27/kotobase-voice", connectConfig);
+    
+    const voiceName = options?.voiceName || "JVNV-F1 - Giọng nữ 1 (Chuẩn, trong trẻo, tự nhiên)";
+    const speed = options?.speed ?? 1.0;
+    const style = options?.style || "Neutral";
+    const styleWeight = options?.styleWeight ?? 1.0;
+
+    const result = await client.predict("/tts", { 
+      text: text, 
+      voice_name: voiceName, 
+      speed: speed, 
+      style: style, 
+      style_weight: styleWeight 
+    });
+    
+    return result.data;
+  } catch (error) {
+    console.error("Lỗi khi gọi KotoBase TTS API:", error);
+    throw error;
+  }
+}
+
+const playKotobaseAI = async (text: string, settings?: TTSSettings): Promise<boolean> => {
   try {
     stopCurrentAudio();
-    const cacheKey = `kotobase-ai:${text}`;
+    const voiceName = settings?.kotobaseVoiceName || "JVNV-F1 - Giọng nữ 1 (Chuẩn, trong trẻo, tự nhiên)";
+    const speed = settings?.kotobaseSpeed ?? 1.0;
+    const style = settings?.kotobaseStyle || "Neutral";
+    const styleWeight = settings?.kotobaseStyleWeight ?? 1.0;
+    const hfToken = settings?.hfToken || "";
+
+    const cacheKey = `kotobase-ai:${voiceName}:${speed}:${style}:${styleWeight}:${text}`;
     let audioUrl = audioBlobCache.get(cacheKey);
 
     if (!audioUrl) {
-      const connectOptions = hfToken && hfToken.startsWith('hf_') ? { hf_token: hfToken as `hf_${string}` } : {};
-      const client = await Client.connect("Vcoch27/kotobase-voice", connectOptions);
-      const result = await client.predict("/tts", { 
-          text: text, 
-          voice_name: "JVNV-F1 - Giọng nữ 1 (Chuẩn, trong trẻo, tự nhiên)", 
-          speed: 1.0, 
-          style: "Neutral", 
-          style_weight: 1.0 
-      });
+      const data = await fetchKotoBaseTTS(
+        text,
+        { voiceName, speed, style, styleWeight },
+        hfToken
+      );
 
       let extractedUrl = "";
-      if (result && result.data) {
-        if (Array.isArray(result.data)) {
-          const first = result.data[0];
+      if (data) {
+        if (Array.isArray(data)) {
+          const first = data[0];
           if (typeof first === 'object' && first !== null && 'url' in first) {
             extractedUrl = first.url as string;
           } else if (typeof first === 'string') {
             extractedUrl = first;
           }
-        } else if (typeof result.data === 'string') {
-          extractedUrl = result.data;
+        } else if (typeof data === 'string') {
+          extractedUrl = data;
         }
       }
 
@@ -170,7 +232,7 @@ export const playAudio = async (text: string, tempSettings?: TTSSettings) => {
 
   // 0. Nếu chọn KotoBase AI
   if (settings.provider === 'kotobase-ai') {
-    const aiSuccess = await playKotobaseAI(cleanText, settings.hfToken);
+    const aiSuccess = await playKotobaseAI(cleanText, settings);
     if (aiSuccess) return;
     toast.error('KotoBase AI đang khởi động hoặc quá tải, thử lại sau nhé...', { id: 'tts-ai-fail' });
   }
@@ -242,7 +304,7 @@ export const playAudio = async (text: string, tempSettings?: TTSSettings) => {
 
   // Fallback chuỗi
   if (settings.provider !== 'kotobase-ai') {
-    const fallbackKotoBase = await playKotobaseAI(cleanText, settings.hfToken);
+    const fallbackKotoBase = await playKotobaseAI(cleanText, settings);
     if (fallbackKotoBase) return;
   }
   

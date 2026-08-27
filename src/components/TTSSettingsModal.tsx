@@ -1,10 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Save, Volume2, Key, Info, Check, Monitor, Sparkles } from "lucide-react";
+import { 
+  X, Save, Volume2, Key, Info, Check, Monitor, Sparkles, 
+  User, Smile, Gauge, Sliders, RotateCcw 
+} from "lucide-react";
 import { 
   TTSSettings, loadTTSSettings, saveTTSSettings, 
-  DEFAULT_TTS_SETTINGS, playAudio 
+  DEFAULT_TTS_SETTINGS, playAudio,
+  KOTOBASE_VOICE_OPTIONS, KOTOBASE_STYLE_OPTIONS
 } from "@/lib/tts-utils";
 
 interface TTSSettingsModalProps {
@@ -230,9 +234,125 @@ export function TTSSettingsModal({ onClose }: TTSSettingsModalProps) {
                 </div>
               </div>
 
+              {/* 1. Chọn giọng đọc */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                  <Key className="w-3.5 h-3.5 text-slate-400" /> Hugging Face Access Token (Tuỳ chọn)
+                  <User className="w-3.5 h-3.5 text-rose-500" /> Chọn giọng đọc (Voice Model)
+                </label>
+                <select
+                  value={settings.kotobaseVoiceName || "JVNV-F1 - Giọng nữ 1 (Chuẩn, trong trẻo, tự nhiên)"}
+                  onChange={(e) => setSettings({ ...settings, kotobaseVoiceName: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:border-rose-500 outline-none text-xs font-semibold cursor-pointer"
+                >
+                  {KOTOBASE_VOICE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 2. Grid 2 cột: Cảm xúc & Tốc độ */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Biểu cảm cảm xúc */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                    <Smile className="w-3.5 h-3.5 text-rose-500" /> Biểu cảm cảm xúc
+                  </label>
+                  <select
+                    value={settings.kotobaseStyle || "Neutral"}
+                    onChange={(e) => setSettings({ ...settings, kotobaseStyle: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:border-rose-500 outline-none text-xs font-semibold cursor-pointer"
+                  >
+                    {KOTOBASE_STYLE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Tốc độ đọc */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                      <Gauge className="w-3.5 h-3.5 text-rose-500" /> Tốc độ đọc
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300">
+                        {(settings.kotobaseSpeed ?? 1.0).toFixed(1)}x
+                      </span>
+                      {(settings.kotobaseSpeed ?? 1.0) !== 1.0 && (
+                        <button
+                          type="button"
+                          onClick={() => setSettings({ ...settings, kotobaseSpeed: 1.0 })}
+                          title="Khôi phục mặc định"
+                          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="2.0"
+                    step="0.1"
+                    value={settings.kotobaseSpeed ?? 1.0}
+                    onChange={(e) => setSettings({ ...settings, kotobaseSpeed: parseFloat(e.target.value) })}
+                    className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-rose-500 mt-2"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-400">
+                    <span>0.5x (Chậm)</span>
+                    <span>1.0x</span>
+                    <span>2.0x (Nhanh)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Cường độ cảm xúc */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                    <Sliders className="w-3.5 h-3.5 text-rose-500" /> Cường độ cảm xúc (Style Weight)
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300">
+                      {(settings.kotobaseStyleWeight ?? 1.0).toFixed(1)}
+                    </span>
+                    {(settings.kotobaseStyleWeight ?? 1.0) !== 1.0 && (
+                      <button
+                        type="button"
+                        onClick={() => setSettings({ ...settings, kotobaseStyleWeight: 1.0 })}
+                        title="Khôi phục mặc định"
+                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <input
+                  type="range"
+                  min="0.0"
+                  max="2.0"
+                  step="0.1"
+                  value={settings.kotobaseStyleWeight ?? 1.0}
+                  onChange={(e) => setSettings({ ...settings, kotobaseStyleWeight: parseFloat(e.target.value) })}
+                  className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-rose-500 mt-2"
+                />
+                <div className="flex justify-between text-[10px] text-slate-400">
+                  <span>0.0 (Nhẹ nhàng / Ít biểu cảm)</span>
+                  <span>1.0</span>
+                  <span>2.0 (Biểu cảm rõ rệt)</span>
+                </div>
+              </div>
+
+              {/* 4. Hugging Face Access Token */}
+              <div className="space-y-1.5 pt-2 border-t border-rose-100 dark:border-slate-700/80">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5 text-slate-400" /> Hugging Face Access Token (Khuyên dùng để tránh giới hạn)
                 </label>
                 <input
                   type="password"
