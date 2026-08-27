@@ -221,11 +221,30 @@ export function TTSSettingsModal({ onClose }: TTSSettingsModalProps) {
 
           {/* Config Detail for KotoBase AI */}
           {settings.provider === "kotobase-ai" && (
-            <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-slate-800/50 border border-rose-100 dark:border-slate-700 text-xs text-rose-800 dark:text-rose-300 space-y-1 animate-fadeIn">
-              <p className="font-bold flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> Đang sử dụng KotoBase AI (Độc quyền)</p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Sử dụng API Style-Bert-VITS2 được tối ưu đặc biệt cho tiếng Nhật. Cung cấp chất lượng âm thanh siêu tự nhiên, miễn phí và không cần cấu hình.
-              </p>
+            <div className="space-y-4 animate-fadeIn p-5 rounded-2xl bg-rose-50/40 dark:bg-slate-800/50 border border-rose-100 dark:border-slate-700">
+              <div className="flex items-start gap-3 text-xs text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-500/10 p-3 rounded-xl">
+                <Sparkles className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
+                <div>
+                  <p className="font-bold mb-0.5">KotoBase AI (Style-Bert-VITS2)</p>
+                  <p>Mặc định bạn đang chạy trên ZeroGPU ẩn danh. Nếu gặp lỗi quá tải (Exceeded runs limit), hãy nhập Token Hugging Face cá nhân để dùng miễn phí không giới hạn!</p>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5 text-slate-400" /> Hugging Face Access Token (Tuỳ chọn)
+                </label>
+                <input
+                  type="password"
+                  value={settings.hfToken || ""}
+                  onChange={(e) => setSettings({ ...settings, hfToken: e.target.value })}
+                  placeholder="VD: hf_xxxxxxxxxxxxxxxxxxxxxx..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:border-rose-500 outline-none text-xs font-medium"
+                />
+                <p className="text-[11px] text-slate-500">
+                  Lấy token miễn phí tại: <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noreferrer" className="text-rose-500 hover:underline">huggingface.co/settings/tokens</a> (Quyền Read là đủ).
+                </p>
+              </div>
             </div>
           )}
 

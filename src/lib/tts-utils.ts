@@ -7,12 +7,14 @@ export interface TTSSettings {
   provider: TTSProvider;
   elevenLabsApiKey: string;
   elevenLabsVoiceId: string;
+  hfToken: string; // Token Hugging Face để tăng giới hạn ZeroGPU
 }
 
 export const DEFAULT_TTS_SETTINGS: TTSSettings = {
   provider: 'kotobase-ai',
   elevenLabsApiKey: '',
   elevenLabsVoiceId: 'EXAVITQu4vr4xnSDxMaL',
+  hfToken: '',
 };
 
 // Bộ nhớ đệm âm thanh trong phiên (Audio Cache)
@@ -53,14 +55,15 @@ const stopCurrentAudio = () => {
   }
 };
 
-const playKotobaseAI = async (text: string): Promise<boolean> => {
+const playKotobaseAI = async (text: string, hfToken?: string): Promise<boolean> => {
   try {
     stopCurrentAudio();
     const cacheKey = `kotobase-ai:${text}`;
     let audioUrl = audioBlobCache.get(cacheKey);
 
     if (!audioUrl) {
-      const client = await Client.connect("Vcoch27/kotobase-voice");
+      const connectOptions = hfToken && hfToken.startsWith('hf_') ? { hf_token: hfToken as `hf_${string}` } : {};
+      const client = await Client.connect("Vcoch27/kotobase-voice", connectOptions);
       const result = await client.predict("/tts", { 
           text: text, 
           voice_name: "JVNV-F1 - Giọng nữ 1 (Chuẩn, trong trẻo, tự nhiên)", 
@@ -167,9 +170,9 @@ export const playAudio = async (text: string, tempSettings?: TTSSettings) => {
 
   // 0. Nếu chọn KotoBase AI
   if (settings.provider === 'kotobase-ai') {
-    const aiSuccess = await playKotobaseAI(cleanText);
+    const aiSuccess = await playKotobaseAI(cleanText, settings.hfToken);
     if (aiSuccess) return;
-    toast.error('KotoBase AI đang khởi động hoặc lỗi, thử lại sau nhé...', { id: 'tts-ai-fail' });
+    toast.error('KotoBase AI đang khởi động hoặc quá tải, thử lại sau nhé...', { id: 'tts-ai-fail' });
   }
 
   // 1. Nếu chọn ElevenLabs
@@ -239,7 +242,7 @@ export const playAudio = async (text: string, tempSettings?: TTSSettings) => {
 
   // Fallback chuỗi
   if (settings.provider !== 'kotobase-ai') {
-    const fallbackKotoBase = await playKotobaseAI(cleanText);
+    const fallbackKotoBase = await playKotobaseAI(cleanText, settings.hfToken);
     if (fallbackKotoBase) return;
   }
   
