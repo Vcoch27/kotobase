@@ -39,8 +39,8 @@ export function StudyScopeSelector({
   );
   const [selectedChunkIndex, setSelectedChunkIndex] = useState(0);
   const [randomCount, setRandomCount] = useState(30);
-  const [rangeStart, setRangeStart] = useState(1);
-  const [rangeEnd, setRangeEnd] = useState(Math.min(30, allVocabularies.length));
+  const [rangeStartStr, setRangeStartStr] = useState('1');
+  const [rangeEndStr, setRangeEndStr] = useState(String(Math.min(30, allVocabularies.length || 30)));
   const [isExpanded, setIsExpanded] = useState(false);
 
   const total = allVocabularies.length;
@@ -59,7 +59,7 @@ export function StudyScopeSelector({
         index: idx,
         start,
         end,
-        label: `${start} - ${end} (${end - start + 1} từ)`,
+        label: `${start} - ${end}`,
       });
       start += CHUNK_SIZE;
       idx++;
@@ -67,13 +67,23 @@ export function StudyScopeSelector({
     return list;
   }, [total]);
 
+  // Tính số lượng từ trong dải nhập STT hiện tại
+  const currentRangeCount = useMemo(() => {
+    const s = parseInt(rangeStartStr, 10);
+    const e = parseInt(rangeEndStr, 10);
+    if (isNaN(s) || isNaN(e) || s < 1 || e < s) return 0;
+    const clampedS = Math.min(s, total);
+    const clampedE = Math.min(e, total);
+    return Math.max(0, clampedE - clampedS + 1);
+  }, [rangeStartStr, rangeEndStr, total]);
+
   // Cập nhật phạm vi từ vựng khi thay đổi lựa chọn
   const applyScope = (
     type: ScopeType,
     chunkIdx = selectedChunkIndex,
     randCount = randomCount,
-    rStart = rangeStart,
-    rEnd = rangeEnd
+    customStart?: number,
+    customEnd?: number
   ) => {
     setScopeType(type);
 
@@ -104,8 +114,15 @@ export function StudyScopeSelector({
     }
 
     if (type === 'range') {
-      const s = Math.max(1, Math.min(rStart, total));
-      const e = Math.max(s, Math.min(rEnd, total));
+      const rawS = customStart !== undefined ? customStart : parseInt(rangeStartStr, 10);
+      const rawE = customEnd !== undefined ? customEnd : parseInt(rangeEndStr, 10);
+
+      const s = Math.max(1, Math.min(isNaN(rawS) ? 1 : rawS, total));
+      const e = Math.max(s, Math.min(isNaN(rawE) ? s : rawE, total));
+
+      setRangeStartStr(String(s));
+      setRangeEndStr(String(e));
+
       const sliced = allVocabularies.slice(s - 1, e);
       onScopeChange(sliced, `Từ STT ${s} đến ${e} (${sliced.length} từ)`);
       return;
@@ -141,12 +158,12 @@ export function StudyScopeSelector({
   }[modeTheme];
 
   return (
-    <div className={`rounded-2xl border ${themeClasses} p-3 sm:p-3.5 transition-all mb-4 shadow-sm backdrop-blur-sm`}>
+    <div className={`rounded-2xl border ${themeClasses} p-2.5 sm:p-3 transition-all mb-4 shadow-sm backdrop-blur-sm space-y-2`}>
       {/* Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="p-1.5 rounded-lg bg-white dark:bg-slate-800 shadow-sm border border-slate-200/60 dark:border-slate-700/60">
-            <SlidersHorizontal className="w-4 h-4" />
+            <SlidersHorizontal className="w-3.5 h-3.5" />
           </div>
           <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
             Phạm vi học:
@@ -156,197 +173,165 @@ export function StudyScopeSelector({
           </span>
         </div>
 
-        {/* Nút bấm mở rộng/thu gọn tùy chỉnh */}
-        <button
-          type="button"
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 transition-all shadow-sm"
-        >
-          <span>{isExpanded ? 'Thu gọn bộ chọn' : 'Đổi số lượng từ'}</span>
-          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-        </button>
-      </div>
-
-      {/* Quick Pills Bar (Luôn hiển thị các tùy chọn phổ biến) */}
-      <div className="flex flex-wrap items-center gap-1.5 pt-2.5">
-        {/* Nút: Tất cả */}
-        <button
-          type="button"
-          onClick={() => applyScope('all')}
-          className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-            scopeType === 'all'
-              ? activeBtnClasses
-              : 'bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300'
-          }`}
-        >
-          Tất cả ({total})
-        </button>
-
-        {/* Nút: Các từ đã chọn ở Mode 1 (nếu có) */}
-        {selectedVocabIds.length > 0 && (
-          <button
-            type="button"
-            onClick={() => applyScope('selected')}
-            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
-              scopeType === 'selected'
-                ? activeBtnClasses
-                : 'bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300'
-            }`}
-          >
-            <Check className="w-3.5 h-3.5" />
-            <span>Đã chọn ({selectedVocabIds.length})</span>
-          </button>
-        )}
-
-        {/* Nút: Chunks 30 từ đầu (1-30) */}
-        {chunks.length > 0 && (
+        {/* Quick Pills Bar (Nút nhanh) */}
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          {/* Nút: Tất cả */}
           <button
             type="button"
             onClick={() => {
-              setSelectedChunkIndex(0);
-              applyScope('chunk', 0);
+              setIsExpanded(false);
+              applyScope('all');
             }}
-            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-              scopeType === 'chunk' && selectedChunkIndex === 0
+            className={`px-2.5 py-1 rounded-xl font-bold transition-all ${
+              scopeType === 'all' && !isExpanded
                 ? activeBtnClasses
                 : 'bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300'
             }`}
           >
-            30 từ đầu (1-30)
+            Tất cả ({total})
           </button>
-        )}
 
-        {/* Nút: Chunks 30 từ tiếp theo (31-60) nếu có */}
-        {chunks.length > 1 && (
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedChunkIndex(1);
-              applyScope('chunk', 1);
-            }}
-            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-              scopeType === 'chunk' && selectedChunkIndex === 1
-                ? activeBtnClasses
-                : 'bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300'
-            }`}
-          >
-            30 từ tiếp (31-60)
-          </button>
-        )}
-
-        {/* Nút: Ngẫu nhiên 30 từ */}
-        <button
-          type="button"
-          onClick={() => {
-            setRandomCount(30);
-            applyScope('random', selectedChunkIndex, 30);
-          }}
-          className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
-            scopeType === 'random' && randomCount === 30
-              ? activeBtnClasses
-              : 'bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300'
-          }`}
-        >
-          <Shuffle className="w-3 h-3" />
-          <span>Random 30</span>
-        </button>
-      </div>
-
-      {/* Expanded Custom Panel */}
-      {isExpanded && (
-        <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-700/60 space-y-3 animate-fadeIn text-xs">
-          {/* 1. Chọn theo từng khối Chunk 30 từ */}
-          {chunks.length > 0 && (
-            <div className="space-y-1.5">
-              <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <ListFilter className="w-3.5 h-3.5" />
-                <span>Chia theo từng phần (30 từ / đợt học):</span>
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {chunks.map(chunk => (
-                  <button
-                    key={chunk.index}
-                    type="button"
-                    onClick={() => {
-                      setSelectedChunkIndex(chunk.index);
-                      applyScope('chunk', chunk.index);
-                    }}
-                    className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
-                      scopeType === 'chunk' && selectedChunkIndex === chunk.index
-                        ? activeBtnClasses
-                        : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    {chunk.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+          {/* Nút: Các từ đã chọn ở Mode 1 (nếu có) */}
+          {selectedVocabIds.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsExpanded(false);
+                applyScope('selected');
+              }}
+              className={`px-2.5 py-1 rounded-xl font-bold transition-all flex items-center gap-1 ${
+                scopeType === 'selected' && !isExpanded
+                  ? activeBtnClasses
+                  : 'bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300'
+              }`}
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>Đã chọn ({selectedVocabIds.length})</span>
+            </button>
           )}
 
-          {/* 2. Chọn ngẫu nhiên số lượng */}
-          <div className="space-y-1.5">
-            <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <Shuffle className="w-3.5 h-3.5" />
-              <span>Học ngẫu nhiên số lượng từ:</span>
-            </label>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {[10, 20, 30, 50].filter(n => n <= total).map(n => (
+          {/* Nút: 30 từ đầu (chỉ hiện khi > 30 từ) */}
+          {chunks.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsExpanded(false);
+                setSelectedChunkIndex(0);
+                applyScope('chunk', 0);
+              }}
+              className={`px-2.5 py-1 rounded-xl font-bold transition-all ${
+                scopeType === 'chunk' && selectedChunkIndex === 0 && !isExpanded
+                  ? activeBtnClasses
+                  : 'bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300'
+              }`}
+            >
+              30 từ đầu
+            </button>
+          )}
+
+          {/* Nút: Ngẫu nhiên 30 từ */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsExpanded(false);
+              setRandomCount(30);
+              applyScope('random', selectedChunkIndex, 30);
+            }}
+            className={`px-2.5 py-1 rounded-xl font-bold transition-all flex items-center gap-1 ${
+              scopeType === 'random' && randomCount === 30 && !isExpanded
+                ? activeBtnClasses
+                : 'bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300'
+            }`}
+          >
+            <Shuffle className="w-3 h-3" />
+            <span>Random 30</span>
+          </button>
+
+          {/* Nút bấm mở rộng/thu gọn Dải STT & Khối tùy chỉnh */}
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className={`flex items-center gap-1 font-bold px-2.5 py-1 rounded-xl border transition-all shadow-sm ${
+              isExpanded || scopeType === 'range' || (scopeType === 'chunk' && selectedChunkIndex > 0)
+                ? 'bg-amber-500 text-white border-amber-600 shadow-amber-500/20'
+                : 'bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700'
+            }`}
+          >
+            <Hash className="w-3 h-3" />
+            <span>🎯 Dải STT / Đợt học {isExpanded ? '▲' : '▼'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Expanded Custom Panel (Dải STT & Chia khối theo đợt) */}
+      {isExpanded && (
+        <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 space-y-2 animate-fadeIn text-xs">
+          {/* 1. Nhập Dải STT tùy chỉnh (Cho phép xóa tự do, gõ 31, 65 thoải mái) */}
+          <div className="flex flex-wrap items-center gap-2 p-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 shadow-sm">
+            <span className="font-bold text-slate-700 dark:text-slate-300">Từ STT:</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={rangeStartStr}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (/^\d*$/.test(val)) setRangeStartStr(val);
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && applyScope('range')}
+              placeholder="1"
+              className="w-16 px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-center font-bold text-slate-900 dark:text-white outline-none focus:border-amber-500"
+            />
+            <span className="font-bold text-slate-700 dark:text-slate-300">Đến STT:</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={rangeEndStr}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (/^\d*$/.test(val)) setRangeEndStr(val);
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && applyScope('range')}
+              placeholder={String(total)}
+              className="w-16 px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-center font-bold text-slate-900 dark:text-white outline-none focus:border-amber-500"
+            />
+            <button
+              type="button"
+              onClick={() => applyScope('range')}
+              className={`px-3 py-1 rounded-lg font-bold transition-all ${
+                scopeType === 'range' ? activeBtnClasses : 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm'
+              }`}
+            >
+              Áp dụng {currentRangeCount > 0 ? `(${currentRangeCount} từ)` : ''}
+            </button>
+          </div>
+
+          {/* 2. Chọn nhanh theo từng khối đợt 30 từ nếu danh sách dài */}
+          {chunks.length > 1 && (
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <span className="font-semibold text-slate-500 dark:text-slate-400 text-[11px]">Học theo từng đợt:</span>
+              {chunks.map(chunk => (
                 <button
-                  key={n}
+                  key={chunk.index}
                   type="button"
                   onClick={() => {
-                    setRandomCount(n);
-                    applyScope('random', selectedChunkIndex, n);
+                    setSelectedChunkIndex(chunk.index);
+                    setRangeStartStr(String(chunk.start));
+                    setRangeEndStr(String(chunk.end));
+                    applyScope('chunk', chunk.index);
                   }}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
-                    scopeType === 'random' && randomCount === n
+                  className={`px-2 py-0.5 rounded-lg text-xs font-semibold transition-all ${
+                    scopeType === 'chunk' && selectedChunkIndex === chunk.index
                       ? activeBtnClasses
                       : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  🎲 {n} từ
+                  {chunk.label}
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* 3. Chọn dải STT tùy chỉnh (Custom Range) */}
-          <div className="space-y-1.5">
-            <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <Hash className="w-3.5 h-3.5" />
-              <span>Nhập dải số thứ tự (STT) tùy chỉnh:</span>
-            </label>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-slate-500">Từ STT:</span>
-              <input
-                type="number"
-                min={1}
-                max={total}
-                value={rangeStart}
-                onChange={e => setRangeStart(parseInt(e.target.value) || 1)}
-                className="w-16 px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-center font-bold outline-none focus:border-indigo-500"
-              />
-              <span className="text-slate-500">Đến STT:</span>
-              <input
-                type="number"
-                min={rangeStart}
-                max={total}
-                value={rangeEnd}
-                onChange={e => setRangeEnd(parseInt(e.target.value) || rangeStart)}
-                className="w-16 px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-center font-bold outline-none focus:border-indigo-500"
-              />
-              <button
-                type="button"
-                onClick={() => applyScope('range', selectedChunkIndex, randomCount, rangeStart, rangeEnd)}
-                className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                  scopeType === 'range' ? activeBtnClasses : 'bg-slate-800 text-white dark:bg-slate-700 hover:bg-slate-700'
-                }`}
-              >
-                Áp dụng dải này
-              </button>
-            </div>
-          </div>
+          )}
         </div>
       )}
     </div>
