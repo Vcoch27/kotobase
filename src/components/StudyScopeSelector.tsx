@@ -1,9 +1,14 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  SlidersHorizontal, Check, Shuffle, Hash, ListFilter, 
-  ChevronDown, ChevronUp
+import {
+  SlidersHorizontal,
+  Check,
+  Shuffle,
+  Hash,
+  ListFilter,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 export interface VocabularyData {
@@ -40,7 +45,9 @@ export function StudyScopeSelector({
   const [selectedChunkIndex, setSelectedChunkIndex] = useState(0);
   const [randomCount, setRandomCount] = useState(30);
   const [rangeStartStr, setRangeStartStr] = useState('1');
-  const [rangeEndStr, setRangeEndStr] = useState(String(Math.min(30, allVocabularies.length || 30)));
+  const [rangeEndStr, setRangeEndStr] = useState(
+    String(Math.min(30, allVocabularies.length || 30))
+  );
   const [isExpanded, setIsExpanded] = useState(false);
 
   const total = allVocabularies.length;
@@ -93,7 +100,7 @@ export function StudyScopeSelector({
     }
 
     if (type === 'selected' && selectedVocabIds.length > 0) {
-      const filtered = allVocabularies.filter(v => selectedVocabIds.includes(v.id));
+      const filtered = allVocabularies.filter((v) => selectedVocabIds.includes(v.id));
       onScopeChange(filtered, `${filtered.length} từ đã chọn ở Bảng`);
       return;
     }
@@ -144,10 +151,14 @@ export function StudyScopeSelector({
   if (total <= 5 && selectedVocabIds.length === 0) return null;
 
   const themeClasses = {
-    emerald: 'border-emerald-200/80 dark:border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300',
-    indigo: 'border-indigo-200/80 dark:border-indigo-500/30 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300',
-    purple: 'border-purple-200/80 dark:border-purple-500/30 bg-purple-50/50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-300',
-    amber: 'border-amber-200/80 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300',
+    emerald:
+      'border-emerald-200/80 dark:border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300',
+    indigo:
+      'border-indigo-200/80 dark:border-indigo-500/30 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300',
+    purple:
+      'border-purple-200/80 dark:border-purple-500/30 bg-purple-50/50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-300',
+    amber:
+      'border-amber-200/80 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300',
   }[modeTheme];
 
   const activeBtnClasses = {
@@ -158,16 +169,16 @@ export function StudyScopeSelector({
   }[modeTheme];
 
   return (
-    <div className={`rounded-2xl border ${themeClasses} p-2.5 sm:p-3 transition-all mb-4 shadow-sm backdrop-blur-sm space-y-2`}>
+    <div
+      className={`rounded-2xl border ${themeClasses} p-2.5 sm:p-3 transition-all mb-4 shadow-sm backdrop-blur-sm space-y-2`}
+    >
       {/* Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="p-1.5 rounded-lg bg-white dark:bg-slate-800 shadow-sm border border-slate-200/60 dark:border-slate-700/60">
             <SlidersHorizontal className="w-3.5 h-3.5" />
           </div>
-          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-            Phạm vi học:
-          </span>
+          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Phạm vi học:</span>
           <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200/80 dark:border-slate-700 shadow-sm">
             {activeCount} / {total} từ
           </span>
@@ -252,13 +263,15 @@ export function StudyScopeSelector({
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
             className={`flex items-center gap-1 font-bold px-2.5 py-1 rounded-xl border transition-all shadow-sm ${
-              isExpanded || scopeType === 'range' || (scopeType === 'chunk' && selectedChunkIndex > 0)
+              isExpanded ||
+              scopeType === 'range' ||
+              (scopeType === 'chunk' && selectedChunkIndex > 0)
                 ? 'bg-amber-500 text-white border-amber-600 shadow-amber-500/20'
                 : 'bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700'
             }`}
           >
             <Hash className="w-3 h-3" />
-            <span>🎯 Dải STT / Đợt học {isExpanded ? '▲' : '▼'}</span>
+            <span>Dải STT / Đợt học {isExpanded ? '▲' : '▼'}</span>
           </button>
         </div>
       </div>
@@ -300,7 +313,9 @@ export function StudyScopeSelector({
               type="button"
               onClick={() => applyScope('range')}
               className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                scopeType === 'range' ? activeBtnClasses : 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm'
+                scopeType === 'range'
+                  ? activeBtnClasses
+                  : 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm'
               }`}
             >
               Áp dụng {currentRangeCount > 0 ? `(${currentRangeCount} từ)` : ''}
@@ -310,8 +325,10 @@ export function StudyScopeSelector({
           {/* 2. Chọn nhanh theo từng khối đợt 30 từ nếu danh sách dài */}
           {chunks.length > 1 && (
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="font-semibold text-slate-500 dark:text-slate-400 text-[11px]">Học theo từng đợt:</span>
-              {chunks.map(chunk => (
+              <span className="font-semibold text-slate-500 dark:text-slate-400 text-[11px]">
+                Học theo từng đợt:
+              </span>
+              {chunks.map((chunk) => (
                 <button
                   key={chunk.index}
                   type="button"

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Save, Volume2, Key, Info, Check, Monitor } from "lucide-react";
+import { X, Save, Volume2, Key, Info, Check, Monitor, Sparkles } from "lucide-react";
 import { 
   TTSSettings, loadTTSSettings, saveTTSSettings, 
   DEFAULT_TTS_SETTINGS, playAudio 
