@@ -52,9 +52,9 @@ interface OverviewViewProps {
   onNavigateToStudyMode?: (mode: 'focus' | 'flashcard' | 'quiz', selectedIds?: string[]) => void;
 }
 
-export function OverviewView({ 
-  vocabularies, 
-  folders, 
+export function OverviewView({
+  vocabularies,
+  folders,
   onRefresh,
   selectedVocabIds,
   onSelectionChange,
@@ -126,14 +126,14 @@ export function OverviewView({
     if (e.shiftKey && lastClickedIndex !== null) {
       const start = Math.min(lastClickedIndex, globalIndex);
       const end = Math.max(lastClickedIndex, globalIndex);
-      const rangeIds = localVocabs.slice(start, end + 1).map(v => v.id);
-      
+      const rangeIds = localVocabs.slice(start, end + 1).map((v) => v.id);
+
       const newSet = new Set(selectedIds);
-      rangeIds.forEach(item => newSet.add(item));
+      rangeIds.forEach((item) => newSet.add(item));
       handleSelectionChange(Array.from(newSet));
     } else {
       if (selectedIds.includes(id)) {
-        handleSelectionChange(selectedIds.filter(i => i !== id));
+        handleSelectionChange(selectedIds.filter((i) => i !== id));
       } else {
         handleSelectionChange([...selectedIds, id]);
       }
@@ -142,13 +142,15 @@ export function OverviewView({
   };
 
   // Toggle chọn tất cả từ vựng trang hiện tại
-  const currentPageIds = paginatedVocabularies.map(v => v.id);
-  const isAllCurrentPageSelected = currentPageIds.length > 0 && currentPageIds.every(id => selectedIds.includes(id));
-  const isSomeCurrentPageSelected = currentPageIds.some(id => selectedIds.includes(id)) && !isAllCurrentPageSelected;
+  const currentPageIds = paginatedVocabularies.map((v) => v.id);
+  const isAllCurrentPageSelected =
+    currentPageIds.length > 0 && currentPageIds.every((id) => selectedIds.includes(id));
+  const isSomeCurrentPageSelected =
+    currentPageIds.some((id) => selectedIds.includes(id)) && !isAllCurrentPageSelected;
 
   const handleToggleCurrentPage = () => {
     if (isAllCurrentPageSelected) {
-      handleSelectionChange(selectedIds.filter(id => !currentPageIds.includes(id)));
+      handleSelectionChange(selectedIds.filter((id) => !currentPageIds.includes(id)));
     } else {
       const newSet = new Set([...selectedIds, ...currentPageIds]);
       handleSelectionChange(Array.from(newSet));
@@ -157,7 +159,7 @@ export function OverviewView({
 
   // Chọn nhanh N từ đầu tiên
   const handleSelectFirstN = (n: number) => {
-    const targetIds = localVocabs.slice(0, n).map(v => v.id);
+    const targetIds = localVocabs.slice(0, n).map((v) => v.id);
     handleSelectionChange(targetIds);
     setShowRangeInput(false);
   };
@@ -165,7 +167,7 @@ export function OverviewView({
   // Chọn ngẫu nhiên N từ
   const handleSelectRandomN = (n: number) => {
     const shuffled = [...localVocabs].sort(() => 0.5 - Math.random());
-    const targetIds = shuffled.slice(0, n).map(v => v.id);
+    const targetIds = shuffled.slice(0, n).map((v) => v.id);
     handleSelectionChange(targetIds);
     setShowRangeInput(false);
   };
@@ -181,7 +183,7 @@ export function OverviewView({
     setRangeStartStr(String(s));
     setRangeEndStr(String(e));
 
-    const targetIds = localVocabs.slice(s - 1, e).map(v => v.id);
+    const targetIds = localVocabs.slice(s - 1, e).map((v) => v.id);
     handleSelectionChange(targetIds);
   };
 
@@ -214,7 +216,10 @@ export function OverviewView({
   if (vocabularies.length === 0) {
     return (
       <div className="p-12 text-center bg-[oklch(var(--color-surface))] rounded-2xl shadow-elevation-sm text-[oklch(var(--color-text-muted))] transition-colors duration-300">
-        <BookOpen className="w-10 h-10 mx-auto mb-3 text-[oklch(var(--color-text-muted))]" strokeWidth={1} />
+        <BookOpen
+          className="w-10 h-10 mx-auto mb-3 text-[oklch(var(--color-text-muted))]"
+          strokeWidth={1}
+        />
         <p className="text-base font-semibold text-[oklch(var(--color-text-primary))]">
           Chưa có từ vựng nào
         </p>
@@ -299,7 +304,7 @@ export function OverviewView({
             className="px-3 py-1 rounded-xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center gap-1 transition-all"
           >
             <Shuffle className="w-3 h-3 text-amber-500" />
-            <span>🎲 Random 30</span>
+            <span>Random 30</span>
           </button>
 
           {/* Dải STT Toggle Button */}
@@ -313,7 +318,7 @@ export function OverviewView({
             }`}
           >
             <Hash className="w-3 h-3" />
-            <span>🎯 Dải STT {showRangeInput ? '▲' : '▼'}</span>
+            <span>Dải STT {showRangeInput ? '▲' : '▼'}</span>
           </button>
         </div>
 
@@ -362,8 +367,10 @@ export function OverviewView({
             {/* Khối chọn nhanh các đợt 30 từ nếu có */}
             {quickChunks.length > 1 && (
               <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-amber-200/60 dark:border-amber-500/20 text-[11px]">
-                <span className="font-semibold text-slate-500 dark:text-slate-400">Chọn nhanh theo đợt:</span>
-                {quickChunks.map(chunk => (
+                <span className="font-semibold text-slate-500 dark:text-slate-400">
+                  Chọn nhanh theo đợt:
+                </span>
+                {quickChunks.map((chunk) => (
                   <button
                     key={chunk.label}
                     type="button"
@@ -394,7 +401,7 @@ export function OverviewView({
                   type="button"
                   onClick={handleToggleCurrentPage}
                   className="p-1 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                  title={isAllCurrentPageSelected ? "Bỏ chọn trang này" : "Chọn tất cả trang này"}
+                  title={isAllCurrentPageSelected ? 'Bỏ chọn trang này' : 'Chọn tất cả trang này'}
                 >
                   {isAllCurrentPageSelected ? (
                     <CheckSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
@@ -411,7 +418,7 @@ export function OverviewView({
               <th className="py-4 px-5">Nghĩa (Meaning)</th>
               <th className="py-4 px-5">Ví dụ (Example)</th>
               <th className="py-4 px-4">Thư mục</th>
-              <th className="py-4 px-4 text-right">Thao tác</th>
+              <th className="py-4 px-4 text-right"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-sm text-slate-700 dark:text-slate-200 transition-colors duration-300">
@@ -432,7 +439,10 @@ export function OverviewView({
                   title="Bấm để xem và sửa chi tiết"
                 >
                   {/* Checkbox */}
-                  <td className="py-4 px-3 align-top text-center" onClick={(e) => e.stopPropagation()}>
+                  <td
+                    className="py-4 px-3 align-top text-center"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <button
                       type="button"
                       onClick={(e) => handleToggleSelect(item.id, globalIndex, e)}
@@ -483,7 +493,9 @@ export function OverviewView({
                   <td className="py-4 px-5 align-top text-xs space-y-2 max-w-xs">
                     {item.example ? (
                       <p className="text-slate-600 dark:text-slate-400 italic">
-                        <strong className="text-slate-800 dark:text-slate-300 not-italic">VD:</strong>{' '}
+                        <strong className="text-slate-800 dark:text-slate-300 not-italic">
+                          VD:
+                        </strong>{' '}
                         {item.example}
                       </p>
                     ) : (
@@ -565,7 +577,10 @@ export function OverviewView({
                   <span className="font-mono font-bold text-xs text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg select-none">
                     #{stt}
                   </span>
-                  <div className="text-2xl font-black text-slate-900 dark:text-white tracking-wide" onClick={(e) => e.stopPropagation()}>
+                  <div
+                    className="text-2xl font-black text-slate-900 dark:text-white tracking-wide"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <ClickableKanjiString text={item.word} />
                   </div>
                   {item.sinoVietnamese && (
@@ -601,7 +616,9 @@ export function OverviewView({
               {/* Ví dụ (nếu có) */}
               {item.example && (
                 <div className="text-xs bg-slate-50 dark:bg-slate-950/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 text-slate-600 dark:text-slate-400 italic">
-                  <span className="font-bold text-slate-700 dark:text-slate-300 not-italic mr-1">VD:</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-300 not-italic mr-1">
+                    VD:
+                  </span>
                   {item.example}
                 </div>
               )}
