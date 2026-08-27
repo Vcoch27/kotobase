@@ -2,92 +2,160 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ══════════════════════════════════════════════════════════════
+   CSS CUSTOM PROPERTIES — Design Tokens (OKLCH)
+   Tham chiếu: DESIGN.md § 2. Bảng Màu
+   ══════════════════════════════════════════════════════════════ */
+
 @layer base {
+  :root {
+    /* Surface */
+    --color-bg: 97% 0.005 250;
+    --color-surface: 100% 0 0;
+    --color-surface-raised: 95% 0.005 250;
+    --color-border: 88% 0.008 250;
+
+    /* Text */
+    --color-text-primary: 15% 0.01 250;
+    --color-text-muted: 50% 0.012 250;
+
+    /* Brand */
+    --color-primary: 52% 0.16 250;
+    --color-primary-hover: 45% 0.16 250;
+    --color-accent: 72% 0.18 55;
+    --color-accent-hover: 65% 0.18 55;
+    --color-accent-muted: 95% 0.06 55;
+
+    /* Semantic */
+    --color-danger: 55% 0.22 25;
+    --color-success: 60% 0.18 145;
+
+    /* Focus Ring */
+    --ring: 72% 0.18 55;
+  }
+
+  /* ── Dark Mode ─────────────────────────────────────────────── */
+  .dark {
+    /* Surface — xanh đậm pha lạnh, KHÔNG bao giờ đen thuần */
+    --color-bg: 14% 0.01 250;
+    --color-surface: 18% 0.012 250;
+    --color-surface-raised: 22% 0.012 250;
+    --color-border: 28% 0.012 250;
+
+    /* Text — không trắng thuần để tránh mỏi mắt */
+    --color-text-primary: 94% 0.008 250;
+    --color-text-muted: 65% 0.012 250;
+
+    /* Brand — sáng hơn ở dark để đảm bảo tương phản */
+    --color-primary: 65% 0.16 250;
+    --color-primary-hover: 72% 0.16 250;
+    --color-accent: 78% 0.18 55;
+    --color-accent-hover: 85% 0.18 55;
+    --color-accent-muted: 22% 0.06 55;
+
+    /* Semantic */
+    --color-danger: 65% 0.22 25;
+    --color-success: 68% 0.18 145;
+
+    /* Focus Ring */
+    --ring: 78% 0.18 55;
+  }
+
+  /* ── Base Styles ───────────────────────────────────────────── */
   body {
-    @apply bg-slate-950 text-slate-100 antialiased selection:bg-amber-500 selection:text-slate-950;
+    @apply bg-[oklch(var(--color-bg))] text-[oklch(var(--color-text-primary))] antialiased;
+    font-family: var(--font-body), system-ui, sans-serif;
+    selection-color: oklch(var(--color-text-primary));
+  }
+
+  ::selection {
+    background-color: oklch(var(--color-accent) / 0.25);
+    color: oklch(var(--color-text-primary));
+  }
+
+  /* Heading dùng font display */
+  h1, h2, h3 {
+    font-family: var(--font-display), var(--font-body), system-ui, sans-serif;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   ANIMATIONS
+   ══════════════════════════════════════════════════════════════ */
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.98); }
+  to   { opacity: 1; transform: scale(1); }
 }
-
 .animate-fadeIn {
   animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes fadeOut {
-  from {
-    opacity: 1;
-    transform: scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.98);
-  }
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.98); }
 }
-
 .animate-fadeOut {
   animation: fadeOut 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes slideUp {
-  from {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
 }
-
 .animate-slideUp {
   animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Custom Scrollbar */
+/* Shimmer — dùng cho skeleton loading */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    oklch(var(--color-surface-raised) / 0.8) 25%,
+    oklch(var(--color-border) / 0.5) 50%,
+    oklch(var(--color-surface-raised) / 0.8) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite linear;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SCROLLBAR — Token-based
+   ══════════════════════════════════════════════════════════════ */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #020617;
+  background: oklch(var(--color-bg));
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: oklch(var(--color-border));
   border-radius: 9999px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: oklch(var(--color-text-muted) / 0.5);
 }
 
-/* Flashcard 3D Utilities */
+/* ══════════════════════════════════════════════════════════════
+   FLASHCARD 3D UTILITIES (giữ nguyên, không thay đổi)
+   ══════════════════════════════════════════════════════════════ */
 .perspective-1000 {
   perspective: 1000px;
   -webkit-perspective: 1000px;
 }
-
 .transform-style-3d {
   transform-style: preserve-3d;
   -webkit-transform-style: preserve-3d;
 }
-
 .backface-hidden {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
-
 .rotate-y-180 {
   transform: rotateY(180deg);
   -webkit-transform: rotateY(180deg);
@@ -100,4 +168,17 @@
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PREFERS REDUCED MOTION — Tôn trọng lựa chọn người dùng
+   ══════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

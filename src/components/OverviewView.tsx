@@ -213,12 +213,12 @@ export function OverviewView({
 
   if (vocabularies.length === 0) {
     return (
-      <div className="p-12 text-center bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 transition-colors duration-300">
-        <BookOpen className="w-10 h-10 mx-auto mb-3 text-slate-400 dark:text-slate-600" />
-        <p className="text-base font-semibold text-slate-700 dark:text-slate-300">
+      <div className="p-12 text-center bg-[oklch(var(--color-surface))] rounded-2xl shadow-elevation-sm text-[oklch(var(--color-text-muted))] transition-colors duration-300">
+        <BookOpen className="w-10 h-10 mx-auto mb-3 text-[oklch(var(--color-text-muted))]" strokeWidth={1} />
+        <p className="text-base font-semibold text-[oklch(var(--color-text-primary))]">
           Chưa có từ vựng nào
         </p>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-[oklch(var(--color-text-muted))] mt-1">
           Sử dụng Quick Add ở trên để thêm từ mới vào kho dữ liệu
         </p>
       </div>
@@ -228,7 +228,7 @@ export function OverviewView({
   return (
     <div className="relative space-y-4">
       {/* TOOLBAR CHỌN TỪ VỰNG TINH GỌN */}
-      <div className="bg-white/90 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 p-2.5 sm:p-3 px-3.5 sm:px-4 rounded-2xl shadow-sm backdrop-blur-md transition-all space-y-2.5">
+      <div className="bg-[oklch(var(--color-surface)/0.9)] shadow-elevation-sm p-2.5 sm:p-3 px-3.5 sm:px-4 rounded-2xl backdrop-blur-md transition-all space-y-2.5">
         {/* Dòng chính: Badge trạng thái + Nhóm nút chọn nhanh */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           {/* Bên trái: Trạng thái */}
@@ -384,10 +384,10 @@ export function OverviewView({
       </div>
 
       {/* 1. DESKTOP VIEW (Table - Hiện từ màn hình md trở lên) */}
-      <div className="hidden md:block w-full overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 shadow-xl transition-colors duration-300">
+      <div className="hidden md:block w-full overflow-x-auto rounded-2xl bg-[oklch(var(--color-surface))] shadow-elevation-md transition-colors duration-300">
         <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
-            <tr className="bg-slate-50 dark:bg-slate-950/80 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
+            <tr className="bg-[oklch(var(--color-surface-raised))] text-[oklch(var(--color-text-muted))] text-xs font-semibold uppercase tracking-wider transition-colors duration-300">
               {/* Checkbox Header */}
               <th className="py-4 px-3 w-10 text-center">
                 <button
