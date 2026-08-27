@@ -11,6 +11,7 @@
     "prisma:db-push": "prisma db push"
   },
   "dependencies": {
+    "@gradio/client": "^2.5.1",
     "clsx": "^2.1.1",
     "firebase": "^10.13.1",
     "firebase-admin": "^12.4.1",

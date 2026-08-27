@@ -1,6 +1,7 @@
 import toast from 'react-hot-toast';
+import { Client } from '@gradio/client';
 
-export type TTSProvider = 'voicevox' | 'elevenlabs' | 'browser';
+export type TTSProvider = 'kotobase-ai' | 'voicevox' | 'elevenlabs' | 'browser';
 
 export interface TTSSettings {
   provider: TTSProvider;
@@ -9,7 +10,7 @@ export interface TTSSettings {
 }
 
 export const DEFAULT_TTS_SETTINGS: TTSSettings = {
-  provider: 'voicevox',
+  provider: 'kotobase-ai',
   elevenLabsApiKey: '',
   elevenLabsVoiceId: 'EXAVITQu4vr4xnSDxMaL',
 };
@@ -24,8 +25,8 @@ export const loadTTSSettings = (): TTSSettings => {
     const saved = localStorage.getItem('koto_tts_settings');
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed.provider === 'edge') {
-        parsed.provider = 'voicevox';
+      if (parsed.provider === 'edge' || parsed.provider === 'voicevox') {
+        parsed.provider = 'kotobase-ai';
       }
       return { ...DEFAULT_TTS_SETTINGS, ...parsed };
     }
@@ -50,6 +51,54 @@ const stopCurrentAudio = () => {
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
     window.speechSynthesis.cancel();
   }
+};
+
+const playKotobaseAI = async (text: string): Promise<boolean> => {
+  try {
+    stopCurrentAudio();
+    const cacheKey = `kotobase-ai:${text}`;
+    let audioUrl = audioBlobCache.get(cacheKey);
+
+    if (!audioUrl) {
+      const client = await Client.connect("Vcoch27/kotobase-voice");
+      const result = await client.predict("/tts", { 
+          text: text, 
+          voice_name: "JVNV-F1 - Giọng nữ 1 (Chuẩn, trong trẻo, tự nhiên)", 
+          speed: 1.0, 
+          style: "Neutral", 
+          style_weight: 1.0 
+      });
+
+      let extractedUrl = "";
+      if (result && result.data) {
+        if (Array.isArray(result.data)) {
+          const first = result.data[0];
+          if (typeof first === 'object' && first !== null && 'url' in first) {
+            extractedUrl = first.url as string;
+          } else if (typeof first === 'string') {
+            extractedUrl = first;
+          }
+        } else if (typeof result.data === 'string') {
+          extractedUrl = result.data;
+        }
+      }
+
+      if (extractedUrl) {
+        audioUrl = extractedUrl;
+        audioBlobCache.set(cacheKey, extractedUrl);
+      }
+    }
+
+    if (audioUrl) {
+      const audio = new Audio(audioUrl);
+      currentPlayingAudio = audio;
+      await audio.play();
+      return true;
+    }
+  } catch (error) {
+    console.warn('KotoBase AI failed:', error);
+  }
+  return false;
 };
 
 const playVoicevox = async (text: string): Promise<boolean> => {
@@ -116,6 +165,13 @@ export const playAudio = async (text: string, tempSettings?: TTSSettings) => {
   const cleanText = text.trim();
   const settings = tempSettings || loadTTSSettings();
 
+  // 0. Nếu chọn KotoBase AI
+  if (settings.provider === 'kotobase-ai') {
+    const aiSuccess = await playKotobaseAI(cleanText);
+    if (aiSuccess) return;
+    toast.error('KotoBase AI đang khởi động hoặc lỗi, thử lại sau nhé...', { id: 'tts-ai-fail' });
+  }
+
   // 1. Nếu chọn ElevenLabs
   if (settings.provider === 'elevenlabs' && settings.elevenLabsApiKey) {
     try {
@@ -152,7 +208,7 @@ export const playAudio = async (text: string, tempSettings?: TTSSettings) => {
           audioUrl = url;
           audioBlobCache.set(cacheKey, url);
         } else {
-          toast.error('ElevenLabs báo lỗi (hết token hoặc sai key). Chuyển sang dự phòng...', { id: 'tts-el-fail' });
+          toast.error('ElevenLabs báo lỗi. Chuyển sang dự phòng...', { id: 'tts-el-fail' });
         }
       }
 
@@ -164,7 +220,7 @@ export const playAudio = async (text: string, tempSettings?: TTSSettings) => {
       }
     } catch (e) {
       console.warn('ElevenLabs failed:', e);
-      toast.error('ElevenLabs mất kết nối. Chuyển sang dự phòng...', { id: 'tts-el-fail' });
+      toast.error('ElevenLabs lỗi mạng. Chuyển sang dự phòng...', { id: 'tts-el-fail' });
     }
   }
 
@@ -172,7 +228,7 @@ export const playAudio = async (text: string, tempSettings?: TTSSettings) => {
   if (settings.provider === 'voicevox') {
     const voicevoxSuccess = await playVoicevox(cleanText);
     if (voicevoxSuccess) return;
-    toast.error('Voicevox Server quá tải, chuyển sang giọng mặc định thiết bị...', { id: 'tts-vv-fail' });
+    toast.error('Voicevox Server lỗi, chuyển thiết bị...', { id: 'tts-vv-fail' });
   }
 
   // 3. Nếu chọn Trình duyệt (Browser)
@@ -181,10 +237,15 @@ export const playAudio = async (text: string, tempSettings?: TTSSettings) => {
     return;
   }
 
-  // Fallback chuỗi: Voicevox -> Trình duyệt
+  // Fallback chuỗi
+  if (settings.provider !== 'kotobase-ai') {
+    const fallbackKotoBase = await playKotobaseAI(cleanText);
+    if (fallbackKotoBase) return;
+  }
+  
   const fallbackVoicevox = await playVoicevox(cleanText);
   if (fallbackVoicevox) return;
 
-  toast('Phát âm bằng giọng mặc định của thiết bị.', { id: 'tts-browser-fallback', icon: '💻' });
+  toast('Phát âm thiết bị.', { id: 'tts-browser-fallback', icon: '💻' });
   playBrowserTTS(cleanText);
 };

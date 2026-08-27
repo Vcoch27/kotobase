@@ -66,8 +66,39 @@ export function TTSSettingsModal({ onClose }: TTSSettingsModalProps) {
             <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Công cụ phát âm (Provider)
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               
+              {/* Option 0: KotoBase AI */}
+              <button
+                type="button"
+                onClick={() => setSettings({ ...settings, provider: "kotobase-ai" })}
+                className={`p-3.5 rounded-2xl border-2 text-left transition-all relative flex flex-col justify-between ${
+                  settings.provider === "kotobase-ai"
+                    ? "border-rose-500 bg-rose-50/70 dark:bg-rose-500/10 shadow-sm shadow-rose-500/10"
+                    : "border-slate-200 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-800 bg-slate-50/50 dark:bg-slate-900/50"
+                }`}
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100 flex items-center gap-1">
+                      KotoBase AI
+                    </span>
+                    {settings.provider === "kotobase-ai" && <Check className="w-4 h-4 text-rose-600 dark:text-rose-400" />}
+                  </div>
+                  <div className="flex gap-1.5 flex-wrap">
+                    <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300">
+                      Khuyên dùng
+                    </span>
+                    <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300">
+                      Độc quyền
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug pt-1">
+                    Giọng đọc AI siêu tự nhiên, đa cảm xúc (Style-Bert-VITS2).
+                  </p>
+                </div>
+              </button>
+
               {/* Option 1: Voicevox */}
               <button
                 type="button"
@@ -141,7 +172,7 @@ export function TTSSettingsModal({ onClose }: TTSSettingsModalProps) {
                     Offline 100%
                   </span>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug pt-1">
-                    Giọng mặc định máy tính, không cần internet.
+                    Giọng mặc định, không cần internet.
                   </p>
                 </div>
               </button>
@@ -185,6 +216,16 @@ export function TTSSettingsModal({ onClose }: TTSSettingsModalProps) {
                   Mặc định: <code className="text-indigo-500">EXAVITQu4vr4xnSDxMaL</code> (Sarah).
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* Config Detail for KotoBase AI */}
+          {settings.provider === "kotobase-ai" && (
+            <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-slate-800/50 border border-rose-100 dark:border-slate-700 text-xs text-rose-800 dark:text-rose-300 space-y-1 animate-fadeIn">
+              <p className="font-bold flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> Đang sử dụng KotoBase AI (Độc quyền)</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Sử dụng API Style-Bert-VITS2 được tối ưu đặc biệt cho tiếng Nhật. Cung cấp chất lượng âm thanh siêu tự nhiên, miễn phí và không cần cấu hình.
+              </p>
             </div>
           )}
 
