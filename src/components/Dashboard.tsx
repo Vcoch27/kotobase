@@ -18,7 +18,7 @@ import {
   LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, 
   Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, ChevronUp, Volume2, Loader2,
   User, Lock, Folder, X, FolderTree as FolderTreeIcon, ArrowDownNarrowWide, ArrowUpNarrowWide,
-  Sparkles
+  Sparkles, BookOpen
 } from "lucide-react";
 import { getFolderFullPath } from "@/lib/folder-utils";
 import { useTheme } from "next-themes";
@@ -495,7 +495,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
             </div>
 
             {/* Các công cụ khác (Kanji, Mẫu câu) */}
-            <div className="mt-4 pt-3 flex flex-col gap-1.5">
+            <div className="mt-4 pt-3 flex flex-col gap-1.5 border-t border-slate-100 dark:border-slate-800">
               <Link 
                 href="/sentences"
                 className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 border border-transparent hover:border-emerald-200 dark:hover:border-emerald-500/20 transition-all"
@@ -511,6 +511,15 @@ export function Dashboard({ currentUser }: DashboardProps) {
               >
                 <Library className="w-4 h-4 shrink-0" />
                 <span className="flex-1">Tra cứu Hán tự (Kanji)</span>
+                <ChevronRight className="w-3.5 h-3.5 opacity-50" />
+              </Link>
+              
+              <Link 
+                href="/grammar"
+                className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-semibold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 border border-transparent hover:border-violet-200 dark:hover:border-violet-500/20 transition-all"
+              >
+                <BookOpen className="w-4 h-4 shrink-0" />
+                <span className="flex-1">Ngữ Pháp</span>
                 <ChevronRight className="w-3.5 h-3.5 opacity-50" />
               </Link>
             </div>
