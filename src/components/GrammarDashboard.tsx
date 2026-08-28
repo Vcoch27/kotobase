@@ -98,6 +98,21 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
     }
   };
 
+  const handleImportJson = async () => {
+    if (!importJsonText.trim()) return;
+    setImporting(true);
+    const res = await import("@/app/actions/grammar").then(m => m.createBulkGrammars(importJsonText, selectedFolderId === 'all' ? undefined : selectedFolderId));
+    setImporting(false);
+    if (res.success) {
+      toast.success(`Đã import thành công ${res.count} điểm ngữ pháp!`);
+      setImportJsonText("");
+      setShowImportModal(false);
+      fetchData(true);
+    } else {
+      toast.error(res.error || "Lỗi import JSON");
+    }
+  };
+
   return (
     <div className="flex-1 max-w-screen-2xl w-full mx-auto px-4 lg:px-6 pt-6 flex flex-col md:flex-row gap-6 pb-20">
       
