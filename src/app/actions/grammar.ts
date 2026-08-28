@@ -148,3 +148,51 @@ export async function deleteGrammar(id: string) {
     return { success: true };
   } catch { return { success: false, error: "Không thể xóa ngữ pháp." }; }
 }
+export async function createBulkGrammars(jsonString: string, targetFolderId?: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: "Bạn cần đăng nhập." };
+
+  try {
+    const dataList = JSON.parse(jsonString);
+    if (!Array.isArray(dataList)) return { success: false, error: "Dữ liệu JSON phải là mảng." };
+
+    const batch = adminDb.batch();
+    const grammarsRef = adminDb.collection("grammars");
+    const baseTime = Date.now();
+    
+    let count = 0;
+    for (let i = 0; i < dataList.length; i++) {
+      const item = dataList[i];
+      if (!item.structure || !item.meaning) continue;
+
+      const docRef = grammarsRef.doc();
+      const createdAt = new Date(baseTime + i * 100).toISOString();
+
+      batch.set(docRef, {
+        structure: item.structure.trim(),
+        formation: item.formation?.trim() || null,
+        meaning: item.meaning.trim(),
+        nuance: item.nuance?.trim() || null,
+        example: item.example?.trim() || null,
+        exampleMeaning: item.exampleMeaning?.trim() || null,
+        jlptLevel: item.jlptLevel || null,
+        usageContext: item.usageContext || null,
+        folderIds: targetFolderId ? [targetFolderId] : [],
+        ownerId: currentUser.uid,
+        createdAt: createdAt,
+        updatedAt: createdAt,
+      });
+      
+      count++;
+      if (count % 500 === 0) await batch.commit();
+    }
+
+    if (count % 500 !== 0) await batch.commit();
+
+    revalidatePath("/grammar");
+    return { success: true, count };
+  } catch (error: any) {
+    console.error("Lỗi import ngữ pháp:", error);
+    return { success: false, error: "Không thể lưu dữ liệu." };
+  }
+}

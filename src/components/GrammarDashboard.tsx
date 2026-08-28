@@ -8,7 +8,7 @@ import { GrammarList } from './GrammarList';
 import { GrammarFlashcard } from './GrammarFlashcard';
 import { GrammarFillBlank } from './GrammarFillBlank';
 import { GrammarFormModal } from './GrammarFormModal'; 
-import { LayoutGrid, Layers, Plus, Loader2, ChevronRight, ChevronDown, ArrowLeft, FolderPlus, BookOpen, PenTool } from 'lucide-react';
+import { LayoutGrid, Layers, Plus, Loader2, ChevronRight, ChevronDown, ArrowLeft, FolderPlus, BookOpen, PenTool, Database } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
@@ -36,6 +36,10 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [creatingFolder, setCreatingFolder] = useState(false);
+
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importJsonText, setImportJsonText] = useState("");
+  const [importing, setImporting] = useState(false);
 
   const isGoogleUser = !!currentUser?.uid;
 
@@ -145,17 +149,25 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
       </div>
 
       <div className="flex-1 flex flex-col gap-6 min-w-0">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
           {isGoogleUser && (
-            <button
-              onClick={() => { setEditingGrammar(null); setShowFormModal(true); }}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-violet-500/30 transition-all flex-1 sm:flex-none"
-            >
-              <Plus className="w-4 h-4" /> Thêm Ngữ pháp
-            </button>
+            <>
+              <button
+                onClick={() => { setEditingGrammar(null); setShowFormModal(true); }}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-violet-500/30 transition-all flex-1 sm:flex-none"
+              >
+                <Plus className="w-4 h-4" /> Thêm Ngữ pháp
+              </button>
+              <button
+                onClick={() => setShowImportModal(true)}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-sm transition-all flex-1 sm:flex-none border border-slate-200 dark:border-slate-700"
+              >
+                <Database className="w-4 h-4" /> Import JSON
+              </button>
+            </>
           )}
 
-          <div className="hidden sm:flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl items-center flex-1 justify-center max-w-fit">
+          <div className="hidden sm:flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl items-center flex-1 sm:flex-none justify-center">
             <button
               onClick={() => setViewMode('list')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition-all ${
@@ -252,12 +264,79 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
                 </button>
                 <button
                   onClick={handleCreateFolder}
-                  disabled={creatingFolder || !newFolderName.trim()}
-                  className="flex-1 px-4 py-2.5 rounded-xl font-bold text-sm text-white bg-violet-500 hover:bg-violet-600 disabled:opacity-50 transition-all flex justify-center"
+                  disabled={!newFolderName.trim() || creatingFolder}
+                  className="flex-1 px-4 py-2.5 rounded-xl font-bold text-sm text-white bg-violet-500 hover:bg-violet-600 disabled:opacity-50 transition-colors"
                 >
-                  {creatingFolder ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Tạo mới'}
+                  {creatingFolder ? 'Đang tạo...' : 'Tạo mới'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Import JSON */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn">
+          <div 
+            className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden animate-slideUp border border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900">
+              <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg flex items-center gap-2">
+                <Database className="w-5 h-5 text-violet-500" />
+                Import Ngữ Pháp hàng loạt (JSON)
+              </h3>
+              <button 
+                onClick={() => setShowImportModal(false)}
+                className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-slate-500"
+              >
+                <ChevronDown className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto custom-scrollbar flex-1 space-y-4">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-xl p-4 text-sm text-blue-800 dark:text-blue-300">
+                <p className="font-bold mb-2">Định dạng JSON yêu cầu (Array of Objects):</p>
+                <pre className="bg-white/60 dark:bg-slate-900/60 p-3 rounded-lg overflow-x-auto text-xs font-mono">
+{`[
+  {
+    "structure": "〜によって",
+    "formation": "N + によって",
+    "meaning": "Do/Vì...",
+    "nuance": "Dùng trong văn viết, trang trọng",
+    "example": "不景気の影響により...",
+    "exampleMeaning": "Do ảnh hưởng suy thoái...",
+    "jlptLevel": "N4",
+    "usageContext": "writing,business"
+  }
+]`}
+                </pre>
+              </div>
+
+              <textarea
+                value={importJsonText}
+                onChange={e => setImportJsonText(e.target.value)}
+                placeholder="Dán mảng JSON vào đây..."
+                className="w-full h-64 px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:border-violet-500 outline-none font-mono text-sm resize-none custom-scrollbar"
+              />
+            </div>
+
+            <div className="p-5 border-t border-slate-100 dark:border-slate-800 flex gap-3 bg-slate-50/50 dark:bg-slate-900">
+              <button
+                onClick={() => setShowImportModal(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl font-bold text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleImportJson}
+                disabled={!importJsonText.trim() || importing}
+                className="flex-[2] px-4 py-2.5 rounded-xl font-bold text-sm text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-violet-500/20"
+              >
+                {importing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Database className="w-5 h-5" />}
+                {importing ? 'Đang Import...' : 'Bắt đầu Import'}
+              </button>
             </div>
           </div>
         </div>
