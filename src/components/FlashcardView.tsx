@@ -50,9 +50,12 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
   const [showSino, setShowSino] = useState(true);
   const [isShuffled, setIsShuffled] = useState(false);
 
+  const vocabIdsStr = vocabularies.map(v => v.id).join(',');
+
   useEffect(() => {
     setScopedVocabs(vocabularies);
-  }, [vocabularies]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vocabIdsStr]);
 
   // Listening mode states
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
@@ -352,6 +355,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
 
   // Restart Logic
   const restartAll = () => {
+    setScopedVocabs(vocabularies);
     setDeck(vocabularies); // Normal mode behavior
     // If anki mode, it should ideally re-fetch from local storage.
     if (mode === "anki") {
@@ -383,7 +387,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
       if (mode === "anki") {
         const progress = loadAnkiProgress();
         const now = Date.now();
-        const ankiDeck = vocabularies.filter(v => {
+        const ankiDeck = scopedVocabs.filter(v => {
           const p = progress[v.id];
           if (!p) return true;
           if (p.nextReview <= now) return true;
@@ -391,7 +395,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
         });
         setDeck(ankiDeck);
       } else {
-        setDeck(vocabularies);
+        setDeck(scopedVocabs);
       }
       setIsShuffled(false);
     }
@@ -402,12 +406,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
 
   const studyUnknowns = () => {
     const unknowns = vocabularies.filter(v => unknownIds.has(v.id));
-    setDeck(shuffleArray(unknowns));
-    setCurrentIndex(0);
-    setIsFlipped(false);
-    setIsFinished(false);
-    // Giữ nguyên knownIds nhưng reset unknownIds cho lượt này
-    setUnknownIds(new Set());
+    setScopedVocabs(unknowns);
   };
 
   if (vocabularies.length === 0) {
