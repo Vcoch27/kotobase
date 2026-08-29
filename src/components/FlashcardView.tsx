@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
@@ -114,28 +114,28 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
     }
   }, [scopedVocabs, mode]);
 
-  // Auto-play audio khi ở chế độ Nghe & chuyển sang thẻ mới
+  // Auto-play audio khi á»Ÿ cháº¿ Ä‘á»™ Nghe & chuyá»ƒn sang tháº» má»›i
   useEffect(() => {
     if (mode !== "listening") return;
     if (isFinished || deck.length === 0) return;
     const currentVocab = deck[currentIndex];
     if (!currentVocab) return;
-    // Chỉ auto-play nếu thẻ này chưa được play lần nào trong session hiện tại
+    // Chá»‰ auto-play náº¿u tháº» nÃ y chÆ°a Ä‘Æ°á»£c play láº§n nÃ o trong session hiá»‡n táº¡i
     if (autoPlayedRef.current.has(currentIndex)) return;
     
     autoPlayedRef.current.add(currentIndex);
     setIsPlayingAudio(true);
     const textToPlay = currentVocab.reading || currentVocab.word;
-    // Thêm delay nhỏ để animation thẻ mới có thời gian load
+    // ThÃªm delay nhá» Ä‘á»ƒ animation tháº» má»›i cÃ³ thá»i gian load
     const timer = setTimeout(() => {
       playAudio(textToPlay);
-      // Reset trạng thái playing sau 3 giây (ước lượng)
+      // Reset tráº¡ng thÃ¡i playing sau 3 giÃ¢y (Æ°á»›c lÆ°á»£ng)
       setTimeout(() => setIsPlayingAudio(false), 3000);
     }, 400);
     return () => clearTimeout(timer);
   }, [mode, currentIndex, deck, isFinished]);
 
-  // Reset autoPlayed ref khi đổi mode hoặc restart
+  // Reset autoPlayed ref khi Ä‘á»•i mode hoáº·c restart
   useEffect(() => {
     autoPlayedRef.current = new Set();
     setIsPlayingAudio(false);
@@ -194,7 +194,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
     const currentVocab = deck[currentIndex];
     if (!currentVocab) return;
     
-    // Lưu lịch sử trước khi thay đổi
+    // LÆ°u lá»‹ch sá»­ trÆ°á»›c khi thay Ä‘á»•i
     setAnkiHistory(prev => [...prev, ankiProgress]);
     
     const currentProgress = ankiProgress[currentVocab.id] || { ...DEFAULT_ANKI_DATA };
@@ -258,14 +258,14 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
     const deltaY = touchStart.y - touchEnd.y;
     const threshold = 50; // minimum distance to be considered a swipe
 
-    // Chỉ tính là vuốt ngang nếu khoảng cách ngang lớn hơn khoảng cách dọc và vượt ngưỡng
+    // Chá»‰ tÃ­nh lÃ  vuá»‘t ngang náº¿u khoáº£ng cÃ¡ch ngang lá»›n hÆ¡n khoáº£ng cÃ¡ch dá»c vÃ  vÆ°á»£t ngÆ°á»¡ng
     if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > threshold) {
       if (deltaX > 0) {
-        // Swipe Left (Sang trái) -> Tiếp theo
+        // Swipe Left (Sang trÃ¡i) -> Tiáº¿p theo
         if (mode === "normal" || mode === "listening") handleNext();
         else if (mode === "progress") handleProgress(false);
       } else {
-        // Swipe Right (Sang phải) -> Quay lại
+        // Swipe Right (Sang pháº£i) -> Quay láº¡i
         if (mode === "normal" || mode === "listening") handlePrev();
         else if (mode === "progress") handleProgress(true);
       }
@@ -332,16 +332,16 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
           if (!card) break;
           
           if (mode === "listening") {
-            // Chế độ Nghe: Chỉ phát âm từ vựng (không phát ví dụ) + kích hoạt hiệu ứng sóng âm
+            // Cháº¿ Ä‘á»™ Nghe: Chá»‰ phÃ¡t Ã¢m tá»« vá»±ng (khÃ´ng phÃ¡t vÃ­ dá»¥) + kÃ­ch hoáº¡t hiá»‡u á»©ng sÃ³ng Ã¢m
             const textToPlayKey = card.reading || card.word;
             setIsPlayingAudio(true);
             playAudio(textToPlayKey);
             setTimeout(() => setIsPlayingAudio(false), 3000);
           } else {
-            // Các chế độ khác: Phát từ vựng + ví dụ (nếu có)
-            const exampleTextKey = card.example ? card.example.replace(/[\(（].*?[\)）]/g, '').trim() : '';
+            // CÃ¡c cháº¿ Ä‘á»™ khÃ¡c: PhÃ¡t tá»« vá»±ng + vÃ­ dá»¥ (náº¿u cÃ³)
+            const exampleTextKey = card.example ? card.example.replace(/[\(ï¼ˆ].*?[\)ï¼‰]/g, '').trim() : '';
             const textToPlayKey = exampleTextKey 
-              ? `${card.reading || card.word}。 …… ${exampleTextKey}`
+              ? `${card.reading || card.word}ã€‚ â€¦â€¦ ${exampleTextKey}`
               : (card.reading || card.word);
             playAudio(textToPlayKey);
           }
@@ -413,8 +413,8 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
     return (
       <div className="p-12 text-center bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 transition-colors">
         <GraduationCap className="w-10 h-10 mx-auto mb-3 text-slate-400 dark:text-slate-600" />
-        <p className="text-base font-semibold text-slate-700 dark:text-slate-300">Không có dữ liệu Flashcard</p>
-        <p className="text-xs text-slate-500 mt-1">Hãy thêm từ vựng vào thư mục này để bắt đầu học.</p>
+        <p className="text-base font-semibold text-slate-700 dark:text-slate-300">KhÃ´ng cÃ³ dá»¯ liá»‡u Flashcard</p>
+        <p className="text-xs text-slate-500 mt-1">HÃ£y thÃªm tá»« vá»±ng vÃ o thÆ° má»¥c nÃ y Ä‘á»ƒ báº¯t Ä‘áº§u há»c.</p>
       </div>
     );
   }
@@ -423,13 +423,13 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
     return (
       <div className="p-16 text-center bg-white dark:bg-slate-900/60 rounded-3xl border border-slate-200 dark:border-slate-800 text-emerald-600 dark:text-emerald-400 animate-fadeIn transition-colors">
         <BrainCircuit className="w-16 h-16 mx-auto mb-4 drop-shadow-[0_0_15px_rgba(52,211,153,0.3)] text-emerald-500 dark:text-emerald-400" />
-        <p className="text-xl font-bold text-slate-800 dark:text-slate-100">Bạn đã ôn xong cho hiện tại!</p>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Không còn thẻ nào đến hạn trong thư mục này. Hãy quay lại sau nhé.</p>
+        <p className="text-xl font-bold text-slate-800 dark:text-slate-100">Báº¡n Ä‘Ã£ Ã´n xong cho hiá»‡n táº¡i!</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">KhÃ´ng cÃ²n tháº» nÃ o Ä‘áº¿n háº¡n trong thÆ° má»¥c nÃ y. HÃ£y quay láº¡i sau nhÃ©.</p>
         <button 
           onClick={() => setMode("normal")}
           className="mt-6 px-6 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-semibold transition-all"
         >
-          Trở về Mode Bình thường
+          Trá»Ÿ vá» Mode BÃ¬nh thÆ°á»ng
         </button>
       </div>
     );
@@ -439,24 +439,24 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
     return (
       <div className="w-full max-w-2xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl p-8 shadow-2xl animate-fadeIn text-center transition-colors">
         <GraduationCap className="w-16 h-16 mx-auto mb-4 text-emerald-500 dark:text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.3)]" />
-        <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Đã hoàn thành!</h2>
+        <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">ÄÃ£ hoÃ n thÃ nh!</h2>
         
         {mode === "anki" ? (
-          <p className="text-slate-500 dark:text-slate-400 mb-8">Bạn đã ôn xong toàn bộ thẻ đến hạn hôm nay.</p>
+          <p className="text-slate-500 dark:text-slate-400 mb-8">Báº¡n Ä‘Ã£ Ã´n xong toÃ n bá»™ tháº» Ä‘áº¿n háº¡n hÃ´m nay.</p>
         ) : (
-          <p className="text-slate-500 dark:text-slate-400 mb-8">Bạn đã đi qua hết {deck.length} thẻ trong danh sách này.</p>
+          <p className="text-slate-500 dark:text-slate-400 mb-8">Báº¡n Ä‘Ã£ Ä‘i qua háº¿t {deck.length} tháº» trong danh sÃ¡ch nÃ y.</p>
         )}
         
         {mode === "progress" && (
           <div className="flex justify-center gap-8 mb-8">
             <div className="text-center">
               <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{knownIds.size}</div>
-              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">Đã thuộc</div>
+              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">ÄÃ£ thuá»™c</div>
             </div>
             <div className="w-px bg-slate-200 dark:bg-slate-800"></div>
             <div className="text-center">
               <div className="text-3xl font-black text-rose-600 dark:text-rose-400">{unknownIds.size}</div>
-              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">Chưa nhớ</div>
+              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">ChÆ°a nhá»›</div>
             </div>
           </div>
         )}
@@ -467,7 +467,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
               onClick={studyUnknowns}
               className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg shadow-indigo-600/20 transition-all"
             >
-              <RefreshCcw className="w-5 h-5" /> Tiếp tục học các từ chưa nhớ ({unknownIds.size})
+              <RefreshCcw className="w-5 h-5" /> Tiáº¿p tá»¥c há»c cÃ¡c tá»« chÆ°a nhá»› ({unknownIds.size})
             </button>
           )}
           {mode !== "anki" && (
@@ -475,7 +475,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
               onClick={restartAll}
               className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold transition-all"
             >
-              <RotateCcw className="w-5 h-5" /> Bắt đầu lại từ đầu
+              <RotateCcw className="w-5 h-5" /> Báº¯t Ä‘áº§u láº¡i tá»« Ä‘áº§u
             </button>
           )}
         </div>
@@ -493,7 +493,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
 
   return (
     <div className="w-full max-w-3xl mx-auto flex flex-col gap-4 animate-fadeIn">
-      {/* Bộ chọn linh hoạt phạm vi học (Study Scope Selector) */}
+      {/* Bá»™ chá»n linh hoáº¡t pháº¡m vi há»c (Study Scope Selector) */}
       <StudyScopeSelector
         allVocabularies={vocabularies}
         selectedVocabIds={selectedVocabIds}
@@ -506,7 +506,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
 
       {/* Top Controls Bar */}
       <div className="flex flex-col gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 sm:p-3 rounded-2xl shadow-lg transition-colors">
-        {/* Mode buttons - scroll ngang trên mobile */}
+        {/* Mode buttons - scroll ngang trÃªn mobile */}
         <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800 overflow-x-auto scrollbar-hide">
           <button
             onClick={() => setMode("normal")}
@@ -517,8 +517,8 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
             }`}
           >
             <LayoutList className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="hidden xs:inline sm:inline">Bình thường</span>
-            <span className="xs:hidden sm:hidden">Bình thường</span>
+            <span className="hidden xs:inline sm:inline">BÃ¬nh thÆ°á»ng</span>
+            <span className="xs:hidden sm:hidden">BÃ¬nh thÆ°á»ng</span>
           </button>
           <button
             onClick={() => setMode("progress")}
@@ -528,7 +528,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
-            <GraduationCap className="w-3.5 h-3.5 flex-shrink-0" /> Tiến độ
+            <GraduationCap className="w-3.5 h-3.5 flex-shrink-0" /> Tiáº¿n Ä‘á»™
           </button>
           <button
             onClick={() => setMode("anki")}
@@ -557,7 +557,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
           <button 
             onClick={() => setShowSino(prev => !prev)} 
             className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-all" 
-            title={showSino ? "Ẩn âm Hán Việt" : "Hiện âm Hán Việt"}
+            title={showSino ? "áº¨n Ã¢m HÃ¡n Viá»‡t" : "Hiá»‡n Ã¢m HÃ¡n Viá»‡t"}
           >
             {showSino ? <Eye className="w-4 h-4 sm:w-5 sm:h-5" /> : <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
@@ -567,7 +567,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
               onClick={handleUndo} 
               disabled={currentIndex === 0 && !isFinished}
               className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-all disabled:opacity-30" 
-              title="Quay lại"
+              title="Quay láº¡i"
             >
               <Undo2 className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
@@ -580,12 +580,12 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
                   ? "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-500/40"
                   : "text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10"
               }`} 
-              title={isShuffled ? "Tắt trộn thẻ" : "Trộn ngẫu nhiên"}
+              title={isShuffled ? "Táº¯t trá»™n tháº»" : "Trá»™n ngáº«u nhiÃªn"}
             >
               <Shuffle className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           )}
-          <button onClick={restartAll} className="p-2 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-all" title="Bắt đầu lại">
+          <button onClick={restartAll} className="p-2 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-all" title="Báº¯t Ä‘áº§u láº¡i">
             <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
@@ -597,14 +597,14 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
           <span>{currentIndex + 1} / {deck.length}</span>
           {mode === "progress" && (
             <span className="flex gap-4">
-              <span className="text-emerald-600 dark:text-emerald-400">Thuộc: {knownIds.size}</span>
-              <span className="text-rose-600 dark:text-rose-400">Chưa: {unknownIds.size}</span>
+              <span className="text-emerald-600 dark:text-emerald-400">Thuá»™c: {knownIds.size}</span>
+              <span className="text-rose-600 dark:text-rose-400">ChÆ°a: {unknownIds.size}</span>
             </span>
           )}
           {mode === "anki" && (
             <span className="flex gap-4">
-              <span className="text-sky-600 dark:text-sky-400">Mới: {ankiStats.new}</span>
-              <span className="text-rose-600 dark:text-rose-400">Đến hạn: {ankiStats.due}</span>
+              <span className="text-sky-600 dark:text-sky-400">Má»›i: {ankiStats.new}</span>
+              <span className="text-rose-600 dark:text-rose-400">Äáº¿n háº¡n: {ankiStats.due}</span>
             </span>
           )}
         </div>
@@ -639,7 +639,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
         >
           {/* Front */}
           {mode === "listening" ? (
-            /* Listening Mode Front: Chỉ hiện âm thanh */
+            /* Listening Mode Front: Chá»‰ hiá»‡n Ã¢m thanh */
             <div 
               className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-violet-50 to-slate-50 dark:from-violet-950/40 dark:to-slate-950 border border-violet-200 dark:border-violet-700/40 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center transition-all duration-300 ${
                 isFlipped ? "opacity-0 pointer-events-none invisible" : "opacity-100 pointer-events-auto visible"
@@ -652,12 +652,12 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
               }}
             >
               <span className="absolute top-3 left-3 sm:top-6 sm:left-6 text-[10px] sm:text-xs font-bold text-violet-400 dark:text-violet-500 uppercase tracking-wider flex items-center gap-1">
-                <Headphones className="w-3 h-3 sm:w-4 sm:h-4" /> Chế độ Nghe — Bấm để lật
+                <Headphones className="w-3 h-3 sm:w-4 sm:h-4" /> Cháº¿ Ä‘á»™ Nghe â€” Báº¥m Ä‘á»ƒ láº­t
               </span>
               
-              {/* Vòng sóng âm thanh pulsing */}
+              {/* VÃ²ng sÃ³ng Ã¢m thanh pulsing */}
               <div className="relative flex items-center justify-center mb-4 sm:mb-6">
-                {/* Pulse rings - chỉ animate khi đang ở mặt trước để tránh tách GPU layer khi lật */}
+                {/* Pulse rings - chá»‰ animate khi Ä‘ang á»Ÿ máº·t trÆ°á»›c Ä‘á»ƒ trÃ¡nh tÃ¡ch GPU layer khi láº­t */}
                 {!isFlipped && isPlayingAudio && (
                   <>
                     <div className="absolute w-28 h-28 sm:w-32 sm:h-32 rounded-full border-2 border-violet-400/30 dark:border-violet-500/20 animate-ping" style={{ animationDuration: '1.2s' }}></div>
@@ -665,7 +665,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
                   </>
                 )}
                 
-                {/* Nút play trung tâm */}
+                {/* NÃºt play trung tÃ¢m */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -679,18 +679,18 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
                       ? 'bg-violet-500 dark:bg-violet-600 shadow-violet-500/40 scale-110'
                       : 'bg-white dark:bg-slate-800 border-2 border-violet-300 dark:border-violet-600 hover:border-violet-500 hover:scale-105 shadow-violet-200 dark:shadow-violet-900/50'
                   }`}
-                  title="Phát âm (nhấn lại để nghe)"
+                  title="PhÃ¡t Ã¢m (nháº¥n láº¡i Ä‘á»ƒ nghe)"
                 >
                   <Volume2 className={`w-7 h-7 sm:w-8 sm:h-8 ${isPlayingAudio ? 'text-white' : 'text-violet-500 dark:text-violet-400'}`} />
                 </button>
               </div>
 
               <p className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 max-w-xs px-2 text-center">
-                {isPlayingAudio ? "Đang phát âm thanh..." : "Nhấn nút để nghe lại • Bấm thẻ để xem đáp án"}
+                {isPlayingAudio ? "Äang phÃ¡t Ã¢m thanh..." : "Nháº¥n nÃºt Ä‘á»ƒ nghe láº¡i â€¢ Báº¥m tháº» Ä‘á»ƒ xem Ä‘Ã¡p Ã¡n"}
               </p>
             </div>
           ) : (
-            /* Normal / Progress / Anki Front: Hiển thị từ vựng */
+            /* Normal / Progress / Anki Front: Hiá»ƒn thá»‹ tá»« vá»±ng */
             <div 
               className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-6 sm:p-8 text-center transition-all duration-300 ${
                 isFlipped ? "opacity-0 pointer-events-none invisible" : "opacity-100 pointer-events-auto visible"
@@ -703,7 +703,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
               }}
             >
               <span className="absolute top-3 left-3 sm:top-6 sm:left-6 text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                <Rotate3D className="w-3 h-3 sm:w-4 sm:h-4" /> Bấm để lật
+                <Rotate3D className="w-3 h-3 sm:w-4 sm:h-4" /> Báº¥m Ä‘á»ƒ láº­t
               </span>
               <div className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-wide" onClick={(e) => e.stopPropagation()}>
                 <ClickableKanjiString text={currentVocab.word} />
@@ -729,27 +729,27 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
             }}
           >
             <span className="absolute top-3 left-3 sm:top-6 sm:left-6 text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
-              <Rotate3D className="w-4 h-4" /> Bấm để lật
+              <Rotate3D className="w-4 h-4" /> Báº¥m Ä‘á»ƒ láº­t
             </span>
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                const exampleTextBtn = currentVocab.example ? currentVocab.example.replace(/[\(（].*?[\)）]/g, '').trim() : '';
+                const exampleTextBtn = currentVocab.example ? currentVocab.example.replace(/[\(ï¼ˆ].*?[\)ï¼‰]/g, '').trim() : '';
                 const textToPlayBtn = exampleTextBtn 
-                  ? `${currentVocab.reading || currentVocab.word}。 …… ${exampleTextBtn}`
+                  ? `${currentVocab.reading || currentVocab.word}ã€‚ â€¦â€¦ ${exampleTextBtn}`
                   : (currentVocab.reading || currentVocab.word);
                 playAudio(textToPlayBtn);
               }}
               className="absolute top-2 right-2 sm:top-4 sm:right-4 p-2 sm:p-3 rounded-xl text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
-              title="Phát âm thanh"
+              title="PhÃ¡t Ã¢m thanh"
             >
               <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
             
-            {/* Nếu là chế độ Nghe (Listening Mode): Cần hiển thị đầy đủ Từ vựng gốc + Hán Việt vì mặt trước chưa có */}
+            {/* Náº¿u lÃ  cháº¿ Ä‘á»™ Nghe (Listening Mode): Cáº§n hiá»ƒn thá»‹ Ä‘áº§y Ä‘á»§ Tá»« vá»±ng gá»‘c + HÃ¡n Viá»‡t vÃ¬ máº·t trÆ°á»›c chÆ°a cÃ³ */}
             {mode === "listening" ? (
               <>
-                {/* Từ vựng gốc (Kanji) */}
+                {/* Tá»« vá»±ng gá»‘c (Kanji) */}
                 <div 
                   className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-wide mb-1" 
                   onClick={(e) => e.stopPropagation()}
@@ -757,27 +757,27 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
                   <ClickableKanjiString text={currentVocab.word} />
                 </div>
 
-                {/* Âm Hán Việt */}
+                {/* Ã‚m HÃ¡n Viá»‡t */}
                 {currentVocab.sinoVietnamese && showSino && (
                   <div className="text-xs sm:text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] mb-2 animate-fadeIn">
                     {currentVocab.sinoVietnamese}
                   </div>
                 )}
 
-                {/* Cách đọc Hiragana/Katakana */}
+                {/* CÃ¡ch Ä‘á»c Hiragana/Katakana */}
                 {currentVocab.reading && currentVocab.reading !== currentVocab.word && (
                   <div className="text-base sm:text-lg md:text-xl font-bold text-amber-600 dark:text-amber-400 mb-2">
                     {currentVocab.reading}
                   </div>
                 )}
                 
-                {/* Nghĩa */}
+                {/* NghÄ©a */}
                 <div className="text-xl sm:text-2xl md:text-4xl font-black text-emerald-600 dark:text-emerald-400 mb-3 sm:mb-5 leading-tight">
                   {currentVocab.meaning}
                 </div>
               </>
             ) : (
-              /* Các chế độ thông thường (Mặt trước đã có chữ gốc) */
+              /* CÃ¡c cháº¿ Ä‘á»™ thÃ´ng thÆ°á»ng (Máº·t trÆ°á»›c Ä‘Ã£ cÃ³ chá»¯ gá»‘c) */
               <>
                 {currentVocab.reading && (
                   <div className="text-lg sm:text-xl md:text-2xl font-bold text-amber-600 dark:text-amber-400 mb-1 sm:mb-2">
@@ -791,10 +791,10 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
               </>
             )}
 
-            {/* Ví dụ minh họa */}
+            {/* VÃ­ dá»¥ minh há»a */}
             {currentVocab.example && (
               <div className="p-3 sm:p-4 bg-white/50 dark:bg-slate-950/50 rounded-2xl border border-slate-200 dark:border-slate-700/50 w-full max-w-lg">
-                <span className="block text-[10px] sm:text-xs font-bold text-slate-500 uppercase mb-1">Ví dụ minh họa</span>
+                <span className="block text-[10px] sm:text-xs font-bold text-slate-500 uppercase mb-1">VÃ­ dá»¥ minh há»a</span>
                 <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 italic leading-relaxed">{currentVocab.example}</p>
               </div>
             )}
@@ -808,7 +808,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
           <div className="w-full max-w-xl mx-auto flex items-center gap-2 md:gap-4">
             {!isFlipped ? (
                <div className="w-full text-center text-slate-500 dark:text-slate-400 text-sm font-semibold h-16 flex items-center justify-center">
-                  Bấm lật thẻ hoặc [Space] để hiện kết quả
+                  Báº¥m láº­t tháº» hoáº·c [Space] Ä‘á»ƒ hiá»‡n káº¿t quáº£
                </div>
             ) : (() => {
               const p = ankiProgress[currentVocab.id] || { ...DEFAULT_ANKI_DATA };
@@ -820,19 +820,19 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
               return (
                 <>
                   <button onClick={() => handleAnkiRate("again")} className="flex-1 py-3 rounded-2xl font-bold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-transparent border-b-4 border-b-rose-500 text-slate-900 dark:text-white flex flex-col items-center gap-1 active:translate-y-1 active:border-b transition-all shadow-sm">
-                    <span className="text-rose-600 dark:text-rose-400 text-[10px] uppercase tracking-wider">Lại (1)</span>
+                    <span className="text-rose-600 dark:text-rose-400 text-[10px] uppercase tracking-wider">Láº¡i (1)</span>
                     <span className="text-sm text-slate-600 dark:text-slate-300">{formatInterval(tAgain.interval)}</span>
                   </button>
                   <button onClick={() => handleAnkiRate("hard")} className="flex-1 py-3 rounded-2xl font-bold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-transparent border-b-4 border-b-amber-500 text-slate-900 dark:text-white flex flex-col items-center gap-1 active:translate-y-1 active:border-b transition-all shadow-sm">
-                    <span className="text-amber-600 dark:text-amber-400 text-[10px] uppercase tracking-wider">Khó (2)</span>
+                    <span className="text-amber-600 dark:text-amber-400 text-[10px] uppercase tracking-wider">KhÃ³ (2)</span>
                     <span className="text-sm text-slate-600 dark:text-slate-300">{formatInterval(tHard.interval)}</span>
                   </button>
                   <button onClick={() => handleAnkiRate("good")} className="flex-1 py-3 rounded-2xl font-bold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-transparent border-b-4 border-b-emerald-500 text-slate-900 dark:text-white flex flex-col items-center gap-1 active:translate-y-1 active:border-b transition-all shadow-sm">
-                    <span className="text-emerald-600 dark:text-emerald-400 text-[10px] uppercase tracking-wider">Tốt (3)</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 text-[10px] uppercase tracking-wider">Tá»‘t (3)</span>
                     <span className="text-sm text-slate-600 dark:text-slate-300">{formatInterval(tGood.interval)}</span>
                   </button>
                   <button onClick={() => handleAnkiRate("easy")} className="flex-1 py-3 rounded-2xl font-bold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-transparent border-b-4 border-b-sky-500 text-slate-900 dark:text-white flex flex-col items-center gap-1 active:translate-y-1 active:border-b transition-all shadow-sm">
-                    <span className="text-sky-600 dark:text-sky-400 text-[10px] uppercase tracking-wider">Dễ (4)</span>
+                    <span className="text-sky-600 dark:text-sky-400 text-[10px] uppercase tracking-wider">Dá»… (4)</span>
                     <span className="text-sm text-slate-600 dark:text-slate-300">{formatInterval(tEasy.interval)}</span>
                   </button>
                 </>
@@ -847,7 +847,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
                 onClick={flipCard}
                 className="flex items-center gap-2 px-8 py-3 rounded-2xl font-bold transition-all text-white bg-violet-500 hover:bg-violet-600 shadow-lg shadow-violet-500/20 active:scale-95"
               >
-                <Rotate3D className="w-5 h-5" /> Lật xem đáp án (Space)
+                <Rotate3D className="w-5 h-5" /> Láº­t xem Ä‘Ã¡p Ã¡n (Space)
               </button>
             ) : (
               <>
@@ -855,13 +855,13 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
                   onClick={flipCard}
                   className="flex items-center gap-2 px-4 py-3 rounded-2xl font-bold transition-all text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 shadow-sm"
                 >
-                  <Rotate3D className="w-5 h-5" /> Xem lại âm thanh
+                  <Rotate3D className="w-5 h-5" /> Xem láº¡i Ã¢m thanh
                 </button>
                 <button
                   onClick={handleNext}
                   className="flex items-center gap-2 px-8 py-3 rounded-2xl font-bold transition-all text-white bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95"
                 >
-                  Tiếp theo <ArrowRight className="w-5 h-5" />
+                  Tiáº¿p theo <ArrowRight className="w-5 h-5" />
                 </button>
               </>
             )}
@@ -873,13 +873,13 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
               disabled={currentIndex === 0}
               className="flex items-center gap-2 px-4 md:px-6 py-3 rounded-2xl font-bold transition-all disabled:opacity-30 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white hover:bg-slate-50 dark:bg-transparent dark:hover:bg-slate-800 border border-slate-200 dark:border-transparent hover:border-slate-300 dark:hover:border-slate-700 shadow-sm dark:shadow-none"
             >
-              <ArrowLeft className="w-5 h-5" /> Trước <span className="hidden sm:inline">(Left)</span>
+              <ArrowLeft className="w-5 h-5" /> TrÆ°á»›c <span className="hidden sm:inline">(Left)</span>
             </button>
             <button 
               onClick={handleNext}
               className="flex items-center gap-2 px-6 md:px-8 py-3 rounded-2xl font-bold transition-all text-white dark:text-slate-900 bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-400 dark:hover:bg-emerald-300 shadow-lg shadow-emerald-500/20 active:scale-95"
             >
-              Tiếp theo <span className="hidden sm:inline">(Right)</span> <ArrowRight className="w-5 h-5" />
+              Tiáº¿p theo <span className="hidden sm:inline">(Right)</span> <ArrowRight className="w-5 h-5" />
             </button>
           </>
         ) : (
@@ -888,13 +888,13 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
               onClick={() => handleProgress(false)}
               className="flex items-center gap-2 px-8 py-4 rounded-2xl font-bold transition-all text-rose-600 dark:text-rose-300 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 border border-rose-200 dark:border-rose-500/30 active:scale-95 w-40 justify-center shadow-sm"
             >
-              <X className="w-6 h-6" /> Chưa (Left)
+              <X className="w-6 h-6" /> ChÆ°a (Left)
             </button>
             <button 
               onClick={() => handleProgress(true)}
               className="flex items-center gap-2 px-8 py-4 rounded-2xl font-bold transition-all text-white dark:text-emerald-900 bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-400 dark:hover:bg-emerald-300 shadow-lg shadow-emerald-500/20 active:scale-95 w-40 justify-center"
             >
-              <Check className="w-6 h-6" /> Đã thuộc (Right)
+              <Check className="w-6 h-6" /> ÄÃ£ thuá»™c (Right)
             </button>
           </>
         )}
@@ -902,3 +902,5 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
     </div>
   );
 }
+
+
