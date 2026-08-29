@@ -58,9 +58,12 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
   // Ref cho ô input để tự động focus
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const vocabIdsStr = vocabularies.map(v => v.id).join(',');
+
   useEffect(() => {
     setScopedVocabs(vocabularies);
-  }, [vocabularies]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vocabIdsStr]);
 
   const buildQuizList = (list: VocabularyData[], mode: "mix" | "type1" | "type2"): QuizItem[] => {
     return list.map(v => {
@@ -119,7 +122,7 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
     if (nextShuffled) {
       setQuizList(shuffleArray(quizList));
     } else {
-      setQuizList(buildQuizList(vocabularies, quizMode));
+      setQuizList(buildQuizList(scopedVocabs, quizMode));
     }
 
     setCurrentIndex(0);
@@ -261,14 +264,17 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
           <div className="flex flex-wrap items-center justify-center gap-4">
             {skippedCount > 0 && (
               <button 
-                onClick={() => startNewQuiz(skippedList)}
+                onClick={() => setScopedVocabs(skippedList)}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-amber-500/20 active:scale-95 text-sm"
               >
                 <RotateCcw className="w-4 h-4" /> Chỉ ôn lại {skippedCount} từ đã bỏ qua
               </button>
             )}
             <button 
-              onClick={() => startNewQuiz()}
+              onClick={() => {
+                setScopedVocabs(vocabularies);
+                startNewQuiz(vocabularies);
+              }}
               className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/30 active:scale-95 text-sm"
             >
               <Shuffle className="w-4 h-4" /> Kiểm tra lại toàn bộ danh sách

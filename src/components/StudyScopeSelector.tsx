@@ -138,6 +138,9 @@ export function StudyScopeSelector({
     onScopeChange(allVocabularies, `Tất cả ${total} từ vựng`);
   };
 
+  const vocabIdsStr = allVocabularies.map(v => v.id).join(',');
+  const selectedVocabIdsStr = selectedVocabIds.join(',');
+
   // Tự động áp dụng scope khi danh sách allVocabularies thay đổi
   useEffect(() => {
     if (selectedVocabIds.length > 0) {
@@ -146,7 +149,7 @@ export function StudyScopeSelector({
       applyScope('all');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allVocabularies]);
+  }, [vocabIdsStr, selectedVocabIdsStr]);
 
   if (total <= 5 && selectedVocabIds.length === 0) return null;
 
