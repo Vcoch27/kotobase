@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { HelpCircle, CheckCircle2, XCircle, SkipForward, Info, RotateCcw, Shuffle } from "lucide-react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
 import { StudyScopeSelector } from "./StudyScopeSelector";
+import { audioFX } from "@/lib/audio-fx";
 
 interface VocabularyData {
   id: string;
@@ -163,6 +164,7 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
     }
 
     if (isCorrect) {
+      audioFX.playCorrect();
       setFeedback("correct");
       // Lưu vào danh sách đúng nếu chưa có
       setCorrectList(prev => prev.some(item => item.id === currentItem.id) ? prev : [...prev, currentItem]);
@@ -171,6 +173,7 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
         moveToNext();
       }, 1000);
     } else {
+      audioFX.playWrong();
       setFeedback("wrong");
     }
   };
