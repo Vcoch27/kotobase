@@ -240,18 +240,20 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
   const skippedCount = skippedList.length;
 
   return (
-    <div className={isFullscreen ? "fixed inset-0 z-[100] bg-slate-50 dark:bg-slate-950 p-4 md:p-8 overflow-y-auto w-full h-full" : ""}>
-      <div className={`mx-auto w-full space-y-4 ${isFullscreen ? "max-w-5xl" : "max-w-4xl"}`}>
+    <div className={isFullscreen ? "fixed inset-0 z-[100] bg-slate-50 dark:bg-slate-950 p-4 md:p-8 overflow-y-auto w-full h-full flex flex-col items-center justify-center" : ""}>
+      <div className={`mx-auto w-full space-y-4 max-w-4xl ${isFullscreen ? "my-auto" : ""}`}>
       {/* Bộ chọn linh hoạt phạm vi học (Study Scope Selector) */}
-      <StudyScopeSelector
-        allVocabularies={vocabularies}
-        selectedVocabIds={selectedVocabIds}
-        onScopeChange={(scoped) => {
-          setScopedVocabs(scoped);
-        }}
-        activeCount={quizList.length}
-        modeTheme="purple"
-      />
+      <div className={isFullscreen ? "hidden" : "block"}>
+        <StudyScopeSelector
+          allVocabularies={vocabularies}
+          selectedVocabIds={selectedVocabIds}
+          onScopeChange={(scoped) => {
+            setScopedVocabs(scoped);
+          }}
+          activeCount={quizList.length}
+          modeTheme="purple"
+        />
+      </div>
 
       {isFinished ? (
         <div className="w-full space-y-8 animate-fadeIn mt-4">

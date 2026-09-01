@@ -449,18 +449,20 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
   const progressPercent = ((currentIndex) / deck.length) * 100;
 
   return (
-    <div className={isFullscreen ? "fixed inset-0 z-[100] bg-slate-50 dark:bg-slate-950 p-4 md:p-8 overflow-y-auto w-full h-full" : ""}>
-      <div className={`w-full mx-auto flex flex-col gap-4 animate-fadeIn ${isFullscreen ? "max-w-5xl h-full" : "max-w-3xl"}`}>
+    <div className={isFullscreen ? "fixed inset-0 z-[100] bg-slate-50 dark:bg-slate-950 p-4 md:p-8 overflow-y-auto w-full h-full flex flex-col items-center justify-center" : ""}>
+      <div className={`w-full mx-auto flex flex-col gap-4 animate-fadeIn max-w-3xl ${isFullscreen ? "my-auto" : ""}`}>
       {/* Bộ chọn linh hoạt phạm vi học (Study Scope Selector) */}
-      <StudyScopeSelector
-        allVocabularies={vocabularies}
-        selectedVocabIds={selectedVocabIds}
-        onScopeChange={(scoped) => {
-          setScopedVocabs(scoped);
-        }}
-        activeCount={deck.length}
-        modeTheme="emerald"
-      />
+      <div className={isFullscreen ? "hidden" : "block"}>
+        <StudyScopeSelector
+          allVocabularies={vocabularies}
+          selectedVocabIds={selectedVocabIds}
+          onScopeChange={(scoped) => {
+            setScopedVocabs(scoped);
+          }}
+          activeCount={deck.length}
+          modeTheme="emerald"
+        />
+      </div>
 
       {isFinished ? (
         <div className="w-full max-w-2xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl p-8 shadow-2xl animate-fadeIn text-center transition-colors mt-4">
