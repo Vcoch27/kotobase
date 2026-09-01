@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { assignVocabularyToFolder } from '@/app/actions/vocabulary';
 import { deleteFolderAndVocabs, renameFolder } from '@/app/actions/folder';
@@ -444,13 +445,13 @@ export function FolderTree({
       )}
 
       {/* Custom Prompt Modal (Thay thế window.prompt) */}
-      {promptModal.isOpen && (
+      {promptModal.isOpen && typeof document !== 'undefined' && createPortal(
         <>
           <div
-            className="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/60 backdrop-blur-sm z-50 animate-fadeIn"
+            className="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/60 backdrop-blur-sm z-[9999] animate-fadeIn"
             onClick={() => setPromptModal((prev) => ({ ...prev, isOpen: false }))}
           ></div>
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 animate-zoomIn overflow-hidden">
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-[9999] animate-zoomIn overflow-hidden">
             <div
               className={`p-4 ${promptModal.type === 'delete' ? 'bg-rose-50 dark:bg-rose-500/10 border-b border-rose-100 dark:border-rose-500/20' : 'bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800'}`}
             >
@@ -540,7 +541,8 @@ export function FolderTree({
               </div>
             </form>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );
