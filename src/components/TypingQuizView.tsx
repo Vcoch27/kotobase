@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { HelpCircle, CheckCircle2, XCircle, SkipForward, Info, RotateCcw, Shuffle } from "lucide-react";
+import { HelpCircle, CheckCircle2, XCircle, SkipForward, Info, RotateCcw, Shuffle, Maximize, Minimize } from "lucide-react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
 import { StudyScopeSelector } from "./StudyScopeSelector";
 import { audioFX } from "@/lib/audio-fx";
@@ -51,6 +51,7 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
   const [isFinished, setIsFinished] = useState(false);
   const [quizMode, setQuizMode] = useState<"mix" | "type1" | "type2">("mix");
   const [isShuffled, setIsShuffled] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   // Danh sách từ làm đúng và từ đã bấm bỏ qua
   const [skippedList, setSkippedList] = useState<QuizItem[]>([]);
@@ -58,6 +59,14 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
   
   // Ref cho ô input để tự động focus
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, []);
 
   const vocabIdsStr = vocabularies.map(v => v.id).join(',');
 
@@ -231,7 +240,8 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
   const skippedCount = skippedList.length;
 
   return (
-    <div className="max-w-4xl mx-auto w-full space-y-4">
+    <div className={isFullscreen ? "fixed inset-0 z-[100] bg-slate-50 dark:bg-slate-950 p-4 md:p-8 overflow-y-auto w-full h-full" : ""}>
+      <div className={`mx-auto w-full space-y-4 ${isFullscreen ? "max-w-5xl" : "max-w-4xl"}`}>
       {/* Bộ chọn linh hoạt phạm vi học (Study Scope Selector) */}
       <StudyScopeSelector
         allVocabularies={vocabularies}
@@ -419,6 +429,18 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
             >
               <RotateCcw className="w-4 h-4" />
             </button>
+            <div className="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-0.5"></div>
+            <button 
+              onClick={() => setIsFullscreen(!isFullscreen)} 
+              className={`p-1.5 rounded-lg transition-all ${
+                isFullscreen
+                  ? "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20 border border-blue-300 dark:border-blue-500/40 shadow-sm"
+                  : "text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-slate-700"
+              }`}
+              title={isFullscreen ? "Thu nhỏ (Esc)" : "Toàn màn hình"}
+            >
+              {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+            </button>
           </div>
         </div>
       </div>
@@ -531,6 +553,7 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
       </div>
         </>
       ) : null}
+      </div>
     </div>
   );
 }

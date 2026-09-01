@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
 import { 
   RotateCcw, Shuffle, ArrowLeft, ArrowRight, X, Check, 
-  Rotate3D, GraduationCap, LayoutList, RefreshCcw, BrainCircuit, Undo2, Eye, EyeOff, Volume2, Headphones
+  Rotate3D, GraduationCap, LayoutList, RefreshCcw, BrainCircuit, Undo2, Eye, EyeOff, Volume2, Headphones, Maximize, Minimize
 } from "lucide-react";
 import { playAudio } from "@/lib/tts-utils";
 import { 
@@ -49,6 +49,15 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showSino, setShowSino] = useState(true);
   const [isShuffled, setIsShuffled] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, []);
 
   const vocabIdsStr = vocabularies.map(v => v.id).join(',');
 
@@ -440,7 +449,8 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
   const progressPercent = ((currentIndex) / deck.length) * 100;
 
   return (
-    <div className="w-full max-w-3xl mx-auto flex flex-col gap-4 animate-fadeIn">
+    <div className={isFullscreen ? "fixed inset-0 z-[100] bg-slate-50 dark:bg-slate-950 p-4 md:p-8 overflow-y-auto w-full h-full" : ""}>
+      <div className={`w-full mx-auto flex flex-col gap-4 animate-fadeIn ${isFullscreen ? "max-w-5xl h-full" : "max-w-3xl"}`}>
       {/* Bộ chọn linh hoạt phạm vi học (Study Scope Selector) */}
       <StudyScopeSelector
         allVocabularies={vocabularies}
@@ -581,6 +591,18 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
           )}
           <button onClick={restartAll} className="p-2 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-all" title="Bắt đầu lại">
             <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+          <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+          <button 
+            onClick={() => setIsFullscreen(!isFullscreen)} 
+            className={`p-2 rounded-lg transition-all ${
+              isFullscreen
+                ? "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20 border border-blue-300 dark:border-blue-500/40"
+                : "text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10"
+            }`} 
+            title={isFullscreen ? "Thu nhỏ (Esc)" : "Toàn màn hình"}
+          >
+            {isFullscreen ? <Minimize className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
         </div>
       </div>
@@ -895,6 +917,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
       </div>
         </>
       ) : null}
+      </div>
     </div>
   );
 }
