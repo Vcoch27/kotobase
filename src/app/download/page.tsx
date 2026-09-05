@@ -110,15 +110,28 @@ export default function DownloadPage() {
               </div>
 
               {/* Nút Tải APK */}
-              <a
-                href={android.downloadUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 active:scale-95 transition-all"
-              >
-                <Download className="w-5 h-5" />
-                <span>Xem & Tải bản APK trên GitHub</span>
-              </a>
+              <div className="space-y-2">
+                <a
+                  href={android.downloadUrl}
+                  download="kotobase.apk"
+                  className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 active:scale-95 transition-all"
+                >
+                  <Download className="w-5 h-5" />
+                  <span>Tải file APK trực tiếp ({android.fileSize})</span>
+                </a>
+
+                {android.githubUrl && (
+                  <a
+                    href={android.githubUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs transition-all border border-slate-200 dark:border-slate-700"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Xem bản phát hành trên GitHub</span>
+                  </a>
+                )}
+              </div>
 
               {/* Hướng dẫn cài đặt Android */}
               <div className="pt-2">

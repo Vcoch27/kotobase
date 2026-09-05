@@ -7,12 +7,12 @@
   "android": {
     "version": "1.0.0",
     "versionCode": 1,
-    "downloadUrl": "https://github.com/Vcoch27/kotobase/releases",
-    "fileSize": "18.5 MB",
+    "downloadUrl": "/downloads/kotobase.apk",
+    "githubUrl": "https://github.com/Vcoch27/kotobase/releases",
+    "fileSize": "3.8 MB",
     "minAndroidVersion": "Android 7.0 trở lên",
     "instructions": [
-      "Bấm nút 'Xem & Tải bản APK trên GitHub' phía trên.",
-      "Tại mục Assets của phiên bản mới nhất, bấm tải file 'kotobase.apk'.",
+      "Bấm nút 'Tải file APK trực tiếp' phía trên để tải file về điện thoại.",
       "Mở file vừa tải về trong mục 'Tệp đã tải xuống' trên điện thoại.",
       "Nếu điện thoại hỏi 'Cài đặt ứng dụng không rõ nguồn gốc', hãy chọn 'Cho phép' trong Cài đặt.",
       "Bấm 'Cài đặt' và mở KotoBase để bắt đầu học!"
