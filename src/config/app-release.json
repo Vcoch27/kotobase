@@ -1,15 +1,15 @@
 {
-  "version": "1.0.0",
-  "buildNumber": 1,
+  "version": "1.1.0",
+  "buildNumber": 2,
   "releaseDate": "2026-09-05",
   "appName": "KotoBase",
-  "appDescription": "Ứng dụng học Từ vựng & Hán tự tiếng Nhật thông minh với Flashcard SRS và Quiz phản xạ.",
+  "appDescription": "Ứng dụng học Từ vựng, Ngữ pháp & Hán tự tiếng Nhật thông minh với Flashcard SRS và Quiz phản xạ.",
   "android": {
-    "version": "1.0.0",
-    "versionCode": 1,
-    "downloadUrl": "/downloads/kotobase.apk",
-    "githubUrl": "https://github.com/Vcoch27/kotobase/releases",
-    "fileSize": "3.8 MB",
+    "version": "1.1.0",
+    "versionCode": 2,
+    "downloadUrl": "https://github.com/Vcoch27/kotobase/releases/download/v1.1.0/app-release.apk",
+    "githubUrl": "https://github.com/Vcoch27/kotobase/releases/tag/v1.1.0",
+    "fileSize": "3.19 MB",
     "minAndroidVersion": "Android 7.0 trở lên",
     "instructions": [
       "Bấm nút 'Tải file APK trực tiếp' phía trên để tải file về điện thoại.",
@@ -19,8 +19,8 @@
     ]
   },
   "ios": {
-    "version": "1.0.0",
-    "build": "1.0.0",
+    "version": "1.1.0",
+    "build": "1.1.0",
     "pwaRecommended": true,
     "ipaDownloadUrl": "https://github.com/Vcoch27/kotobase/releases",
     "fileSize": "22.1 MB",
@@ -38,10 +38,10 @@
     ]
   },
   "changelog": [
-    "Hỗ trợ chế độ học Offline hoàn toàn: Tải bộ từ về máy và học Flashcard, Quiz không cần kết nối mạng.",
-    "Bổ sung thanh điều hướng đáy màn hình (Bottom Navigation) tối ưu cho việc dùng một tay trên điện thoại di động.",
-    "Thêm phím tắt Tab bỏ qua nhanh trong mode Typing Quiz.",
-    "Hỗ trợ chế độ Toàn màn hình (Focus Mode) không nhiễu cho Flashcard và Quiz.",
-    "Đồng bộ hóa giao diện và trải nghiệm mượt mà trên cả Android và iOS."
+    "Khắc phục lỗi ứng dụng Crash khi chuyển sang chế độ Focus/Quiz trong khi Offline.",
+    "Tối ưu hóa UI: Sửa lỗi nút chọn thư mục nổi bị thanh Bottom Navigation che khuất.",
+    "Cải thiện quản lý thư mục: Phân biệt rõ ràng huy hiệu thư mục 'Offline toàn bộ' và 'Offline một phần'.",
+    "Bổ sung Module học Ngữ pháp hoàn toàn mới.",
+    "Xóa bỏ nút chọn thư mục trên tiêu đề để tối giản giao diện di động."
   ]
 }
