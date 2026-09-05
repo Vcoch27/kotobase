@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Noto_Serif_JP } from "next/font/google";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -22,10 +22,25 @@ const notoSerifJP = Noto_Serif_JP({
   preload: false, // Tránh block render do file lớn
 });
 
+import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { AppUpdateNotifier } from "@/components/AppUpdateNotifier";
+
+export const viewport: Viewport = {
+  themeColor: "#4f46e5",
+  width: "device-width",
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
   title: "KotoBase - Japanese Vocabulary & Kanji Manager",
   description:
     "Ứng dụng quản lý và học Từ vựng, Hán tự tiếng Nhật thông minh với phương pháp Anki SRS và Active Recall.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "KotoBase",
+  },
   icons: {
     icon: [{ url: "/logo.png" }],
     shortcut: ["/logo.png"],
@@ -51,6 +66,8 @@ export default function RootLayout({
           enableSystem
         >
           {children}
+          <MobileBottomNav />
+          <AppUpdateNotifier />
 
           {/* Toast — sử dụng CSS variables thay vì hardcode màu */}
           <Toaster

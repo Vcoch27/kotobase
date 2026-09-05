@@ -1,0 +1,46 @@
+﻿{
+  "version": "1.0.0",
+  "buildNumber": 1,
+  "releaseDate": "2026-09-05",
+  "appName": "KotoBase",
+  "appDescription": "Ứng dụng học Từ vựng & Hán tự tiếng Nhật thông minh với Flashcard SRS và Quiz phản xạ.",
+  "android": {
+    "version": "1.0.0",
+    "versionCode": 1,
+    "downloadUrl": "https://github.com/Vcoch27/kotobase/releases/download/v1.0.0/kotobase-v1.0.0.apk",
+    "fileSize": "18.5 MB",
+    "minAndroidVersion": "Android 7.0 trở lên",
+    "instructions": [
+      "Tải file APK về điện thoại bằng nút tải phía trên.",
+      "Mở file vừa tải về trong mục 'Tệp đã tải xuống' (hoặc thanh thông báo).",
+      "Nếu điện thoại hỏi 'Cài đặt ứng dụng không rõ nguồn gốc', hãy chọn 'Cho phép' trong phần Cài đặt.",
+      "Bấm 'Cài đặt' và mở KotoBase để bắt đầu học!"
+    ]
+  },
+  "ios": {
+    "version": "1.0.0",
+    "build": "1.0.0",
+    "pwaRecommended": true,
+    "ipaDownloadUrl": "https://github.com/Vcoch27/kotobase/releases/download/v1.0.0/kotobase-v1.0.0.ipa",
+    "fileSize": "22.1 MB",
+    "minIosVersion": "iOS 14.0 trở lên",
+    "pwaInstructions": [
+      "Mở trình duyệt Safari trên iPhone và truy cập trang web KotoBase.",
+      "Chạm vào biểu tượng 'Chia sẻ' (hình ô vuông có mũi tên hướng lên) ở dưới cùng màn hình.",
+      "Cuộn xuống và chọn 'Thêm vào Màn hình chính' (Add to Home Screen).",
+      "Bấm 'Thêm' (Add) ở góc trên bên phải. KotoBase sẽ xuất hiện trên màn hình như app tải từ App Store!"
+    ],
+    "sideloadInstructions": [
+      "Tải file .IPA về máy tính hoặc điện thoại.",
+      "Sử dụng công cụ Sideloadly, AltStore hoặc Scarlet để cài đặt file .IPA vào iPhone.",
+      "Vào Cài đặt > Cài đặt chung > Quản lý VPN & Thiết bị > Tin cậy chứng chỉ nhà phát triển để mở ứng dụng."
+    ]
+  },
+  "changelog": [
+    "Hỗ trợ chế độ học Offline hoàn toàn: Tải bộ từ về máy và học Flashcard, Quiz không cần kết nối mạng.",
+    "Bổ sung thanh điều hướng đáy màn hình (Bottom Navigation) tối ưu cho việc dùng một tay trên điện thoại di động.",
+    "Thêm phím tắt Tab bỏ qua nhanh trong mode Typing Quiz.",
+    "Hỗ trợ chế độ Toàn màn hình (Focus Mode) không nhiễu cho Flashcard và Quiz.",
+    "Đồng bộ hóa giao diện và trải nghiệm mượt mà trên cả Android và iOS."
+  ]
+}

@@ -1,0 +1,44 @@
+﻿{
+  "name": "KotoBase - Học Tiếng Nhật Thông Minh",
+  "short_name": "KotoBase",
+  "description": "Ứng dụng quản lý & học Từ vựng, Hán tự tiếng Nhật thông minh với Flashcard SRS và Quiz phản xạ.",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#4f46e5",
+  "scope": "/",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Học Flashcard",
+      "url": "/?mode=flashcard",
+      "description": "Luyện tập từ vựng với Flashcard SRS"
+    },
+    {
+      "name": "Ngữ pháp",
+      "url": "/grammar",
+      "description": "Tra cứu ngữ pháp tiếng Nhật"
+    },
+    {
+      "name": "Mẫu câu",
+      "url": "/sentences",
+      "description": "Mẫu câu giao tiếp thực tế"
+    }
+  ]
+}

@@ -18,8 +18,11 @@ import {
   LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, 
   Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, ChevronUp, Volume2, Loader2,
   User, Lock, Folder, X, FolderTree as FolderTreeIcon, ArrowDownNarrowWide, ArrowUpNarrowWide,
-  Sparkles, BookOpen
+  Sparkles, BookOpen, Smartphone, WifiOff
 } from "lucide-react";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { OfflineSyncButton } from "./OfflineSyncButton";
+import { getOfflineVocabularies, getOfflineFolders, saveVocabulariesOffline, saveFoldersOffline } from "@/lib/offline-storage";
 import { getFolderFullPath } from "@/lib/folder-utils";
 import { useTheme } from "next-themes";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -92,6 +95,8 @@ export function Dashboard({ currentUser }: DashboardProps) {
 
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const isOnline = useOnlineStatus();
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
 
   // Bộ nhớ đệm (Cache) siêu tiết kiệm Reads
   const vocabCache = React.useRef<Record<string, any[]>>({});
@@ -108,6 +113,21 @@ export function Dashboard({ currentUser }: DashboardProps) {
     }
     setQuotaExceeded(false);
     try {
+      // 1. Nếu thiết bị mất mạng (Offline), ưu tiên đọc ngay từ IndexedDB
+      if (typeof window !== "undefined" && !navigator.onLine) {
+        const [offlineVocabs, offlineFolders] = await Promise.all([
+          getOfflineVocabularies(selectedFolderId),
+          getOfflineFolders()
+        ]);
+        if (offlineVocabs.length > 0) {
+          setVocabularies(offlineVocabs);
+          if (offlineFolders.length > 0) setFolders(offlineFolders);
+          setIsOfflineMode(true);
+          toast("Đang tải dữ liệu học Offline trên máy", { icon: "📶" });
+          return;
+        }
+      }
+
       let vocabData: any[];
       let folderData: any[];
 
@@ -128,15 +148,40 @@ export function Dashboard({ currentUser }: DashboardProps) {
         vocabData = vData as any[];
         folderData = fData as any[];
         
-        // Lưu lại vào Cache
+        // Lưu lại vào Cache RAM
         vocabCache.current[selectedFolderId] = Array.isArray(vocabData) ? vocabData : [];
         foldersCache.current = Array.isArray(folderData) ? folderData : [];
+
+        // Tự động lưu bản sao vào IndexedDB để sẵn sàng cho lúc mất mạng (Background)
+        if (Array.isArray(vocabData) && vocabData.length > 0) {
+          saveVocabulariesOffline(vocabData).catch(() => {});
+        }
+        if (Array.isArray(folderData) && folderData.length > 0) {
+          saveFoldersOffline(folderData).catch(() => {});
+        }
       }
 
       setVocabularies(Array.isArray(vocabData) ? vocabData : []);
       setFolders(Array.isArray(folderData) ? folderData : []);
+      setIsOfflineMode(false);
     } catch (error: any) {
       console.error("Lỗi khi tải dữ liệu:", error);
+      
+      // Fallback: Khi có lỗi (hết Quota Firebase hoặc rớt mạng đột ngột), đọc ngay từ IndexedDB
+      try {
+        const offlineVocabs = await getOfflineVocabularies(selectedFolderId);
+        if (offlineVocabs.length > 0) {
+          setVocabularies(offlineVocabs);
+          const offlineFolders = await getOfflineFolders();
+          if (offlineFolders.length > 0) setFolders(offlineFolders);
+          setIsOfflineMode(true);
+          toast.success(`Đã tự động chuyển sang ${offlineVocabs.length} từ vựng Offline trên máy!`);
+          return;
+        }
+      } catch (offlineErr) {
+        console.warn("Lỗi đọc offline fallback:", offlineErr);
+      }
+
       if (error.message === "QUOTA_EXCEEDED") {
         setQuotaExceeded(true);
       } else {
@@ -326,9 +371,18 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 title="Đăng nhập Google để quản lý thư mục cá nhân"
               >
                 <Lock className="w-3.5 h-3.5" />
-                <span className="hidden sm:block">Đăng nhập Google</span>
               </button>
             )}
+
+            {/* Nút Tải App Mobile */}
+            <Link
+              href="/download"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold border border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-all shrink-0"
+              title="Tải ứng dụng cho điện thoại Android (.APK) & iOS (.IPA / PWA)"
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Tải App</span>
+            </Link>
 
             <button 
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -582,6 +636,20 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 </div>
               )}
 
+              {/* Nút Tải Học Offline & Quản lý kho */}
+              <OfflineSyncButton
+                currentFolderId={selectedFolderId}
+                currentFolderName={
+                  selectedFolderId === 'all' 
+                    ? 'Tất cả từ vựng' 
+                    : folders.find(f => f.id === selectedFolderId)?.name || 'Thư mục'
+                }
+                currentVocabs={filteredVocabularies}
+                folders={folders}
+                isOnline={isOnline}
+                onOfflineDataChanged={() => fetchData(true)}
+              />
+
               {/* Sort Order Selector */}
               <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/60 p-1 rounded-xl border border-slate-200 dark:border-slate-700/60 text-xs">
                 <button
@@ -612,6 +680,24 @@ export function Dashboard({ currentUser }: DashboardProps) {
               </div>
             </div>
           </div>
+
+          {/* Thông báo trạng thái Offline nếu mất mạng */}
+          {(!isOnline || isOfflineMode) && (
+            <div className="p-3 px-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs flex flex-wrap items-center justify-between gap-3 animate-fadeIn">
+              <div className="flex items-center gap-2">
+                <WifiOff className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>
+                  <strong>Chế độ Ngoại tuyến (Offline):</strong> Đang sử dụng dữ liệu được lưu trực tiếp trên bộ nhớ thiết bị. Flashcard và Quiz vẫn hoạt động 100%!
+                </span>
+              </div>
+              <button
+                onClick={() => fetchData(true)}
+                className="px-3 py-1 rounded-xl bg-amber-600 text-white font-bold text-[11px] hover:bg-amber-700 transition-colors shrink-0"
+              >
+                Thử kết nối lại
+              </button>
+            </div>
+          )}
 
           {/* View Modes — Animated Tab Indicator (Framer Motion layoutId) */}
           {(() => {

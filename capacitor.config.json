@@ -1,0 +1,18 @@
+﻿{
+  "appId": "online.vanhoang.kotobase",
+  "appName": "KotoBase",
+  "webDir": "out",
+  "server": {
+    "url": "https://kotobase.vanhoang.online",
+    "cleartext": true,
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#0f172a",
+      "showSpinner": false,
+      "androidSplashResourceName": "splash"
+    }
+  }
+}
