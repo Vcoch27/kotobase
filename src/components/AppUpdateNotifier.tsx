@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -69,7 +69,7 @@ export function AppUpdateNotifier() {
               </span>
             </div>
             <p className="text-[11px] text-slate-300 truncate mt-0.5">
-              Học offline & giao diện mobile mới
+              Cập nhật tính năng & sửa lỗi
             </p>
           </div>
         </div>
@@ -77,7 +77,12 @@ export function AppUpdateNotifier() {
         <div className="flex items-center gap-1.5 shrink-0">
           <Link
             href="/download"
-            onClick={() => setDismissed(true)}
+            onClick={() => {
+              setDismissed(true);
+              try {
+                localStorage.setItem("kotobase_installed_version", latestVersion);
+              } catch {}
+            }}
             className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/30"
           >
             <span>Tải</span>
