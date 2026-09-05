@@ -182,3 +182,11 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   IOS / NOTCH / DYNAMIC ISLAND SAFE AREA SUPPORT
+   ══════════════════════════════════════════════════════════════ */
+header.sticky {
+  padding-top: max(0px, env(safe-area-inset-top));
+}
+
