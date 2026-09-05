@@ -15,8 +15,36 @@ export const metadata: Metadata = {
   description: "Tải app KotoBase học tiếng Nhật trên điện thoại di động Android và iOS. Hỗ trợ học Offline 100% không cần mạng.",
 };
 
-export default function DownloadPage() {
+export default async function DownloadPage() {
   const { android, ios, version, releaseDate, changelog } = releaseData;
+
+  // Cố gắng lấy thông tin mới nhất từ GitHub
+  let displayVersion = version;
+  let displayApkUrl = android.downloadUrl;
+  let displayApkSize = android.fileSize;
+  let displayGithubUrl = android.githubUrl;
+
+  try {
+    const res = await fetch("https://api.github.com/repos/Vcoch27/kotobase/releases/latest", {
+      next: { revalidate: 3600 } // Cache 1 giờ để tránh bị GitHub giới hạn API
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.tag_name) {
+        displayVersion = data.tag_name.replace('v', '');
+        displayGithubUrl = data.html_url;
+      }
+      
+      // Tìm file .apk trong danh sách assets
+      const apkAsset = data.assets?.find((a: any) => a.name.endsWith('.apk'));
+      if (apkAsset) {
+        displayApkUrl = apkAsset.browser_download_url;
+        displayApkSize = (apkAsset.size / (1024 * 1024)).toFixed(2) + " MB";
+      }
+    }
+  } catch (e) {
+    console.error("Lỗi khi fetch Github release:", e);
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased pb-24 md:pb-16 transition-colors duration-300">
@@ -33,7 +61,7 @@ export default function DownloadPage() {
 
           <div className="flex items-center gap-2">
             <span className="text-xs font-extrabold px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-              Bản phát hành v{version}
+              Bản phát hành v{displayVersion}
             </span>
           </div>
         </div>
@@ -97,11 +125,11 @@ export default function DownloadPage() {
               <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80 space-y-1.5 text-xs">
                 <div className="flex justify-between">
                   <span className="text-slate-500 dark:text-slate-400">Phiên bản:</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">v{android.version}</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">v{displayVersion}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500 dark:text-slate-400">Dung lượng:</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">{android.fileSize}</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">{displayApkSize}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500 dark:text-slate-400">Yêu cầu hệ điều hành:</span>
@@ -112,17 +140,17 @@ export default function DownloadPage() {
               {/* Nút Tải APK */}
               <div className="space-y-2">
                 <a
-                  href={android.downloadUrl}
+                  href={displayApkUrl}
                   download="kotobase.apk"
                   className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 active:scale-95 transition-all"
                 >
                   <Download className="w-5 h-5" />
-                  <span>Tải file APK trực tiếp ({android.fileSize})</span>
+                  <span>Tải file APK trực tiếp ({displayApkSize})</span>
                 </a>
 
-                {android.githubUrl && (
+                {displayGithubUrl && (
                   <a
-                    href={android.githubUrl}
+                    href={displayGithubUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs transition-all border border-slate-200 dark:border-slate-700"
