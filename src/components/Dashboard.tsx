@@ -33,15 +33,9 @@ import { auth } from "@/lib/firebase";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { loginWithGoogle } from "@/app/actions/auth";
 
-const FocusRecallView = dynamic(() => import("./FocusRecallView").then(m => m.FocusRecallView), {
-  loading: () => <div className="flex items-center justify-center p-20"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
-});
-const FlashcardView = dynamic(() => import("./FlashcardView").then(m => m.FlashcardView), {
-  loading: () => <div className="flex items-center justify-center p-20"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
-});
-const TypingQuizView = dynamic(() => import("./TypingQuizView").then(m => m.TypingQuizView), {
-  loading: () => <div className="flex items-center justify-center p-20"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
-});
+import { FocusRecallView } from "./FocusRecallView";
+import { FlashcardView } from "./FlashcardView";
+import { TypingQuizView } from "./TypingQuizView";
 
 interface UserInfo {
   uid: string;
@@ -349,21 +343,6 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 KotoBase <span className="hidden sm:inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Japanese</span>
               </h1>
             </div>
-
-            {/* Nút xem thư mục nhanh trên Header (Mobile) */}
-            <button
-              onClick={() => setShowMobileFolderDrawer(true)}
-              className="md:hidden flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/25 text-xs font-bold active:scale-95 transition-all shadow-sm max-w-[140px]"
-              title="Xem tất cả thư mục"
-            >
-              <Folder className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span className="truncate text-[11px]">
-                {selectedFolderId === 'all' 
-                  ? 'Thư mục' 
-                  : (folders.find(f => f.id === selectedFolderId)?.name || 'Thư mục')}
-              </span>
-              <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
-            </button>
           </div>
 
           {/* Desktop Search */}
@@ -968,7 +947,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
       )}
 
       {/* 🚀 MOBILE ONLY: Nút nổi Floating Button chuyển nhanh Thư mục */}
-      <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px)+14px)] right-4 z-[45] md:hidden animate-fadeIn">
+      <div className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom,0px))] right-4 z-[60] md:hidden animate-fadeIn">
         <button
           onClick={() => setShowMobileFolderDrawer(true)}
           className="flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 text-white shadow-xl shadow-amber-500/30 border border-amber-400/30 active:scale-95 transition-all"
