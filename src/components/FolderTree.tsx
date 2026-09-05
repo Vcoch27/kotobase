@@ -288,7 +288,7 @@ export function FolderTree({
     return count;
   };
 
-  // Hàm kiểm tra thư mục này hoặc bất kỳ thư mục con nào đã được tải offline
+  // Hàm kiểm tra bất kỳ thư mục con nào đã được tải offline (cục bộ thư mục con)
   const hasRecursiveDownloaded = (node: any): boolean => {
     if (downloadedFolderIds.has(node.id)) return true;
     if (node.children && node.children.length > 0) {
@@ -298,15 +298,18 @@ export function FolderTree({
   };
 
   // Render recursive
-  const renderTree = (nodes: any[], level = 0) => {
+  const renderTree = (nodes: any[], level = 0, parentFullyOffline = false) => {
     return nodes.map((node) => {
       const isExpanded = expandedFolders[node.id];
       const isSelected = selectedFolderId === node.id;
       const hasChildren = node.children.length > 0;
       const isDragOver = dragOverFolderId === node.id;
       const totalCount = getRecursiveCount(node);
-      const isDirectlyDownloaded = downloadedFolderIds.has(node.id);
-      const isChildDownloaded = !isDirectlyDownloaded && hasRecursiveDownloaded(node);
+      
+      // Thư mục này offline nếu nó tự offline HOẶC cha của nó đã offline
+      const isFullyOffline = downloadedFolderIds.has(node.id) || parentFullyOffline;
+      // Thư mục này partially offline nếu nó chưa offline hoàn toàn NHƯNG có thư mục con offline
+      const isPartiallyOffline = !isFullyOffline && hasRecursiveDownloaded(node);
 
       // Phân quyền hiển thị
       const isAdmin = currentUserEmail === 'hoangtungmy123@gmail.com';
@@ -386,21 +389,20 @@ export function FolderTree({
               ) : null}
 
               {/* Badge Offline nếu thư mục này hoặc thư mục con đã tải */}
-              {isDirectlyDownloaded ? (
+              {isFullyOffline ? (
                 <span
                   className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30 shrink-0"
-                  title="Đã tải về máy để học offline"
+                  title="Đã tải toàn bộ về máy để học offline"
                 >
                   <CheckCircle2 className="w-2.5 h-2.5" />
                   <span className="inline">Offline</span>
                 </span>
-              ) : isChildDownloaded ? (
+              ) : isPartiallyOffline ? (
                 <span
-                  className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 shrink-0"
-                  title="Có thư mục con đã lưu offline"
+                  className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 border border-dashed border-emerald-300 dark:border-emerald-500/40 shrink-0"
+                  title="Có một số thư mục con đã lưu offline"
                 >
-                  <CheckCircle2 className="w-2.5 h-2.5" />
-                  <span className="inline">Offline</span>
+                  <span className="inline">Một phần</span>
                 </span>
               ) : null}
 
@@ -463,7 +465,7 @@ export function FolderTree({
           </div>
 
           {hasChildren && isExpanded && (
-            <div className="w-full">{renderTree(node.children, level + 1)}</div>
+            <div className="w-full">{renderTree(node.children, level + 1, isFullyOffline)}</div>
           )}
         </div>
       );
