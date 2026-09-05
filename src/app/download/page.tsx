@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import Link from "next/link";
 import { 
   Download, Smartphone, Apple, CheckCircle2, 
@@ -112,11 +112,12 @@ export default function DownloadPage() {
               {/* Nút Tải APK */}
               <a
                 href={android.downloadUrl}
-                download="kotobase-v1.0.0.apk"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 active:scale-95 transition-all"
               >
                 <Download className="w-5 h-5" />
-                <span>Tải file APK trực tiếp</span>
+                <span>Xem & Tải bản APK trên GitHub</span>
               </a>
 
               {/* Hướng dẫn cài đặt Android */}
@@ -206,11 +207,12 @@ export default function DownloadPage() {
 
                 <a
                   href={ios.ipaDownloadUrl}
-                  download="kotobase-v1.0.0.ipa"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition-all border border-slate-200 dark:border-slate-700"
                 >
                   <Download className="w-4 h-4" />
-                  <span>Tải file .IPA (Sideloadly / AltStore)</span>
+                  <span>Xem bản phát hành .IPA trên GitHub</span>
                 </a>
 
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">

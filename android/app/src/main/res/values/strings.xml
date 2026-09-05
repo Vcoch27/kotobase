@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">KotoBase</string>
+    <string name="title_activity_main">KotoBase</string>
+    <string name="package_name">online.vanhoang.kotobase</string>
+    <string name="custom_url_scheme">online.vanhoang.kotobase</string>
+</resources>
