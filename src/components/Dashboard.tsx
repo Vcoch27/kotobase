@@ -349,6 +349,21 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 KotoBase <span className="hidden sm:inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Japanese</span>
               </h1>
             </div>
+
+            {/* Nút xem thư mục nhanh trên Header (Mobile) */}
+            <button
+              onClick={() => setShowMobileFolderDrawer(true)}
+              className="md:hidden flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/25 text-xs font-bold active:scale-95 transition-all shadow-sm max-w-[140px]"
+              title="Xem tất cả thư mục"
+            >
+              <Folder className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span className="truncate text-[11px]">
+                {selectedFolderId === 'all' 
+                  ? 'Thư mục' 
+                  : (folders.find(f => f.id === selectedFolderId)?.name || 'Thư mục')}
+              </span>
+              <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
+            </button>
           </div>
 
           {/* Desktop Search */}
@@ -547,7 +562,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
       </header>
 
       {/* Main Layout (2 Columns) */}
-      <main className="flex-1 max-w-screen-2xl w-full mx-auto px-4 lg:px-6 pt-6 pb-28 md:pb-10 flex flex-col md:flex-row gap-6">
+      <main className="flex-1 max-w-screen-2xl w-full mx-auto px-4 lg:px-6 pt-6 pb-36 md:pb-10 flex flex-col md:flex-row gap-6">
         
         {/* LEFT SIDEBAR: Folder Tree */}
         <div className="w-full md:w-64 lg:w-72 shrink-0 space-y-4 md:sticky md:top-20 md:self-start">
@@ -658,13 +673,18 @@ export function Dashboard({ currentUser }: DashboardProps) {
           <div className="flex flex-wrap items-center justify-between gap-3 px-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Đang chọn:</span>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800/50 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/50">
-                <Folder className="w-4 h-4 text-amber-500" />
+              <div 
+                onClick={() => setShowMobileFolderDrawer(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800/50 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/50 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+                title="Bấm để đổi thư mục"
+              >
+                <Folder className="w-4 h-4 text-amber-500 shrink-0" />
                 {selectedFolderId === 'all' ? (
                   <span>Tất cả từ vựng</span>
                 ) : (
                   <span>{getFolderFullPath(folders.find(f => f.id === selectedFolderId) || { name: 'Thư mục không xác định' }, folders)}</span>
                 )}
+                <ChevronDown className="w-3.5 h-3.5 opacity-60 ml-0.5 md:hidden shrink-0" />
               </div>
             </div>
 
