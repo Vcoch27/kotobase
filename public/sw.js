@@ -77,9 +77,15 @@ self.addEventListener("fetch", (event) => {
     fetch(event.request)
       .then((response) => {
         // Cache response hợp lệ (same-origin hoặc basic)
-        if (response && response.status === 200) {
+        if (response && (response.status === 200 || response.type === 'opaque')) {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, clone);
+            // Nếu là trang web HTML (hoặc điều hướng), luôn lưu một bản vào key "/"
+            if (event.request.mode === "navigate" || event.request.headers.get("accept")?.includes("text/html")) {
+              cache.put("/", response.clone());
+            }
+          });
         }
         return response;
       })
@@ -88,10 +94,12 @@ self.addEventListener("fetch", (event) => {
         const cached = await caches.match(event.request);
         if (cached) return cached;
 
-        // Fallback HTML: trả về trang chủ đã cache
-        if (event.request.headers.get("accept")?.includes("text/html")) {
+        // Fallback HTML: trả về trang chủ đã cache khi mở app offline
+        if (event.request.mode === "navigate" || event.request.headers.get("accept")?.includes("text/html")) {
           const root = await caches.match("/");
           if (root) return root;
+          const login = await caches.match("/login");
+          if (login) return login;
         }
 
         return new Response("Offline - Tài nguyên chưa được lưu.", {
