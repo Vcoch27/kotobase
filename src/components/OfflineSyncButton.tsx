@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { 
@@ -19,6 +19,7 @@ interface OfflineSyncButtonProps {
   currentVocabs: any[];
   folders: any[];
   onOfflineDataChanged?: () => void;
+  onNavigateToFolder?: (folderId: string) => void;
   isOnline: boolean;
 }
 
@@ -28,6 +29,7 @@ export function OfflineSyncButton({
   currentVocabs,
   folders,
   onOfflineDataChanged,
+  onNavigateToFolder,
   isOnline
 }: OfflineSyncButtonProps) {
   const [downloading, setDownloading] = useState(false);
@@ -98,6 +100,9 @@ export function OfflineSyncButton({
       toast.dismiss(toastId);
       toast.success(`Đã lưu thành công ${vocabsToSave.length} từ vựng về máy để học Offline!`);
       if (onOfflineDataChanged) onOfflineDataChanged();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("kotobase_offline_data_changed"));
+      }
     } catch (error: any) {
       toast.dismiss(toastId);
       toast.error("Lỗi khi lưu dữ liệu về máy: " + (error?.message || "Không xác định"));
@@ -112,6 +117,9 @@ export function OfflineSyncButton({
       await refreshDecksInfo();
       toast.success(`Đã xoá bộ từ "${folderName}" khỏi máy`);
       if (onOfflineDataChanged) onOfflineDataChanged();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("kotobase_offline_data_changed"));
+      }
     } catch (e) {
       toast.error("Lỗi khi xoá bộ từ offline");
     }
@@ -124,6 +132,9 @@ export function OfflineSyncButton({
       await refreshDecksInfo();
       toast.success("Đã xoá toàn bộ dữ liệu offline trên thiết bị!");
       if (onOfflineDataChanged) onOfflineDataChanged();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("kotobase_offline_data_changed"));
+      }
     } catch (e) {
       toast.error("Lỗi khi dọn dẹp dữ liệu");
     }
@@ -264,18 +275,33 @@ export function OfflineSyncButton({
                     {downloadedDecks.map((deck) => (
                       <div
                         key={deck.folderId}
-                        className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between gap-3"
+                        className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between gap-3 group"
                       >
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                        {/* Phần tên - bấm vào để mở thư mục */}
+                        <button
+                          className="min-w-0 flex-1 text-left hover:opacity-80 transition-opacity"
+                          onClick={() => {
+                            if (onNavigateToFolder) {
+                              onNavigateToFolder(deck.folderId);
+                              setShowManagerModal(false);
+                            }
+                          }}
+                          title={`Mở thư mục "${deck.folderName}"`}
+                        >
+                          <div className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                             {deck.folderName}
                           </div>
                           <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
                             <span className="font-semibold text-indigo-600 dark:text-indigo-400">{deck.count} từ vựng</span>
                             <span>•</span>
                             <span>{new Date(deck.downloadedAt).toLocaleDateString("vi-VN")}</span>
+                            {onNavigateToFolder && (
+                              <span className="text-indigo-500 dark:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity font-semibold">
+                                → Mở
+                              </span>
+                            )}
                           </div>
-                        </div>
+                        </button>
 
                         <button
                           onClick={() => handleDeleteDeck(deck.folderId, deck.folderName)}

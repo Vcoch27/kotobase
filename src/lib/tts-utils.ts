@@ -33,7 +33,7 @@ export const KOTOBASE_STYLE_OPTIONS = [
 ];
 
 export const DEFAULT_TTS_SETTINGS: TTSSettings = {
-  provider: 'kotobase-ai',
+  provider: 'browser',
   elevenLabsApiKey: '',
   elevenLabsVoiceId: 'EXAVITQu4vr4xnSDxMaL',
   hfToken: '',

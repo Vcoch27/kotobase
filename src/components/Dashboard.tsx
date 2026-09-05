@@ -58,7 +58,15 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const [viewMode, setViewMode] = useState<"overview" | "focus" | "flashcard" | "quiz">("overview");
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [vocabularies, setVocabularies] = useState<any[]>([]);
-  const [folders, setFolders] = useState<any[]>([]);
+  const [folders, setFolders] = useState<any[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("kotobase_cached_folders");
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return [];
+  });
   const [selectedFolderId, setSelectedFolderId] = useState<string>("all");
   const [selectedVocabIds, setSelectedVocabIds] = useState<string[]>([]);
   const [sortOrder, setSortOrder] = useState<"created_asc" | "created_desc" | "alphabetical">("created_asc");
@@ -112,20 +120,43 @@ export function Dashboard({ currentUser }: DashboardProps) {
       setLoading(true);
     }
     setQuotaExceeded(false);
+
+    // Hàm phụ khôi phục thư mục offline/cache
+    const getFallbackFolders = async (): Promise<any[]> => {
+      try {
+        const offlineF = await getOfflineFolders();
+        if (Array.isArray(offlineF) && offlineF.length > 0) return offlineF;
+      } catch (e) {}
+      if (typeof window !== "undefined") {
+        try {
+          const saved = localStorage.getItem("kotobase_cached_folders");
+          if (saved) return JSON.parse(saved);
+        } catch (e) {}
+      }
+      return [];
+    };
+
     try {
       // 1. Nếu thiết bị mất mạng (Offline), ưu tiên đọc ngay từ IndexedDB
       if (typeof window !== "undefined" && !navigator.onLine) {
-        const [offlineVocabs, offlineFolders] = await Promise.all([
+        const [offlineVocabs, fallbackFolders] = await Promise.all([
           getOfflineVocabularies(selectedFolderId),
-          getOfflineFolders()
+          getFallbackFolders()
         ]);
-        if (offlineVocabs.length > 0) {
-          setVocabularies(offlineVocabs);
-          if (offlineFolders.length > 0) setFolders(offlineFolders);
-          setIsOfflineMode(true);
-          toast("Đang tải dữ liệu học Offline trên máy", { icon: "📶" });
-          return;
+
+        if (fallbackFolders.length > 0) {
+          setFolders(fallbackFolders);
+          foldersCache.current = fallbackFolders;
         }
+
+        setVocabularies(offlineVocabs || []);
+        setIsOfflineMode(true);
+        if (offlineVocabs && offlineVocabs.length > 0) {
+          toast(`Đang học Offline (${offlineVocabs.length} từ vựng)`, { icon: "📶", id: "offline-status" });
+        } else if (selectedFolderId !== "all") {
+          toast("Thư mục này chưa có dữ liệu lưu offline trên máy.", { icon: "ℹ️", id: "offline-empty" });
+        }
+        return;
       }
 
       let vocabData: any[];
@@ -152,12 +183,15 @@ export function Dashboard({ currentUser }: DashboardProps) {
         vocabCache.current[selectedFolderId] = Array.isArray(vocabData) ? vocabData : [];
         foldersCache.current = Array.isArray(folderData) ? folderData : [];
 
-        // Tự động lưu bản sao vào IndexedDB để sẵn sàng cho lúc mất mạng (Background)
+        // Tự động lưu bản sao vào IndexedDB và localStorage để sẵn sàng cho lúc mất mạng (Background)
         if (Array.isArray(vocabData) && vocabData.length > 0) {
           saveVocabulariesOffline(vocabData).catch(() => {});
         }
         if (Array.isArray(folderData) && folderData.length > 0) {
           saveFoldersOffline(folderData).catch(() => {});
+          try {
+            localStorage.setItem("kotobase_cached_folders", JSON.stringify(folderData));
+          } catch (e) {}
         }
       }
 
@@ -169,15 +203,22 @@ export function Dashboard({ currentUser }: DashboardProps) {
       
       // Fallback: Khi có lỗi (hết Quota Firebase hoặc rớt mạng đột ngột), đọc ngay từ IndexedDB
       try {
-        const offlineVocabs = await getOfflineVocabularies(selectedFolderId);
-        if (offlineVocabs.length > 0) {
-          setVocabularies(offlineVocabs);
-          const offlineFolders = await getOfflineFolders();
-          if (offlineFolders.length > 0) setFolders(offlineFolders);
-          setIsOfflineMode(true);
-          toast.success(`Đã tự động chuyển sang ${offlineVocabs.length} từ vựng Offline trên máy!`);
-          return;
+        const [offlineVocabs, fallbackFolders] = await Promise.all([
+          getOfflineVocabularies(selectedFolderId),
+          getFallbackFolders()
+        ]);
+
+        if (fallbackFolders.length > 0) {
+          setFolders(fallbackFolders);
+          foldersCache.current = fallbackFolders;
         }
+
+        setVocabularies(offlineVocabs || []);
+        setIsOfflineMode(true);
+        if (offlineVocabs && offlineVocabs.length > 0) {
+          toast.success(`Đã tự động chuyển sang ${offlineVocabs.length} từ vựng Offline trên máy!`, { id: "offline-status" });
+        }
+        return;
       } catch (offlineErr) {
         console.warn("Lỗi đọc offline fallback:", offlineErr);
       }
@@ -188,7 +229,6 @@ export function Dashboard({ currentUser }: DashboardProps) {
         toast.error("Lỗi tải dữ liệu, vui lòng thử lại sau.");
       }
       setVocabularies([]);
-      setFolders([]);
     } finally {
       if (!isBackground) {
         setLoading(false);
@@ -297,7 +337,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased pb-20 flex flex-col transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased pb-24 md:pb-0 flex flex-col transition-colors duration-300">
       {/* Top Navbar */}
       <header className="sticky top-0 z-40 shadow-elevation-sm bg-[oklch(var(--color-surface)/0.85)] backdrop-blur-xl transition-colors duration-300">
         <div className="max-w-screen-2xl mx-auto px-4 lg:px-6 py-3 md:h-16 flex flex-wrap items-center justify-between gap-3 md:gap-4">
@@ -507,7 +547,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
       </header>
 
       {/* Main Layout (2 Columns) */}
-      <main className="flex-1 max-w-screen-2xl w-full mx-auto px-4 lg:px-6 pt-6 flex flex-col md:flex-row gap-6">
+      <main className="flex-1 max-w-screen-2xl w-full mx-auto px-4 lg:px-6 pt-6 pb-28 md:pb-10 flex flex-col md:flex-row gap-6">
         
         {/* LEFT SIDEBAR: Folder Tree */}
         <div className="w-full md:w-64 lg:w-72 shrink-0 space-y-4 md:sticky md:top-20 md:self-start">
@@ -648,6 +688,9 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 folders={folders}
                 isOnline={isOnline}
                 onOfflineDataChanged={() => fetchData(true)}
+                onNavigateToFolder={(folderId) => {
+                  handleSelectFolder(folderId);
+                }}
               />
 
               {/* Sort Order Selector */}
@@ -768,7 +811,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
             </div>
           </div>
 
-          <div className="pb-10">
+          <div className="pb-24 md:pb-10">
             {quotaExceeded ? (
               <div className="p-8 my-8 text-center bg-rose-50 dark:bg-rose-900/10 rounded-2xl border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400">
                 <BrainCircuit className="w-12 h-12 mx-auto mb-4 text-rose-500 opacity-80" />
@@ -905,10 +948,10 @@ export function Dashboard({ currentUser }: DashboardProps) {
       )}
 
       {/* 🚀 MOBILE ONLY: Nút nổi Floating Button chuyển nhanh Thư mục */}
-      <div className="fixed bottom-5 right-4 z-40 md:hidden animate-fadeIn">
+      <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px)+14px)] right-4 z-[45] md:hidden animate-fadeIn">
         <button
           onClick={() => setShowMobileFolderDrawer(true)}
-          className="flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 text-white shadow-2xl shadow-amber-500/40 border border-amber-400/30 active:scale-95 transition-all"
+          className="flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 text-white shadow-xl shadow-amber-500/30 border border-amber-400/30 active:scale-95 transition-all"
           title="Chuyển nhanh thư mục"
         >
           <Folder className="w-4 h-4 text-white shrink-0" />
@@ -923,7 +966,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
 
       {/* 🚀 MOBILE ONLY: Bottom Sheet Drawer Cây Thư Mục */}
       {showMobileFolderDrawer && (
-        <div className="fixed inset-0 z-50 md:hidden flex flex-col justify-end">
+        <div className="fixed inset-0 z-[70] md:hidden flex flex-col justify-end">
           {/* Backdrop mờ tối */}
           <div 
             className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity animate-fadeIn" 

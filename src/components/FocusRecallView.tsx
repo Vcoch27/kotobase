@@ -148,7 +148,10 @@ export function FocusRecallView({ vocabularies, selectedVocabIds = [], onRefresh
               {/* Card Header: Chỉ hiển thị Từ vựng (Word) ban đầu */}
               <div className="p-5 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="text-2xl font-black text-slate-900 dark:text-white tracking-wide">
+                  <div 
+                    className="text-2xl font-black text-slate-900 dark:text-white tracking-wide"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <ClickableKanjiString text={item.word} />
                   </div>
                   {!isExpanded && (

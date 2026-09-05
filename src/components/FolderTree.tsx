@@ -15,7 +15,9 @@ import {
   AlertTriangle,
   Type,
   MoreVertical,
+  CheckCircle2,
 } from 'lucide-react';
+import { getDownloadedDecks } from '@/lib/offline-storage';
 
 interface FolderItem {
   id: string;
@@ -58,8 +60,34 @@ export function FolderTree({
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
   const [activeMenuFolderId, setActiveMenuFolderId] = useState<string | null>(null);
   const [localFolders, setLocalFolders] = useState<FolderItem[]>([]);
+  const [downloadedFolderIds, setDownloadedFolderIds] = useState<Set<string>>(new Set());
 
-  // States cho Custom Prompt Modal
+  // Lấy danh sách thư mục đã tải offline và lắng nghe thay đổi
+  useEffect(() => {
+    const updateDownloadedList = async () => {
+      try {
+        const decks = await getDownloadedDecks();
+        setDownloadedFolderIds(new Set(decks.map((d) => d.folderId)));
+      } catch (e) {
+        console.warn('Lỗi đọc danh sách offline trong FolderTree:', e);
+      }
+    };
+
+    updateDownloadedList();
+
+    const handleOfflineChanged = () => {
+      updateDownloadedList();
+    };
+
+    window.addEventListener('kotobase_offline_data_changed', handleOfflineChanged);
+    return () => {
+      window.removeEventListener('kotobase_offline_data_changed', handleOfflineChanged);
+    };
+  }, []);
+
+  useEffect(() => {
+    setLocalFolders(folders);
+  }, [folders]);
   const [promptModal, setPromptModal] = useState<{
     isOpen: boolean;
     type: 'delete' | 'rename';
@@ -260,6 +288,15 @@ export function FolderTree({
     return count;
   };
 
+  // Hàm kiểm tra thư mục này hoặc bất kỳ thư mục con nào đã được tải offline
+  const hasRecursiveDownloaded = (node: any): boolean => {
+    if (downloadedFolderIds.has(node.id)) return true;
+    if (node.children && node.children.length > 0) {
+      return node.children.some((child: any) => hasRecursiveDownloaded(child));
+    }
+    return false;
+  };
+
   // Render recursive
   const renderTree = (nodes: any[], level = 0) => {
     return nodes.map((node) => {
@@ -268,6 +305,8 @@ export function FolderTree({
       const hasChildren = node.children.length > 0;
       const isDragOver = dragOverFolderId === node.id;
       const totalCount = getRecursiveCount(node);
+      const isDirectlyDownloaded = downloadedFolderIds.has(node.id);
+      const isChildDownloaded = !isDirectlyDownloaded && hasRecursiveDownloaded(node);
 
       // Phân quyền hiển thị
       const isAdmin = currentUserEmail === 'hoangtungmy123@gmail.com';
@@ -343,6 +382,25 @@ export function FolderTree({
                   title={`Chủ: ${node.ownerName || node.ownerEmail || 'Người dùng khác'}`}
                 >
                   <Users className="w-2.5 h-2.5" />
+                </span>
+              ) : null}
+
+              {/* Badge Offline nếu thư mục này hoặc thư mục con đã tải */}
+              {isDirectlyDownloaded ? (
+                <span
+                  className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30 shrink-0"
+                  title="Đã tải về máy để học offline"
+                >
+                  <CheckCircle2 className="w-2.5 h-2.5" />
+                  <span className="inline">Offline</span>
+                </span>
+              ) : isChildDownloaded ? (
+                <span
+                  className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 shrink-0"
+                  title="Có thư mục con đã lưu offline"
+                >
+                  <CheckCircle2 className="w-2.5 h-2.5" />
+                  <span className="inline">Offline</span>
                 </span>
               ) : null}
 
@@ -427,9 +485,20 @@ export function FolderTree({
           <Folder className="w-4 h-4 text-amber-500 shrink-0" />
           <span className="text-xs sm:text-sm truncate">Tất cả từ vựng</span>
         </div>
-        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-full shrink-0">
-          {folders.reduce((acc, f) => acc + (f._count?.folderVocabularies || 0), 0)}
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {downloadedFolderIds.has('all') && (
+            <span
+              className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30 shrink-0"
+              title="Đã tải về máy để học offline"
+            >
+              <CheckCircle2 className="w-2.5 h-2.5" />
+              <span className="hidden xs:inline">Offline</span>
+            </span>
+          )}
+          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-full shrink-0">
+            {folders.reduce((acc, f) => acc + (f._count?.folderVocabularies || 0), 0)}
+          </span>
+        </div>
       </div>
 
       <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 px-1">

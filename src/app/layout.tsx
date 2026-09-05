@@ -69,6 +69,19 @@ export default function RootLayout({
           <MobileBottomNav />
           <AppUpdateNotifier />
 
+          {/* Đăng ký Service Worker hỗ trợ Offline PWA & Web Cache */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+                  window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js').catch(function(e) {});
+                  });
+                }
+              `,
+            }}
+          />
+
           {/* Toast — sử dụng CSS variables thay vì hardcode màu */}
           <Toaster
             position="top-center"

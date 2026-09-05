@@ -111,7 +111,7 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-transparent animate-fadeIn tracking-normal font-sans text-base font-normal text-left leading-normal cursor-default"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn tracking-normal font-sans text-base font-normal text-left leading-normal cursor-default"
       onClick={onClose}
     >
       <div 
