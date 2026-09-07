@@ -9,6 +9,7 @@ import { VocabularyEditModal } from "./VocabularyEditModal";
 import { KanjiLookupResults } from "./KanjiLookupResults";
 import { playAudio } from "@/lib/tts-utils";
 import { KanjiDetail } from "@/app/api/kanji/lookup/route";
+import { HighlightMnemonic } from "./HighlightMnemonic";
 import toast from "react-hot-toast";
 
 interface KanjiNote {
@@ -325,15 +326,33 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
                         />
                       </div>
                       <div>
-                        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 mb-1">
-                          <BookOpen className="w-3.5 h-3.5" /> MẸO NHỚ
+                        <div className="flex items-center justify-between mb-1 flex-wrap gap-1">
+                          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                            <BookOpen className="w-3.5 h-3.5" /> MẸO NHỚ
+                          </div>
+                          <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400">
+                            <span className="inline-flex items-center gap-1 font-semibold text-indigo-600 dark:text-indigo-400">
+                              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> Viết hoa đầu: Bộ thủ
+                            </span>
+                            <span className="inline-flex items-center gap-1 font-bold text-rose-600 dark:text-rose-400">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span> HOA HẾT: Nghĩa gốc
+                            </span>
+                          </div>
                         </div>
                         <textarea
                           value={editKanjiForm.mnemonic}
                           onChange={(e) => setEditKanjiForm(prev => ({ ...prev, mnemonic: e.target.value }))}
                           className="w-full px-3 py-1.5 rounded-lg text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-slate-800 dark:text-slate-100 min-h-[60px]"
-                          placeholder="Nhập mẹo nhớ..."
+                          placeholder="Ví dụ: cô gái dùng Khăn lau Thực phẩm dính trên trang SỨC..."
                         />
+                        {editKanjiForm.mnemonic.trim() && (
+                          <div className="mt-1.5 p-2 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
+                              Xem trước:
+                            </span>
+                            <HighlightMnemonic text={editKanjiForm.mnemonic} />
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center justify-end gap-2 pt-1">
                         <button 
@@ -431,8 +450,12 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
                         <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 mb-0.5 mt-2">
                           <BookOpen className="w-3.5 h-3.5" /> MẸO NHỚ
                         </div>
-                        <div className="text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                          {selectedKanji.mnemonic || <span className="text-slate-400 italic">Nhấn để thêm mẹo nhớ...</span>}
+                        <div className="text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 leading-relaxed">
+                          {selectedKanji.mnemonic ? (
+                            <HighlightMnemonic text={selectedKanji.mnemonic} />
+                          ) : (
+                            <span className="text-slate-400 italic">Nhấn để thêm mẹo nhớ...</span>
+                          )}
                         </div>
                       </div>
                     </div>

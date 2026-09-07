@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { Plus, AlertTriangle, Sparkles, Folder, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { getFolderFullPath } from "@/lib/folder-utils";
 import { FolderSelector } from "./FolderSelector";
+import { HighlightMnemonic } from "./HighlightMnemonic";
 
 interface FolderItem {
   id: string;
@@ -184,9 +185,10 @@ export function QuickAddForm({ folders, currentFolderId, onSuccess }: QuickAddFo
                 {duplicateInfo.kanjiNotes.map((kn) => (
                   <span
                     key={kn.id}
-                    className="px-2.5 py-1 rounded-lg bg-white dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-500/40 text-slate-700 dark:text-slate-200"
+                    className="px-2.5 py-1 rounded-lg bg-white dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-500/40 text-slate-700 dark:text-slate-200 text-xs"
                   >
-                    <strong className="text-indigo-600 dark:text-indigo-400">{kn.character}:</strong> {kn.mnemonic || "Đã lưu"}
+                    <strong className="text-indigo-600 dark:text-indigo-400 mr-1">{kn.character}:</strong>
+                    {kn.mnemonic ? <HighlightMnemonic text={kn.mnemonic} /> : "Đã lưu"}
                   </span>
                 ))}
               </div>
