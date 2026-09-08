@@ -70,6 +70,39 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const autoPlayedRef = useRef<Set<number>>(new Set()); // Track which card indexes have been auto-played
 
+  // Chế độ phát âm khi bấm phím V hoặc nút Loa: "both" (Cả 2), "word" (Chỉ từ vựng), "example" (Chỉ câu ví dụ)
+  const [audioMode, setAudioMode] = useState<"both" | "word" | "example">("both");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("kotobase_flashcard_audio_mode");
+      if (saved === "both" || saved === "word" || saved === "example") {
+        setAudioMode(saved);
+      }
+    } catch {}
+  }, []);
+
+  const handleAudioModeChange = (newMode: "both" | "word" | "example") => {
+    setAudioMode(newMode);
+    try {
+      localStorage.setItem("kotobase_flashcard_audio_mode", newMode);
+    } catch {}
+  };
+
+  const getAudioTextToPlay = useCallback((card: VocabularyData) => {
+    const wordText = card.reading || card.word;
+    const exampleClean = card.example ? card.example.replace(/[\(（].*?[\)）]/g, '').trim() : '';
+
+    if (audioMode === "word") {
+      return wordText;
+    }
+    if (audioMode === "example") {
+      return exampleClean || wordText;
+    }
+    // Mặc định "both": đọc từ vựng rồi đọc câu ví dụ
+    return exampleClean ? `${wordText}。 …… ${exampleClean}` : wordText;
+  }, [audioMode]);
+
   // Swipe tracking
   const [touchStart, setTouchStart] = useState<{x: number, y: number} | null>(null);
   const [touchEnd, setTouchEnd] = useState<{x: number, y: number} | null>(null);
@@ -134,7 +167,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
     
     autoPlayedRef.current.add(currentIndex);
     setIsPlayingAudio(true);
-    const textToPlay = currentVocab.reading || currentVocab.word;
+    const textToPlay = getAudioTextToPlay(currentVocab);
     // Thêm delay nhỏ để animation thẻ mới có thời gian load
     const timer = setTimeout(() => {
       playAudio(textToPlay);
@@ -142,7 +175,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
       setTimeout(() => setIsPlayingAudio(false), 3000);
     }, 400);
     return () => clearTimeout(timer);
-  }, [mode, currentIndex, deck, isFinished]);
+  }, [mode, currentIndex, deck, isFinished, getAudioTextToPlay]);
 
   // Reset autoPlayed ref khi đổi mode hoặc restart
   useEffect(() => {
@@ -340,18 +373,12 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
           const card = deck[currentIndex];
           if (!card) break;
           
+          const textToPlayKey = getAudioTextToPlay(card);
           if (mode === "listening") {
-            // Chế độ Nghe: Chỉ phát âm từ vựng (không phát ví dụ) + kích hoạt hiệu ứng sóng âm
-            const textToPlayKey = card.reading || card.word;
             setIsPlayingAudio(true);
             playAudio(textToPlayKey);
             setTimeout(() => setIsPlayingAudio(false), 3000);
           } else {
-            // Các chế độ khác: Phát từ vựng + ví dụ (nếu có)
-            const exampleTextKey = card.example ? card.example.replace(/[\(（].*?[\)）]/g, '').trim() : '';
-            const textToPlayKey = exampleTextKey 
-              ? `${card.reading || card.word}。 …… ${exampleTextKey}`
-              : (card.reading || card.word);
             playAudio(textToPlayKey);
           }
           break;
@@ -360,7 +387,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isFinished, deck, currentIndex, mode, handleNext, handlePrev, handleProgress, handleAnkiRate, handleUndo, flipCard, isFlipped]);
+  }, [isFinished, deck, currentIndex, mode, handleNext, handlePrev, handleProgress, handleAnkiRate, handleUndo, flipCard, isFlipped, getAudioTextToPlay]);
 
   // Restart Logic
   const restartAll = () => {
@@ -558,54 +585,101 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
           </button>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex items-center justify-end gap-1">
-          <button 
-            onClick={() => setShowSino(prev => !prev)} 
-            className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-all" 
-            title={showSino ? "Ẩn âm Hán Việt" : "Hiện âm Hán Việt"}
-          >
-            {showSino ? <Eye className="w-4 h-4 sm:w-5 sm:h-5" /> : <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" />}
-          </button>
-          
-          {mode !== "normal" && (
-            <button 
-              onClick={handleUndo} 
-              disabled={currentIndex === 0 && !isFinished}
-              className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-all disabled:opacity-30" 
-              title="Quay lại"
+        {/* Action & Audio mode buttons */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-100 dark:border-slate-800/80">
+          {/* Bộ chuyển đổi chế độ phát âm (Audio Mode Switch) */}
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700/60">
+            <span className="pl-2 pr-1 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 font-semibold select-none">
+              <Volume2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+              <span className="hidden sm:inline">Phát âm (V):</span>
+            </span>
+            <button
+              onClick={() => handleAudioModeChange("both")}
+              className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${
+                audioMode === "both"
+                  ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/50 dark:border-slate-600/50"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+              title="Đọc cả Từ vựng và Câu ví dụ khi bấm phím V"
             >
-              <Undo2 className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden xs:inline sm:inline">Cả hai</span>
+              <span className="xs:hidden sm:hidden">Cả 2</span>
             </button>
-          )}
-          {mode !== "anki" && (
+            <button
+              onClick={() => handleAudioModeChange("word")}
+              className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${
+                audioMode === "word"
+                  ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/50 dark:border-slate-600/50"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+              title="Chỉ đọc Từ vựng khi bấm phím V"
+            >
+              <span className="hidden xs:inline sm:inline">Từ vựng</span>
+              <span className="xs:hidden sm:hidden">Từ</span>
+            </button>
+            <button
+              onClick={() => handleAudioModeChange("example")}
+              className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${
+                audioMode === "example"
+                  ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/50 dark:border-slate-600/50"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+              title="Chỉ đọc Câu ví dụ khi bấm phím V"
+            >
+              <span className="hidden xs:inline sm:inline">Câu ví dụ</span>
+              <span className="xs:hidden sm:hidden">Câu</span>
+            </button>
+          </div>
+
+          {/* Action buttons (Bên phải) */}
+          <div className="flex items-center gap-1 ml-auto">
             <button 
-              onClick={toggleShuffle} 
+              onClick={() => setShowSino(prev => !prev)} 
+              className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-all" 
+              title={showSino ? "Ẩn âm Hán Việt" : "Hiện âm Hán Việt"}
+            >
+              {showSino ? <Eye className="w-4 h-4 sm:w-5 sm:h-5" /> : <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" />}
+            </button>
+            
+            {mode !== "normal" && (
+              <button 
+                onClick={handleUndo} 
+                disabled={currentIndex === 0 && !isFinished}
+                className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-all disabled:opacity-30" 
+                title="Quay lại"
+              >
+                <Undo2 className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            )}
+            {mode !== "anki" && (
+              <button 
+                onClick={toggleShuffle} 
+                className={`p-2 rounded-lg transition-all ${
+                  isShuffled
+                    ? "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-500/40"
+                    : "text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10"
+                }`} 
+                title={isShuffled ? "Tắt trộn thẻ" : "Trộn ngẫu nhiên"}
+              >
+                <Shuffle className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            )}
+            <button onClick={restartAll} className="p-2 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-all" title="Bắt đầu lại">
+              <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+            <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+            <button 
+              onClick={() => setIsFullscreen(!isFullscreen)} 
               className={`p-2 rounded-lg transition-all ${
-                isShuffled
-                  ? "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-500/40"
-                  : "text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10"
+                isFullscreen
+                  ? "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20 border border-blue-300 dark:border-blue-500/40"
+                  : "text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10"
               }`} 
-              title={isShuffled ? "Tắt trộn thẻ" : "Trộn ngẫu nhiên"}
+              title={isFullscreen ? "Thu nhỏ (Esc)" : "Toàn màn hình"}
             >
-              <Shuffle className="w-4 h-4 sm:w-5 sm:h-5" />
+              {isFullscreen ? <Minimize className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
-          )}
-          <button onClick={restartAll} className="p-2 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-all" title="Bắt đầu lại">
-            <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
-          <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
-          <button 
-            onClick={() => setIsFullscreen(!isFullscreen)} 
-            className={`p-2 rounded-lg transition-all ${
-              isFullscreen
-                ? "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20 border border-blue-300 dark:border-blue-500/40"
-                : "text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10"
-            }`} 
-            title={isFullscreen ? "Thu nhỏ (Esc)" : "Toàn màn hình"}
-          >
-            {isFullscreen ? <Minimize className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize className="w-4 h-4 sm:w-5 sm:h-5" />}
-          </button>
+          </div>
         </div>
       </div>
 
@@ -687,7 +761,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    const textToPlay = currentVocab.reading || currentVocab.word;
+                    const textToPlay = getAudioTextToPlay(currentVocab);
                     setIsPlayingAudio(true);
                     playAudio(textToPlay);
                     setTimeout(() => setIsPlayingAudio(false), 3000);
@@ -697,7 +771,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
                       ? 'bg-violet-500 dark:bg-violet-600 shadow-violet-500/40 scale-110'
                       : 'bg-white dark:bg-slate-800 border-2 border-violet-300 dark:border-violet-600 hover:border-violet-500 hover:scale-105 shadow-violet-200 dark:shadow-violet-900/50'
                   }`}
-                  title="Phát âm (nhấn lại để nghe)"
+                  title={`Phát âm (${audioMode === "both" ? "Từ & Câu" : audioMode === "word" ? "Chỉ từ" : "Chỉ câu"})`}
                 >
                   <Volume2 className={`w-7 h-7 sm:w-8 sm:h-8 ${isPlayingAudio ? 'text-white' : 'text-violet-500 dark:text-violet-400'}`} />
                 </button>
@@ -752,14 +826,11 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                const exampleTextBtn = currentVocab.example ? currentVocab.example.replace(/[\(（].*?[\)）]/g, '').trim() : '';
-                const textToPlayBtn = exampleTextBtn 
-                  ? `${currentVocab.reading || currentVocab.word}。 …… ${exampleTextBtn}`
-                  : (currentVocab.reading || currentVocab.word);
+                const textToPlayBtn = getAudioTextToPlay(currentVocab);
                 playAudio(textToPlayBtn);
               }}
               className="absolute top-2 right-2 sm:top-4 sm:right-4 p-2 sm:p-3 rounded-xl text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
-              title="Phát âm thanh"
+              title={`Phát âm thanh (${audioMode === "both" ? "Từ & Câu" : audioMode === "word" ? "Chỉ từ" : "Chỉ câu"})`}
             >
               <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
