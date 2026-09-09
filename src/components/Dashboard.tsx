@@ -947,21 +947,23 @@ export function Dashboard({ currentUser }: DashboardProps) {
       )}
 
       {/* 🚀 MOBILE ONLY: Nút nổi Floating Button chuyển nhanh Thư mục */}
-      <div className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom,0px))] right-4 z-[60] md:hidden animate-fadeIn">
-        <button
-          onClick={() => setShowMobileFolderDrawer(true)}
-          className="flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 text-white shadow-xl shadow-amber-500/30 border border-amber-400/30 active:scale-95 transition-all"
-          title="Chuyển nhanh thư mục"
-        >
-          <Folder className="w-4 h-4 text-white shrink-0" />
-          <span className="text-xs font-black max-w-[120px] truncate">
-            {selectedFolderId === 'all' 
-              ? 'Tất cả từ vựng' 
-              : (folders.find(f => f.id === selectedFolderId)?.name || 'Thư mục')}
-          </span>
-          <ChevronUp className="w-3.5 h-3.5 opacity-80 shrink-0" />
-        </button>
-      </div>
+      {viewMode === "overview" && (
+        <div className={`fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] right-4 z-[45] md:hidden animate-fadeIn transition-all duration-200 ${selectedVocabIds.length > 0 ? "opacity-0 pointer-events-none translate-y-3" : "opacity-100 translate-y-0"}`}>
+          <button
+            onClick={() => setShowMobileFolderDrawer(true)}
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 text-white shadow-xl shadow-amber-500/30 border border-amber-400/30 active:scale-95 transition-all"
+            title="Chuyển nhanh thư mục"
+          >
+            <Folder className="w-4 h-4 text-white shrink-0" />
+            <span className="text-xs font-black max-w-[120px] truncate">
+              {selectedFolderId === 'all' 
+                ? 'Tất cả từ vựng' 
+                : (folders.find(f => f.id === selectedFolderId)?.name || 'Thư mục')}
+            </span>
+            <ChevronUp className="w-3.5 h-3.5 opacity-80 shrink-0" />
+          </button>
+        </div>
+      )}
 
       {/* 🚀 MOBILE ONLY: Bottom Sheet Drawer Cây Thư Mục */}
       {showMobileFolderDrawer && (

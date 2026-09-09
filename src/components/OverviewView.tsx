@@ -651,51 +651,60 @@ export function OverviewView({
         })}
       </div>
 
-      {/* 3. FLOATING ACTION BAR (Hiện khi có từ được chọn) */}
+      {/* 3. FLOATING ACTION BAR (Hiện khi có từ được chọn) - Tối ưu responsive trên Mobile */}
       {selectedIds.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex flex-wrap items-center justify-center gap-2 bg-slate-900/95 dark:bg-slate-950/95 text-white p-2.5 px-4 rounded-2xl shadow-2xl border border-slate-700/80 backdrop-blur-md animate-slideUp max-w-[95vw]">
-          <div className="flex items-center gap-2 pr-2 border-r border-slate-700/80">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="text-xs font-bold whitespace-nowrap">
-              Đã chọn <strong className="text-emerald-400">{selectedIds.length}</strong> từ
+        <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:bottom-6 left-1/2 -translate-x-1/2 z-[55] flex items-center justify-between sm:justify-center gap-1.5 sm:gap-2 bg-slate-900/95 dark:bg-slate-950/95 text-white p-1.5 sm:p-2.5 px-2.5 sm:px-4 rounded-2xl shadow-2xl border border-slate-700/80 backdrop-blur-md animate-slideUp w-[calc(100%-1rem)] sm:w-auto max-w-xl">
+          {/* Badge đếm số từ & nút huỷ chọn */}
+          <div className="flex items-center gap-1.5 pr-2 border-r border-slate-700/80 shrink-0">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+            <span className="text-xs font-bold whitespace-nowrap text-slate-200">
+              <span className="hidden sm:inline">Đã chọn </span>
+              <strong className="text-emerald-400 font-extrabold">{selectedIds.length}</strong>
+              <span className="sm:hidden"> từ</span>
             </span>
+            <button
+              type="button"
+              onClick={handleClearSelection}
+              className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors ml-0.5"
+              title="Bỏ chọn tất cả"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
 
-          <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Các nút chuyển nhanh chế độ học: Flashcard, Quiz, Focus */}
+          <div className="flex items-center gap-1 sm:gap-1.5 flex-1 sm:flex-initial justify-end min-w-0">
             <button
               type="button"
               onClick={() => onNavigateToStudyMode?.('flashcard', selectedIds)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/30 transition-all active:scale-95 whitespace-nowrap"
+              className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/30 transition-all active:scale-95 flex-1 sm:flex-initial whitespace-nowrap"
+              title="Học Flashcard"
             >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Học Flashcard ({selectedIds.length})</span>
+              <Layers className="w-3.5 h-3.5 shrink-0" />
+              <span className="sm:hidden">Flashcard</span>
+              <span className="hidden sm:inline">Học Flashcard ({selectedIds.length})</span>
             </button>
 
             <button
               type="button"
               onClick={() => onNavigateToStudyMode?.('quiz', selectedIds)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-md shadow-purple-600/30 transition-all active:scale-95 whitespace-nowrap"
+              className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-md shadow-purple-600/30 transition-all active:scale-95 flex-1 sm:flex-initial whitespace-nowrap"
+              title="Làm Quiz"
             >
-              <BrainCircuit className="w-3.5 h-3.5" />
-              <span>Làm Quiz ({selectedIds.length})</span>
+              <BrainCircuit className="w-3.5 h-3.5 shrink-0" />
+              <span className="sm:hidden">Quiz</span>
+              <span className="hidden sm:inline">Làm Quiz ({selectedIds.length})</span>
             </button>
 
             <button
               type="button"
               onClick={() => onNavigateToStudyMode?.('focus', selectedIds)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition-all active:scale-95 whitespace-nowrap"
+              className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition-all active:scale-95 flex-1 sm:flex-initial whitespace-nowrap"
+              title="Ôn Focus"
             >
-              <Eye className="w-3.5 h-3.5" />
-              <span>Ôn Focus ({selectedIds.length})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleClearSelection}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors ml-1"
-              title="Bỏ chọn tất cả"
-            >
-              <X className="w-4 h-4" />
+              <Eye className="w-3.5 h-3.5 shrink-0" />
+              <span className="sm:hidden">Focus</span>
+              <span className="hidden sm:inline">Ôn Focus ({selectedIds.length})</span>
             </button>
           </div>
         </div>
