@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ClickableKanjiString } from './ClickableKanjiString';
 import {
   Eye,
@@ -23,6 +23,11 @@ interface VocabularyData {
   reading?: string | null;
   sinoVietnamese?: string | null;
   example?: string | null;
+  folders?: {
+    id: string;
+    name: string;
+    color?: string | null;
+  }[];
   folderVocabularies?: any[];
 }
 
@@ -33,14 +38,29 @@ interface FocusRecallViewProps {
 }
 
 export function FocusRecallView({ vocabularies, selectedVocabIds = [], onRefresh }: FocusRecallViewProps) {
-  const [scopedVocabs, setScopedVocabs] = useState<VocabularyData[]>(vocabularies);
+  const getScopedFromSelection = useCallback((all: VocabularyData[], selIds: string[]) => {
+    if (selIds && selIds.length > 0) {
+      const set = new Set(selIds);
+      const filtered = all.filter(v => set.has(v.id));
+      if (filtered.length > 0) return filtered;
+    }
+    return all;
+  }, []);
+
+  const [scopedVocabs, setScopedVocabs] = useState<VocabularyData[]>(() => 
+    getScopedFromSelection(vocabularies, selectedVocabIds)
+  );
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 40;
 
+  const vocabIdsStr = vocabularies.map(v => v.id).join(',');
+  const selectedVocabIdsStr = selectedVocabIds.join(',');
+
   useEffect(() => {
-    setScopedVocabs(vocabularies);
-  }, [vocabularies]);
+    setScopedVocabs(getScopedFromSelection(vocabularies, selectedVocabIds));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vocabIdsStr, selectedVocabIdsStr]);
 
   useEffect(() => {
     setCurrentPage(1);

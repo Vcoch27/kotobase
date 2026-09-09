@@ -40,7 +40,18 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 };
 
 export function FlashcardView({ vocabularies, selectedVocabIds = [] }: FlashcardViewProps) {
-  const [scopedVocabs, setScopedVocabs] = useState<VocabularyData[]>(vocabularies);
+  const getScopedFromSelection = useCallback((all: VocabularyData[], selIds: string[]) => {
+    if (selIds && selIds.length > 0) {
+      const set = new Set(selIds);
+      const filtered = all.filter(v => set.has(v.id));
+      if (filtered.length > 0) return filtered;
+    }
+    return all;
+  }, []);
+
+  const [scopedVocabs, setScopedVocabs] = useState<VocabularyData[]>(() => 
+    getScopedFromSelection(vocabularies, selectedVocabIds)
+  );
   const [mode, setMode] = useState<StudyMode>("normal");
   const [deck, setDeck] = useState<VocabularyData[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -60,11 +71,12 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
   }, []);
 
   const vocabIdsStr = vocabularies.map(v => v.id).join(',');
+  const selectedVocabIdsStr = selectedVocabIds.join(',');
 
   useEffect(() => {
-    setScopedVocabs(vocabularies);
+    setScopedVocabs(getScopedFromSelection(vocabularies, selectedVocabIds));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vocabIdsStr]);
+  }, [vocabIdsStr, selectedVocabIdsStr]);
 
   // Listening mode states
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
@@ -391,15 +403,15 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
 
   // Restart Logic
   const restartAll = () => {
-    setScopedVocabs(vocabularies);
-    setDeck(vocabularies); // Normal mode behavior
+    const targetVocabs = scopedVocabs.length > 0 ? scopedVocabs : vocabularies;
+    setDeck(targetVocabs); // Normal mode behavior
     // If anki mode, it should ideally re-fetch from local storage.
     if (mode === "anki") {
       const progress = loadAnkiProgress();
       setAnkiProgress(progress);
       
       const now = Date.now();
-      const ankiDeck = vocabularies.filter(v => {
+      const ankiDeck = targetVocabs.filter(v => {
         const p = progress[v.id];
         if (!p) return true;
         if (p.nextReview <= now) return true;

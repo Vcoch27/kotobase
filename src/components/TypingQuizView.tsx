@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { HelpCircle, CheckCircle2, XCircle, SkipForward, Info, RotateCcw, Shuffle, Maximize, Minimize } from "lucide-react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
 import { StudyScopeSelector } from "./StudyScopeSelector";
@@ -42,7 +42,18 @@ function cleanString(str: string): string {
 }
 
 export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQuizViewProps) {
-  const [scopedVocabs, setScopedVocabs] = useState<VocabularyData[]>(vocabularies);
+  const getScopedFromSelection = useCallback((all: VocabularyData[], selIds: string[]) => {
+    if (selIds && selIds.length > 0) {
+      const set = new Set(selIds);
+      const filtered = all.filter(v => set.has(v.id));
+      if (filtered.length > 0) return filtered;
+    }
+    return all;
+  }, []);
+
+  const [scopedVocabs, setScopedVocabs] = useState<VocabularyData[]>(() => 
+    getScopedFromSelection(vocabularies, selectedVocabIds)
+  );
   const [quizList, setQuizList] = useState<QuizItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userInput, setUserInput] = useState("");
@@ -69,11 +80,12 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
   }, []);
 
   const vocabIdsStr = vocabularies.map(v => v.id).join(',');
+  const selectedVocabIdsStr = selectedVocabIds.join(',');
 
   useEffect(() => {
-    setScopedVocabs(vocabularies);
+    setScopedVocabs(getScopedFromSelection(vocabularies, selectedVocabIds));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vocabIdsStr]);
+  }, [vocabIdsStr, selectedVocabIdsStr]);
 
   const buildQuizList = (list: VocabularyData[], mode: "mix" | "type1" | "type2"): QuizItem[] => {
     return list.map(v => {
