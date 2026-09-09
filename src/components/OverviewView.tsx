@@ -89,12 +89,66 @@ export function OverviewView({
   const [showRangeInput, setShowRangeInput] = useState(false);
   const [rangeStartStr, setRangeStartStr] = useState('1');
   const [rangeEndStr, setRangeEndStr] = useState(String(Math.min(30, localVocabs.length || 30)));
+  const [prioritizeSelected, setPrioritizeSelected] = useState(true);
+  const [filterOnlySelected, setFilterOnlySelected] = useState(false);
 
-  const totalPages = Math.ceil(localVocabs.length / ITEMS_PER_PAGE);
-  const paginatedVocabularies = localVocabs.slice(
+  // Map cố định ID -> STT gốc (1-based) theo đúng thứ tự sắp xếp hiện tại (thứ tự thêm hoặc mới nhất)
+  const vocabSttMap = useMemo(() => {
+    const map = new Map<string, number>();
+    localVocabs.forEach((v, idx) => {
+      map.set(v.id, idx + 1);
+    });
+    return map;
+  }, [localVocabs]);
+
+  // Tự động tắt chế độ lọc nếu danh sách chọn rỗng
+  useEffect(() => {
+    if (selectedIds.length === 0 && filterOnlySelected) {
+      setFilterOnlySelected(false);
+    }
+  }, [selectedIds.length, filterOnlySelected]);
+
+  // Danh sách từ vựng hiển thị: tự động đẩy các từ đã chọn lên trang đầu tiên (nếu prioritizeSelected bật)
+  const displayedVocabs = useMemo(() => {
+    if (selectedIds.length === 0) {
+      return localVocabs;
+    }
+
+    const selectedSet = new Set(selectedIds);
+
+    if (filterOnlySelected) {
+      return localVocabs.filter((item) => selectedSet.has(item.id));
+    }
+
+    if (prioritizeSelected && selectedIds.length < localVocabs.length) {
+      const selected: VocabularyData[] = [];
+      const unselected: VocabularyData[] = [];
+
+      for (const item of localVocabs) {
+        if (selectedSet.has(item.id)) {
+          selected.push(item);
+        } else {
+          unselected.push(item);
+        }
+      }
+
+      return [...selected, ...unselected];
+    }
+
+    return localVocabs;
+  }, [localVocabs, selectedIds, prioritizeSelected, filterOnlySelected]);
+
+  const totalPages = Math.max(1, Math.ceil(displayedVocabs.length / ITEMS_PER_PAGE));
+  const paginatedVocabularies = displayedVocabs.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(Math.max(1, totalPages));
+    }
+  }, [totalPages, currentPage]);
 
   // Tính số lượng từ trong dải nhập STT hiện tại
   const currentRangeCount = useMemo(() => {
@@ -162,6 +216,8 @@ export function OverviewView({
     const targetIds = localVocabs.slice(0, n).map((v) => v.id);
     handleSelectionChange(targetIds);
     setShowRangeInput(false);
+    setPrioritizeSelected(true);
+    setCurrentPage(1);
   };
 
   // Chọn ngẫu nhiên N từ
@@ -170,6 +226,8 @@ export function OverviewView({
     const targetIds = shuffled.slice(0, n).map((v) => v.id);
     handleSelectionChange(targetIds);
     setShowRangeInput(false);
+    setPrioritizeSelected(true);
+    setCurrentPage(1);
   };
 
   // Chọn dải STT tùy chỉnh (xử lý chuỗi số an toàn, clamp đúng phạm vi)
@@ -185,11 +243,14 @@ export function OverviewView({
 
     const targetIds = localVocabs.slice(s - 1, e).map((v) => v.id);
     handleSelectionChange(targetIds);
+    setPrioritizeSelected(true);
+    setCurrentPage(1);
   };
 
   // Xóa toàn bộ lựa chọn
   const handleClearSelection = () => {
     handleSelectionChange([]);
+    setFilterOnlySelected(false);
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string, word: string) => {
@@ -252,6 +313,45 @@ export function OverviewView({
               <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                 Tất cả ({localVocabs.length} từ)
               </span>
+            )}
+
+            {/* Toggle Đưa từ đã chọn lên đầu trang */}
+            {selectedIds.length > 0 && selectedIds.length < localVocabs.length && (
+              <button
+                type="button"
+                onClick={() => {
+                  setPrioritizeSelected((prev) => !prev);
+                  setCurrentPage(1);
+                }}
+                className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border transition-all flex items-center gap-1 ${
+                  prioritizeSelected
+                    ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:text-slate-700 dark:hover:text-slate-200'
+                }`}
+                title="Bật/tắt đưa các từ đã chọn lên trang đầu tiên (vẫn giữ nguyên STT gốc)"
+              >
+                <span>{prioritizeSelected ? '📌 Đã đưa lên đầu' : 'Đưa lên đầu'}</span>
+              </button>
+            )}
+
+            {/* Toggle Chỉ hiển thị từ đã chọn */}
+            {selectedIds.length > 0 && selectedIds.length < localVocabs.length && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterOnlySelected((prev) => !prev);
+                  setCurrentPage(1);
+                }}
+                className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border transition-all flex items-center gap-1 ${
+                  filterOnlySelected
+                    ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/30'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:text-slate-700 dark:hover:text-slate-200'
+                }`}
+                title="Chỉ hiển thị các từ vựng đã chọn trong danh sách"
+              >
+                <Eye className="w-3 h-3" />
+                <span>{filterOnlySelected ? 'Chỉ xem đã chọn' : 'Lọc chỉ đã chọn'}</span>
+              </button>
             )}
           </div>
 
@@ -423,118 +523,143 @@ export function OverviewView({
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-sm text-slate-700 dark:text-slate-200 transition-colors duration-300">
             {paginatedVocabularies.map((item, index) => {
-              const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + index;
-              const stt = globalIndex + 1;
+              const originalStt = vocabSttMap.get(item.id) ?? 1;
+              const originalIndex = originalStt - 1;
               const isSelected = selectedIds.includes(item.id);
 
+              const selectedCount = selectedIds.length;
+              const pageStartIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+              const isDividerBefore =
+                prioritizeSelected &&
+                !filterOnlySelected &&
+                selectedCount > 0 &&
+                selectedCount < localVocabs.length &&
+                pageStartIndex + index === selectedCount;
+
               return (
-                <tr
-                  key={item.id}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, item.id)}
-                  onClick={() => setEditingVocab(item)}
-                  className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer ${
-                    isSelected ? 'bg-indigo-50/50 dark:bg-indigo-950/20' : ''
-                  }`}
-                  title="Bấm để xem và sửa chi tiết"
-                >
-                  {/* Checkbox */}
-                  <td
-                    className="py-4 px-3 align-top text-center"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <button
-                      type="button"
-                      onClick={(e) => handleToggleSelect(item.id, globalIndex, e)}
-                      className="p-1 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                      title="Chọn từ này (Giữ Shift để chọn dải)"
-                    >
-                      {isSelected ? (
-                        <CheckSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                      ) : (
-                        <Square className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-slate-400" />
-                      )}
-                    </button>
-                  </td>
-
-                  {/* STT */}
-                  <td className="py-4 px-2 align-top text-center font-mono text-xs font-bold text-slate-400 dark:text-slate-500 select-none">
-                    {stt}
-                  </td>
-
-                  {/* Word & Interactive Kanji */}
-                  <td className="py-4 px-5 align-top">
-                    <div className="text-xl font-extrabold text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
-                      <ClickableKanjiString text={item.word} />
-                      <Edit3 className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </td>
-
-                  {/* Reading & Sino-Vietnamese */}
-                  <td className="py-4 px-4 align-top space-y-1">
-                    {item.reading && (
-                      <span className="block text-xs font-medium text-amber-700 dark:text-amber-300/90 bg-amber-100 dark:bg-amber-500/10 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-500/20 w-fit">
-                        {item.reading}
-                      </span>
-                    )}
-                    {item.sinoVietnamese && (
-                      <span className="block text-xs font-semibold text-indigo-600 dark:text-indigo-300 uppercase tracking-wide">
-                        {item.sinoVietnamese}
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Meaning */}
-                  <td className="py-4 px-5 align-top font-semibold text-emerald-600 dark:text-emerald-400">
-                    {item.meaning}
-                  </td>
-
-                  {/* Example */}
-                  <td className="py-4 px-5 align-top text-xs space-y-2 max-w-xs">
-                    {item.example ? (
-                      <p className="text-slate-600 dark:text-slate-400 italic">
-                        <strong className="text-slate-800 dark:text-slate-300 not-italic">
-                          VD:
-                        </strong>{' '}
-                        {item.example}
-                      </p>
-                    ) : (
-                      <span className="text-slate-400 dark:text-slate-600 italic">---</span>
-                    )}
-                  </td>
-
-                  {/* Folders */}
-                  <td className="py-4 px-4 align-top">
-                    <div className="flex flex-wrap gap-1">
-                      {item.folderVocabularies && item.folderVocabularies.length > 0 ? (
-                        item.folderVocabularies.map((fv: any) => (
-                          <span
-                            key={fv.folderId}
-                            className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 whitespace-nowrap"
-                          >
-                            <FolderIcon className="w-3 h-3 text-indigo-500 dark:text-indigo-400" />{' '}
-                            {getFolderFullPath(fv.folder, folders)}
+                <React.Fragment key={item.id}>
+                  {isDividerBefore && (
+                    <tr className="bg-slate-100/90 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 select-none">
+                      <td colSpan={8} className="py-2.5 px-4 text-xs font-bold tracking-wide">
+                        <div className="flex items-center gap-3">
+                          <span className="h-px bg-slate-200 dark:bg-slate-700 flex-1" />
+                          <span className="text-slate-500 dark:text-slate-400 uppercase text-[10px] tracking-wider font-extrabold">
+                            Các từ còn lại trong danh sách ({localVocabs.length - selectedCount} từ)
                           </span>
-                        ))
-                      ) : (
-                        <span className="text-xs text-slate-400 dark:text-slate-600 italic">
-                          Chưa xếp thư mục
+                          <span className="h-px bg-slate-200 dark:bg-slate-700 flex-1" />
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  <tr
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, item.id)}
+                    onClick={() => setEditingVocab(item)}
+                    className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer ${
+                      isSelected ? 'bg-indigo-50/50 dark:bg-indigo-950/20' : ''
+                    }`}
+                    title="Bấm để xem và sửa chi tiết"
+                  >
+                    {/* Checkbox */}
+                    <td
+                      className="py-4 px-3 align-top text-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleSelect(item.id, originalIndex, e)}
+                        className="p-1 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                        title="Chọn từ này (Giữ Shift để chọn dải)"
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                        ) : (
+                          <Square className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-slate-400" />
+                        )}
+                      </button>
+                    </td>
+
+                    {/* STT */}
+                    <td className="py-4 px-2 align-top text-center font-mono text-xs select-none">
+                      <span className={isSelected ? 'font-extrabold text-indigo-600 dark:text-indigo-400' : 'font-bold text-slate-400 dark:text-slate-500'}>
+                        #{originalStt}
+                      </span>
+                    </td>
+
+                    {/* Word & Interactive Kanji */}
+                    <td className="py-4 px-5 align-top">
+                      <div className="text-xl font-extrabold text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
+                        <ClickableKanjiString text={item.word} />
+                        <Edit3 className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </td>
+
+                    {/* Reading & Sino-Vietnamese */}
+                    <td className="py-4 px-4 align-top space-y-1">
+                      {item.reading && (
+                        <span className="block text-xs font-medium text-amber-700 dark:text-amber-300/90 bg-amber-100 dark:bg-amber-500/10 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-500/20 w-fit">
+                          {item.reading}
                         </span>
                       )}
-                    </div>
-                  </td>
+                      {item.sinoVietnamese && (
+                        <span className="block text-xs font-semibold text-indigo-600 dark:text-indigo-300 uppercase tracking-wide">
+                          {item.sinoVietnamese}
+                        </span>
+                      )}
+                    </td>
 
-                  {/* Actions */}
-                  <td className="py-4 px-4 align-top text-right">
-                    <button
-                      onClick={(e) => handleDelete(e, item.id, item.word)}
-                      title="Xóa từ vựng"
-                      className="p-2 text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
+                    {/* Meaning */}
+                    <td className="py-4 px-5 align-top font-semibold text-emerald-600 dark:text-emerald-400">
+                      {item.meaning}
+                    </td>
+
+                    {/* Example */}
+                    <td className="py-4 px-5 align-top text-xs space-y-2 max-w-xs">
+                      {item.example ? (
+                        <p className="text-slate-600 dark:text-slate-400 italic">
+                          <strong className="text-slate-800 dark:text-slate-300 not-italic">
+                            VD:
+                          </strong>{' '}
+                          {item.example}
+                        </p>
+                      ) : (
+                        <span className="text-slate-400 dark:text-slate-600 italic">---</span>
+                      )}
+                    </td>
+
+                    {/* Folders */}
+                    <td className="py-4 px-4 align-top">
+                      <div className="flex flex-wrap gap-1">
+                        {item.folderVocabularies && item.folderVocabularies.length > 0 ? (
+                          item.folderVocabularies.map((fv: any) => (
+                            <span
+                              key={fv.folderId}
+                              className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 whitespace-nowrap"
+                            >
+                              <FolderIcon className="w-3 h-3 text-indigo-500 dark:text-indigo-400" />{' '}
+                              {getFolderFullPath(fv.folder, folders)}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-slate-400 dark:text-slate-600 italic">
+                            Chưa xếp thư mục
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="py-4 px-4 align-top text-right">
+                      <button
+                        onClick={(e) => handleDelete(e, item.id, item.word)}
+                        title="Xóa từ vựng"
+                        className="p-2 text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                </React.Fragment>
               );
             })}
           </tbody>
@@ -544,109 +669,134 @@ export function OverviewView({
       {/* 2. MOBILE VIEW (Card List - Hiện trên điện thoại < md) */}
       <div className="md:hidden flex flex-col gap-3">
         {paginatedVocabularies.map((item, index) => {
-          const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + index;
-          const stt = globalIndex + 1;
+          const originalStt = vocabSttMap.get(item.id) ?? 1;
+          const originalIndex = originalStt - 1;
           const isSelected = selectedIds.includes(item.id);
 
+          const selectedCount = selectedIds.length;
+          const pageStartIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+          const isDividerBefore =
+            prioritizeSelected &&
+            !filterOnlySelected &&
+            selectedCount > 0 &&
+            selectedCount < localVocabs.length &&
+            pageStartIndex + index === selectedCount;
+
           return (
-            <div
-              key={item.id}
-              onClick={() => setEditingVocab(item)}
-              className={`bg-white dark:bg-slate-900 border rounded-2xl p-4 shadow-sm active:scale-[0.99] transition-all cursor-pointer space-y-3 ${
-                isSelected
-                  ? 'border-indigo-500 bg-indigo-50/20 dark:bg-indigo-950/20 shadow-indigo-500/10'
-                  : 'border-slate-200 dark:border-slate-800 hover:border-amber-500/40'
-              }`}
-            >
-              {/* Header: Checkbox + STT + Từ vựng + Hán Việt + Nút xóa */}
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {/* Mobile Checkbox */}
-                  <button
-                    type="button"
-                    onClick={(e) => handleToggleSelect(item.id, globalIndex, e)}
-                    className="p-1 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
-                  >
-                    {isSelected ? (
-                      <CheckSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                    ) : (
-                      <Square className="w-4 h-4 text-slate-400" />
-                    )}
-                  </button>
-
-                  <span className="font-mono font-bold text-xs text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg select-none">
-                    #{stt}
-                  </span>
-                  <div
-                    className="text-2xl font-black text-slate-900 dark:text-white tracking-wide"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <ClickableKanjiString text={item.word} />
+            <React.Fragment key={item.id}>
+              {isDividerBefore && (
+                <div className="py-2 text-center my-1 select-none">
+                  <div className="flex items-center gap-3">
+                    <span className="h-px bg-slate-200 dark:bg-slate-800 flex-1" />
+                    <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                      Các từ còn lại ({localVocabs.length - selectedCount} từ)
+                    </span>
+                    <span className="h-px bg-slate-200 dark:bg-slate-800 flex-1" />
                   </div>
-                  {item.sinoVietnamese && (
-                    <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-500/20">
-                      {item.sinoVietnamese}
+                </div>
+              )}
+              <div
+                onClick={() => setEditingVocab(item)}
+                className={`bg-white dark:bg-slate-900 border rounded-2xl p-4 shadow-sm active:scale-[0.99] transition-all cursor-pointer space-y-3 ${
+                  isSelected
+                    ? 'border-indigo-500 bg-indigo-50/20 dark:bg-indigo-950/20 shadow-indigo-500/10'
+                    : 'border-slate-200 dark:border-slate-800 hover:border-amber-500/40'
+                }`}
+              >
+                {/* Header: Checkbox + STT + Từ vựng + Hán Việt + Nút xóa */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Mobile Checkbox */}
+                    <button
+                      type="button"
+                      onClick={(e) => handleToggleSelect(item.id, originalIndex, e)}
+                      className="p-1 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+                    >
+                      {isSelected ? (
+                        <CheckSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      ) : (
+                        <Square className="w-4 h-4 text-slate-400" />
+                      )}
+                    </button>
+
+                    <span className={`font-mono text-xs px-2 py-0.5 rounded-lg select-none ${
+                      isSelected
+                        ? 'font-extrabold text-indigo-600 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-500/30'
+                        : 'font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800'
+                    }`}>
+                      #{originalStt}
                     </span>
-                  )}
-                </div>
-
-                <button
-                  onClick={(e) => handleDelete(e, item.id, item.word)}
-                  className="p-1.5 text-slate-400 hover:text-rose-500 active:bg-rose-50 dark:active:bg-rose-500/20 rounded-lg -mr-1 -mt-1 transition-colors"
-                  title="Xóa từ vựng"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Cách đọc Furigana */}
-              {item.reading && (
-                <div className="w-fit">
-                  <span className="inline-block text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-500/10 px-2.5 py-0.5 rounded-md border border-amber-300 dark:border-amber-500/20">
-                    {item.reading}
-                  </span>
-                </div>
-              )}
-
-              {/* Nghĩa */}
-              <div className="text-base font-bold text-emerald-600 dark:text-emerald-400 leading-snug">
-                {item.meaning}
-              </div>
-
-              {/* Ví dụ (nếu có) */}
-              {item.example && (
-                <div className="text-xs bg-slate-50 dark:bg-slate-950/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 text-slate-600 dark:text-slate-400 italic">
-                  <span className="font-bold text-slate-700 dark:text-slate-300 not-italic mr-1">
-                    VD:
-                  </span>
-                  {item.example}
-                </div>
-              )}
-
-              {/* Footer: Thư mục & Gợi ý chạm để sửa */}
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/60 text-xs">
-                <div className="flex flex-wrap gap-1 max-w-[70%]">
-                  {item.folderVocabularies && item.folderVocabularies.length > 0 ? (
-                    item.folderVocabularies.map((fv: any) => (
-                      <span
-                        key={fv.folderId}
-                        className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 truncate max-w-full"
-                      >
-                        <FolderIcon className="w-2.5 h-2.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
-                        <span className="truncate">{getFolderFullPath(fv.folder, folders)}</span>
+                    <div
+                      className="text-2xl font-black text-slate-900 dark:text-white tracking-wide"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <ClickableKanjiString text={item.word} />
+                    </div>
+                    {item.sinoVietnamese && (
+                      <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-500/20">
+                        {item.sinoVietnamese}
                       </span>
-                    ))
-                  ) : (
-                    <span className="text-[10px] text-slate-400 dark:text-slate-600 italic">
-                      Chưa xếp thư mục
-                    </span>
-                  )}
+                    )}
+                  </div>
+
+                  <button
+                    onClick={(e) => handleDelete(e, item.id, item.word)}
+                    className="p-1.5 text-slate-400 hover:text-rose-500 active:bg-rose-50 dark:active:bg-rose-500/20 rounded-lg -mr-1 -mt-1 transition-colors"
+                    title="Xóa từ vựng"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-                <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 flex items-center gap-1 shrink-0">
-                  <Edit3 className="w-3 h-3" /> Chạm để sửa
-                </span>
+
+                {/* Cách đọc Furigana */}
+                {item.reading && (
+                  <div className="w-fit">
+                    <span className="inline-block text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-500/10 px-2.5 py-0.5 rounded-md border border-amber-300 dark:border-amber-500/20">
+                      {item.reading}
+                    </span>
+                  </div>
+                )}
+
+                {/* Nghĩa */}
+                <div className="text-base font-bold text-emerald-600 dark:text-emerald-400 leading-snug">
+                  {item.meaning}
+                </div>
+
+                {/* Ví dụ (nếu có) */}
+                {item.example && (
+                  <div className="text-xs bg-slate-50 dark:bg-slate-950/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 text-slate-600 dark:text-slate-400 italic">
+                    <span className="font-bold text-slate-700 dark:text-slate-300 not-italic mr-1">
+                      VD:
+                    </span>
+                    {item.example}
+                  </div>
+                )}
+
+                {/* Footer: Thư mục & Gợi ý chạm để sửa */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/60 text-xs">
+                  <div className="flex flex-wrap gap-1 max-w-[70%]">
+                    {item.folderVocabularies && item.folderVocabularies.length > 0 ? (
+                      item.folderVocabularies.map((fv: any) => (
+                        <span
+                          key={fv.folderId}
+                          className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 truncate max-w-full"
+                        >
+                          <FolderIcon className="w-2.5 h-2.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                          <span className="truncate">{getFolderFullPath(fv.folder, folders)}</span>
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-[10px] text-slate-400 dark:text-slate-600 italic">
+                        Chưa xếp thư mục
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 flex items-center gap-1 shrink-0">
+                    <Edit3 className="w-3 h-3" /> Chạm để sửa
+                  </span>
+                </div>
               </div>
-            </div>
+            </React.Fragment>
           );
         })}
       </div>
@@ -720,13 +870,18 @@ export function OverviewView({
             </span>{' '}
             -{' '}
             <span className="font-bold text-slate-700 dark:text-slate-200">
-              {Math.min(currentPage * ITEMS_PER_PAGE, vocabularies.length)}
+              {Math.min(currentPage * ITEMS_PER_PAGE, displayedVocabs.length)}
             </span>{' '}
             trên{' '}
             <span className="font-bold text-slate-700 dark:text-slate-200">
-              {vocabularies.length}
+              {displayedVocabs.length}
             </span>{' '}
             từ vựng
+            {filterOnlySelected && (
+              <span className="ml-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+                (đang lọc từ đã chọn)
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button
