@@ -353,20 +353,17 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
           <div className="flex flex-wrap items-center justify-center gap-4">
             {skippedCount > 0 && (
               <button 
-                onClick={() => setScopedVocabs(skippedList)}
+                onClick={() => startNewQuiz(skippedList)}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-amber-500/20 active:scale-95 text-sm"
               >
                 <RotateCcw className="w-4 h-4" /> Chỉ ôn lại {skippedCount} từ đã bỏ qua
               </button>
             )}
             <button 
-              onClick={() => {
-                setScopedVocabs(vocabularies);
-                startNewQuiz(vocabularies);
-              }}
+              onClick={() => startNewQuiz(scopedVocabs)}
               className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/30 active:scale-95 text-sm"
             >
-              <Shuffle className="w-4 h-4" /> Kiểm tra lại toàn bộ danh sách
+              <RotateCcw className="w-4 h-4" /> Kiểm tra lại danh sách ({scopedVocabs.length} từ)
             </button>
           </div>
         </div>
