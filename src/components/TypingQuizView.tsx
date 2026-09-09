@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { HelpCircle, CheckCircle2, XCircle, SkipForward, Info, RotateCcw, Shuffle, Maximize, Minimize } from "lucide-react";
+import { HelpCircle, CheckCircle2, XCircle, SkipForward, Info, RotateCcw, Shuffle, Maximize, Minimize, Volume2 } from "lucide-react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
 import { StudyScopeSelector } from "./StudyScopeSelector";
 import { audioFX } from "@/lib/audio-fx";
+import { playAudio } from "@/lib/tts-utils";
 
 interface VocabularyData {
   id: string;
@@ -64,6 +65,9 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
   const [isShuffled, setIsShuffled] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   
+  // Timeout ref để tự động chuyển câu sau khi hiển thị thông tin
+  const nextTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Danh sách từ làm đúng và từ đã bấm bỏ qua
   const [skippedList, setSkippedList] = useState<QuizItem[]>([]);
   const [correctList, setCorrectList] = useState<QuizItem[]>([]);
@@ -71,13 +75,47 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
   // Ref cho ô input để tự động focus
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const moveToNext = useCallback(() => {
+    if (nextTimeoutRef.current) {
+      clearTimeout(nextTimeoutRef.current);
+      nextTimeoutRef.current = null;
+    }
+    setCurrentIndex(prev => {
+      if (prev < quizList.length - 1) {
+        setUserInput("");
+        setFeedback("none");
+        setShowHint(false);
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 100);
+        return prev + 1;
+      } else {
+        setIsFinished(true);
+        return prev;
+      }
+    });
+  }, [quizList.length]);
+
   useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsFullscreen(false);
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsFullscreen(false);
+      } else if (e.key === "Enter" && feedback === "correct") {
+        if (nextTimeoutRef.current) {
+          clearTimeout(nextTimeoutRef.current);
+          nextTimeoutRef.current = null;
+        }
+        moveToNext();
+      }
     };
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, []);
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleGlobalKeyDown);
+      if (nextTimeoutRef.current) {
+        clearTimeout(nextTimeoutRef.current);
+      }
+    };
+  }, [feedback, moveToNext]);
 
   const vocabIdsStr = vocabularies.map(v => v.id).join(',');
   const selectedVocabIdsStr = selectedVocabIds.join(',');
@@ -108,6 +146,11 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
   }, [scopedVocabs, quizMode]);
 
   const startNewQuiz = (customVocabs?: VocabularyData[], forceShuffle?: boolean) => {
+    if (nextTimeoutRef.current) {
+      clearTimeout(nextTimeoutRef.current);
+      nextTimeoutRef.current = null;
+    }
+
     const sourceList = customVocabs && customVocabs.length > 0 ? customVocabs : scopedVocabs;
     
     if (sourceList.length === 0) {
@@ -138,6 +181,11 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
   };
 
   const toggleShuffle = () => {
+    if (nextTimeoutRef.current) {
+      clearTimeout(nextTimeoutRef.current);
+      nextTimeoutRef.current = null;
+    }
+
     const nextShuffled = !isShuffled;
     setIsShuffled(nextShuffled);
 
@@ -189,10 +237,11 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
       setFeedback("correct");
       // Lưu vào danh sách đúng nếu chưa có
       setCorrectList(prev => prev.some(item => item.id === currentItem.id) ? prev : [...prev, currentItem]);
-      // Đợi 1 giây rồi chuyển câu tiếp theo
-      setTimeout(() => {
+      // Hiển thị đầy đủ thông tin từ vựng trong 2s để người dùng gợi nhớ Nghĩa & Âm Hán Việt
+      if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
+      nextTimeoutRef.current = setTimeout(() => {
         moveToNext();
-      }, 1000);
+      }, 2000);
     } else {
       audioFX.playWrong();
       setFeedback("wrong");
@@ -205,16 +254,25 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
         // Nếu đang sai, bấm Enter để xóa đi gõ lại nhanh
         setUserInput("");
         setFeedback("none");
+      } else if (feedback === "correct") {
+        // Cho phép bấm Enter để sang ngay câu tiếp theo không cần đợi hết 2s
+        if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
+        moveToNext();
       } else {
         handleCheck();
       }
     } else if (e.key === "Tab") {
       e.preventDefault();
+      if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
       handleSkip();
     }
   };
 
   const handleSkip = () => {
+    if (nextTimeoutRef.current) {
+      clearTimeout(nextTimeoutRef.current);
+      nextTimeoutRef.current = null;
+    }
     const currentItem = quizList[currentIndex];
     if (currentItem) {
       // Lưu vào danh sách bỏ qua nếu chưa có
@@ -222,20 +280,6 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
     }
     setFeedback("none");
     moveToNext();
-  };
-
-  const moveToNext = () => {
-    if (currentIndex < quizList.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-      setUserInput("");
-      setFeedback("none");
-      setShowHint(false);
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
-    } else {
-      setIsFinished(true);
-    }
   };
 
   if (vocabularies.length === 0) {
@@ -463,7 +507,11 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
       </div>
 
       {/* Card Câu hỏi */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden transition-colors">
+      <div className={`bg-white dark:bg-slate-900 border rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden transition-all duration-300 ${
+        feedback === "correct"
+          ? "border-emerald-400/80 dark:border-emerald-500/50 shadow-emerald-500/10 dark:shadow-emerald-950/30"
+          : "border-slate-200 dark:border-slate-800"
+      }`}>
         
         {/* Nhãn Dạng câu hỏi */}
         <div className="absolute top-0 left-0 right-0 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 px-6 py-2.5 flex items-center justify-center gap-2">
@@ -477,34 +525,114 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
           {currentItem.quizType === 1 ? (
             <>
               {/* DẠNG 1: HIỂN THỊ TỪ VỰNG */}
-              <div className="text-4xl md:text-5xl font-black text-slate-800 dark:text-white tracking-wide mb-6 drop-shadow-sm">
+              <div className="text-4xl md:text-5xl font-black text-slate-800 dark:text-white tracking-wide mb-4 drop-shadow-sm flex items-center justify-center gap-3">
                 <ClickableKanjiString text={currentItem.word} />
+                {feedback === "correct" && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      playAudio(currentItem.reading || currentItem.word);
+                    }}
+                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all"
+                    title="Nghe phát âm"
+                  >
+                    <Volume2 className="w-5 h-5" />
+                  </button>
+                )}
               </div>
               
-              {currentItem.sinoVietnamese ? (
-                showHint ? (
-                  <div className="text-sm font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest px-4 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg animate-fadeIn border border-indigo-100 dark:border-indigo-500/20">
-                    {currentItem.sinoVietnamese}
+              {/* Khi gõ đúng: Hiển thị đầy đủ Cách đọc, Âm Hán Việt, Nghĩa tiếng Việt và Ví dụ để người dùng củng cố trí nhớ */}
+              {feedback === "correct" ? (
+                <div className="space-y-3 animate-fadeIn w-full max-w-lg mx-auto mt-1">
+                  <div className="flex items-center justify-center gap-2 flex-wrap">
+                    {currentItem.reading && (
+                      <span className="px-3 py-1 rounded-xl bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 text-sm font-bold border border-amber-300 dark:border-amber-500/30 shadow-sm">
+                        {currentItem.reading}
+                      </span>
+                    )}
+                    {currentItem.sinoVietnamese && (
+                      <span className="px-3 py-1 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 text-sm font-bold uppercase border border-indigo-300 dark:border-indigo-500/30 shadow-sm">
+                        {currentItem.sinoVietnamese}
+                      </span>
+                    )}
                   </div>
-                ) : (
-                  <button 
-                    onClick={() => setShowHint(true)}
-                    className="text-xs font-semibold text-slate-400 hover:text-indigo-500 hover:underline transition-colors px-3 py-1"
-                  >
-                    Hiển thị gợi ý Âm Hán Việt
-                  </button>
-                )
-              ) : null}
+                  <div className="text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                    {currentItem.meaning}
+                  </div>
+                  {currentItem.example && (
+                    <div className="text-xs italic text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 text-left">
+                      <span className="font-bold not-italic text-slate-500 dark:text-slate-400 block mb-0.5">Ví dụ:</span>
+                      {currentItem.example}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                currentItem.sinoVietnamese ? (
+                  showHint ? (
+                    <div className="text-sm font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest px-4 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg animate-fadeIn border border-indigo-100 dark:border-indigo-500/20">
+                      {currentItem.sinoVietnamese}
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => setShowHint(true)}
+                      className="text-xs font-semibold text-slate-400 hover:text-indigo-500 hover:underline transition-colors px-3 py-1"
+                    >
+                      Hiển thị gợi ý Âm Hán Việt
+                    </button>
+                  )
+                ) : null
+              )}
             </>
           ) : (
             <>
               {/* DẠNG 2: HIỂN THỊ NGHĨA */}
-              <div className="text-2xl md:text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-6 max-w-xl mx-auto leading-tight">
-                {currentItem.meaning}
-              </div>
-              <div className="text-sm text-slate-500 dark:text-slate-400 italic">
-                (Gõ Hiragana hoặc Kanji tương ứng)
-              </div>
+              {feedback === "correct" ? (
+                <div className="space-y-3 animate-fadeIn w-full max-w-lg mx-auto">
+                  <div className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white tracking-wide flex items-center justify-center gap-3">
+                    <ClickableKanjiString text={currentItem.word} />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playAudio(currentItem.reading || currentItem.word);
+                      }}
+                      className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all"
+                      title="Nghe phát âm"
+                    >
+                      <Volume2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 flex-wrap">
+                    {currentItem.reading && (
+                      <span className="px-3 py-1 rounded-xl bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 text-sm font-bold border border-amber-300 dark:border-amber-500/30 shadow-sm">
+                        {currentItem.reading}
+                      </span>
+                    )}
+                    {currentItem.sinoVietnamese && (
+                      <span className="px-3 py-1 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 text-sm font-bold uppercase border border-indigo-300 dark:border-indigo-500/30 shadow-sm">
+                        {currentItem.sinoVietnamese}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-lg md:text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                    {currentItem.meaning}
+                  </div>
+                  {currentItem.example && (
+                    <div className="text-xs italic text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 text-left">
+                      <span className="font-bold not-italic text-slate-500 dark:text-slate-400 block mb-0.5">Ví dụ:</span>
+                      {currentItem.example}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl md:text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-6 max-w-xl mx-auto leading-tight">
+                    {currentItem.meaning}
+                  </div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400 italic">
+                    (Gõ Hiragana hoặc Kanji tương ứng)
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>
@@ -517,12 +645,12 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
             ref={inputRef}
             type="text"
             value={userInput}
+            readOnly={feedback === "correct"}
             onChange={(e) => {
               setUserInput(e.target.value);
               if (feedback === "wrong") setFeedback("none");
             }}
             onKeyDown={handleKeyDown}
-            disabled={feedback === "correct"}
             placeholder="Nhập câu trả lời vào đây..."
             className={`w-full px-6 py-5 text-xl font-medium rounded-2xl border-2 outline-none transition-all shadow-lg text-center ${
               feedback === "correct" 
@@ -551,6 +679,12 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
           </div>
         )}
 
+        {feedback === "correct" && (
+          <div className="text-center text-emerald-600 dark:text-emerald-400 font-semibold text-sm animate-fadeIn flex items-center justify-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4" /> Chính xác! Đang chuẩn bị chuyển câu (hoặc bấm Enter để chuyển ngay)...
+          </div>
+        )}
+
         <div className="flex justify-center gap-4 mt-6">
           <button
             onClick={handleSkip}
@@ -559,13 +693,25 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
             <SkipForward className="w-4 h-4" /> Bỏ qua (Tab)
           </button>
           
-          <button
-            onClick={handleCheck}
-            disabled={!userInput.trim() || feedback === "correct"}
-            className="flex items-center gap-2 px-8 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-300 disabled:dark:bg-slate-800 text-white font-bold transition-all shadow-md shadow-indigo-500/20 text-sm"
-          >
-            Kiểm tra
-          </button>
+          {feedback === "correct" ? (
+            <button
+              onClick={() => {
+                if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
+                moveToNext();
+              }}
+              className="flex items-center gap-2 px-8 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all shadow-md shadow-emerald-500/30 text-sm active:scale-95"
+            >
+              Tiếp tục (Enter)
+            </button>
+          ) : (
+            <button
+              onClick={handleCheck}
+              disabled={!userInput.trim()}
+              className="flex items-center gap-2 px-8 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-300 disabled:dark:bg-slate-800 text-white font-bold transition-all shadow-md shadow-indigo-500/20 text-sm"
+            >
+              Kiểm tra
+            </button>
+          )}
         </div>
       </div>
         </>
