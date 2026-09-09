@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ClickableKanjiString } from './ClickableKanjiString';
 import {
   Eye,
@@ -53,6 +53,19 @@ export function FocusRecallView({ vocabularies, selectedVocabIds = [], onRefresh
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 40;
+
+  // Map cố định ID -> STT gốc (1-based) theo đúng thứ tự danh sách hiện tại
+  const vocabSttMap = useMemo(() => {
+    const map = new Map<string, number>();
+    vocabularies.forEach((v, idx) => {
+      map.set(v.id, idx + 1);
+    });
+    return map;
+  }, [vocabularies]);
+
+  const handleScopeChange = useCallback((scoped: VocabularyData[]) => {
+    setScopedVocabs(scoped);
+  }, []);
 
   const vocabIdsStr = vocabularies.map(v => v.id).join(',');
   const selectedVocabIdsStr = selectedVocabIds.join(',');
@@ -119,9 +132,7 @@ export function FocusRecallView({ vocabularies, selectedVocabIds = [], onRefresh
       <StudyScopeSelector
         allVocabularies={vocabularies}
         selectedVocabIds={selectedVocabIds}
-        onScopeChange={(scoped) => {
-          setScopedVocabs(scoped);
-        }}
+        onScopeChange={handleScopeChange}
         activeCount={scopedVocabs.length}
         modeTheme="indigo"
       />
@@ -129,7 +140,7 @@ export function FocusRecallView({ vocabularies, selectedVocabIds = [], onRefresh
       {/* Control Bar: Quick Reveal / Hide All */}
       <div className="flex items-center justify-between px-2">
         <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-          Chế độ Ôn tập & Ghi nhớ ({vocabularies.length} từ)
+          Chế độ Ôn tập & Ghi nhớ ({scopedVocabs.length} từ)
         </span>
         <div className="flex items-center gap-2">
           <button
@@ -146,6 +157,15 @@ export function FocusRecallView({ vocabularies, selectedVocabIds = [], onRefresh
           </button>
         </div>
       </div>
+
+      {scopedVocabs.length === 0 && (
+        <div className="p-12 text-center bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 transition-colors">
+          <HelpCircle className="w-10 h-10 mx-auto mb-3 text-slate-400 dark:text-slate-600" />
+          <p className="text-base font-semibold text-slate-700 dark:text-slate-300">
+            Không có từ vựng nào trong phạm vi đã chọn
+          </p>
+        </div>
+      )}
 
       {/* Accordion / Flashcard Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -167,7 +187,12 @@ export function FocusRecallView({ vocabularies, selectedVocabIds = [], onRefresh
             >
               {/* Card Header: Chỉ hiển thị Từ vựng (Word) ban đầu */}
               <div className="p-5 flex items-center justify-between">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                  {vocabSttMap.has(item.id) && (
+                    <span className="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                      #{vocabSttMap.get(item.id)}
+                    </span>
+                  )}
                   <div 
                     className="text-2xl font-black text-slate-900 dark:text-white tracking-wide"
                     onClick={(e) => e.stopPropagation()}
@@ -277,11 +302,11 @@ export function FocusRecallView({ vocabularies, selectedVocabIds = [], onRefresh
             </span>{' '}
             -{' '}
             <span className="font-bold text-slate-700 dark:text-slate-200">
-              {Math.min(currentPage * ITEMS_PER_PAGE, vocabularies.length)}
+              {Math.min(currentPage * ITEMS_PER_PAGE, scopedVocabs.length)}
             </span>{' '}
             trên{' '}
             <span className="font-bold text-slate-700 dark:text-slate-200">
-              {vocabularies.length}
+              {scopedVocabs.length}
             </span>{' '}
             từ vựng
           </div>
