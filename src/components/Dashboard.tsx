@@ -70,6 +70,15 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const handleSelectFolder = (id: string) => {
     setSelectedFolderId(id);
     setSelectedVocabIds([]);
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setIsMobileFolderOpen(false);
+      setTimeout(() => {
+        const el = document.getElementById("study-main-content");
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 80);
+    }
     try {
       localStorage.setItem("kotobase_selected_folder", id);
     } catch (e) {}
@@ -621,7 +630,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
         </div>
 
         {/* RIGHT MAIN CONTENT */}
-        <div className="flex-1 flex flex-col gap-6 min-w-0">
+        <div id="study-main-content" className="flex-1 flex flex-col gap-6 min-w-0 scroll-mt-20">
           
           {/* Thanh Toolbar Ngang Hợp Nhất: + Thêm nội dung, Đang chọn Thư mục, Offline & Sắp xếp */}
           <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800 p-2 sm:px-3 shadow-sm flex flex-wrap items-center justify-between gap-2.5">
