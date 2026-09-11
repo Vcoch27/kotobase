@@ -633,17 +633,17 @@ export function Dashboard({ currentUser }: DashboardProps) {
         <div id="study-main-content" className="flex-1 flex flex-col gap-6 min-w-0 scroll-mt-20">
           
           {/* Thanh Toolbar Ngang Hợp Nhất: + Thêm nội dung, Đang chọn Thư mục, Offline & Sắp xếp */}
-          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800 p-2 sm:px-3 shadow-sm flex flex-wrap items-center justify-between gap-2.5">
+          <div className="relative z-20 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-2 sm:px-3 shadow-sm flex flex-wrap items-center justify-between gap-2.5">
             {/* Vùng bên trái: Nút + Thêm nội dung & Đang chọn Thư mục */}
             <div className="flex items-center gap-2 flex-wrap min-w-0">
               {isGoogleUser && (
-                <div className="relative">
+                <div className="relative z-30">
                   <button
                     onClick={() => setShowAddMenu(!showAddMenu)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white text-xs font-bold shadow-sm shadow-indigo-600/20 active:scale-95 transition-all shrink-0"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>+ Thêm nội dung</span>
+                    <span>Thêm nội dung</span>
                     <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showAddMenu ? "rotate-180" : ""}`} />
                   </button>
 
@@ -651,20 +651,20 @@ export function Dashboard({ currentUser }: DashboardProps) {
                   {showAddMenu && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setShowAddMenu(false)} />
-                      <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 z-50 animate-fadeIn space-y-1">
+                      <div className="absolute left-0 mt-2 w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 z-50 animate-fadeIn space-y-1">
                         <button
                           onClick={() => {
                             setShowAddMenu(false);
                             setShowQuickAddModal(true);
                           }}
-                          className="w-full flex items-start gap-2.5 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition-colors group"
+                          className="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition-colors group"
                         >
-                          <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover:scale-105 transition-transform shrink-0">
+                          <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover:scale-105 transition-transform shrink-0">
                             <Plus className="w-4 h-4" />
                           </div>
                           <div>
-                            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Thêm nhanh từ vựng</div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400">Nhập từng từ hoặc gợi ý tự động</div>
+                            <div className="text-xs font-bold text-slate-800 dark:text-slate-100">Thêm nhanh từ vựng</div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Nhập từng từ hoặc gợi ý tự động</div>
                           </div>
                         </button>
 
@@ -673,14 +673,14 @@ export function Dashboard({ currentUser }: DashboardProps) {
                             setShowAddMenu(false);
                             setShowBulkImportModal(true);
                           }}
-                          className="w-full flex items-start gap-2.5 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition-colors group"
+                          className="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition-colors group"
                         >
-                          <div className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 group-hover:scale-105 transition-transform shrink-0">
+                          <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 group-hover:scale-105 transition-transform shrink-0">
                             <Sparkles className="w-4 h-4" />
                           </div>
                           <div>
-                            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Thêm hàng loạt (Bulk AI)</div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400">Dán danh sách, AI tự bóc tách</div>
+                            <div className="text-xs font-bold text-slate-800 dark:text-slate-100">Thêm hàng loạt (Bulk AI)</div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Dán danh sách, AI tự bóc tách</div>
                           </div>
                         </button>
                       </div>
