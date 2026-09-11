@@ -40,3 +40,7 @@ next-env.d.ts
 
 # Legacy folders
 /prisma/
+
+# Backup dumps
+/backups/
+*.json.gz
