@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Module quản lý lưu trữ Offline bằng IndexedDB cho KotoBase.
  * Cung cấp khả năng lưu và truy vấn từ vựng, thư mục ngay trên điện thoại không cần internet.
  */
@@ -92,9 +92,10 @@ export async function saveFoldersOffline(folders: any[]): Promise<number> {
 }
 
 /**
- * Lấy danh sách từ vựng offline theo folderId (hoặc tất cả nếu 'all' hoặc không truyền)
+/**
+ * Lấy danh sách từ vựng offline theo folderId (1 ID, mảng ID, hoặc tất cả nếu 'all' hoặc rỗng)
  */
-export async function getOfflineVocabularies(folderId: string = "all"): Promise<any[]> {
+export async function getOfflineVocabularies(folderId: string | string[] = "all"): Promise<any[]> {
   try {
     const db = await openDB();
     return new Promise((resolve, reject) => {
@@ -104,16 +105,22 @@ export async function getOfflineVocabularies(folderId: string = "all"): Promise<
 
       request.onsuccess = () => {
         const allVocabs = request.result || [];
-        if (folderId === "all" || !folderId) {
+        const targetIds: string[] = Array.isArray(folderId)
+          ? folderId.filter(id => id && id !== "all")
+          : (folderId && folderId !== "all" ? [folderId] : []);
+
+        if (targetIds.length === 0) {
           return resolve(allVocabs);
         }
-        // Lọc theo folderId
+
+        const targetSet = new Set(targetIds);
+        // Lọc theo targetSet
         const filtered = allVocabs.filter((v: any) => {
           if (Array.isArray(v.folderIds)) {
-            return v.folderIds.includes(folderId);
+            return v.folderIds.some((fid: string) => targetSet.has(fid));
           }
           if (Array.isArray(v.folderVocabularies)) {
-            return v.folderVocabularies.some((fv: any) => fv.folderId === folderId);
+            return v.folderVocabularies.some((fv: any) => targetSet.has(fv.folderId));
           }
           return false;
         });

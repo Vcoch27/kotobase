@@ -18,6 +18,10 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
+  CheckSquare,
+  Square,
+  Layers,
+  Sparkles,
 } from 'lucide-react';
 import { getDownloadedDecks } from '@/lib/offline-storage';
 
@@ -34,8 +38,11 @@ interface FolderItem {
 
 interface FolderTreeProps {
   folders: FolderItem[];
-  selectedFolderId: string;
+  selectedFolderId?: string;
+  selectedFolderIds?: string[];
   onSelectFolder: (id: string) => void;
+  onSelectFolders?: (ids: string[]) => void;
+  onConfirmMultiSelect?: () => void;
   onRefresh: () => void;
   currentUserId?: string | null;
   currentUserEmail?: string | null;
@@ -44,7 +51,10 @@ interface FolderTreeProps {
 export function FolderTree({
   folders,
   selectedFolderId,
+  selectedFolderIds,
   onSelectFolder,
+  onSelectFolders,
+  onConfirmMultiSelect,
   onRefresh,
   currentUserId,
   currentUserEmail,
@@ -64,6 +74,44 @@ export function FolderTree({
   const [activeMenuFolderId, setActiveMenuFolderId] = useState<string | null>(null);
   const [localFolders, setLocalFolders] = useState<FolderItem[]>([]);
   const [downloadedFolderIds, setDownloadedFolderIds] = useState<Set<string>>(new Set());
+
+  const activeSelectedIds = useMemo(() => {
+    if (selectedFolderIds && selectedFolderIds.length > 0) {
+      return selectedFolderIds;
+    }
+    return selectedFolderId ? [selectedFolderId] : ['all'];
+  }, [selectedFolderIds, selectedFolderId]);
+
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState<boolean>(() => {
+    return (selectedFolderIds && selectedFolderIds.length > 1 && !selectedFolderIds.includes('all')) || false;
+  });
+
+  // Tự động bật chế độ chọn nhiều nếu selectedFolderIds có nhiều hơn 1 folder
+  useEffect(() => {
+    if (selectedFolderIds && selectedFolderIds.length > 1 && !selectedFolderIds.includes('all')) {
+      setIsMultiSelectMode(true);
+    }
+  }, [selectedFolderIds]);
+
+  const handleToggleSelectMulti = (id: string) => {
+    const currentSet = new Set(activeSelectedIds.filter((x) => x !== 'all'));
+    if (currentSet.has(id)) {
+      currentSet.delete(id);
+    } else {
+      currentSet.add(id);
+    }
+    let nextIds = Array.from(currentSet);
+    if (nextIds.length === 0) {
+      nextIds = ['all'];
+    }
+    if (onSelectFolders) {
+      onSelectFolders(nextIds);
+    } else if (nextIds.length === 1) {
+      onSelectFolder(nextIds[0]);
+    } else {
+      onSelectFolder('all');
+    }
+  };
 
   // Lấy danh sách thư mục đã tải offline và lắng nghe thay đổi
   useEffect(() => {
@@ -291,6 +339,24 @@ export function FolderTree({
     return count;
   };
 
+  const totalSelectedWords = useMemo(() => {
+    const validIds = activeSelectedIds.filter((id) => id !== 'all');
+    if (validIds.length === 0) return 0;
+
+    const countMap = new Map<string, number>();
+    const computeCount = (nodes: any[]) => {
+      nodes.forEach((node) => {
+        countMap.set(node.id, getRecursiveCount(node));
+        if (node.children && node.children.length > 0) {
+          computeCount(node.children);
+        }
+      });
+    };
+    computeCount(tree);
+
+    return validIds.reduce((sum, id) => sum + (countMap.get(id) || 0), 0);
+  }, [activeSelectedIds, tree]);
+
   // Hàm kiểm tra bất kỳ thư mục con nào đã được tải offline (cục bộ thư mục con)
   const hasRecursiveDownloaded = (node: any): boolean => {
     if (downloadedFolderIds.has(node.id)) return true;
@@ -304,7 +370,9 @@ export function FolderTree({
   const renderTree = (nodes: any[], level = 0, parentFullyOffline = false) => {
     return nodes.map((node) => {
       const isExpanded = expandedFolders[node.id];
-      const isSelected = selectedFolderId === node.id;
+      const isSelected = isMultiSelectMode
+        ? activeSelectedIds.includes(node.id)
+        : (activeSelectedIds.length === 1 && activeSelectedIds[0] === node.id);
       const hasChildren = node.children.length > 0;
       const isDragOver = dragOverFolderId === node.id;
       const totalCount = getRecursiveCount(node);
@@ -325,7 +393,13 @@ export function FolderTree({
       return (
         <div key={node.id} className="w-full relative">
           <div
-            onClick={() => {
+            onClick={(e) => {
+              if (isMultiSelectMode || e.ctrlKey || e.metaKey) {
+                e.stopPropagation();
+                if (!isMultiSelectMode) setIsMultiSelectMode(true);
+                handleToggleSelectMulti(node.id);
+                return;
+              }
               onSelectFolder(node.id);
               if (hasChildren) {
                 setExpandedFolders((prev) => ({ ...prev, [node.id]: !prev[node.id] }));
@@ -355,6 +429,23 @@ export function FolderTree({
                   <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
                 ))}
             </div>
+
+            {/* Checkbox khi ở chế độ chọn nhiều */}
+            {isMultiSelectMode && (
+              <div 
+                className="w-4 h-4 shrink-0 flex items-center justify-center text-indigo-600 dark:text-indigo-400"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggleSelectMulti(node.id);
+                }}
+              >
+                {isSelected ? (
+                  <CheckSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                ) : (
+                  <Square className="w-4 h-4 text-slate-300 dark:text-slate-600 hover:text-slate-500" />
+                )}
+              </div>
+            )}
 
             {/* Icon thư mục */}
             <Folder
@@ -527,9 +618,18 @@ export function FolderTree({
     <div className="w-full">
       {/* Mục Tất cả từ vựng */}
       <div
-        onClick={() => onSelectFolder('all')}
+        onClick={() => {
+          if (isMultiSelectMode) {
+            setIsMultiSelectMode(false);
+          }
+          if (onSelectFolders) {
+            onSelectFolders(['all']);
+          } else {
+            onSelectFolder('all');
+          }
+        }}
         className={`flex items-center justify-between gap-2 px-3 py-2.5 mb-3 rounded-xl cursor-pointer transition-all ${
-          selectedFolderId === 'all'
+          activeSelectedIds.includes('all') && activeSelectedIds.length === 1
             ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 font-bold border border-amber-300 dark:border-amber-500/30 shadow-sm'
             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent font-medium'
         }`}
@@ -554,8 +654,32 @@ export function FolderTree({
         </div>
       </div>
 
-      <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 px-1">
-        Cây Thư Mục (Kéo thả vào đây)
+      {/* Header Cây Thư Mục & Nút chuyển đổi Chọn nhiều */}
+      <div className="flex items-center justify-between mb-2 px-1 gap-1">
+        <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider truncate">
+          Cây Thư Mục {activeSelectedIds.filter(x => x !== 'all').length > 1 ? `(${activeSelectedIds.filter(x => x !== 'all').length})` : ''}
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            const nextMode = !isMultiSelectMode;
+            setIsMultiSelectMode(nextMode);
+            if (!nextMode && activeSelectedIds.length > 1) {
+              const firstId = activeSelectedIds.find(x => x !== 'all') || 'all';
+              if (onSelectFolders) onSelectFolders([firstId]);
+              else onSelectFolder(firstId);
+            }
+          }}
+          className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
+            isMultiSelectMode
+              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/20'
+              : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+          title="Bật/Tắt chế độ chọn nhiều thư mục để học gộp"
+        >
+          <CheckSquare className="w-3.5 h-3.5" />
+          <span>{isMultiSelectMode ? 'Đang chọn nhiều' : 'Chọn nhiều'}</span>
+        </button>
       </div>
 
       {folders.length === 0 ? (
@@ -564,6 +688,52 @@ export function FolderTree({
         </div>
       ) : (
         <div className="custom-scrollbar overflow-y-auto max-h-[60vh] pr-1">{renderTree(tree)}</div>
+      )}
+
+      {/* Floating Action Bar khi ở chế độ Chọn nhiều */}
+      {isMultiSelectMode && (
+        <div className="mt-3 p-3 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/60 shadow-sm animate-fadeIn space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5 truncate">
+              <Layers className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <span className="truncate">
+                {activeSelectedIds.filter((x) => x !== 'all').length === 0
+                  ? 'Chưa chọn thư mục nào'
+                  : `Đã chọn: ${activeSelectedIds.filter((x) => x !== 'all').length} thư mục (~${totalSelectedWords} từ)`}
+              </span>
+            </span>
+            {activeSelectedIds.filter((x) => x !== 'all').length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (onSelectFolders) onSelectFolders(['all']);
+                  else onSelectFolder('all');
+                }}
+                className="text-[11px] text-slate-500 hover:text-rose-500 font-semibold transition-colors shrink-0"
+              >
+                Xóa chọn
+              </button>
+            )}
+          </div>
+
+          <button
+            type="button"
+            disabled={activeSelectedIds.filter((x) => x !== 'all').length === 0}
+            onClick={() => {
+              if (onConfirmMultiSelect) {
+                onConfirmMultiSelect();
+              } else if (onSelectFolders) {
+                onSelectFolders(activeSelectedIds);
+              }
+            }}
+            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 rounded-xl shadow-md shadow-indigo-600/20 active:scale-95 disabled:opacity-50 transition-all cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>
+              Học ngay {activeSelectedIds.filter((x) => x !== 'all').length > 0 ? `(~${totalSelectedWords} từ)` : ''} →
+            </span>
+          </button>
+        </div>
       )}
 
       {/* Custom Prompt Modal (Thay thế window.prompt) */}

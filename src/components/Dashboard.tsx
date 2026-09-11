@@ -63,15 +63,38 @@ export function Dashboard({ currentUser }: DashboardProps) {
     }
     return [];
   });
-  const [selectedFolderId, setSelectedFolderId] = useState<string>("all");
+  const [selectedFolderIds, setSelectedFolderIds] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const savedMulti = localStorage.getItem("kotobase_selected_folders");
+        if (savedMulti) {
+          const parsed = JSON.parse(savedMulti);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+        const savedSingle = localStorage.getItem("kotobase_selected_folder");
+        if (savedSingle) return [savedSingle];
+      } catch (e) {}
+    }
+    return ["all"];
+  });
+
+  const selectedFolderId = React.useMemo(() => {
+    if (!selectedFolderIds || selectedFolderIds.length === 0 || selectedFolderIds.includes("all")) {
+      return "all";
+    }
+    return selectedFolderIds.length === 1 ? selectedFolderIds[0] : "multi";
+  }, [selectedFolderIds]);
+
   const [selectedVocabIds, setSelectedVocabIds] = useState<string[]>([]);
   const [sortOrder, setSortOrder] = useState<"created_asc" | "created_desc" | "alphabetical">("created_asc");
 
   const handleSelectFolder = (id: string) => {
-    setSelectedFolderId(id);
+    const newIds = id ? [id] : ["all"];
+    setSelectedFolderIds(newIds);
     setSelectedVocabIds([]);
     if (typeof window !== "undefined" && window.innerWidth < 768) {
       setIsMobileFolderOpen(false);
+      setShowMobileFolderDrawer(false);
       setTimeout(() => {
         const el = document.getElementById("study-main-content");
         if (el) {
@@ -80,8 +103,34 @@ export function Dashboard({ currentUser }: DashboardProps) {
       }, 80);
     }
     try {
+      localStorage.setItem("kotobase_selected_folders", JSON.stringify(newIds));
       localStorage.setItem("kotobase_selected_folder", id);
     } catch (e) {}
+  };
+
+  const handleSelectFolders = (ids: string[]) => {
+    const newIds = ids && ids.length > 0 ? ids : ["all"];
+    setSelectedFolderIds(newIds);
+    setSelectedVocabIds([]);
+    try {
+      localStorage.setItem("kotobase_selected_folders", JSON.stringify(newIds));
+      if (newIds.length === 1) {
+        localStorage.setItem("kotobase_selected_folder", newIds[0]);
+      }
+    } catch (e) {}
+  };
+
+  const handleConfirmMultiSelect = () => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setIsMobileFolderOpen(false);
+      setShowMobileFolderDrawer(false);
+    }
+    setTimeout(() => {
+      const el = document.getElementById("study-main-content");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 80);
   };
 
   const handleSortChange = (newSort: "created_asc" | "created_desc" | "alphabetical") => {
@@ -168,11 +217,13 @@ export function Dashboard({ currentUser }: DashboardProps) {
       return [];
     };
 
+    const cacheKey = selectedFolderIds.slice().sort().join(",") || "all";
+
     try {
       // 1. Nếu thiết bị mất mạng (Offline), ưu tiên đọc ngay từ IndexedDB
       if (typeof window !== "undefined" && !navigator.onLine) {
         const [offlineVocabs, fallbackFolders] = await Promise.all([
-          getOfflineVocabularies(selectedFolderId),
+          getOfflineVocabularies(selectedFolderIds),
           getFallbackFolders()
         ]);
 
@@ -185,7 +236,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
         setIsOfflineMode(true);
         if (offlineVocabs && offlineVocabs.length > 0) {
           toast(`Đang học Offline (${offlineVocabs.length} từ vựng)`, { icon: "📶", id: "offline-status" });
-        } else if (selectedFolderId !== "all") {
+        } else if (!selectedFolderIds.includes("all")) {
           toast("Thư mục này chưa có dữ liệu lưu offline trên máy.", { icon: "ℹ️", id: "offline-empty" });
         }
         return;
@@ -195,13 +246,13 @@ export function Dashboard({ currentUser }: DashboardProps) {
       let folderData: any[];
 
       // Kiểm tra xem trong cache đã có folder này chưa
-      if (!isBackground && vocabCache.current[selectedFolderId] && foldersCache.current) {
-        vocabData = vocabCache.current[selectedFolderId];
+      if (!isBackground && vocabCache.current[cacheKey] && foldersCache.current) {
+        vocabData = vocabCache.current[cacheKey];
         folderData = foldersCache.current;
       } else {
         // Chỉ tải mới từ Firebase khi chưa có cache hoặc vừa có thay đổi dữ liệu (isBackground)
         const [vData, fData] = await Promise.all([
-          getVocabularies(selectedFolderId),
+          getVocabularies(selectedFolderIds.length === 1 ? selectedFolderIds[0] : selectedFolderIds),
           getFolders(),
         ]);
         
@@ -212,7 +263,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
         folderData = fData as any[];
         
         // Lưu lại vào Cache RAM
-        vocabCache.current[selectedFolderId] = Array.isArray(vocabData) ? vocabData : [];
+        vocabCache.current[cacheKey] = Array.isArray(vocabData) ? vocabData : [];
         foldersCache.current = Array.isArray(folderData) ? folderData : [];
 
         // Tự động lưu bản sao vào IndexedDB và localStorage để sẵn sàng cho lúc mất mạng (Background)
@@ -268,12 +319,20 @@ export function Dashboard({ currentUser }: DashboardProps) {
     }
   };
 
-  // Khôi phục selectedFolderId & sortOrder từ localStorage ở Client
+  // Khôi phục selectedFolderIds & sortOrder từ localStorage ở Client
   useEffect(() => {
     try {
-      const savedFolder = localStorage.getItem("kotobase_selected_folder");
-      if (savedFolder && savedFolder !== "all") {
-        setSelectedFolderId(savedFolder);
+      const savedMulti = localStorage.getItem("kotobase_selected_folders");
+      if (savedMulti) {
+        const parsed = JSON.parse(savedMulti);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSelectedFolderIds(parsed);
+        }
+      } else {
+        const savedFolder = localStorage.getItem("kotobase_selected_folder");
+        if (savedFolder && savedFolder !== "all") {
+          setSelectedFolderIds([savedFolder]);
+        }
       }
       const savedSort = localStorage.getItem("kotobase_sort_order") as any;
       if (savedSort && ["created_asc", "created_desc", "alphabetical"].includes(savedSort)) {
@@ -286,7 +345,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
   useEffect(() => {
     if (!mounted) return;
     fetchData();
-  }, [selectedFolderId, mounted]); // ĐÃ BỎ debouncedSearchQuery khỏi đây!
+  }, [selectedFolderIds, mounted]); // ĐÃ BỎ debouncedSearchQuery khỏi đây!
 
   // Client-side Filtering & Sorting cực nhanh và 0 tốn read của Firebase
   const filteredVocabularies = React.useMemo(() => {
@@ -615,8 +674,11 @@ export function Dashboard({ currentUser }: DashboardProps) {
             <div className={`${isMobileFolderOpen ? 'block' : 'hidden'} md:block`}>
               <FolderTree 
                 folders={folders} 
-                selectedFolderId={selectedFolderId} 
+                selectedFolderId={selectedFolderId}
+                selectedFolderIds={selectedFolderIds}
                 onSelectFolder={handleSelectFolder}
+                onSelectFolders={handleSelectFolders}
+                onConfirmMultiSelect={handleConfirmMultiSelect}
                 onRefresh={() => fetchData(true)}
                 currentUserId={currentUser?.uid || null}
                 currentUserEmail={currentUser?.email || null}
@@ -718,24 +780,49 @@ export function Dashboard({ currentUser }: DashboardProps) {
               {/* Breadcrumb / Đang chọn */}
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 hidden sm:inline shrink-0">Đang chọn:</span>
-                <div 
-                  onClick={() => setShowMobileFolderDrawer(true)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-800/60 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/50 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors max-w-[200px] sm:max-w-xs truncate"
-                  title="Bấm để đổi thư mục"
-                >
-                  <Folder className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                  <span className="truncate">
-                    {selectedFolderId === 'all' ? (
-                      'Tất cả từ vựng'
-                    ) : (
-                      getFolderFullPath(folders.find(f => f.id === selectedFolderId) || { name: 'Thư mục không xác định' }, folders)
-                    )}
-                  </span>
-                  <ChevronDown className="w-3 h-3 opacity-60 ml-0.5 md:hidden shrink-0" />
-                </div>
+                {selectedFolderIds.length > 1 && !selectedFolderIds.includes('all') ? (
+                  <div 
+                    onClick={() => setShowMobileFolderDrawer(true)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/40 rounded-lg text-xs font-bold text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors max-w-[240px] sm:max-w-sm truncate"
+                    title="Bấm để đổi hoặc chọn thêm thư mục"
+                  >
+                    <Layers className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                    <span className="truncate">
+                      Gộp {selectedFolderIds.length} thư mục ({filteredVocabularies.length} từ)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectFolder('all');
+                      }}
+                      className="p-0.5 hover:bg-indigo-200/60 dark:hover:bg-indigo-800/60 rounded text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-200 ml-0.5"
+                      title="Bỏ gộp thư mục, về Tất cả"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                    <ChevronDown className="w-3 h-3 opacity-60 ml-0.5 md:hidden shrink-0" />
+                  </div>
+                ) : (
+                  <div 
+                    onClick={() => setShowMobileFolderDrawer(true)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-800/60 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/50 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors max-w-[200px] sm:max-w-xs truncate"
+                    title="Bấm để đổi thư mục"
+                  >
+                    <Folder className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span className="truncate">
+                      {selectedFolderId === 'all' ? (
+                        'Tất cả từ vựng'
+                      ) : (
+                        getFolderFullPath(folders.find(f => f.id === selectedFolderId) || { name: 'Thư mục không xác định' }, folders)
+                      )}
+                    </span>
+                    <ChevronDown className="w-3 h-3 opacity-60 ml-0.5 md:hidden shrink-0" />
+                  </div>
+                )}
               </div>
 
-              {selectedFolderId !== 'all' && folders.find(f => f.id === selectedFolderId)?.ownerEmail && (
+              {selectedFolderId !== 'all' && selectedFolderIds.length === 1 && folders.find(f => f.id === selectedFolderId)?.ownerEmail && (
                 <div className="hidden lg:flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20 rounded-full max-w-[180px] truncate">
                   <User className="w-3 h-3 shrink-0" />
                   <span className="truncate">{folders.find(f => f.id === selectedFolderId)?.ownerEmail}</span>
@@ -748,9 +835,11 @@ export function Dashboard({ currentUser }: DashboardProps) {
               <OfflineSyncButton
                 currentFolderId={selectedFolderId}
                 currentFolderName={
-                  selectedFolderId === 'all' 
-                    ? 'Tất cả từ vựng' 
-                    : folders.find(f => f.id === selectedFolderId)?.name || 'Thư mục'
+                  selectedFolderIds.length > 1 && !selectedFolderIds.includes('all')
+                    ? `Gộp ${selectedFolderIds.length} thư mục`
+                    : selectedFolderId === 'all' 
+                      ? 'Tất cả từ vựng' 
+                      : folders.find(f => f.id === selectedFolderId)?.name || 'Thư mục'
                 }
                 currentVocabs={filteredVocabularies}
                 folders={folders}
@@ -1147,11 +1236,13 @@ export function Dashboard({ currentUser }: DashboardProps) {
             <div className="p-4 overflow-y-auto flex-1 custom-scrollbar max-h-[60vh]">
               <FolderTree 
                 folders={folders} 
-                selectedFolderId={selectedFolderId} 
+                selectedFolderId={selectedFolderId}
+                selectedFolderIds={selectedFolderIds}
                 onSelectFolder={(id) => {
                   handleSelectFolder(id);
-                  setShowMobileFolderDrawer(false);
                 }}
+                onSelectFolders={handleSelectFolders}
+                onConfirmMultiSelect={handleConfirmMultiSelect}
                 onRefresh={() => fetchData(true)}
                 currentUserId={currentUser?.uid || null}
                 currentUserEmail={currentUser?.email || null}

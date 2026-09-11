@@ -161,7 +161,7 @@ export async function assignVocabularyToFolder(vocabularyId: string, folderId: s
   }
 }
 
-export async function getVocabularies(folderId?: string, searchQuery?: string) {
+export async function getVocabularies(folderId?: string | string[], searchQuery?: string) {
   try {
     const currentUser = await getCurrentUser();
     const isAdmin = currentUser?.email === "hoangtungmy123@gmail.com";
@@ -201,17 +201,20 @@ export async function getVocabularies(folderId?: string, searchQuery?: string) {
       return true;
     };
 
-    // Nếu chọn folderId cụ thể mà user không có quyền xem => trả về rỗng ngay
-    if (folderId && folderId !== "all") {
-      if (!isFolderVisible(folderId)) {
-        return [];
-      }
-    }
+    // Chuẩn hoá inputFolderIds (hỗ trợ cả chọn 1 thư mục hoặc chọn nhiều thư mục gộp)
+    const inputFolderIds: string[] = Array.isArray(folderId)
+      ? folderId.filter(id => id && id !== "all")
+      : (folderId && folderId !== "all" ? [folderId] : []);
 
     // 2. Tìm tất cả ID thư mục con cháu nếu có chọn thư mục cụ thể (chỉ lấy thư mục con mà user được phép xem)
     const targetFolderIds = new Set<string>();
-    if (folderId && folderId !== "all") {
-      targetFolderIds.add(folderId);
+    if (inputFolderIds.length > 0) {
+      inputFolderIds.forEach(fid => {
+        if (isFolderVisible(fid)) {
+          targetFolderIds.add(fid);
+        }
+      });
+
       let added = true;
       while (added) {
         added = false;
@@ -229,8 +232,8 @@ export async function getVocabularies(folderId?: string, searchQuery?: string) {
     // 3. Lấy tất cả từ vựng từ collection
     let snapshotDocs: any[] = [];
 
-    if (folderId && folderId !== "all") {
-      // Nếu có chọn thư mục, thực hiện query riêng cho từng folderId con
+    if (inputFolderIds.length > 0) {
+      // Nếu có chọn thư mục (1 hoặc nhiều), thực hiện query riêng cho từng folderId và khử trùng bằng docMap
       const promises = Array.from(targetFolderIds).map(fid => 
         adminDb.collection("vocabularies").where("folderIds", "array-contains", fid).get()
       );
