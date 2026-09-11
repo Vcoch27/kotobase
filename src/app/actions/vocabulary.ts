@@ -163,6 +163,10 @@ export async function assignVocabularyToFolder(vocabularyId: string, folderId: s
 
 export async function getVocabularies(folderId?: string, searchQuery?: string) {
   try {
+    const currentUser = await getCurrentUser();
+    const isAdmin = currentUser?.email === "hoangtungmy123@gmail.com";
+    const currentUid = currentUser?.uid;
+
     // 1. Lấy danh sách folders để map tên & tìm cây thư mục con đệ quy
     const foldersSnapshot = await adminDb.collection("folders").get();
     const folderMap = new Map<string, any>();
@@ -170,10 +174,41 @@ export async function getVocabularies(folderId?: string, searchQuery?: string) {
       id: doc.id,
       name: doc.data().name,
       parentId: doc.data().parentId || null,
+      ownerId: doc.data().ownerId || null,
+      isPublic: doc.data().isPublic !== false,
     }));
     allFolders.forEach(f => folderMap.set(f.id, f));
 
-    // 2. Tìm tất cả ID thư mục con cháu nếu có chọn thư mục cụ thể
+    // Hàm kiểm tra folder có hiển thị với user không (kế thừa theo cây thư mục)
+    const isFolderVisible = (fid: string): boolean => {
+      const f = folderMap.get(fid);
+      if (!f) return false;
+      if (isAdmin) return true;
+      if (currentUid && f.ownerId === currentUid) return true;
+      if (!f.isPublic) return false;
+      
+      // Kiểm tra toàn bộ tổ tiên
+      let currParentId = f.parentId;
+      const visited = new Set<string>();
+      while (currParentId) {
+        if (visited.has(currParentId)) break;
+        visited.add(currParentId);
+        const p = folderMap.get(currParentId);
+        if (!p) break;
+        if (!p.isPublic) return false;
+        currParentId = p.parentId;
+      }
+      return true;
+    };
+
+    // Nếu chọn folderId cụ thể mà user không có quyền xem => trả về rỗng ngay
+    if (folderId && folderId !== "all") {
+      if (!isFolderVisible(folderId)) {
+        return [];
+      }
+    }
+
+    // 2. Tìm tất cả ID thư mục con cháu nếu có chọn thư mục cụ thể (chỉ lấy thư mục con mà user được phép xem)
     const targetFolderIds = new Set<string>();
     if (folderId && folderId !== "all") {
       targetFolderIds.add(folderId);
@@ -182,8 +217,10 @@ export async function getVocabularies(folderId?: string, searchQuery?: string) {
         added = false;
         allFolders.forEach(f => {
           if (f.parentId && targetFolderIds.has(f.parentId) && !targetFolderIds.has(f.id)) {
-            targetFolderIds.add(f.id);
-            added = true;
+            if (isFolderVisible(f.id)) {
+              targetFolderIds.add(f.id);
+              added = true;
+            }
           }
         });
       }
@@ -226,6 +263,16 @@ export async function getVocabularies(folderId?: string, searchQuery?: string) {
           folderVocabularies
         };
       });
+
+    // Nếu không phải Admin, lọc bỏ các từ vựng chỉ thuộc về các thư mục đang bị ẩn đối với user này
+    if (!isAdmin) {
+      vocabs = vocabs.filter((v: any) => {
+        if (currentUid && v.createdBy === currentUid) return true;
+        const fIds: string[] = v.folderIds || [];
+        if (fIds.length === 0) return true;
+        return fIds.some((fid: string) => isFolderVisible(fid));
+      });
+    }
 
     // 4. Lọc tìm kiếm nếu có
     if (searchQuery && searchQuery.trim()) {

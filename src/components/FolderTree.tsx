@@ -4,7 +4,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { assignVocabularyToFolder } from '@/app/actions/vocabulary';
-import { deleteFolderAndVocabs, renameFolder } from '@/app/actions/folder';
+import { deleteFolderAndVocabs, renameFolder, updateFolderVisibility } from '@/app/actions/folder';
 import {
   Folder,
   ChevronRight,
@@ -16,6 +16,8 @@ import {
   Type,
   MoreVertical,
   CheckCircle2,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { getDownloadedDecks } from '@/lib/offline-storage';
 
@@ -26,6 +28,7 @@ interface FolderItem {
   ownerId?: string | null;
   ownerEmail?: string | null;
   ownerName?: string | null;
+  isPublic?: boolean;
   _count?: { folderVocabularies: number };
 }
 
@@ -367,8 +370,16 @@ export function FolderTree({
             />
 
             {/* Tên thư mục (Tối đa diện tích hiển thị) */}
-            <span className="text-xs sm:text-sm font-medium truncate flex-1 min-w-0 leading-tight">
-              {node.name}
+            <span className="text-xs sm:text-sm font-medium truncate flex-1 min-w-0 leading-tight flex items-center gap-1.5">
+              <span>{node.name}</span>
+              {node.isPublic === false && (
+                <span 
+                  className="inline-flex items-center text-amber-500 dark:text-amber-400 shrink-0" 
+                  title="Thư mục riêng tư (Đang ẩn với người khác)"
+                >
+                  <EyeOff className="w-3 h-3" />
+                </span>
+              )}
             </span>
 
             {/* Phần thông tin phụ bên phải: Badge me + Số lượng */}
@@ -426,7 +437,7 @@ export function FolderTree({
               </span>
             </div>
 
-            {/* Menu 3 chấm thao tác gọn gàng (Đổi tên / Xóa) - Chỉ hiện cho chủ sở hữu */}
+            {/* Menu 3 chấm thao tác gọn gàng (Đổi tên / Ẩn hiện / Xóa) - Chỉ hiện cho chủ sở hữu */}
             {canEdit && (
               <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
                 <button
@@ -447,7 +458,7 @@ export function FolderTree({
                 {/* Dropdown Menu Popup */}
                 {isMenuOpen && (
                   <div 
-                    className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 py-1 overflow-hidden animate-fadeIn text-xs"
+                    className="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 py-1 overflow-hidden animate-fadeIn text-xs"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button
@@ -458,6 +469,38 @@ export function FolderTree({
                       <Pencil className="w-3.5 h-3.5 text-indigo-500" />
                       <span>Đổi tên</span>
                     </button>
+                    
+                    {/* Nút Bật / Tắt Hiển thị (Công khai / Riêng tư) */}
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        setActiveMenuFolderId(null);
+                        const newIsPublic = node.isPublic === false ? true : false;
+                        setLocalFolders((prev) => prev.map((f) => f.id === node.id ? { ...f, isPublic: newIsPublic } : f));
+                        const res = await updateFolderVisibility(node.id, newIsPublic);
+                        if (res.success) {
+                          toast.success(newIsPublic ? `Đã mở công khai "${node.name}"` : `Đã chuyển "${node.name}" sang Riêng tư (Ẩn với người khác)`);
+                          onRefresh();
+                        } else {
+                          toast.error(res.error || "Không thể cập nhật trạng thái hiển thị!");
+                          setLocalFolders(folders);
+                        }
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors text-left border-t border-slate-100 dark:border-slate-800"
+                    >
+                      {node.isPublic === false ? (
+                        <>
+                          <Eye className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Hiện công khai</span>
+                        </>
+                      ) : (
+                        <>
+                          <EyeOff className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Ẩn (Riêng tư)</span>
+                        </>
+                      )}
+                    </button>
+
                     <button
                       onClick={(e) => handleDeleteFolder(node.id, node.name, e)}
                       disabled={deletingFolderId === node.id}

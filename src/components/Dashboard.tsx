@@ -91,6 +91,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const [showGeminiSettingsModal, setShowGeminiSettingsModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderParentId, setNewFolderParentId] = useState<string>("");
+  const [newFolderIsPublic, setNewFolderIsPublic] = useState<boolean>(true);
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [isMobileFolderOpen, setIsMobileFolderOpen] = useState(false);
   const [quotaExceeded, setQuotaExceeded] = useState(false);
@@ -300,18 +301,21 @@ export function Dashboard({ currentUser }: DashboardProps) {
       ownerId: currentUser?.uid || null,
       ownerEmail: currentUser?.email || null,
       ownerName: currentUser?.name || null,
+      isPublic: newFolderIsPublic,
       _count: { folderVocabularies: 0 } 
     };
     setFolders(prev => [...prev, newFolder]);
     
     const submittedName = newFolderName.trim();
     const submittedParentId = newFolderParentId;
+    const submittedIsPublic = newFolderIsPublic;
     
     setNewFolderName("");
     setNewFolderParentId("");
+    setNewFolderIsPublic(true);
     setShowFolderModal(false);
 
-    const res = await createFolder(submittedName, submittedParentId || undefined);
+    const res = await createFolder(submittedName, submittedParentId || undefined, submittedIsPublic);
     
     if (res.success) {
       fetchData(true);
@@ -908,6 +912,19 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     <option key={f.id} value={f.id}>{getFolderFullPath(f, folders)}</option>
                   ))}
                 </select>
+              </div>
+
+              <div className="flex items-center gap-2.5 pt-1 px-1">
+                <input
+                  type="checkbox"
+                  id="newFolderIsPublic"
+                  checked={newFolderIsPublic}
+                  onChange={(e) => setNewFolderIsPublic(e.target.checked)}
+                  className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 cursor-pointer"
+                />
+                <label htmlFor="newFolderIsPublic" className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                  Công khai (Cho phép người khác xem thư mục này)
+                </label>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2">
