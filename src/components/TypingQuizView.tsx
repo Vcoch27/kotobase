@@ -67,6 +67,7 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
   
   // Timeout ref để tự động chuyển câu sau khi hiển thị thông tin
   const nextTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const correctTimestampRef = useRef<number>(0);
 
   // Danh sách từ làm đúng và từ đã bấm bỏ qua
   const [skippedList, setSkippedList] = useState<QuizItem[]>([]);
@@ -100,12 +101,6 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setIsFullscreen(false);
-      } else if (e.key === "Enter" && feedback === "correct") {
-        if (nextTimeoutRef.current) {
-          clearTimeout(nextTimeoutRef.current);
-          nextTimeoutRef.current = null;
-        }
-        moveToNext();
       }
     };
     window.addEventListener("keydown", handleGlobalKeyDown);
@@ -115,7 +110,7 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
         clearTimeout(nextTimeoutRef.current);
       }
     };
-  }, [feedback, moveToNext]);
+  }, []);
 
   const vocabIdsStr = vocabularies.map(v => v.id).join(',');
   const selectedVocabIdsStr = selectedVocabIds.join(',');
@@ -235,6 +230,7 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
     if (isCorrect) {
       audioFX.playCorrect();
       setFeedback("correct");
+      correctTimestampRef.current = Date.now();
       // Lưu vào danh sách đúng nếu chưa có
       setCorrectList(prev => prev.some(item => item.id === currentItem.id) ? prev : [...prev, currentItem]);
       // Hiển thị đầy đủ thông tin từ vựng trong 2s để người dùng gợi nhớ Nghĩa & Âm Hán Việt
@@ -249,15 +245,22 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Nếu đang trong quá trình gõ IME tiếng Nhật (chưa bấm Enter hoàn tất từ), không bắt sự kiện
+    if (e.nativeEvent.isComposing) return;
+
     if (e.key === "Enter") {
+      e.preventDefault();
       if (feedback === "wrong") {
         // Nếu đang sai, bấm Enter để xóa đi gõ lại nhanh
         setUserInput("");
         setFeedback("none");
       } else if (feedback === "correct") {
-        // Cho phép bấm Enter để sang ngay câu tiếp theo không cần đợi hết 2s
-        if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
-        moveToNext();
+        // Chỉ cho phép bấm Enter để sang ngay câu tiếp theo sau tối thiểu 600ms
+        // nhằm tránh tình trạng dính phím / IME Enter bấm 2 lần nhảy cóc làm mất hiệu ứng viền xanh
+        if (Date.now() - correctTimestampRef.current > 600) {
+          if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
+          moveToNext();
+        }
       } else {
         handleCheck();
       }
@@ -504,10 +507,12 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
       </div>
 
       {/* Card Câu hỏi */}
-      <div className={`bg-white dark:bg-slate-900 border rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden transition-all duration-300 ${
+      <div className={`bg-white dark:bg-slate-900 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden transition-all duration-300 ${
         feedback === "correct"
-          ? "border-emerald-400/80 dark:border-emerald-500/50 shadow-emerald-500/10 dark:shadow-emerald-950/30"
-          : "border-slate-200 dark:border-slate-800"
+          ? "border-2 border-emerald-500 dark:border-emerald-400 ring-4 ring-emerald-500/20 dark:ring-emerald-500/30 shadow-emerald-500/15"
+          : feedback === "wrong"
+          ? "border-2 border-rose-500 dark:border-rose-400 ring-4 ring-rose-500/20 shadow-rose-500/15"
+          : "border border-slate-200 dark:border-slate-800"
       }`}>
         
         {/* Nhãn Dạng câu hỏi */}
@@ -651,9 +656,9 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
             placeholder="Nhập câu trả lời vào đây..."
             className={`w-full px-6 py-5 text-xl font-medium rounded-2xl border-2 outline-none transition-all shadow-lg text-center ${
               feedback === "correct" 
-                ? "bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
+                ? "bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-500 dark:border-emerald-400 text-emerald-800 dark:text-emerald-200 ring-4 ring-emerald-500/30 dark:ring-emerald-500/40 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/30 shadow-md shadow-emerald-500/20"
                 : feedback === "wrong"
-                ? "bg-rose-50 border-rose-500 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400 animate-shake"
+                ? "bg-rose-50 dark:bg-rose-950/40 border-rose-500 dark:border-rose-400 text-rose-800 dark:text-rose-200 ring-4 ring-rose-500/30 dark:ring-rose-500/40 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/30 animate-shake"
                 : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:border-indigo-500 dark:focus:border-indigo-500 text-slate-800 dark:text-slate-100 focus:ring-4 focus:ring-indigo-500/20"
             }`}
           />
