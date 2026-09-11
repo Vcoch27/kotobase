@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { KanjiDictionaryView } from "./KanjiDictionaryView";
 import { AppLogo } from "./AppLogo";
 import { ArrowLeft, Moon, Sun, User, LogOut, Settings2, Lock } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { useEffect } from "react";
 import { auth } from "@/lib/firebase";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { loginWithGoogle } from "@/app/actions/auth";
@@ -30,10 +29,31 @@ export function KanjiPageClient({ vocabularies, folders, initialKanjiNotes, curr
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const settingsDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Đóng settings dropdown khi click bất kỳ đâu bên ngoài
+  useEffect(() => {
+    const handleGlobalClick = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      if (showSettingsDropdown && settingsDropdownRef.current && !settingsDropdownRef.current.contains(target)) {
+        setShowSettingsDropdown(false);
+      }
+    };
+
+    if (showSettingsDropdown) {
+      document.addEventListener("mousedown", handleGlobalClick);
+      document.addEventListener("touchstart", handleGlobalClick);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleGlobalClick);
+      document.removeEventListener("touchstart", handleGlobalClick);
+    };
+  }, [showSettingsDropdown]);
 
   if (!mounted) {
     return (
@@ -118,7 +138,7 @@ export function KanjiPageClient({ vocabularies, folders, initialKanjiNotes, curr
               {mounted && theme === "dark" ? <Sun className="w-4 h-4 md:w-5 md:h-5" /> : <Moon className="w-4 h-4 md:w-5 md:h-5" />}
             </button>
 
-            <div className="relative">
+            <div className="relative" ref={settingsDropdownRef}>
               <button
                 onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
                 className={`p-2 rounded-xl transition-colors ${showSettingsDropdown ? 'bg-slate-100 dark:bg-slate-800 text-amber-500' : 'text-slate-500 dark:text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-900'}`}

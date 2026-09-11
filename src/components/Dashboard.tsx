@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/cn";
 import dynamic from "next/dynamic";
@@ -100,6 +100,32 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showTTSSettingsModal, setShowTTSSettingsModal] = useState(false);
   const [showGeminiSettingsModal, setShowGeminiSettingsModal] = useState(false);
+  const settingsDropdownRef = useRef<HTMLDivElement>(null);
+  const addMenuRef = useRef<HTMLDivElement>(null);
+
+  // Đóng dropdown khi click bất kỳ đâu bên ngoài
+  useEffect(() => {
+    const handleGlobalClick = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      if (showSettingsDropdown && settingsDropdownRef.current && !settingsDropdownRef.current.contains(target)) {
+        setShowSettingsDropdown(false);
+      }
+      if (showAddMenu && addMenuRef.current && !addMenuRef.current.contains(target)) {
+        setShowAddMenu(false);
+      }
+    };
+
+    if (showSettingsDropdown || showAddMenu) {
+      document.addEventListener("mousedown", handleGlobalClick);
+      document.addEventListener("touchstart", handleGlobalClick);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleGlobalClick);
+      document.removeEventListener("touchstart", handleGlobalClick);
+    };
+  }, [showSettingsDropdown, showAddMenu]);
+
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderParentId, setNewFolderParentId] = useState<string>("");
   const [newFolderIsPublic, setNewFolderIsPublic] = useState<boolean>(true);
@@ -440,7 +466,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
             >
               {mounted && theme === "dark" ? <Sun className="w-4 h-4 md:w-5 md:h-5" /> : <Moon className="w-4 h-4 md:w-5 md:h-5" />}
             </button>
-            <div className="relative">
+            <div className="relative" ref={settingsDropdownRef}>
               <button 
                 onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
                 className={`p-2 rounded-xl transition-colors ${showSettingsDropdown ? 'bg-slate-100 dark:bg-slate-800 text-amber-500 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-900'}`}
@@ -637,7 +663,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
             {/* Vùng bên trái: Nút + Thêm nội dung & Đang chọn Thư mục */}
             <div className="flex items-center gap-2 flex-wrap min-w-0">
               {isGoogleUser && (
-                <div className="relative z-30">
+                <div className="relative z-30" ref={addMenuRef}>
                   <button
                     onClick={() => setShowAddMenu(!showAddMenu)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white text-xs font-bold shadow-sm shadow-indigo-600/20 active:scale-95 transition-all shrink-0"
