@@ -903,8 +903,8 @@ export function Dashboard({ currentUser }: DashboardProps) {
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 text-sm text-slate-800 dark:text-slate-100 outline-none"
                 >
                   <option value="">-- Không có (Root) --</option>
-                  {/* Chỉ hiển thị folder của mình */}
-                  {folders.filter(f => !f.ownerId || f.ownerId === currentUser?.uid).map((f) => (
+                  {/* Chỉ hiển thị folder của mình, Admin mới được chọn tất cả các thư mục */}
+                  {folders.filter(f => currentUser?.email === "hoangtungmy123@gmail.com" ? true : (f.ownerId && f.ownerId === currentUser?.uid)).map((f) => (
                     <option key={f.id} value={f.id}>{getFolderFullPath(f, folders)}</option>
                   ))}
                 </select>

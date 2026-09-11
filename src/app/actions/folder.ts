@@ -54,6 +54,20 @@ export async function createFolder(name: string, parentId?: string) {
     return { success: false, error: "Bạn cần đăng nhập bằng Google để tạo thư mục." };
   }
 
+  const isAdmin = currentUser.email === "hoangtungmy123@gmail.com";
+
+  // Nếu tạo thư mục con bên trong thư mục cha: Chỉ Admin hoặc chủ sở hữu thư mục cha mới có quyền
+  if (parentId) {
+    const parentDoc = await adminDb.collection("folders").doc(parentId).get();
+    if (parentDoc.exists) {
+      const parentData = parentDoc.data();
+      const isParentOwner = !!parentData?.ownerId && parentData.ownerId === currentUser.uid;
+      if (!isAdmin && !isParentOwner) {
+        return { success: false, error: "Bạn không có quyền tạo thư mục con trong thư mục này." };
+      }
+    }
+  }
+
   try {
     const docRef = await adminDb.collection("folders").add({
       name: name.trim(),
@@ -98,8 +112,11 @@ export async function renameFolder(id: string, newName: string) {
   if (!folderDoc.exists) return { success: false, error: "Thư mục không tồn tại." };
   
   const folderData = folderDoc.data();
-  if (!isAdmin && folderData?.ownerId && folderData.ownerId !== currentUser.uid) {
-    return { success: false, error: "Bạn không có quyền đổi tên thư mục này." };
+  const isOwner = !!folderData?.ownerId && folderData.ownerId === currentUser.uid;
+
+  // Thư mục vô danh (!ownerId) hoặc thư mục của người khác: CHỈ Admin (hoangtungmy123@gmail.com) mới có quyền đổi tên
+  if (!isAdmin && !isOwner) {
+    return { success: false, error: "Bạn không có quyền đổi tên thư mục này. Thư mục này chỉ Admin hoặc người tạo mới có quyền chỉnh sửa." };
   }
 
   try {
@@ -129,13 +146,20 @@ export async function deleteFolderAndVocabs(id: string) {
   if (!folderDoc.exists) return { success: false, error: "Thư mục không tồn tại." };
   
   const folderData = folderDoc.data();
-  if (!isAdmin && folderData?.ownerId && folderData.ownerId !== currentUser.uid) {
-    return { success: false, error: "Bạn không có quyền xóa thư mục này." };
+  const isOwner = !!folderData?.ownerId && folderData.ownerId === currentUser.uid;
+
+  // Thư mục vô danh (!ownerId) hoặc thư mục của người khác: CHỈ Admin (hoangtungmy123@gmail.com) mới có quyền xóa
+  if (!isAdmin && !isOwner) {
+    return { success: false, error: "Bạn không có quyền xóa thư mục này. Thư mục này chỉ Admin hoặc người tạo mới có quyền xóa." };
   }
 
   try {
     const allFoldersSnapshot = await adminDb.collection("folders").get();
-    const allFolders = allFoldersSnapshot.docs.map(doc => ({ id: doc.id, parentId: doc.data().parentId }));
+    const allFolders = allFoldersSnapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      parentId: doc.data().parentId,
+      ownerId: doc.data().ownerId 
+    }));
     
     const folderIdsToDelete = new Set<string>();
     folderIdsToDelete.add(id);
@@ -150,6 +174,16 @@ export async function deleteFolderAndVocabs(id: string) {
           addedNew = true;
         }
       });
+    }
+
+    // Nếu không phải admin, đảm bảo toàn bộ cây thư mục con cũng thuộc quyền sở hữu của user
+    if (!isAdmin) {
+      for (const fid of Array.from(folderIdsToDelete)) {
+        const target = allFolders.find(f => f.id === fid);
+        if (!target?.ownerId || target.ownerId !== currentUser.uid) {
+          return { success: false, error: "Thư mục này chứa thư mục con không thuộc quyền sở hữu của bạn." };
+        }
+      }
     }
 
     const folderIdsArray = Array.from(folderIdsToDelete);
@@ -185,5 +219,41 @@ export async function deleteFolderAndVocabs(id: string) {
   } catch (error) {
     console.error("Lỗi khi xóa thư mục và từ vựng:", error);
     return { success: false, error: "Không thể xóa thư mục." };
+  }
+}
+
+export async function claimLegacyFolders() {
+  const currentUser = await getCurrentUser();
+  if (!currentUser || currentUser.email !== "hoangtungmy123@gmail.com") {
+    return { success: false, error: "Chỉ tài khoản Admin mới có quyền thực hiện thao tác này." };
+  }
+
+  try {
+    const snapshot = await adminDb.collection("folders").get();
+    const batch = adminDb.batch();
+    let count = 0;
+
+    snapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      if (!data.ownerId) {
+        batch.update(doc.ref, {
+          ownerId: currentUser.uid,
+          ownerEmail: currentUser.email,
+          ownerName: currentUser.name || "Hoàng Nguyễn Văn",
+          updatedAt: new Date().toISOString(),
+        });
+        count++;
+      }
+    });
+
+    if (count > 0) {
+      await batch.commit();
+      revalidatePath("/");
+    }
+
+    return { success: true, count };
+  } catch (error: any) {
+    console.error("Lỗi khi chuyển quyền sở hữu thư mục cũ:", error);
+    return { success: false, error: "Không thể cập nhật quyền sở hữu thư mục." };
   }
 }

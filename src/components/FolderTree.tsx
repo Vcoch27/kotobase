@@ -313,7 +313,8 @@ export function FolderTree({
 
       // Phân quyền hiển thị
       const isAdmin = currentUserEmail === 'hoangtungmy123@gmail.com';
-      const isOwner = currentUserId && node.ownerId && node.ownerId === currentUserId;
+      // Thư mục vô danh (!node.ownerId) được tự động xem là thuộc quyền quản trị của Admin
+      const isOwner = (currentUserId && node.ownerId && node.ownerId === currentUserId) || (isAdmin && !node.ownerId);
       const hasOwner = !!node.ownerId;
       const canEdit = isOwner || isAdmin; // Chủ hoặc Admin mới có thể sửa/xóa
       const isMenuOpen = activeMenuFolderId === node.id;
@@ -375,7 +376,7 @@ export function FolderTree({
               {isOwner ? (
                 <span
                   className="text-[9px] font-extrabold text-indigo-600 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-500/25 px-1 py-0.2 rounded"
-                  title={`Thư mục của bạn (${node.ownerEmail || ''})`}
+                  title={!node.ownerId ? `Thư mục quản trị của Admin (${currentUserEmail})` : `Thư mục của bạn (${node.ownerEmail || ''})`}
                 >
                   me
                 </span>
@@ -386,7 +387,14 @@ export function FolderTree({
                 >
                   <Users className="w-2.5 h-2.5" />
                 </span>
-              ) : null}
+              ) : (
+                <span
+                  className="text-[9px] flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded text-slate-400"
+                  title="Thư mục hệ thống (Chỉ Admin có quyền chỉnh sửa)"
+                >
+                  <Users className="w-2.5 h-2.5" />
+                </span>
+              )}
 
               {/* Badge Offline nếu thư mục này hoặc thư mục con đã tải */}
               {isFullyOffline ? (
