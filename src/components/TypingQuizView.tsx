@@ -304,7 +304,7 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
   return (
     <div className={isFullscreen ? "fixed inset-0 z-[100] bg-slate-50 dark:bg-slate-950 p-4 md:p-8 overflow-y-auto w-full h-full flex flex-col items-center justify-center" : ""}>
       <div className={`mx-auto w-full space-y-4 max-w-4xl ${isFullscreen ? "my-auto" : ""}`}>
-      {/* Bộ chọn linh hoạt phạm vi học (Study Scope Selector) */}
+      {/* Thanh điều khiển duy nhất ngay trên card câu hỏi (Phạm vi học + Dạng câu hỏi + Tiến độ) */}
       <div className={isFullscreen ? "hidden" : "block"}>
         <StudyScopeSelector
           allVocabularies={vocabularies}
@@ -314,8 +314,101 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
           }}
           activeCount={quizList.length}
           modeTheme="purple"
+          extraControls={
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Quiz Mode Selector */}
+              <div className="flex items-center gap-0.5 bg-white/90 dark:bg-slate-900/90 p-1 rounded-xl border border-slate-200 dark:border-slate-700/80 text-xs">
+                <button 
+                  onClick={() => setQuizMode("mix")}
+                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-colors ${quizMode === "mix" ? "bg-purple-600 text-white shadow-sm shadow-purple-600/30" : "text-slate-600 dark:text-slate-300 hover:text-purple-600"}`}
+                >
+                  Ngẫu nhiên
+                </button>
+                <button 
+                  onClick={() => setQuizMode("type1")}
+                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-colors ${quizMode === "type1" ? "bg-purple-600 text-white shadow-sm shadow-purple-600/30" : "text-slate-600 dark:text-slate-300 hover:text-purple-600"}`}
+                >
+                  Chỉ Dạng 1
+                </button>
+                <button 
+                  onClick={() => setQuizMode("type2")}
+                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-colors ${quizMode === "type2" ? "bg-purple-600 text-white shadow-sm shadow-purple-600/30" : "text-slate-600 dark:text-slate-300 hover:text-purple-600"}`}
+                >
+                  Chỉ Dạng 2
+                </button>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-0.5 bg-white/90 dark:bg-slate-900/90 p-1 rounded-xl border border-slate-200 dark:border-slate-700/80">
+                <button 
+                  onClick={toggleShuffle}
+                  title={isShuffled ? "Tắt trộn câu hỏi (Về thứ tự ban đầu)" : "Trộn câu hỏi ngẫu nhiên (Shuffle)"}
+                  className={`p-1.5 rounded-lg transition-all ${
+                    isShuffled
+                      ? "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-500/40 shadow-sm"
+                      : "text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <Shuffle className="w-3.5 h-3.5" />
+                </button>
+                <button 
+                  onClick={() => {
+                    startNewQuiz(undefined, false);
+                    setIsShuffled(false);
+                  }}
+                  title="Làm lại từ đầu"
+                  className="p-1.5 text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+                <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
+                <button 
+                  onClick={() => setIsFullscreen(!isFullscreen)} 
+                  className={`p-1.5 rounded-lg transition-all ${
+                    isFullscreen
+                      ? "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20 border border-blue-300 dark:border-blue-500/40 shadow-sm"
+                      : "text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                  title={isFullscreen ? "Thu nhỏ (Esc)" : "Toàn màn hình"}
+                >
+                  {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+          }
+          bottomContent={
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-[11px] font-bold">
+                <span className="text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tiến độ kiểm tra</span>
+                <span className="text-purple-600 dark:text-purple-400">{currentIndex + 1} / {quizList.length}</span>
+              </div>
+              <div className="w-full h-1.5 bg-slate-200/60 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-purple-500 to-indigo-600 transition-all duration-300 ease-out" 
+                  style={{ width: `${progressPercentage}%` }}
+                ></div>
+              </div>
+            </div>
+          }
         />
       </div>
+
+      {isFullscreen && (
+        <div className="w-full flex items-center justify-between gap-4 mb-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg">
+          <div className="flex-1">
+            <div className="flex items-center justify-between text-xs font-bold mb-1">
+              <span className="text-slate-400">Tiến độ kiểm tra</span>
+              <span className="text-purple-600">{currentIndex + 1} / {quizList.length}</span>
+            </div>
+            <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-full bg-purple-600" style={{ width: `${progressPercentage}%` }}></div>
+            </div>
+          </div>
+          <button onClick={() => setIsFullscreen(false)} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500">
+            <Minimize className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {isFinished ? (
         <div className="w-full space-y-8 animate-fadeIn mt-4">
@@ -428,83 +521,6 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
       </div>
       ) : currentItem ? (
         <>
-      {/* Thanh Tiến độ và Cài đặt */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm transition-colors">
-        <div className="flex-1 w-full">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tiến độ kiểm tra</span>
-            <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{currentIndex + 1} / {quizList.length}</span>
-          </div>
-          <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 transition-all duration-500 ease-out" 
-              style={{ width: `${progressPercentage}%` }}
-            ></div>
-          </div>
-        </div>
-
-        {/* Quiz Actions & Settings */}
-        <div className="flex items-center gap-2 flex-wrap justify-end">
-          {/* Quiz Mode Selector */}
-          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
-            <button 
-              onClick={() => setQuizMode("mix")}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${quizMode === "mix" ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200 dark:border-slate-600" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
-            >
-              Ngẫu nhiên
-            </button>
-            <button 
-              onClick={() => setQuizMode("type1")}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${quizMode === "type1" ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200 dark:border-slate-600" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
-            >
-              Chỉ Dạng 1
-            </button>
-            <button 
-              onClick={() => setQuizMode("type2")}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${quizMode === "type2" ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200 dark:border-slate-600" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
-            >
-              Chỉ Dạng 2
-            </button>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
-            <button 
-              onClick={toggleShuffle}
-              title={isShuffled ? "Tắt trộn câu hỏi (Về thứ tự ban đầu)" : "Trộn câu hỏi ngẫu nhiên (Shuffle)"}
-              className={`p-1.5 rounded-lg transition-all ${
-                isShuffled
-                  ? "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-500/40 shadow-sm"
-                  : "text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-700"
-              }`}
-            >
-              <Shuffle className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={() => {
-                startNewQuiz(undefined, false);
-                setIsShuffled(false);
-              }}
-              title="Làm lại từ đầu"
-              className="p-1.5 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-colors"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <div className="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-0.5"></div>
-            <button 
-              onClick={() => setIsFullscreen(!isFullscreen)} 
-              className={`p-1.5 rounded-lg transition-all ${
-                isFullscreen
-                  ? "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20 border border-blue-300 dark:border-blue-500/40 shadow-sm"
-                  : "text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-slate-700"
-              }`}
-              title={isFullscreen ? "Thu nhỏ (Esc)" : "Toàn màn hình"}
-            >
-              {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Card Câu hỏi */}
       <div className={`bg-white dark:bg-slate-900 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden transition-all duration-300 ${

@@ -18,7 +18,7 @@ import {
   LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, 
   Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, ChevronUp, Volume2, Loader2,
   User, Lock, Folder, X, FolderTree as FolderTreeIcon, ArrowDownNarrowWide, ArrowUpNarrowWide,
-  Sparkles, BookOpen, Smartphone, WifiOff
+  Sparkles, BookOpen, Smartphone, WifiOff, Plus
 } from "lucide-react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { OfflineSyncButton } from "./OfflineSyncButton";
@@ -50,7 +50,9 @@ interface DashboardProps {
 
 export function Dashboard({ currentUser }: DashboardProps) {
   const [viewMode, setViewMode] = useState<"overview" | "focus" | "flashcard" | "quiz">("overview");
-  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showQuickAddModal, setShowQuickAddModal] = useState(false);
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
   const [vocabularies, setVocabularies] = useState<any[]>([]);
   const [folders, setFolders] = useState<any[]>(() => {
     if (typeof window !== "undefined") {
@@ -621,65 +623,93 @@ export function Dashboard({ currentUser }: DashboardProps) {
         {/* RIGHT MAIN CONTENT */}
         <div className="flex-1 flex flex-col gap-6 min-w-0">
           
-          {/* Action Tabs: Quick Add & Bulk Import - Chỉ hiện khi đăng nhập Google */}
-          {isGoogleUser ? (
-            <>
-              <div className="flex items-center gap-2 mb-2">
-                <button
-                  onClick={() => setShowBulkImport(false)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${!showBulkImport ? 'bg-slate-800 dark:bg-slate-800 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-900'}`}
-                >
-                  Thêm Nhanh (Quick Add)
-                </button>
-                <button
-                  onClick={() => setShowBulkImport(true)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${showBulkImport ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-900'}`}
-                >
-                  Thêm Hàng Loạt (Bulk AI)
-                </button>
-              </div>
+          {/* Thanh Toolbar Ngang Hợp Nhất: + Thêm nội dung, Đang chọn Thư mục, Offline & Sắp xếp */}
+          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800 p-2 sm:px-3 shadow-sm flex flex-wrap items-center justify-between gap-2.5">
+            {/* Vùng bên trái: Nút + Thêm nội dung & Đang chọn Thư mục */}
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              {isGoogleUser && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowAddMenu(!showAddMenu)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white text-xs font-bold shadow-sm shadow-indigo-600/20 active:scale-95 transition-all shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ Thêm nội dung</span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showAddMenu ? "rotate-180" : ""}`} />
+                  </button>
 
-              {showBulkImport ? (
-                <BulkImport 
-                  folders={folders} 
-                  currentFolderId={selectedFolderId} 
-                  onSuccess={() => fetchData(true)} 
-                  onOpenGeminiSettings={() => setShowGeminiSettingsModal(true)}
-                />
-              ) : (
-                <QuickAddForm folders={folders} currentFolderId={selectedFolderId} onSuccess={() => fetchData(true)} />
-              )}
-            </>
-          ) : null}
+                  {/* Dropdown Menu */}
+                  {showAddMenu && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowAddMenu(false)} />
+                      <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 z-50 animate-fadeIn space-y-1">
+                        <button
+                          onClick={() => {
+                            setShowAddMenu(false);
+                            setShowQuickAddModal(true);
+                          }}
+                          className="w-full flex items-start gap-2.5 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition-colors group"
+                        >
+                          <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover:scale-105 transition-transform shrink-0">
+                            <Plus className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Thêm nhanh từ vựng</div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">Nhập từng từ hoặc gợi ý tự động</div>
+                          </div>
+                        </button>
 
-          {/* Breadcrumbs & Bộ chọn sắp xếp linh hoạt */}
-          <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Đang chọn:</span>
-              <div 
-                onClick={() => setShowMobileFolderDrawer(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800/50 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/50 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
-                title="Bấm để đổi thư mục"
-              >
-                <Folder className="w-4 h-4 text-amber-500 shrink-0" />
-                {selectedFolderId === 'all' ? (
-                  <span>Tất cả từ vựng</span>
-                ) : (
-                  <span>{getFolderFullPath(folders.find(f => f.id === selectedFolderId) || { name: 'Thư mục không xác định' }, folders)}</span>
-                )}
-                <ChevronDown className="w-3.5 h-3.5 opacity-60 ml-0.5 md:hidden shrink-0" />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              {selectedFolderId !== 'all' && folders.find(f => f.id === selectedFolderId)?.ownerEmail && (
-                <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20 rounded-full">
-                  <User className="w-3 h-3" />
-                  <span>Chủ sở hữu: {folders.find(f => f.id === selectedFolderId)?.ownerEmail}</span>
+                        <button
+                          onClick={() => {
+                            setShowAddMenu(false);
+                            setShowBulkImportModal(true);
+                          }}
+                          className="w-full flex items-start gap-2.5 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition-colors group"
+                        >
+                          <div className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 group-hover:scale-105 transition-transform shrink-0">
+                            <Sparkles className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Thêm hàng loạt (Bulk AI)</div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">Dán danh sách, AI tự bóc tách</div>
+                          </div>
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
-              {/* Nút Tải Học Offline & Quản lý kho */}
+              {/* Breadcrumb / Đang chọn */}
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 hidden sm:inline shrink-0">Đang chọn:</span>
+                <div 
+                  onClick={() => setShowMobileFolderDrawer(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-800/60 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/50 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors max-w-[200px] sm:max-w-xs truncate"
+                  title="Bấm để đổi thư mục"
+                >
+                  <Folder className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span className="truncate">
+                    {selectedFolderId === 'all' ? (
+                      'Tất cả từ vựng'
+                    ) : (
+                      getFolderFullPath(folders.find(f => f.id === selectedFolderId) || { name: 'Thư mục không xác định' }, folders)
+                    )}
+                  </span>
+                  <ChevronDown className="w-3 h-3 opacity-60 ml-0.5 md:hidden shrink-0" />
+                </div>
+              </div>
+
+              {selectedFolderId !== 'all' && folders.find(f => f.id === selectedFolderId)?.ownerEmail && (
+                <div className="hidden lg:flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20 rounded-full max-w-[180px] truncate">
+                  <User className="w-3 h-3 shrink-0" />
+                  <span className="truncate">{folders.find(f => f.id === selectedFolderId)?.ownerEmail}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Vùng bên phải: Nút Tải Offline & Bộ chọn sắp xếp */}
+            <div className="flex items-center gap-2 flex-wrap shrink-0">
               <OfflineSyncButton
                 currentFolderId={selectedFolderId}
                 currentFolderName={
@@ -696,31 +726,31 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 }}
               />
 
-              {/* Sort Order Selector */}
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/60 p-1 rounded-xl border border-slate-200 dark:border-slate-700/60 text-xs">
+              <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800/60 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700/60 text-xs">
                 <button
                   onClick={() => handleSortChange("created_asc")}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-bold transition-all ${
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg font-bold text-xs transition-all ${
                     sortOrder === "created_asc"
                       ? "bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-sm"
                       : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                   }`}
-                  title="Hiển thị theo đúng thứ tự thêm vào (Bài học từ trên xuống dưới)"
+                  title="Hiển thị theo thứ tự thêm vào"
                 >
-                  <ArrowDownNarrowWide className="w-3.5 h-3.5" />
-                  <span>Thứ tự thêm</span>
+                  <ArrowDownNarrowWide className="w-3 h-3" />
+                  <span className="hidden sm:inline">Thứ tự thêm</span>
+                  <span className="sm:hidden">STT</span>
                 </button>
 
                 <button
                   onClick={() => handleSortChange("created_desc")}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-bold transition-all ${
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg font-bold text-xs transition-all ${
                     sortOrder === "created_desc"
                       ? "bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-sm"
                       : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                   }`}
                   title="Từ mới nhất lên đầu"
                 >
-                  <ArrowUpNarrowWide className="w-3.5 h-3.5" />
+                  <ArrowUpNarrowWide className="w-3 h-3" />
                   <span>Mới nhất</span>
                 </button>
               </div>
@@ -733,7 +763,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
               <div className="flex items-center gap-2">
                 <WifiOff className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                 <span>
-                  <strong>Chế độ Ngoại tuyến (Offline):</strong> Đang sử dụng dữ liệu được lưu trực tiếp trên bộ nhớ thiết bị. Flashcard và Quiz vẫn hoạt động 100%!
+                  <strong>Chế độ Ngoại tuyến (Offline):</strong> Đang sử dữ liệu được lưu trực tiếp trên bộ nhớ thiết bị. Flashcard và Quiz vẫn hoạt động 100%!
                 </span>
               </div>
               <button
@@ -745,24 +775,24 @@ export function Dashboard({ currentUser }: DashboardProps) {
             </div>
           )}
 
-          {/* View Modes — Animated Tab Indicator (Framer Motion layoutId) */}
+          {/* View Modes — Animated Tab Indicator gọn gàng kèm Tiêu đề chế độ */}
           {(() => {
             const tabs = [
               { id: "overview",  icon: <LayoutGrid className="w-3.5 h-3.5" />,   label: "Tổng quan",        color: "text-amber-500" },
-              { id: "focus",     icon: <Eye className="w-3.5 h-3.5" />,          label: "Ôn tập (Focus)",   color: "text-indigo-500" },
+              { id: "focus",     icon: <Eye className="w-3.5 h-3.5" />,          label: "Ôn tập",           color: "text-indigo-500" },
               { id: "flashcard", icon: <Layers className="w-3.5 h-3.5" />,       label: "Flashcard",        color: "text-emerald-500" },
-              { id: "quiz",      icon: <BrainCircuit className="w-3.5 h-3.5" />, label: "Quiz",             color: "text-purple-500" },
+              { id: "quiz",      icon: <BrainCircuit className="w-3.5 h-3.5" />, label: "Quiz (Gõ phím)",   color: "text-purple-500" },
             ] as const;
 
             return (
-              <div className="bg-[oklch(var(--color-surface))] p-3 rounded-2xl shadow-elevation-sm w-full overflow-x-auto scrollbar-hide transition-colors duration-300">
-                <div className="flex items-center w-max bg-[oklch(var(--color-surface-raised))] p-1 rounded-xl gap-0.5">
+              <div className="bg-[oklch(var(--color-surface))] p-1.5 px-2.5 rounded-2xl shadow-elevation-sm w-full flex items-center justify-between gap-2 overflow-x-auto scrollbar-hide transition-colors duration-300">
+                <div className="flex items-center bg-[oklch(var(--color-surface-raised))] p-1 rounded-xl gap-0.5">
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
                       onClick={() => setViewMode(tab.id as typeof viewMode)}
                       className={cn(
-                        "relative flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors duration-150",
+                        "relative flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-colors duration-150",
                         viewMode === tab.id
                           ? "text-[oklch(var(--color-text-primary))]"
                           : "text-[oklch(var(--color-text-muted))] hover:text-[oklch(var(--color-text-primary))]"
@@ -786,33 +816,20 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     </button>
                   ))}
                 </div>
+
+                {/* Tiêu đề ngắn gọn của chế độ đang chọn (Thay thế card mô tả cồng kềnh cũ) */}
+                <div className="hidden sm:flex items-center gap-2 pr-2 text-xs text-slate-500 dark:text-slate-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                    {viewMode === "overview" && "Quản lý & Danh sách tổng quan"}
+                    {viewMode === "focus" && "Ôn tập che đáp án (Active Recall)"}
+                    {viewMode === "flashcard" && "Flashcard lặp lại ngắt quãng (SRS)"}
+                    {viewMode === "quiz" && "Kiểm tra gõ phím tiếng Nhật"}
+                  </span>
+                </div>
               </div>
             );
           })()}
-
-          {/* Mode Description Banner */}
-          <div className="bg-[oklch(var(--color-surface)/0.6)] shadow-elevation-sm p-3.5 px-4 rounded-2xl flex items-start gap-3.5 transition-colors">
-            <div className="p-2 rounded-xl bg-[oklch(var(--color-surface-raised))] shadow-elevation-sm shrink-0">
-              {viewMode === "overview" && <LayoutGrid className="w-4 h-4 text-amber-500" />}
-              {viewMode === "focus" && <Eye className="w-4 h-4 text-indigo-500" />}
-              {viewMode === "flashcard" && <Layers className="w-4 h-4 text-emerald-500" />}
-              {viewMode === "quiz" && <BrainCircuit className="w-4 h-4 text-purple-500" />}
-            </div>
-            <div className="space-y-0.5">
-              <div className="font-bold text-slate-800 dark:text-slate-200 text-xs">
-                {viewMode === "overview" && "Mode 1: Quản lý & Danh sách Tổng quan"}
-                {viewMode === "focus" && "Mode 2: Ôn tập che đáp án (Active Recall)"}
-                {viewMode === "flashcard" && "Mode 3: Flashcard lặp lại ngắt quãng (SRS Anki)"}
-                {viewMode === "quiz" && "Mode 4: Kiểm tra gõ phím (Typing Quiz)"}
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                {viewMode === "overview" && "Xem toàn bộ từ vựng dưới dạng bảng. Bấm vào bất kỳ dòng nào để chỉnh sửa, hoặc kéo thả vào thư mục bên trái để phân loại."}
-                {viewMode === "focus" && "Luyện nhớ nhanh bằng cách che bớt nghĩa và cách đọc. Bấm vào từng thẻ để lật mở đáp án."}
-                {viewMode === "flashcard" && "Luyện tập theo phương pháp lặp lại ngắt quãng (Spaced Repetition). Lật thẻ kiểm tra và chọn mức độ nhớ."}
-                {viewMode === "quiz" && "Thử thách phản xạ bằng cách gõ trực tiếp đáp án tiếng Nhật. Hỗ trợ 2 dạng câu hỏi."}
-              </p>
-            </div>
-          </div>
 
           <div className="pb-24 md:pb-10">
             {quotaExceeded ? (
@@ -944,6 +961,61 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Thêm nhanh từ vựng */}
+      {showQuickAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4 custom-scrollbar">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <Plus className="w-5 h-5 text-indigo-500" /> Thêm nhanh từ vựng
+              </h3>
+              <button
+                onClick={() => setShowQuickAddModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <QuickAddForm 
+              folders={folders} 
+              currentFolderId={selectedFolderId} 
+              onSuccess={() => {
+                fetchData(true);
+                setShowQuickAddModal(false);
+              }} 
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Modal Thêm hàng loạt từ vựng (Bulk AI) */}
+      {showBulkImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4 custom-scrollbar">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-indigo-500" /> Thêm hàng loạt từ vựng (Bulk AI)
+              </h3>
+              <button
+                onClick={() => setShowBulkImportModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <BulkImport 
+              folders={folders} 
+              currentFolderId={selectedFolderId} 
+              onSuccess={() => {
+                fetchData(true);
+                setShowBulkImportModal(false);
+              }} 
+              onOpenGeminiSettings={() => setShowGeminiSettingsModal(true)}
+            />
           </div>
         </div>
       )}

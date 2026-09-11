@@ -30,6 +30,8 @@ interface StudyScopeSelectorProps {
   onScopeChange: (scopedVocabs: VocabularyData[], scopeDescription: string) => void;
   activeCount: number;
   modeTheme?: 'amber' | 'indigo' | 'emerald' | 'purple';
+  extraControls?: React.ReactNode;
+  bottomContent?: React.ReactNode;
 }
 
 export function StudyScopeSelector({
@@ -38,6 +40,8 @@ export function StudyScopeSelector({
   onScopeChange,
   activeCount,
   modeTheme = 'emerald',
+  extraControls,
+  bottomContent,
 }: StudyScopeSelectorProps) {
   const [scopeType, setScopeType] = useState<ScopeType>(
     selectedVocabIds.length > 0 ? 'selected' : 'all'
@@ -176,108 +180,124 @@ export function StudyScopeSelector({
       className={`rounded-2xl border ${themeClasses} p-2.5 sm:p-3 transition-all mb-4 shadow-sm backdrop-blur-sm space-y-2`}
     >
       {/* Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="p-1.5 rounded-lg bg-white dark:bg-slate-800 shadow-sm border border-slate-200/60 dark:border-slate-700/60">
-            <SlidersHorizontal className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-1.5">
+            <div className="p-1 rounded-lg bg-white dark:bg-slate-800 shadow-sm border border-slate-200/60 dark:border-slate-700/60">
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+            </div>
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Phạm vi:</span>
+            <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200/80 dark:border-slate-700 shadow-sm">
+              {activeCount} / {total}
+            </span>
           </div>
-          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Phạm vi học:</span>
-          <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200/80 dark:border-slate-700 shadow-sm">
-            {activeCount} / {total} từ
-          </span>
-        </div>
 
-        {/* Quick Pills Bar (Nút nhanh) */}
-        <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          {/* Nút: Tất cả */}
-          <button
-            type="button"
-            onClick={() => {
-              setIsExpanded(false);
-              applyScope('all');
-            }}
-            className={`px-2.5 py-1 rounded-xl font-bold transition-all ${
-              scopeType === 'all' && !isExpanded
-                ? activeBtnClasses
-                : 'bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300'
-            }`}
-          >
-            Tất cả ({total})
-          </button>
-
-          {/* Nút: Các từ đã chọn ở Mode 1 (nếu có) */}
-          {selectedVocabIds.length > 0 && (
+          {/* Quick Pills Bar (Nút nhanh) */}
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            {/* Nút: Tất cả */}
             <button
               type="button"
               onClick={() => {
                 setIsExpanded(false);
-                applyScope('selected');
+                applyScope('all');
               }}
-              className={`px-2.5 py-1 rounded-xl font-bold transition-all flex items-center gap-1 ${
-                scopeType === 'selected' && !isExpanded
+              className={`px-2 py-1 rounded-xl font-bold transition-all text-xs ${
+                scopeType === 'all' && !isExpanded
                   ? activeBtnClasses
                   : 'bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300'
               }`}
             >
-              <Check className="w-3.5 h-3.5" />
-              <span>Đã chọn ({selectedVocabIds.length})</span>
+              Tất cả ({total})
             </button>
-          )}
 
-          {/* Nút: 30 từ đầu (chỉ hiện khi > 30 từ) */}
-          {chunks.length > 0 && (
+            {/* Nút: Các từ đã chọn ở Mode 1 (nếu có) */}
+            {selectedVocabIds.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsExpanded(false);
+                  applyScope('selected');
+                }}
+                className={`px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 text-xs ${
+                  scopeType === 'selected' && !isExpanded
+                    ? activeBtnClasses
+                    : 'bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300'
+                }`}
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Đã chọn ({selectedVocabIds.length})</span>
+              </button>
+            )}
+
+            {/* Nút: 30 từ đầu (chỉ hiện khi > 30 từ) */}
+            {chunks.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsExpanded(false);
+                  setSelectedChunkIndex(0);
+                  applyScope('chunk', 0);
+                }}
+                className={`px-2 py-1 rounded-xl font-bold transition-all text-xs ${
+                  scopeType === 'chunk' && selectedChunkIndex === 0 && !isExpanded
+                    ? activeBtnClasses
+                    : 'bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300'
+                }`}
+              >
+                30 từ đầu
+              </button>
+            )}
+
+            {/* Nút: Ngẫu nhiên 30 từ */}
             <button
               type="button"
               onClick={() => {
                 setIsExpanded(false);
-                setSelectedChunkIndex(0);
-                applyScope('chunk', 0);
+                setRandomCount(30);
+                applyScope('random', selectedChunkIndex, 30);
               }}
-              className={`px-2.5 py-1 rounded-xl font-bold transition-all ${
-                scopeType === 'chunk' && selectedChunkIndex === 0 && !isExpanded
+              className={`px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 text-xs ${
+                scopeType === 'random' && randomCount === 30 && !isExpanded
                   ? activeBtnClasses
                   : 'bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300'
               }`}
             >
-              30 từ đầu
+              <Shuffle className="w-3 h-3" />
+              <span>Random 30</span>
             </button>
-          )}
 
-          {/* Nút: Ngẫu nhiên 30 từ */}
-          <button
-            type="button"
-            onClick={() => {
-              setIsExpanded(false);
-              setRandomCount(30);
-              applyScope('random', selectedChunkIndex, 30);
-            }}
-            className={`px-2.5 py-1 rounded-xl font-bold transition-all flex items-center gap-1 ${
-              scopeType === 'random' && randomCount === 30 && !isExpanded
-                ? activeBtnClasses
-                : 'bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300'
-            }`}
-          >
-            <Shuffle className="w-3 h-3" />
-            <span>Random 30</span>
-          </button>
-
-          {/* Nút bấm mở rộng/thu gọn Dải STT & Khối tùy chỉnh */}
-          <button
-            type="button"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className={`flex items-center gap-1 font-bold px-2.5 py-1 rounded-xl border transition-all shadow-sm ${
-              isExpanded ||
-              scopeType === 'range' ||
-              (scopeType === 'chunk' && selectedChunkIndex > 0)
-                ? 'bg-amber-500 text-white border-amber-600 shadow-amber-500/20'
-                : 'bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700'
-            }`}
-          >
-            <Hash className="w-3 h-3" />
-            <span>Dải STT / Đợt học {isExpanded ? '▲' : '▼'}</span>
-          </button>
+            {/* Nút bấm mở rộng/thu gọn Dải STT & Khối tùy chỉnh */}
+            <button
+              type="button"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className={`flex items-center gap-1 font-bold px-2 py-1 rounded-xl border transition-all shadow-sm text-xs ${
+                isExpanded ||
+                scopeType === 'range' ||
+                (scopeType === 'chunk' && selectedChunkIndex > 0)
+                  ? 'bg-amber-500 text-white border-amber-600 shadow-amber-500/20'
+                  : 'bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700'
+              }`}
+            >
+              <Hash className="w-3 h-3" />
+              <span>Dải STT {isExpanded ? '▲' : '▼'}</span>
+            </button>
+          </div>
         </div>
+
+        {/* Extra Controls (Dạng câu hỏi, Actions) */}
+        {extraControls && (
+          <div className="flex items-center gap-2 flex-wrap ml-auto">
+            {extraControls}
+          </div>
+        )}
       </div>
+
+      {/* Bottom Content (e.g. Tiến độ câu hỏi) */}
+      {bottomContent && (
+        <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+          {bottomContent}
+        </div>
+      )}
 
       {/* Expanded Custom Panel (Dải STT & Chia khối theo đợt) */}
       {isExpanded && (
