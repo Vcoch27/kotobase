@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createVocabulary } from "@/app/actions/vocabulary";
 import toast from "react-hot-toast";
-import { Plus, AlertTriangle, Sparkles, Folder, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, AlertTriangle, Sparkles, Folder, Check } from "lucide-react";
 import { getFolderFullPath } from "@/lib/folder-utils";
 import { FolderSelector } from "./FolderSelector";
 import { HighlightMnemonic } from "./HighlightMnemonic";
@@ -20,7 +20,6 @@ interface QuickAddFormProps {
 }
 
 export function QuickAddForm({ folders, currentFolderId, onSuccess }: QuickAddFormProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [word, setWord] = useState("");
   const [meaning, setMeaning] = useState("");
   const [reading, setReading] = useState("");
@@ -127,29 +126,7 @@ export function QuickAddForm({ folders, currentFolderId, onSuccess }: QuickAddFo
   };
 
   return (
-    <div className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl mb-6 transition-all duration-300">
-      {/* Header bar / Quick Toggle */}
-      <div
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between cursor-pointer select-none"
-      >
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">
-            <Sparkles className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Thêm nhanh Từ vựng (Quick Add)</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Tự động phát hiện trùng lặp & kiểm tra Kanji thông minh</p>
-          </div>
-        </div>
-        <button className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-100 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-          {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-        </button>
-      </div>
-
-      {/* Form Content */}
-      {isExpanded && (
-        <form onSubmit={handleSubmit} className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 space-y-4 animate-fadeIn">
+    <form onSubmit={handleSubmit} className="w-full space-y-4 animate-fadeIn">
           {/* Cảnh báo trùng lặp tức thì (Non-blocking Alert Popup) */}
           {checking && (
             <div className="p-3 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700/50 flex items-center gap-2">
@@ -300,7 +277,5 @@ export function QuickAddForm({ folders, currentFolderId, onSuccess }: QuickAddFo
             </button>
           </div>
         </form>
-      )}
-    </div>
   );
 }

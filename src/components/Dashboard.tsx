@@ -976,11 +976,11 @@ export function Dashboard({ currentUser }: DashboardProps) {
 
       {/* Modal Thêm nhanh từ vựng */}
       {showQuickAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4 custom-scrollbar">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                <Plus className="w-5 h-5 text-indigo-500" /> Thêm nhanh từ vựng
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-2xl max-h-[94vh] flex flex-col rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+              <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500" /> Thêm nhanh từ vựng
               </h3>
               <button
                 onClick={() => setShowQuickAddModal(false)}
@@ -989,25 +989,27 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <QuickAddForm 
-              folders={folders} 
-              currentFolderId={selectedFolderId} 
-              onSuccess={() => {
-                fetchData(true);
-                setShowQuickAddModal(false);
-              }} 
-            />
+            <div className="p-3 sm:p-6 overflow-y-auto custom-scrollbar flex-1">
+              <QuickAddForm 
+                folders={folders} 
+                currentFolderId={selectedFolderId} 
+                onSuccess={() => {
+                  fetchData(true);
+                  setShowQuickAddModal(false);
+                }} 
+              />
+            </div>
           </div>
         </div>
       )}
 
       {/* Modal Thêm hàng loạt từ vựng (Bulk AI) */}
       {showBulkImportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4 custom-scrollbar">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-indigo-500" /> Thêm hàng loạt từ vựng (Bulk AI)
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-3xl max-h-[94vh] flex flex-col rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+              <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500" /> Thêm hàng loạt từ vựng (Bulk AI)
               </h3>
               <button
                 onClick={() => setShowBulkImportModal(false)}
@@ -1016,15 +1018,17 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <BulkImport 
-              folders={folders} 
-              currentFolderId={selectedFolderId} 
-              onSuccess={() => {
-                fetchData(true);
-                setShowBulkImportModal(false);
-              }} 
-              onOpenGeminiSettings={() => setShowGeminiSettingsModal(true)}
-            />
+            <div className="p-3 sm:p-6 overflow-y-auto custom-scrollbar flex-1">
+              <BulkImport 
+                folders={folders} 
+                currentFolderId={selectedFolderId} 
+                onSuccess={() => {
+                  fetchData(true);
+                  setShowBulkImportModal(false);
+                }} 
+                onOpenGeminiSettings={() => setShowGeminiSettingsModal(true)}
+              />
+            </div>
           </div>
         </div>
       )}

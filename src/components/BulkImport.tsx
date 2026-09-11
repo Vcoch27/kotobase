@@ -4,8 +4,7 @@ import React, { useState, useEffect } from "react";
 import { createBulkVocabulary } from "@/app/actions/vocabulary";
 import { 
   Upload, Copy, CheckCircle, Sparkles, Folder, ArrowRight, ArrowLeft, Check, 
-  AlertCircle, Bot, FileCode, Key, ExternalLink, Loader2, RefreshCw, Cpu, Settings2,
-  ChevronDown, ChevronUp
+  AlertCircle, Bot, FileCode, Key, ExternalLink, Loader2, RefreshCw, Cpu, Settings2
 } from "lucide-react";
 import { getFolderFullPath } from "@/lib/folder-utils";
 import { FolderSelector } from "./FolderSelector";
@@ -37,7 +36,6 @@ interface ParsedVocabItem {
 }
 
 export function BulkImport({ folders, currentFolderId, onSuccess, onOpenGeminiSettings }: BulkImportProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
   const [step, setStep] = useState<"input" | "preview">("input");
   const [inputMode, setInputMode] = useState<"ai" | "json">("ai");
   const [rawText, setRawText] = useState("");
@@ -197,89 +195,67 @@ Ví dụ:
   const hasApiKey = !!geminiConfig.apiKey?.trim();
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-500/30 rounded-2xl p-5 shadow-xl animate-fadeIn transition-colors mb-6">
-      {/* Header Panel / Collapsible Toggle */}
-      <div 
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between cursor-pointer select-none transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 text-white shadow-md shadow-indigo-500/20 shrink-0">
-            <Sparkles className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 flex-wrap">
-              <span>Nhập liệu hàng loạt (Bulk AI)</span>
-              {hasApiKey && (
-                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20 px-2 py-0.5 rounded-full">
-                  Gemini AI Active
-                </span>
-              )}
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {step === "input" 
-                ? "Dán danh sách từ vựng thô để AI tự động phân tích hoặc dán JSON có sẵn." 
-                : `Xem trước ${previewList.length} từ vựng chuẩn bị thêm`}
-            </p>
-          </div>
+    <div className="w-full space-y-4 animate-fadeIn">
+      {/* Subheader / Step & API Status */}
+      <div className="flex items-center justify-between gap-2 flex-wrap pb-3 border-b border-slate-100 dark:border-slate-800 text-xs">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-slate-500 dark:text-slate-400">
+            {step === "input" 
+              ? "Dán danh sách từ vựng thô để AI tự động phân tích hoặc dán JSON có sẵn." 
+              : `Xem trước ${previewList.length} từ vựng chuẩn bị thêm`}
+          </span>
+          {hasApiKey && (
+            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20 px-2 py-0.5 rounded-full">
+              Gemini AI Active
+            </span>
+          )}
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Step indicator */}
-          <div className="hidden sm:flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-            <span className={step === "input" ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"}>1. Nhập liệu</span>
-            <span>→</span>
-            <span className={step === "preview" ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400"}>2. Xem trước & Lưu</span>
-          </div>
-
-          <button 
-            type="button"
-            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-100 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          >
-            {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-          </button>
+        {/* Step indicator */}
+        <div className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 ml-auto">
+          <span className={step === "input" ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"}>1. Nhập liệu</span>
+          <span>→</span>
+          <span className={step === "preview" ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400"}>2. Xem trước & Lưu</span>
         </div>
       </div>
 
-      {isExpanded && (
-        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 animate-fadeIn">
-          {step === "input" ? (
-            /* ================= BƯỚC 1: NHẬP LIỆU ================= */
-            <div className="flex flex-col gap-4 animate-fadeIn">
-              {/* Tabs chuyển đổi giữa AI và JSON */}
-              <div className="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-950 rounded-xl w-fit border border-slate-200 dark:border-slate-800 text-xs">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInputMode("ai");
-                    setMessage(null);
-                  }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all ${
-                    inputMode === "ai"
-                      ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
-                      : "text-slate-500 dark:text-slate-400 hover:text-slate-800"
-                  }`}
-                >
-                  <Bot className="w-3.5 h-3.5" />
-                  <span>🤖 Tự động bằng Gemini AI</span>
-                </button>
+      {step === "input" ? (
+        /* ================= BƯỚC 1: NHẬP LIỆU ================= */
+        <div className="flex flex-col gap-4 animate-fadeIn">
+          {/* Tabs chuyển đổi giữa AI và JSON */}
+          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-950 rounded-xl w-full sm:w-fit border border-slate-200 dark:border-slate-800 text-xs">
+            <button
+              type="button"
+              onClick={() => {
+                setInputMode("ai");
+                setMessage(null);
+              }}
+              className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-bold transition-all flex-1 sm:flex-initial ${
+                inputMode === "ai"
+                  ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-800"
+              }`}
+            >
+              <Bot className="w-3.5 h-3.5 shrink-0" />
+              <span>🤖 Tự động bằng Gemini AI</span>
+            </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInputMode("json");
-                    setMessage(null);
-                  }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all ${
-                    inputMode === "json"
-                      ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
-                      : "text-slate-500 dark:text-slate-400 hover:text-slate-800"
-                  }`}
-                >
-                  <FileCode className="w-3.5 h-3.5" />
-                  <span>📋 Dán JSON thủ công</span>
-                </button>
-              </div>
+            <button
+              type="button"
+              onClick={() => {
+                setInputMode("json");
+                setMessage(null);
+              }}
+              className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-bold transition-all flex-1 sm:flex-initial ${
+                inputMode === "json"
+                  ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-800"
+              }`}
+            >
+              <FileCode className="w-3.5 h-3.5 shrink-0" />
+              <span>📋 Dán JSON thủ công</span>
+            </button>
+          </div>
 
               {inputMode === "ai" ? (
                 /* --- Chế độ 1: Tự động bằng Gemini AI --- */
@@ -532,8 +508,6 @@ Ví dụ:
             </div>
           )}
         </div>
-      )}
-    </div>
-  );
-}
+    );
+  }
 
