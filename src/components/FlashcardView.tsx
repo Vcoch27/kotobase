@@ -128,9 +128,14 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
   const [ankiStats, setAnkiStats] = useState({ new: 0, due: 0 });
   const [ankiHistory, setAnkiHistory] = useState<Record<string, AnkiCardData>[]>([]);
 
+  // Track previous mode and previous scoped vocab IDs to avoid resetting progress on unrelated re-renders
+  const prevModeRef = useRef<StudyMode>(mode);
+  const prevVocabIdsRef = useRef<string>(scopedVocabs.map(v => v.id).join(","));
+
   // Initialization
   useEffect(() => {
     if (scopedVocabs.length > 0) {
+      let nextDeck: VocabularyData[] = [];
       if (mode === "anki") {
         const progress = loadAnkiProgress();
         setAnkiProgress(progress);
@@ -143,7 +148,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
           return false;
         });
         
-        setDeck(ankiDeck);
+        nextDeck = ankiDeck;
         // Calculate stats
         let newCount = 0;
         let dueCount = 0;
@@ -153,15 +158,30 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
         });
         setAnkiStats({ new: newCount, due: dueCount });
       } else {
-        setDeck(scopedVocabs);
+        nextDeck = scopedVocabs;
       }
       
-      setCurrentIndex(0);
-      setIsFlipped(false);
-      setIsFinished(false);
-      setIsShuffled(false);
-      setKnownIds(new Set());
-      setUnknownIds(new Set());
+      setDeck(nextDeck);
+
+      const currentScopedIds = scopedVocabs.map(v => v.id).join(",");
+      const modeChanged = prevModeRef.current !== mode;
+      const scopeChanged = prevVocabIdsRef.current !== currentScopedIds;
+
+      prevModeRef.current = mode;
+      prevVocabIdsRef.current = currentScopedIds;
+
+      // Chỉ reset tiến trình khi THỰC SỰ đổi chế độ học hoặc đổi phạm vi bộ thẻ
+      if (modeChanged || scopeChanged) {
+        setCurrentIndex(0);
+        setIsFlipped(false);
+        setIsFinished(false);
+        setIsShuffled(false);
+        setKnownIds(new Set());
+        setUnknownIds(new Set());
+      } else {
+        // Giữ nguyên vị trí thẻ hiện tại đang học
+        setCurrentIndex(prev => Math.min(prev, Math.max(0, nextDeck.length - 1)));
+      }
     } else {
       setDeck([]);
       setIsShuffled(false);

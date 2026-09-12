@@ -2,7 +2,6 @@
 
 import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/session";
-import { revalidatePath } from "next/cache";
 
 export async function getFolders() {
   try {
@@ -123,7 +122,6 @@ export async function createFolder(name: string, parentId?: string, isPublic: bo
       updatedAt: new Date().toISOString()
     });
 
-    revalidatePath("/");
     return { 
       success: true, 
       folder: { 
@@ -165,7 +163,6 @@ export async function updateFolderVisibility(id: string, isPublic: boolean) {
       updatedAt: new Date().toISOString(),
     });
 
-    revalidatePath("/");
     return { success: true, isPublic: !!isPublic };
   } catch (error) {
     console.error("Lỗi khi cập nhật trạng thái hiển thị thư mục:", error);
@@ -201,7 +198,6 @@ export async function renameFolder(id: string, newName: string) {
       updatedAt: new Date().toISOString()
     });
 
-    revalidatePath("/");
     return { success: true };
   } catch (error) {
     console.error("Lỗi khi đổi tên thư mục:", error);
@@ -290,7 +286,6 @@ export async function deleteFolderAndVocabs(id: string) {
       await batch.commit();
     }
 
-    revalidatePath("/");
     return { success: true };
   } catch (error) {
     console.error("Lỗi khi xóa thư mục và từ vựng:", error);
@@ -324,7 +319,6 @@ export async function claimLegacyFolders() {
 
     if (count > 0) {
       await batch.commit();
-      revalidatePath("/");
     }
 
     return { success: true, count };

@@ -384,6 +384,23 @@ export function Dashboard({ currentUser }: DashboardProps) {
     return sorted;
   }, [vocabularies, debouncedSearchQuery, sortOrder]);
 
+  // Cập nhật riêng danh sách thư mục (KHÔNG chạm vào từ vựng, KHÔNG reset tiến trình học)
+  const refreshFoldersOnly = async () => {
+    try {
+      const fData = await getFolders();
+      if (Array.isArray(fData)) {
+        setFolders(fData);
+        foldersCache.current = fData;
+        saveFoldersOffline(fData).catch(() => {});
+        try {
+          localStorage.setItem("kotobase_cached_folders", JSON.stringify(fData));
+        } catch (e) {}
+      }
+    } catch (e) {
+      console.error("Lỗi cập nhật danh sách thư mục:", e);
+    }
+  };
+
   const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFolderName.trim()) return;
@@ -414,7 +431,11 @@ export function Dashboard({ currentUser }: DashboardProps) {
     const res = await createFolder(submittedName, submittedParentId || undefined, submittedIsPublic);
     
     if (res.success) {
-      fetchData(true);
+      if (res.folder) {
+        setFolders(prev => prev.map(f => f.id === optimisticId ? { ...f, id: res.folder.id } : f));
+      }
+      toast.success(`Đã tạo thư mục "${submittedName}"`);
+      refreshFoldersOnly();
     } else {
       setFolders(prev => prev.filter(f => f.id !== optimisticId));
       toast.error(res.error || "Không thể tạo thư mục!");
@@ -679,7 +700,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 onSelectFolder={handleSelectFolder}
                 onSelectFolders={handleSelectFolders}
                 onConfirmMultiSelect={handleConfirmMultiSelect}
-                onRefresh={() => fetchData(true)}
+                onRefresh={refreshFoldersOnly}
                 currentUserId={currentUser?.uid || null}
                 currentUserEmail={currentUser?.email || null}
               />
@@ -1243,7 +1264,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 }}
                 onSelectFolders={handleSelectFolders}
                 onConfirmMultiSelect={handleConfirmMultiSelect}
-                onRefresh={() => fetchData(true)}
+                onRefresh={refreshFoldersOnly}
                 currentUserId={currentUser?.uid || null}
                 currentUserEmail={currentUser?.email || null}
               />
