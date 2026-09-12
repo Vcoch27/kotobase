@@ -107,6 +107,13 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
       if (e.key === "Escape") {
         setIsFullscreen(false);
       }
+      // Phím tắt ` (cạnh số 1) để bật/tắt gợi ý Âm Hán Việt (khi không focus vào ô input)
+      if ((e.key === "`" || e.code === "Backquote") && !e.altKey && !e.ctrlKey && !e.metaKey) {
+        if ((e.target as HTMLElement)?.tagName === "INPUT") return;
+        e.preventDefault();
+        setShowHint(prev => !prev);
+        inputRef.current?.focus();
+      }
     };
     window.addEventListener("keydown", handleGlobalKeyDown);
     return () => {
@@ -276,6 +283,15 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Phím tắt ` (cạnh số 1) để bật/tắt gợi ý Âm Hán Việt
+    if ((e.key === "`" || e.code === "Backquote") && !e.altKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      if (feedback !== "correct") {
+        setShowHint(prev => !prev);
+      }
+      return;
+    }
+
     // Nếu đang trong quá trình gõ IME tiếng Nhật (chưa bấm Enter hoàn tất từ), không bắt sự kiện
     if (e.nativeEvent.isComposing) return;
 
@@ -696,7 +712,11 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
               ) : (
                 currentItem.sinoVietnamese ? (
                   showHint ? (
-                    <div className="text-xs sm:text-sm font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest px-3 py-1 sm:px-4 sm:py-1.5 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg animate-fadeIn border border-indigo-100 dark:border-indigo-500/20">
+                    <div 
+                      onClick={() => setShowHint(false)}
+                      title="Bấm để ẩn gợi ý (hoặc phím `)"
+                      className="cursor-pointer select-none text-xs sm:text-sm font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest px-3 py-1 sm:px-4 sm:py-1.5 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg animate-fadeIn border border-indigo-100 dark:border-indigo-500/20"
+                    >
                       {currentItem.sinoVietnamese}
                     </div>
                   ) : (
@@ -708,9 +728,11 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
                         setShowHint(true);
                       }}
                       onClick={() => setShowHint(true)}
-                      className="text-xs font-semibold text-slate-400 hover:text-indigo-500 hover:underline transition-colors px-3 py-1"
+                      title="Hiển thị gợi ý Âm Hán Việt (Phím `)"
+                      className="text-xs font-semibold text-slate-400 hover:text-indigo-500 hover:underline transition-colors px-3 py-1 inline-flex items-center gap-1.5"
                     >
-                      Hiển thị gợi ý Âm Hán Việt
+                      <span>Hiển thị gợi ý Âm Hán Việt</span>
+                      <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded border border-slate-200 dark:border-slate-700 shadow-xs">`</kbd>
                     </button>
                   )
                 ) : null
@@ -772,7 +794,11 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
                   </div>
                   {currentItem.sinoVietnamese ? (
                     showHint ? (
-                      <div className="text-xs sm:text-sm font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest px-3 py-1 sm:px-4 sm:py-1.5 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg animate-fadeIn border border-indigo-100 dark:border-indigo-500/20">
+                      <div 
+                        onClick={() => setShowHint(false)}
+                        title="Bấm để ẩn gợi ý (hoặc phím `)"
+                        className="cursor-pointer select-none text-xs sm:text-sm font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest px-3 py-1 sm:px-4 sm:py-1.5 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg animate-fadeIn border border-indigo-100 dark:border-indigo-500/20"
+                      >
                         {currentItem.sinoVietnamese}
                       </div>
                     ) : (
@@ -784,9 +810,11 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
                           setShowHint(true);
                         }}
                         onClick={() => setShowHint(true)}
-                        className="text-xs font-semibold text-slate-400 hover:text-indigo-500 hover:underline transition-colors px-3 py-1"
+                        title="Hiển thị gợi ý Âm Hán Việt (Phím `)"
+                        className="text-xs font-semibold text-slate-400 hover:text-indigo-500 hover:underline transition-colors px-3 py-1 inline-flex items-center gap-1.5"
                       >
-                        Hiển thị gợi ý Âm Hán Việt
+                        <span>Hiển thị gợi ý Âm Hán Việt</span>
+                        <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded border border-slate-200 dark:border-slate-700 shadow-xs">`</kbd>
                       </button>
                     )
                   ) : null}
