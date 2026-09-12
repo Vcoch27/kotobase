@@ -741,13 +741,10 @@ export function Dashboard({ currentUser }: DashboardProps) {
         </div>
 
         {/* RIGHT MAIN CONTENT */}
-        <div id="study-main-content" className="flex-1 flex flex-col gap-3 md:gap-6 min-w-0 scroll-mt-20">
+        <div id="study-main-content" className="flex-1 flex flex-col gap-6 min-w-0 scroll-mt-20">
           
           {/* Thanh Toolbar Ngang Hợp Nhất: + Thêm nội dung, Đang chọn Thư mục, Offline & Sắp xếp */}
-          <div className={cn(
-            "relative z-20 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-2 sm:px-3 shadow-sm items-center justify-between gap-2.5",
-            viewMode === "quiz" ? "hidden md:flex" : "flex flex-wrap"
-          )}>
+          <div className="relative z-20 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-2 sm:px-3 shadow-sm flex flex-wrap items-center justify-between gap-2.5">
             {/* Vùng bên trái: Nút + Thêm nội dung & Đang chọn Thư mục */}
             <div className="flex items-center gap-2 flex-wrap min-w-0">
               {isGoogleUser && (
