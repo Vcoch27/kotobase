@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -11,6 +11,52 @@ import { cn } from "@/lib/cn";
 
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  useEffect(() => {
+    const handleViewportResize = () => {
+      if (window.visualViewport) {
+        // When virtual keyboard opens on mobile, visualViewport height shrinks significantly
+        const isKeyboard = window.innerHeight - window.visualViewport.height > 120;
+        setIsKeyboardOpen(isKeyboard);
+      }
+    };
+
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) {
+        setIsKeyboardOpen(true);
+      }
+    };
+
+    const handleFocusOut = () => {
+      // Check if another input was focused or if keyboard really closed
+      setTimeout(() => {
+        const active = document.activeElement as HTMLElement;
+        if (!active || (active.tagName !== "INPUT" && active.tagName !== "TEXTAREA")) {
+          setIsKeyboardOpen(false);
+        }
+      }, 100);
+    };
+
+    if (typeof window !== "undefined") {
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", handleViewportResize);
+      }
+      window.addEventListener("focusin", handleFocusIn);
+      window.addEventListener("focusout", handleFocusOut);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        if (window.visualViewport) {
+          window.visualViewport.removeEventListener("resize", handleViewportResize);
+        }
+        window.removeEventListener("focusin", handleFocusIn);
+        window.removeEventListener("focusout", handleFocusOut);
+      }
+    };
+  }, []);
 
   // Ẩn thanh bottom nav khi ở trang login
   if (pathname === "/login") return null;
@@ -60,7 +106,10 @@ export function MobileBottomNav() {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800/80 px-2 pt-1.5 pb-[max(6px,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] transition-colors duration-300">
+    <nav className={cn(
+      "md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800/80 px-2 pt-1.5 pb-[max(6px,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] transition-all duration-200",
+      isKeyboardOpen && "translate-y-full opacity-0 pointer-events-none"
+    )}>
       <div className="flex items-center justify-around max-w-md mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon;

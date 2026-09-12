@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { HelpCircle, CheckCircle2, XCircle, SkipForward, Info, RotateCcw, Shuffle, Maximize, Minimize, Volume2 } from "lucide-react";
+import { HelpCircle, CheckCircle2, XCircle, SkipForward, Info, RotateCcw, Shuffle, Maximize, Minimize, Volume2, ArrowRight, Settings2 } from "lucide-react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
 import { StudyScopeSelector } from "./StudyScopeSelector";
 import { audioFX } from "@/lib/audio-fx";
@@ -65,6 +65,7 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
   const [quizMode, setQuizMode] = useState<"mix" | "type1" | "type2">("mix");
   const [isShuffled, setIsShuffled] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showMobileSettings, setShowMobileSettings] = useState(false);
   
   // Timeout ref để tự động chuyển câu sau khi hiển thị thông tin
   const nextTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -87,9 +88,11 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
         setUserInput("");
         setFeedback("none");
         setShowHint(false);
-        setTimeout(() => {
+        // Focus ngay lập tức để giữ bàn phím ảo không bị đóng trên mobile
+        inputRef.current?.focus();
+        requestAnimationFrame(() => {
           inputRef.current?.focus();
-        }, 100);
+        });
         return prev + 1;
       } else {
         setIsFinished(true);
@@ -283,9 +286,9 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
         setUserInput("");
         setFeedback("none");
       } else if (feedback === "correct") {
-        // Chỉ cho phép bấm Enter để sang ngay câu tiếp theo sau tối thiểu 600ms
+        // Chỉ cho phép bấm Enter để sang ngay câu tiếp theo sau tối thiểu 300ms
         // nhằm tránh tình trạng dính phím / IME Enter bấm 2 lần nhảy cóc làm mất hiệu ứng viền xanh
-        if (Date.now() - correctTimestampRef.current > 600) {
+        if (Date.now() - correctTimestampRef.current > 300) {
           if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
           moveToNext();
         }
@@ -334,6 +337,74 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
       <div className={`mx-auto w-full space-y-4 max-w-4xl ${isFullscreen ? "my-auto" : ""}`}>
       {/* Thanh điều khiển duy nhất ngay trên card câu hỏi (Phạm vi học + Dạng câu hỏi + Tiến độ) */}
       <div className={isFullscreen ? "hidden" : "block"}>
+        {/* Mobile compact header: Thanh tiến độ siêu mỏng và tiện ích nhanh trên màn hình nhỏ */}
+        {!isFinished && (
+          <div className="sm:hidden bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-1.5 mb-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Câu</span>
+                <span className="text-xs font-black text-purple-600 dark:text-purple-400">{currentIndex + 1}/{quizList.length}</span>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/60">
+                  {quizMode === "mix" ? "Ngẫu nhiên" : quizMode === "type1" ? "Dạng 1" : "Dạng 2"}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button 
+                  type="button"
+                  onClick={toggleShuffle}
+                  title={isShuffled ? "Tắt trộn câu hỏi" : "Trộn câu hỏi (Shuffle)"}
+                  className={`p-1.5 rounded-lg text-xs transition-all ${
+                    isShuffled
+                      ? "text-amber-600 bg-amber-100 dark:bg-amber-500/20"
+                      : "text-slate-500 hover:text-purple-600 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <Shuffle className="w-3.5 h-3.5" />
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    startNewQuiz(undefined, false);
+                    setIsShuffled(false);
+                  }}
+                  title="Làm lại từ đầu"
+                  className="p-1.5 text-slate-500 hover:text-purple-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setIsFullscreen(!isFullscreen)} 
+                  title={isFullscreen ? "Thu nhỏ" : "Toàn màn hình"}
+                  className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  <Maximize className="w-3.5 h-3.5" />
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setShowMobileSettings(!showMobileSettings)}
+                  title="Cài đặt phạm vi & chế độ"
+                  className={`p-1.5 rounded-lg transition-all ${
+                    showMobileSettings
+                      ? "bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300"
+                      : "text-slate-500 hover:text-purple-600 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <Settings2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+            {/* Progress bar */}
+            <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-purple-500 to-indigo-600 transition-all duration-300 ease-out" 
+                style={{ width: `${progressPercentage}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
+
+        <div className={showMobileSettings ? "block" : "hidden sm:block"}>
         <StudyScopeSelector
           allVocabularies={vocabularies}
           selectedVocabIds={selectedVocabIds}
@@ -419,6 +490,7 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
             </div>
           }
         />
+        </div>
       </div>
 
       {isFullscreen && (
@@ -551,7 +623,7 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
         <>
 
       {/* Card Câu hỏi */}
-      <div className={`bg-white dark:bg-slate-900 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden transition-all duration-300 ${
+      <div className={`bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-8 md:p-12 shadow-2xl relative overflow-hidden transition-all duration-300 ${
         feedback === "correct"
           ? "border-2 border-emerald-500 dark:border-emerald-400 ring-4 ring-emerald-500/20 dark:ring-emerald-500/30 shadow-emerald-500/15"
           : feedback === "wrong"
@@ -560,53 +632,59 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
       }`}>
         
         {/* Nhãn Dạng câu hỏi */}
-        <div className="absolute top-0 left-0 right-0 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 px-6 py-2.5 flex items-center justify-center gap-2">
-          <Info className="w-4 h-4 text-slate-400" />
-          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+        <div className="absolute top-0 left-0 right-0 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 px-3 sm:px-6 py-1.5 sm:py-2.5 flex items-center justify-center gap-1.5">
+          <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             {currentItem.quizType === 1 ? "Dạng 1: Nhìn chữ, nhập cách đọc" : "Dạng 2: Nhìn nghĩa, dịch sang tiếng Nhật"}
           </span>
         </div>
 
-        <div className="mt-10 text-center flex flex-col items-center min-h-[160px] justify-center">
+        <div className="mt-6 sm:mt-10 text-center flex flex-col items-center min-h-[90px] sm:min-h-[140px] justify-center">
           {currentItem.quizType === 1 ? (
             <>
               {/* DẠNG 1: HIỂN THỊ TỪ VỰNG */}
-              <div className="text-4xl md:text-5xl font-black text-slate-800 dark:text-white tracking-wide mb-4 drop-shadow-sm flex items-center justify-center gap-3">
+              <div className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-800 dark:text-white tracking-wide mb-2 sm:mb-4 drop-shadow-sm flex items-center justify-center gap-2 sm:gap-3">
                 <ClickableKanjiString text={currentItem.word} />
                 {feedback === "correct" && (
                   <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onTouchStart={(e) => {
+                      e.preventDefault();
+                      playAudio(currentItem.reading || currentItem.word);
+                    }}
                     onClick={(e) => {
                       e.stopPropagation();
                       playAudio(currentItem.reading || currentItem.word);
                     }}
-                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all"
+                    className="p-1.5 sm:p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all"
                     title="Nghe phát âm"
                   >
-                    <Volume2 className="w-5 h-5" />
+                    <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 )}
               </div>
               
               {/* Khi gõ đúng: Hiển thị đầy đủ Cách đọc, Âm Hán Việt, Nghĩa tiếng Việt và Ví dụ để người dùng củng cố trí nhớ */}
               {feedback === "correct" ? (
-                <div className="space-y-3 animate-fadeIn w-full max-w-lg mx-auto mt-1">
-                  <div className="flex items-center justify-center gap-2 flex-wrap">
+                <div className="space-y-2 sm:space-y-3 animate-fadeIn w-full max-w-lg mx-auto mt-1">
+                  <div className="flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap">
                     {currentItem.reading && (
-                      <span className="px-3 py-1 rounded-xl bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 text-sm font-bold border border-amber-300 dark:border-amber-500/30 shadow-sm">
+                      <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg sm:rounded-xl bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 text-xs sm:text-sm font-bold border border-amber-300 dark:border-amber-500/30 shadow-sm">
                         {currentItem.reading}
                       </span>
                     )}
                     {currentItem.sinoVietnamese && (
-                      <span className="px-3 py-1 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 text-sm font-bold uppercase border border-indigo-300 dark:border-indigo-500/30 shadow-sm">
+                      <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg sm:rounded-xl bg-indigo-100 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 text-xs sm:text-sm font-bold uppercase border border-indigo-300 dark:border-indigo-500/30 shadow-sm">
                         {currentItem.sinoVietnamese}
                       </span>
                     )}
                   </div>
-                  <div className="text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                  <div className="text-lg sm:text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-400">
                     {currentItem.meaning}
                   </div>
                   {currentItem.example && (
-                    <div className="text-xs italic text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 text-left">
+                    <div className="text-xs italic text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80 p-2 sm:p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 text-left">
                       <span className="font-bold not-italic text-slate-500 dark:text-slate-400 block mb-0.5">Ví dụ:</span>
                       {currentItem.example}
                     </div>
@@ -615,11 +693,17 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
               ) : (
                 currentItem.sinoVietnamese ? (
                   showHint ? (
-                    <div className="text-sm font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest px-4 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg animate-fadeIn border border-indigo-100 dark:border-indigo-500/20">
+                    <div className="text-xs sm:text-sm font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest px-3 py-1 sm:px-4 sm:py-1.5 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg animate-fadeIn border border-indigo-100 dark:border-indigo-500/20">
                       {currentItem.sinoVietnamese}
                     </div>
                   ) : (
                     <button 
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onTouchStart={(e) => {
+                        e.preventDefault();
+                        setShowHint(true);
+                      }}
                       onClick={() => setShowHint(true)}
                       className="text-xs font-semibold text-slate-400 hover:text-indigo-500 hover:underline transition-colors px-3 py-1"
                     >
@@ -633,37 +717,43 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
             <>
               {/* DẠNG 2: HIỂN THỊ NGHĨA */}
               {feedback === "correct" ? (
-                <div className="space-y-3 animate-fadeIn w-full max-w-lg mx-auto">
-                  <div className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white tracking-wide flex items-center justify-center gap-3">
+                <div className="space-y-2 sm:space-y-3 animate-fadeIn w-full max-w-lg mx-auto">
+                  <div className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-800 dark:text-white tracking-wide flex items-center justify-center gap-2 sm:gap-3">
                     <ClickableKanjiString text={currentItem.word} />
                     <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onTouchStart={(e) => {
+                        e.preventDefault();
+                        playAudio(currentItem.reading || currentItem.word);
+                      }}
                       onClick={(e) => {
                         e.stopPropagation();
                         playAudio(currentItem.reading || currentItem.word);
                       }}
-                      className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all"
+                      className="p-1.5 sm:p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all"
                       title="Nghe phát âm"
                     >
-                      <Volume2 className="w-5 h-5" />
+                      <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                   </div>
-                  <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <div className="flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap">
                     {currentItem.reading && (
-                      <span className="px-3 py-1 rounded-xl bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 text-sm font-bold border border-amber-300 dark:border-amber-500/30 shadow-sm">
+                      <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg sm:rounded-xl bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 text-xs sm:text-sm font-bold border border-amber-300 dark:border-amber-500/30 shadow-sm">
                         {currentItem.reading}
                       </span>
                     )}
                     {currentItem.sinoVietnamese && (
-                      <span className="px-3 py-1 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 text-sm font-bold uppercase border border-indigo-300 dark:border-indigo-500/30 shadow-sm">
+                      <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg sm:rounded-xl bg-indigo-100 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 text-xs sm:text-sm font-bold uppercase border border-indigo-300 dark:border-indigo-500/30 shadow-sm">
                         {currentItem.sinoVietnamese}
                       </span>
                     )}
                   </div>
-                  <div className="text-lg md:text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                  <div className="text-base sm:text-lg md:text-xl font-bold text-emerald-600 dark:text-emerald-400">
                     {currentItem.meaning}
                   </div>
                   {currentItem.example && (
-                    <div className="text-xs italic text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 text-left">
+                    <div className="text-xs italic text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80 p-2 sm:p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 text-left">
                       <span className="font-bold not-italic text-slate-500 dark:text-slate-400 block mb-0.5">Ví dụ:</span>
                       {currentItem.example}
                     </div>
@@ -671,10 +761,10 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
                 </div>
               ) : (
                 <>
-                  <div className="text-2xl md:text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-6 max-w-xl mx-auto leading-tight">
+                  <div className="text-xl sm:text-3xl md:text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-2 sm:mb-6 max-w-xl mx-auto leading-tight">
                     {currentItem.meaning}
                   </div>
-                  <div className="text-sm text-slate-500 dark:text-slate-400 italic">
+                  <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 italic">
                     (Gõ Hiragana hoặc Kanji tương ứng)
                   </div>
                 </>
@@ -685,54 +775,116 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
       </div>
 
       {/* Khu vực Nhập liệu */}
-      <div className="space-y-4">
-        <div className="relative max-w-2xl mx-auto">
-          <input
-            ref={inputRef}
-            type="text"
-            value={userInput}
-            readOnly={feedback === "correct"}
-            onChange={(e) => {
-              setUserInput(e.target.value);
-              if (feedback === "wrong") setFeedback("none");
+      <div className="space-y-2 sm:space-y-4">
+        <div className="flex items-stretch gap-2 max-w-2xl mx-auto">
+          <div className="relative flex-1">
+            <input
+              ref={inputRef}
+              type="text"
+              value={userInput}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              onChange={(e) => {
+                if (feedback === "correct") return;
+                setUserInput(e.target.value);
+                if (feedback === "wrong") setFeedback("none");
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder="Nhập câu trả lời vào đây..."
+              className={`w-full h-12 sm:h-16 px-4 sm:px-6 text-base sm:text-xl font-medium rounded-xl sm:rounded-2xl border-2 outline-none transition-all shadow-lg text-center ${
+                feedback === "correct" 
+                  ? "bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-500 dark:border-emerald-400 text-emerald-800 dark:text-emerald-200 ring-4 ring-emerald-500/30 dark:ring-emerald-500/40 shadow-md shadow-emerald-500/20"
+                  : feedback === "wrong"
+                  ? "bg-rose-50 dark:bg-rose-950/40 border-rose-500 dark:border-rose-400 text-rose-800 dark:text-rose-200 ring-4 ring-rose-500/30 dark:ring-rose-500/40 animate-shake"
+                  : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:border-indigo-500 dark:focus:border-indigo-500 text-slate-800 dark:text-slate-100 focus:ring-4 focus:ring-indigo-500/20"
+              }`}
+            />
+            
+            {feedback === "correct" && (
+              <div className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 text-emerald-500 animate-bounce pointer-events-none">
+                <CheckCircle2 className="w-5 h-5 sm:w-7 sm:h-7" />
+              </div>
+            )}
+            {feedback === "wrong" && (
+              <div className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 text-rose-500 pointer-events-none">
+                <XCircle className="w-5 h-5 sm:w-7 sm:h-7" />
+              </div>
+            )}
+          </div>
+
+          {/* Nút Bỏ qua nhanh ngay cạnh ô gõ - KHÔNG BAO GIỜ bị che bởi bàn phím ảo hay cần scroll */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              handleSkip();
             }}
-            onKeyDown={handleKeyDown}
-            placeholder="Nhập câu trả lời vào đây..."
-            className={`w-full px-6 py-5 text-xl font-medium rounded-2xl border-2 outline-none transition-all shadow-lg text-center ${
-              feedback === "correct" 
-                ? "bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-500 dark:border-emerald-400 text-emerald-800 dark:text-emerald-200 ring-4 ring-emerald-500/30 dark:ring-emerald-500/40 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/30 shadow-md shadow-emerald-500/20"
-                : feedback === "wrong"
-                ? "bg-rose-50 dark:bg-rose-950/40 border-rose-500 dark:border-rose-400 text-rose-800 dark:text-rose-200 ring-4 ring-rose-500/30 dark:ring-rose-500/40 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/30 animate-shake"
-                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:border-indigo-500 dark:focus:border-indigo-500 text-slate-800 dark:text-slate-100 focus:ring-4 focus:ring-indigo-500/20"
-            }`}
-          />
-          
-          {feedback === "correct" && (
-            <div className="absolute right-6 top-1/2 -translate-y-1/2 text-emerald-500 animate-bounce">
-              <CheckCircle2 className="w-8 h-8" />
-            </div>
-          )}
-          {feedback === "wrong" && (
-            <div className="absolute right-6 top-1/2 -translate-y-1/2 text-rose-500">
-              <XCircle className="w-8 h-8" />
-            </div>
+            onClick={handleSkip}
+            className="shrink-0 h-12 sm:h-16 px-3 sm:px-4 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs sm:text-sm flex items-center gap-1.5 active:scale-95 transition-all shadow-sm select-none"
+            title="Bỏ qua từ này (Tab)"
+          >
+            <SkipForward className="w-4 h-4 text-amber-500 shrink-0" />
+            <span>Bỏ qua</span>
+          </button>
+
+          {/* Nút Gửi / Tiếp tục nhanh ngay cạnh ô gõ */}
+          {feedback === "correct" ? (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
+                moveToNext();
+              }}
+              onClick={() => {
+                if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
+                moveToNext();
+              }}
+              className="shrink-0 h-12 sm:h-16 px-3.5 sm:px-5 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm flex items-center gap-1 active:scale-95 transition-all shadow-md shadow-emerald-500/30 select-none"
+              title="Sang câu tiếp theo (Enter)"
+            >
+              <span>Tiếp</span>
+              <ArrowRight className="w-4 h-4 shrink-0" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={!userInput.trim()}
+              onMouseDown={(e) => e.preventDefault()}
+              onTouchStart={(e) => {
+                if (!userInput.trim()) return;
+                e.preventDefault();
+                handleCheck();
+              }}
+              onClick={handleCheck}
+              className="shrink-0 h-12 sm:h-16 px-3.5 sm:px-5 rounded-xl sm:rounded-2xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-200 disabled:dark:bg-slate-800 disabled:text-slate-400 text-white font-bold text-xs sm:text-sm flex items-center gap-1 active:scale-95 transition-all shadow-md shadow-indigo-500/20 select-none"
+              title="Kiểm tra (Enter)"
+            >
+              <span>Gửi</span>
+            </button>
           )}
         </div>
 
         {feedback === "wrong" && (
-          <div className="text-center text-rose-500 dark:text-rose-400 font-medium text-sm animate-fadeIn">
+          <div className="text-center text-rose-500 dark:text-rose-400 font-medium text-xs sm:text-sm animate-fadeIn">
             Chưa chính xác! Vui lòng thử lại. (Hoặc bấm Enter để xóa nhanh)
           </div>
         )}
 
         {feedback === "correct" && (
-          <div className="text-center text-emerald-600 dark:text-emerald-400 font-semibold text-sm animate-fadeIn flex items-center justify-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4" /> Chính xác! Đang chuẩn bị chuyển câu (hoặc bấm Enter để chuyển ngay)...
+          <div className="text-center text-emerald-600 dark:text-emerald-400 font-semibold text-xs sm:text-sm animate-fadeIn flex items-center justify-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Chính xác! Đang chuẩn bị chuyển câu (hoặc bấm Tiếp / Enter)...
           </div>
         )}
 
-        <div className="flex justify-center gap-4 mt-6">
+        <div className="hidden sm:flex justify-center gap-4 mt-6">
           <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={handleSkip}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm"
           >
@@ -741,6 +893,8 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
           
           {feedback === "correct" ? (
             <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
                 if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
                 moveToNext();
@@ -751,8 +905,10 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
             </button>
           ) : (
             <button
-              onClick={handleCheck}
+              type="button"
               disabled={!userInput.trim()}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handleCheck}
               className="flex items-center gap-2 px-8 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-300 disabled:dark:bg-slate-800 text-white font-bold transition-all shadow-md shadow-indigo-500/20 text-sm"
             >
               Kiểm tra
