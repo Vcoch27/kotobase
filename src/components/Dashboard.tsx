@@ -999,34 +999,45 @@ export function Dashboard({ currentUser }: DashboardProps) {
                   ))}
                 </div>
               </div>
-            ) : viewMode === "overview" ? (
-              <OverviewView 
-                vocabularies={filteredVocabularies} 
-                folders={folders} 
-                onRefresh={() => fetchData(true)} 
-                selectedVocabIds={selectedVocabIds}
-                onSelectionChange={setSelectedVocabIds}
-                onNavigateToStudyMode={(mode, ids) => {
-                  if (ids) setSelectedVocabIds(ids);
-                  setViewMode(mode);
-                }}
-              />
-            ) : viewMode === "focus" ? (
-              <FocusRecallView 
-                vocabularies={filteredVocabularies} 
-                onRefresh={fetchData}
-                selectedVocabIds={selectedVocabIds}
-              />
-            ) : viewMode === "quiz" ? (
-              <TypingQuizView 
-                vocabularies={filteredVocabularies}
-                selectedVocabIds={selectedVocabIds}
-              />
             ) : (
-              <FlashcardView 
-                vocabularies={filteredVocabularies}
-                selectedVocabIds={selectedVocabIds}
-              />
+              <>
+                <div className={viewMode === "overview" ? "block" : "hidden"}>
+                  <OverviewView 
+                    vocabularies={filteredVocabularies} 
+                    folders={folders} 
+                    onRefresh={() => fetchData(true)} 
+                    selectedVocabIds={selectedVocabIds}
+                    onSelectionChange={setSelectedVocabIds}
+                    onNavigateToStudyMode={(mode, ids) => {
+                      if (ids) setSelectedVocabIds(ids);
+                      setViewMode(mode);
+                    }}
+                    isActive={viewMode === "overview"}
+                  />
+                </div>
+                <div className={viewMode === "focus" ? "block" : "hidden"}>
+                  <FocusRecallView 
+                    vocabularies={filteredVocabularies} 
+                    onRefresh={fetchData}
+                    selectedVocabIds={selectedVocabIds}
+                    isActive={viewMode === "focus"}
+                  />
+                </div>
+                <div className={viewMode === "quiz" ? "block" : "hidden"}>
+                  <TypingQuizView 
+                    vocabularies={filteredVocabularies}
+                    selectedVocabIds={selectedVocabIds}
+                    isActive={viewMode === "quiz"}
+                  />
+                </div>
+                <div className={viewMode === "flashcard" ? "block" : "hidden"}>
+                  <FlashcardView 
+                    vocabularies={filteredVocabularies}
+                    selectedVocabIds={selectedVocabIds}
+                    isActive={viewMode === "flashcard"}
+                  />
+                </div>
+              </>
             )}
 
             {/* Tra cứu Từ điển Jisho mở rộng khi người dùng đang tìm kiếm */}

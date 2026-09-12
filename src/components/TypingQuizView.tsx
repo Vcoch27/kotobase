@@ -19,6 +19,7 @@ interface VocabularyData {
 interface TypingQuizViewProps {
   vocabularies: VocabularyData[];
   selectedVocabIds?: string[];
+  isActive?: boolean;
 }
 
 type QuizType = 1 | 2; // 1: Xem Từ -> Gõ Cách đọc, 2: Xem Nghĩa -> Gõ Từ/Cách đọc
@@ -42,7 +43,7 @@ function cleanString(str: string): string {
   return str.toLowerCase().replace(/\s+/g, "");
 }
 
-export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQuizViewProps) {
+export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive = true }: TypingQuizViewProps) {
   const getScopedFromSelection = useCallback((all: VocabularyData[], selIds: string[]) => {
     if (selIds && selIds.length > 0) {
       const set = new Set(selIds);
@@ -98,6 +99,7 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
   }, [quizList.length]);
 
   useEffect(() => {
+    if (!isActive) return;
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setIsFullscreen(false);
@@ -110,7 +112,7 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
         clearTimeout(nextTimeoutRef.current);
       }
     };
-  }, []);
+  }, [isActive]);
 
   const vocabIdsStr = vocabularies.map(v => v.id).join(',');
   const selectedVocabIdsStr = selectedVocabIds.join(',');
@@ -134,11 +136,35 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
     });
   };
 
+  // Track previous mode and previous scoped vocab IDs to avoid resetting progress on unrelated re-renders
+  const prevModeRef = useRef<"mix" | "type1" | "type2">(quizMode);
+  const prevVocabIdsRef = useRef<string>(scopedVocabs.map(v => v.id).join(","));
+
   // Khởi tạo quiz khi scopedVocabs hoặc quizMode thay đổi
   useEffect(() => {
-    startNewQuiz(scopedVocabs, false);
-    setIsShuffled(false);
+    const currentScopedIds = scopedVocabs.map(v => v.id).join(",");
+    const modeChanged = prevModeRef.current !== quizMode;
+    const scopeChanged = prevVocabIdsRef.current !== currentScopedIds;
+
+    prevModeRef.current = quizMode;
+    prevVocabIdsRef.current = currentScopedIds;
+
+    // Chỉ reset khi THỰC SỰ đổi mode quiz hoặc danh sách ID từ vựng thay đổi hoặc quiz chưa có câu hỏi
+    if (modeChanged || scopeChanged || quizList.length === 0) {
+      startNewQuiz(scopedVocabs, false);
+      setIsShuffled(false);
+    }
   }, [scopedVocabs, quizMode]);
+
+  // Tự động focus ô nhập liệu khi quay lại tab quiz
+  useEffect(() => {
+    if (isActive && !isFinished) {
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isActive, isFinished]);
 
   const startNewQuiz = (customVocabs?: VocabularyData[], forceShuffle?: boolean) => {
     if (nextTimeoutRef.current) {
@@ -169,10 +195,12 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [] }: TypingQu
     setSkippedList([]);
     setCorrectList([]);
     
-    // Tự động focus sau một chút
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 100);
+    // Tự động focus sau một chút nếu đang active
+    if (isActive) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    }
   };
 
   const toggleShuffle = () => {

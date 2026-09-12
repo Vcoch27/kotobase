@@ -25,6 +25,7 @@ interface VocabularyData {
 interface FlashcardViewProps {
   vocabularies: VocabularyData[];
   selectedVocabIds?: string[];
+  isActive?: boolean;
 }
 
 type StudyMode = "normal" | "progress" | "anki" | "listening";
@@ -39,7 +40,7 @@ const shuffleArray = <T,>(array: T[]): T[] => {
   return newArr;
 };
 
-export function FlashcardView({ vocabularies, selectedVocabIds = [] }: FlashcardViewProps) {
+export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = true }: FlashcardViewProps) {
   const getScopedFromSelection = useCallback((all: VocabularyData[], selIds: string[]) => {
     if (selIds && selIds.length > 0) {
       const set = new Set(selIds);
@@ -63,12 +64,13 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
+    if (!isActive) return;
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") setIsFullscreen(false);
     };
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
-  }, []);
+  }, [isActive]);
 
   const vocabIdsStr = vocabularies.map(v => v.id).join(',');
   const selectedVocabIdsStr = selectedVocabIds.join(',');
@@ -190,6 +192,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
 
   // Auto-play audio khi ở chế độ Nghe & chuyển sang thẻ mới
   useEffect(() => {
+    if (!isActive) return;
     if (mode !== "listening") return;
     if (isFinished || deck.length === 0) return;
     const currentVocab = deck[currentIndex];
@@ -207,7 +210,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
       setTimeout(() => setIsPlayingAudio(false), 3000);
     }, 400);
     return () => clearTimeout(timer);
-  }, [mode, currentIndex, deck, isFinished, getAudioTextToPlay]);
+  }, [isActive, mode, currentIndex, deck, isFinished, getAudioTextToPlay]);
 
   // Reset autoPlayed ref khi đổi mode hoặc restart
   useEffect(() => {
@@ -350,6 +353,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
 
   // Keyboard Shortcuts
   useEffect(() => {
+    if (!isActive) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore if typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
@@ -419,7 +423,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [] }: Flashcard
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isFinished, deck, currentIndex, mode, handleNext, handlePrev, handleProgress, handleAnkiRate, handleUndo, flipCard, isFlipped, getAudioTextToPlay]);
+  }, [isActive, isFinished, deck, currentIndex, mode, handleNext, handlePrev, handleProgress, handleAnkiRate, handleUndo, flipCard, isFlipped, getAudioTextToPlay]);
 
   // Restart Logic
   const restartAll = () => {

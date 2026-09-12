@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ClickableKanjiString } from './ClickableKanjiString';
 import {
   Trash2,
@@ -50,6 +50,7 @@ interface OverviewViewProps {
   selectedVocabIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
   onNavigateToStudyMode?: (mode: 'focus' | 'flashcard' | 'quiz', selectedIds?: string[]) => void;
+  isActive?: boolean;
 }
 
 export function OverviewView({
@@ -59,13 +60,20 @@ export function OverviewView({
   selectedVocabIds,
   onSelectionChange,
   onNavigateToStudyMode,
+  isActive = true,
 }: OverviewViewProps) {
   const [editingVocab, setEditingVocab] = useState<VocabularyData | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 40;
 
+  const prevVocabIdsRef = useRef<string>(vocabularies.map(v => v.id).join(","));
+
   useEffect(() => {
-    setCurrentPage(1);
+    const currentIds = vocabularies.map(v => v.id).join(",");
+    if (prevVocabIdsRef.current !== currentIds) {
+      prevVocabIdsRef.current = currentIds;
+      setCurrentPage(1);
+    }
   }, [vocabularies]);
 
   const [localVocabs, setLocalVocabs] = useState<VocabularyData[]>([]);

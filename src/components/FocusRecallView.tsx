@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ClickableKanjiString } from './ClickableKanjiString';
 import {
   Eye,
@@ -35,9 +35,10 @@ interface FocusRecallViewProps {
   vocabularies: VocabularyData[];
   selectedVocabIds?: string[];
   onRefresh?: () => void;
+  isActive?: boolean;
 }
 
-export function FocusRecallView({ vocabularies, selectedVocabIds = [], onRefresh }: FocusRecallViewProps) {
+export function FocusRecallView({ vocabularies, selectedVocabIds = [], onRefresh, isActive = true }: FocusRecallViewProps) {
   const getScopedFromSelection = useCallback((all: VocabularyData[], selIds: string[]) => {
     if (selIds && selIds.length > 0) {
       const set = new Set(selIds);
@@ -75,8 +76,14 @@ export function FocusRecallView({ vocabularies, selectedVocabIds = [], onRefresh
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vocabIdsStr, selectedVocabIdsStr]);
 
+  const prevVocabIdsRef = useRef<string>(scopedVocabs.map(v => v.id).join(","));
+
   useEffect(() => {
-    setCurrentPage(1);
+    const currentScopedIds = scopedVocabs.map(v => v.id).join(",");
+    if (prevVocabIdsRef.current !== currentScopedIds) {
+      prevVocabIdsRef.current = currentScopedIds;
+      setCurrentPage(1);
+    }
   }, [scopedVocabs]);
 
   const totalPages = Math.ceil(scopedVocabs.length / ITEMS_PER_PAGE);
