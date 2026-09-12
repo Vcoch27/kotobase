@@ -180,8 +180,8 @@ export function StudyScopeSelector({
       className={`rounded-2xl border ${themeClasses} p-2.5 sm:p-3 transition-all mb-4 shadow-sm backdrop-blur-sm space-y-2`}
     >
       {/* Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           <div className="flex items-center gap-1.5">
             <div className="p-1 rounded-lg bg-white dark:bg-slate-800 shadow-sm border border-slate-200/60 dark:border-slate-700/60">
               <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -207,7 +207,7 @@ export function StudyScopeSelector({
                   : 'bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300'
               }`}
             >
-              Tất cả ({total})
+              Tất cả
             </button>
 
             {/* Nút: Các từ đã chọn ở Mode 1 (nếu có) */}
@@ -286,7 +286,7 @@ export function StudyScopeSelector({
 
         {/* Extra Controls (Dạng câu hỏi, Actions) */}
         {extraControls && (
-          <div className="flex items-center gap-2 flex-wrap ml-auto">
+          <div className="flex items-center gap-2 flex-wrap">
             {extraControls}
           </div>
         )}

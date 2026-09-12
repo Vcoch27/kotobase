@@ -419,21 +419,24 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
               <div className="flex items-center gap-0.5 bg-white/90 dark:bg-slate-900/90 p-1 rounded-xl border border-slate-200 dark:border-slate-700/80 text-xs">
                 <button 
                   onClick={() => setQuizMode("mix")}
+                  title="Trộn ngẫu nhiên Dạng 1 và Dạng 2"
                   className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-colors ${quizMode === "mix" ? "bg-purple-600 text-white shadow-sm shadow-purple-600/30" : "text-slate-600 dark:text-slate-300 hover:text-purple-600"}`}
                 >
                   Ngẫu nhiên
                 </button>
                 <button 
                   onClick={() => setQuizMode("type1")}
+                  title="Chỉ Dạng 1: Nhìn chữ Kanji → Nhập Hiragana"
                   className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-colors ${quizMode === "type1" ? "bg-purple-600 text-white shadow-sm shadow-purple-600/30" : "text-slate-600 dark:text-slate-300 hover:text-purple-600"}`}
                 >
-                  Chỉ Dạng 1
+                  Dạng 1
                 </button>
                 <button 
                   onClick={() => setQuizMode("type2")}
+                  title="Chỉ Dạng 2: Nhìn Nghĩa tiếng Việt → Dịch sang tiếng Nhật"
                   className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-colors ${quizMode === "type2" ? "bg-purple-600 text-white shadow-sm shadow-purple-600/30" : "text-slate-600 dark:text-slate-300 hover:text-purple-600"}`}
                 >
-                  Chỉ Dạng 2
+                  Dạng 2
                 </button>
               </div>
 
@@ -761,12 +764,32 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
                 </div>
               ) : (
                 <>
-                  <div className="text-2xl md:text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-6 max-w-xl mx-auto leading-tight">
+                  <div className="text-2xl md:text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-2 max-w-xl mx-auto leading-tight">
                     {currentItem.meaning}
                   </div>
-                  <div className="text-sm text-slate-500 dark:text-slate-400 italic">
+                  <div className="text-sm text-slate-500 dark:text-slate-400 italic mb-2">
                     (Gõ Hiragana hoặc Kanji tương ứng)
                   </div>
+                  {currentItem.sinoVietnamese ? (
+                    showHint ? (
+                      <div className="text-xs sm:text-sm font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest px-3 py-1 sm:px-4 sm:py-1.5 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg animate-fadeIn border border-indigo-100 dark:border-indigo-500/20">
+                        {currentItem.sinoVietnamese}
+                      </div>
+                    ) : (
+                      <button 
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onTouchStart={(e) => {
+                          e.preventDefault();
+                          setShowHint(true);
+                        }}
+                        onClick={() => setShowHint(true)}
+                        className="text-xs font-semibold text-slate-400 hover:text-indigo-500 hover:underline transition-colors px-3 py-1"
+                      >
+                        Hiển thị gợi ý Âm Hán Việt
+                      </button>
+                    )
+                  ) : null}
                 </>
               )}
             </>
