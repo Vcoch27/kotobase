@@ -293,11 +293,11 @@ export function SentenceFolderTree({
   const totalSentences = folders.reduce((sum, f) => sum + (f._count?.folderSentences || 0), 0);
 
   return (
-    <div className="flex flex-col h-full space-y-4">
+    <div className="w-full flex-1 min-h-0 flex flex-col overflow-hidden">
       {/* Root folder option */}
       <div 
         onClick={() => onSelectFolder('all')}
-        className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all border ${
+        className={`shrink-0 flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all border mb-2 ${
           selectedFolderId === 'all' 
             ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 text-amber-900 dark:text-amber-300 shadow-sm' 
             : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-amber-300 dark:hover:border-slate-700'
@@ -318,12 +318,12 @@ export function SentenceFolderTree({
         </span>
       </div>
 
-      <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
+      <div className="shrink-0 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1 mb-2">
         CÂY THƯ MỤC
       </div>
 
       {/* Tree view */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar -mx-2 px-2 pb-20">
+      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar max-h-[55vh] md:max-h-none -mx-2 px-2">
         {tree.length === 0 ? (
           <div className="p-4 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
             <Folder className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />

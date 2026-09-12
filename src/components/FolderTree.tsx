@@ -615,7 +615,7 @@ export function FolderTree({
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full flex-1 min-h-0 flex flex-col overflow-hidden">
       {/* Mục Tất cả từ vựng */}
       <div
         onClick={() => {
@@ -628,7 +628,7 @@ export function FolderTree({
             onSelectFolder('all');
           }
         }}
-        className={`flex items-center justify-between gap-2 px-3 py-2.5 mb-3 rounded-xl cursor-pointer transition-all ${
+        className={`shrink-0 flex items-center justify-between gap-2 px-3 py-2.5 mb-2 rounded-xl cursor-pointer transition-all ${
           activeSelectedIds.includes('all') && activeSelectedIds.length === 1
             ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 font-bold border border-amber-300 dark:border-amber-500/30 shadow-sm'
             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent font-medium'
@@ -655,7 +655,7 @@ export function FolderTree({
       </div>
 
       {/* Header Cây Thư Mục & Nút chuyển đổi Chọn nhiều */}
-      <div className="flex items-center justify-between mb-2 px-1 gap-1">
+      <div className="shrink-0 flex items-center justify-between mb-2 px-1 gap-1">
         <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider truncate">
           Cây Thư Mục {activeSelectedIds.filter(x => x !== 'all').length > 1 ? `(${activeSelectedIds.filter(x => x !== 'all').length})` : ''}
         </div>
@@ -683,16 +683,18 @@ export function FolderTree({
       </div>
 
       {folders.length === 0 ? (
-        <div className="text-xs text-slate-400 dark:text-slate-500 italic px-2">
+        <div className="text-xs text-slate-400 dark:text-slate-500 italic px-2 py-3">
           Chưa có thư mục nào.
         </div>
       ) : (
-        <div className="custom-scrollbar overflow-y-auto max-h-[60vh] pr-1">{renderTree(tree)}</div>
+        <div className="custom-scrollbar overflow-y-auto flex-1 min-h-0 max-h-[55vh] md:max-h-none pr-1">
+          {renderTree(tree)}
+        </div>
       )}
 
       {/* Floating Action Bar khi ở chế độ Chọn nhiều */}
       {isMultiSelectMode && (
-        <div className="mt-3 p-3 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/60 shadow-sm animate-fadeIn space-y-2">
+        <div className="shrink-0 mt-2.5 p-2.5 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/60 shadow-sm animate-fadeIn space-y-2">
           <div className="flex items-center justify-between text-xs">
             <span className="font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5 truncate">
               <Layers className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />

@@ -99,9 +99,9 @@ export function SentenceDashboard({ currentUser }: SentenceDashboardProps) {
       
       {/* LEFT SIDEBAR: Folder Tree */}
       <div className="w-full md:w-64 lg:w-72 shrink-0 space-y-4 md:sticky md:top-20 md:self-start">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl transition-colors duration-300 md:max-h-[calc(100vh-6rem)] md:overflow-y-auto custom-scrollbar">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl transition-colors duration-300 md:h-[calc(100vh-6rem)] md:max-h-[calc(100vh-6rem)] flex flex-col overflow-hidden">
           
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-slate-100 dark:border-slate-800 shrink-0">
             <h2 
               className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 cursor-pointer md:cursor-default flex-1"
               onClick={() => setIsMobileFolderOpen(!isMobileFolderOpen)}
@@ -123,7 +123,7 @@ export function SentenceDashboard({ currentUser }: SentenceDashboardProps) {
             )}
           </div>
           
-          <div className={`${isMobileFolderOpen ? 'block' : 'hidden'} md:block`}>
+          <div className={`${isMobileFolderOpen ? 'flex' : 'hidden'} md:flex flex-1 min-h-0 flex-col overflow-hidden`}>
             <SentenceFolderTree 
               folders={folders}
               selectedFolderId={selectedFolderId}
@@ -133,7 +133,7 @@ export function SentenceDashboard({ currentUser }: SentenceDashboardProps) {
           </div>
 
           {/* Nút quay lại Dashboard */}
-          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 shrink-0">
             <Link 
               href="/"
               className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"

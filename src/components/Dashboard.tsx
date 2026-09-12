@@ -645,8 +645,8 @@ export function Dashboard({ currentUser }: DashboardProps) {
         
         {/* LEFT SIDEBAR: Folder Tree */}
         <div className="w-full md:w-64 lg:w-72 shrink-0 space-y-4 md:sticky md:top-20 md:self-start">
-          <div className="bg-[oklch(var(--color-surface))] rounded-2xl p-4 shadow-elevation-md transition-colors duration-300 md:max-h-[calc(100vh-6rem)] md:overflow-y-auto custom-scrollbar">
-            <div className="flex items-center justify-between mb-4 pb-3">
+          <div className="bg-[oklch(var(--color-surface))] rounded-2xl p-4 shadow-elevation-md transition-colors duration-300 md:h-[calc(100vh-6rem)] md:max-h-[calc(100vh-6rem)] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <h2 
                 className="text-sm font-bold text-[oklch(var(--color-text-primary))] flex items-center justify-between w-full md:w-auto cursor-pointer md:cursor-default"
                 onClick={() => setIsMobileFolderOpen(!isMobileFolderOpen)}
@@ -671,7 +671,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
               )}
             </div>
             
-            <div className={`${isMobileFolderOpen ? 'block' : 'hidden'} md:block`}>
+            <div className={`${isMobileFolderOpen ? 'flex' : 'hidden'} md:flex flex-1 min-h-0 flex-col overflow-hidden`}>
               <FolderTree 
                 folders={folders} 
                 selectedFolderId={selectedFolderId}
@@ -686,7 +686,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
             </div>
 
             {/* Các công cụ khác (Kanji, Mẫu câu) */}
-            <div className="mt-4 pt-3 flex flex-col gap-1.5 border-t border-slate-100 dark:border-slate-800">
+            <div className="mt-3 pt-2.5 flex flex-col gap-1.5 border-t border-slate-100 dark:border-slate-800 shrink-0">
               <Link 
                 href="/sentences"
                 className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 border border-transparent hover:border-emerald-200 dark:hover:border-emerald-500/20 transition-all"
@@ -1233,7 +1233,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
             </div>
 
             {/* Body: Cây thư mục đầy đủ */}
-            <div className="p-4 overflow-y-auto flex-1 custom-scrollbar max-h-[60vh]">
+            <div className="p-4 flex-1 min-h-0 flex flex-col overflow-hidden max-h-[65vh]">
               <FolderTree 
                 folders={folders} 
                 selectedFolderId={selectedFolderId}
