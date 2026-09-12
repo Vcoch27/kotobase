@@ -1,15 +1,15 @@
 {
-  "version": "1.1.0",
-  "buildNumber": 2,
-  "releaseDate": "2026-09-05",
+  "version": "1.2.0",
+  "buildNumber": 4,
+  "releaseDate": "2026-09-12",
   "appName": "KotoBase",
   "appDescription": "Ứng dụng học Từ vựng, Ngữ pháp & Hán tự tiếng Nhật thông minh với Flashcard SRS và Quiz phản xạ.",
   "android": {
-    "version": "1.1.0",
-    "versionCode": 2,
-    "downloadUrl": "https://github.com/Vcoch27/kotobase/releases/download/v1.1.0/app-release.apk",
-    "githubUrl": "https://github.com/Vcoch27/kotobase/releases/tag/v1.1.0",
-    "fileSize": "3.19 MB",
+    "version": "1.2.0",
+    "versionCode": 4,
+    "downloadUrl": "https://github.com/Vcoch27/kotobase/releases/download/v1.2.0/app-release.apk",
+    "githubUrl": "https://github.com/Vcoch27/kotobase/releases/tag/v1.2.0",
+    "fileSize": "3.2 MB",
     "minAndroidVersion": "Android 7.0 trở lên",
     "instructions": [
       "Bấm nút 'Tải file APK trực tiếp' phía trên để tải file về điện thoại.",
@@ -19,8 +19,8 @@
     ]
   },
   "ios": {
-    "version": "1.1.0",
-    "build": "1.1.0",
+    "version": "1.2.0",
+    "build": "1.2.0",
     "pwaRecommended": true,
     "ipaDownloadUrl": "https://github.com/Vcoch27/kotobase/releases",
     "fileSize": "22.1 MB",
@@ -38,10 +38,10 @@
     ]
   },
   "changelog": [
-    "Khắc phục lỗi ứng dụng Crash khi chuyển sang chế độ Focus/Quiz trong khi Offline.",
-    "Tối ưu hóa UI: Sửa lỗi nút chọn thư mục nổi bị thanh Bottom Navigation che khuất.",
-    "Cải thiện quản lý thư mục: Phân biệt rõ ràng huy hiệu thư mục 'Offline toàn bộ' và 'Offline một phần'.",
-    "Bổ sung Module học Ngữ pháp hoàn toàn mới.",
-    "Xóa bỏ nút chọn thư mục trên tiêu đề để tối giản giao diện di động."
+    "Chọn nhiều thư mục để học cùng lúc (Multi-Folder Selection) không cần tạo thư mục tổng hợp.",
+    "Bảo toàn 100% tiến trình học (Quiz gõ phím, Flashcard SRS, Focus Recall) khi chuyển đổi qua lại giữa các tab chế độ.",
+    "Khắc phục lỗi Popup Thêm từ vựng và các modal bị thanh Navigation đáy che khuất trên điện thoại.",
+    "Tối ưu hóa Cây Thư Mục: Loại bỏ thanh cuộn lồng nhau (scrollbar kép) và tạo thư mục không còn bị reload trang.",
+    "Hệ thống tự động sao lưu dữ liệu Cloud Firestore lên Google Drive định kỳ hàng ngày."
   ]
 }
