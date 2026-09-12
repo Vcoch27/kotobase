@@ -1054,7 +1054,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
 
       {/* Modal Tạo Thư Mục */}
       {showFolderModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-transparent animate-fadeIn">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
           <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-6 shadow-2xl space-y-4">
             <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <FolderPlus className="w-5 h-5 text-indigo-500 dark:text-indigo-400" /> Tạo Thư mục mới
@@ -1123,8 +1123,8 @@ export function Dashboard({ currentUser }: DashboardProps) {
 
       {/* Modal Thêm nhanh từ vựng */}
       {showQuickAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-2xl max-h-[94vh] flex flex-col rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-2xl max-h-[90vh] sm:max-h-[94vh] flex flex-col rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500" /> Thêm nhanh từ vựng
@@ -1152,8 +1152,8 @@ export function Dashboard({ currentUser }: DashboardProps) {
 
       {/* Modal Thêm hàng loạt từ vựng (Bulk AI) */}
       {showBulkImportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-3xl max-h-[94vh] flex flex-col rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-3xl max-h-[90vh] sm:max-h-[94vh] flex flex-col rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500" /> Thêm hàng loạt từ vựng (Bulk AI)

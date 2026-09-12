@@ -38,7 +38,7 @@ export function TTSSettingsModal({ onClose }: TTSSettingsModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-fadeIn overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] bg-slate-900/60 backdrop-blur-md animate-fadeIn overflow-y-auto">
       <div 
         className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh] border border-slate-200 dark:border-slate-800 transition-colors"
         onClick={e => e.stopPropagation()}

@@ -252,7 +252,7 @@ export function QuickAddForm({ folders, currentFolderId, onSuccess }: QuickAddFo
           )}
 
           {/* Submit Button */}
-          <div className="flex items-center justify-end gap-3 pt-2">
+          <div className="flex items-center justify-end gap-3 pt-2 pb-4 sm:pb-0">
             <button
               type="button"
               onClick={() => {

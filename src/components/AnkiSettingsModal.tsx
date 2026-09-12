@@ -53,8 +53,8 @@ export function AnkiSettingsModal({ onClose }: AnkiSettingsModalProps) {
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-transparent animate-fadeIn">
-      <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
+      <div className="w-full max-w-lg max-h-[90vh] sm:max-h-[94vh] rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-800 bg-slate-900/50">
           <div>
