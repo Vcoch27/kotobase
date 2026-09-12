@@ -5,9 +5,10 @@ import { verifyToken } from "./lib/auth-utils";
 const AUTH_COOKIE_NAME = "kotobase_auth_token";
 
 export async function middleware(request: NextRequest) {
-  // Bỏ qua nếu route là login hoặc các file tĩnh
+  // Bỏ qua nếu route là login, download hoặc các file tĩnh
   if (
     request.nextUrl.pathname.startsWith("/login") ||
+    request.nextUrl.pathname.startsWith("/download") ||
     request.nextUrl.pathname.startsWith("/_next") ||
     request.nextUrl.pathname.includes(".")
   ) {
@@ -32,6 +33,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|login).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|login|download).*)',
   ],
 };

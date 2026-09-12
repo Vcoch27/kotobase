@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import releaseData from "@/config/app-release.json";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   let latestVersion = releaseData.version;
 
   try {
     const res = await fetch("https://api.github.com/repos/Vcoch27/kotobase/releases/latest", {
-      next: { revalidate: 3600 }
+      next: { revalidate: 60 }
     });
     if (res.ok) {
       const data = await res.json();

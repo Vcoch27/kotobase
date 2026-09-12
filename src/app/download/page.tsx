@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   description: "Tải app KotoBase học tiếng Nhật trên điện thoại di động Android và iOS. Hỗ trợ học Offline 100% không cần mạng.",
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 60;
+
 export default async function DownloadPage() {
   const { android, ios, version, releaseDate, changelog } = releaseData;
 
@@ -26,7 +29,7 @@ export default async function DownloadPage() {
 
   try {
     const res = await fetch("https://api.github.com/repos/Vcoch27/kotobase/releases/latest", {
-      next: { revalidate: 3600 } // Cache 1 giờ để tránh bị GitHub giới hạn API
+      next: { revalidate: 60 } // Tối đa 60 giây để cập nhật ngay khi có release mới
     });
     if (res.ok) {
       const data = await res.json();
@@ -321,7 +324,7 @@ export default async function DownloadPage() {
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
             <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
               <RefreshCw className="w-4 h-4 text-indigo-500" />
-              Nhật ký cập nhật (Phiên bản {version})
+              Nhật ký cập nhật (Phiên bản {displayVersion})
             </h3>
             <span className="text-xs text-slate-500 dark:text-slate-400">
               Phát hành: {releaseDate}
