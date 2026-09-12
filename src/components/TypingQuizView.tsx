@@ -108,10 +108,18 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
         setIsFullscreen(false);
       }
       // Phím tắt ` (cạnh số 1) để bật/tắt gợi ý Âm Hán Việt (khi không focus vào ô input)
-      if ((e.key === "`" || e.code === "Backquote") && !e.altKey && !e.ctrlKey && !e.metaKey) {
+      if (
+        (e.key === "`" || e.code === "Backquote") &&
+        !e.shiftKey &&
+        !e.altKey &&
+        !e.ctrlKey &&
+        !e.metaKey
+      ) {
         if ((e.target as HTMLElement)?.tagName === "INPUT") return;
         e.preventDefault();
-        setShowHint(prev => !prev);
+        if (feedback !== "correct") {
+          setShowHint(prev => !prev);
+        }
         inputRef.current?.focus();
       }
     };
@@ -283,11 +291,26 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Phím tắt ` (cạnh số 1) để bật/tắt gợi ý Âm Hán Việt
-    if ((e.key === "`" || e.code === "Backquote") && !e.altKey && !e.ctrlKey && !e.metaKey) {
+    // Phím tắt ` (cạnh số 1) để bật/tắt gợi ý Âm Hán Việt (chú ý: Shift + ` để ra ~ vẫn hoạt động bình thường)
+    if (
+      (e.key === "`" || e.code === "Backquote") &&
+      !e.shiftKey &&
+      !e.altKey &&
+      !e.ctrlKey &&
+      !e.metaKey
+    ) {
       e.preventDefault();
+      e.stopPropagation();
       if (feedback !== "correct") {
         setShowHint(prev => !prev);
+      }
+      // Huỷ bỏ IME composition ngay lập tức để không hiện popup gợi ý của bộ gõ (như tiếng Nhật/Việt)
+      // và không chèn ký tự ` hoặc ‘ vào input
+      if (inputRef.current) {
+        inputRef.current.blur();
+        requestAnimationFrame(() => {
+          inputRef.current?.focus();
+        });
       }
       return;
     }
@@ -837,10 +860,20 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="off"
-                spellCheck={false}
+                onBeforeInput={(e: any) => {
+                  if (e.data === '`' || e.data === '‘' || e.data === '｀') {
+                    e.preventDefault();
+                  }
+                }}
+                onCompositionEnd={(e) => {
+                  if (e.data === '`' || e.data === '‘' || e.data === '｀') {
+                    setUserInput(prev => prev.replace(/[`‘｀]/g, ''));
+                  }
+                }}
                 onChange={(e) => {
                   if (feedback === "correct") return;
-                  setUserInput(e.target.value);
+                  const val = e.target.value.replace(/[`‘｀]/g, '');
+                  setUserInput(val);
                   if (feedback === "wrong") setFeedback("none");
                 }}
                 onKeyDown={handleKeyDown}
