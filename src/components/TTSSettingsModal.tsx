@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { 
-  X, Save, Volume2, Key, Info, Check, Monitor, Sparkles, 
+  X, Save, Volume2, Volume1, VolumeX, Key, Info, Check, Monitor, Sparkles, 
   User, Smile, Gauge, Sliders, RotateCcw 
 } from "lucide-react";
 import { 
-  TTSSettings, loadTTSSettings, saveTTSSettings, 
+  TTSSettings, loadTTSSettings, saveTTSSettings, setWebVolume,
   DEFAULT_TTS_SETTINGS, playAudio,
   KOTOBASE_VOICE_OPTIONS, KOTOBASE_STYLE_OPTIONS
 } from "@/lib/tts-utils";
@@ -50,8 +50,8 @@ export function TTSSettingsModal({ onClose }: TTSSettingsModalProps) {
               <Volume2 className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-800 dark:text-white">Cài đặt Phát âm Tiếng Nhật</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Chọn công cụ đọc và điều chỉnh giọng phát âm</p>
+              <h2 className="text-base sm:text-lg font-bold text-slate-800 dark:text-white">Cài đặt Âm thanh & Phát âm</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Điều chỉnh âm lượng trang web, chọn công cụ và giọng phát âm</p>
             </div>
           </div>
           <button 
@@ -64,6 +64,103 @@ export function TTSSettingsModal({ onClose }: TTSSettingsModalProps) {
 
         {/* Content */}
         <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-6 custom-scrollbar">
+          
+          {/* 1. Web Volume Control (Master Volume) */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-indigo-50/50 dark:bg-slate-800/60 border border-indigo-100/80 dark:border-slate-700/80 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {(settings.volume ?? 1.0) === 0 ? (
+                  <VolumeX className="w-5 h-5 text-rose-500" />
+                ) : (settings.volume ?? 1.0) < 0.5 ? (
+                  <Volume1 className="w-5 h-5 text-indigo-500" />
+                ) : (
+                  <Volume2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                )}
+                <div>
+                  <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 block">
+                    Âm lượng trang web (Master Volume)
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Áp dụng cho phát âm từ vựng, mẫu câu và hiệu ứng quiz
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm font-mono font-bold text-indigo-600 dark:text-indigo-400 px-2.5 py-1 rounded-xl bg-white dark:bg-slate-900 border border-indigo-200/60 dark:border-indigo-500/20 shadow-xs">
+                  {Math.round((settings.volume ?? 1.0) * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextVol = (settings.volume ?? 1.0) > 0 ? 0 : 1.0;
+                    setSettings({ ...settings, volume: nextVol });
+                    setWebVolume(nextVol);
+                  }}
+                  className={`p-2 rounded-xl border text-xs font-semibold transition-all ${
+                    (settings.volume ?? 1.0) === 0
+                      ? 'bg-rose-100 text-rose-600 border-rose-200 dark:bg-rose-950/40 dark:border-rose-800 shadow-xs'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:text-indigo-600 hover:border-indigo-300'
+                  }`}
+                  title={(settings.volume ?? 1.0) === 0 ? 'Bật âm thanh' : 'Tắt tiếng (Mute)'}
+                >
+                  {(settings.volume ?? 1.0) === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Slider */}
+            <div className="space-y-1 pt-1">
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value={Math.round((settings.volume ?? 1.0) * 100)}
+                onChange={(e) => {
+                  const val = Number(e.target.value) / 100;
+                  setSettings({ ...settings, volume: val });
+                  setWebVolume(val);
+                }}
+                className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+              />
+              <div className="flex justify-between text-[10px] text-slate-400 font-medium">
+                <span>0% (Tắt tiếng)</span>
+                <span>50%</span>
+                <span>100% (Tối đa)</span>
+              </div>
+            </div>
+
+            {/* Quick Presets */}
+            <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-indigo-100/60 dark:border-slate-700/60">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mr-1">Mức nhanh:</span>
+              {[
+                { label: 'Tắt tiếng', val: 0 },
+                { label: '25%', val: 0.25 },
+                { label: '50%', val: 0.5 },
+                { label: '75%', val: 0.75 },
+                { label: '100%', val: 1.0 },
+              ].map((preset) => {
+                const isCurrent = Math.round((settings.volume ?? 1.0) * 100) === Math.round(preset.val * 100);
+                return (
+                  <button
+                    key={preset.val}
+                    type="button"
+                    onClick={() => {
+                      setSettings({ ...settings, volume: preset.val });
+                      setWebVolume(preset.val);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                      isCurrent
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-indigo-400 hover:text-indigo-600'
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           
           {/* Provider Selection */}
           <div className="space-y-3">

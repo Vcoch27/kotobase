@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { KanjiDictionaryView } from "./KanjiDictionaryView";
 import { AppLogo } from "./AppLogo";
-import { ArrowLeft, Moon, Sun, User, LogOut, Settings2, Lock } from "lucide-react";
+import { ArrowLeft, Moon, Sun, User, LogOut, Settings2, Lock, Volume2, Volume1, VolumeX } from "lucide-react";
+import { useWebVolume } from "@/lib/tts-utils";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { auth } from "@/lib/firebase";
@@ -29,6 +30,7 @@ export function KanjiPageClient({ vocabularies, folders, initialKanjiNotes, curr
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const [webVolume, setWebVolume] = useWebVolume();
   const settingsDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -148,7 +150,36 @@ export function KanjiPageClient({ vocabularies, folders, initialKanjiNotes, curr
               {showSettingsDropdown && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setShowSettingsDropdown(false)}></div>
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-fadeIn">
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden animate-fadeIn">
+                    {/* Quick Volume Slider */}
+                    <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                          {webVolume === 0 ? (
+                            <VolumeX className="w-3.5 h-3.5 text-rose-500" />
+                          ) : webVolume < 0.5 ? (
+                            <Volume1 className="w-3.5 h-3.5 text-amber-500" />
+                          ) : (
+                            <Volume2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                          )}
+                          Âm lượng web
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-[11px] bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200/80 dark:border-slate-700 shadow-xs">
+                            {Math.round(webVolume * 100)}%
+                          </span>
+                        </div>
+                      </div>
+                      <input 
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={Math.round(webVolume * 100)}
+                        onChange={(e) => setWebVolume(Number(e.target.value) / 100)}
+                        className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-600"
+                        title={`Âm lượng: ${Math.round(webVolume * 100)}%`}
+                      />
+                    </div>
                     {currentUser && (
                       <button 
                         onClick={async () => {

@@ -16,10 +16,11 @@ import { getVocabularies } from "@/app/actions/vocabulary";
 import { getFolders, createFolder } from "@/app/actions/folder";
 import { 
   LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, 
-  Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, ChevronUp, Volume2, Loader2,
+  Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, ChevronUp, Volume2, Volume1, VolumeX, Loader2,
   User, Lock, Folder, X, FolderTree as FolderTreeIcon, ArrowDownNarrowWide, ArrowUpNarrowWide,
   Sparkles, BookOpen, Smartphone, WifiOff, Plus
 } from "lucide-react";
+import { useWebVolume } from "@/lib/tts-utils";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { OfflineSyncButton } from "./OfflineSyncButton";
 import { getOfflineVocabularies, getOfflineFolders, saveVocabulariesOffline, saveFoldersOffline } from "@/lib/offline-storage";
@@ -149,6 +150,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showTTSSettingsModal, setShowTTSSettingsModal] = useState(false);
   const [showGeminiSettingsModal, setShowGeminiSettingsModal] = useState(false);
+  const [webVolume, setWebVolume] = useWebVolume();
   const settingsDropdownRef = useRef<HTMLDivElement>(null);
   const addMenuRef = useRef<HTMLDivElement>(null);
 
@@ -561,13 +563,53 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     className="fixed inset-0 z-40" 
                     onClick={() => setShowSettingsDropdown(false)}
                   ></div>
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-fadeIn">
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden animate-fadeIn">
+                    {/* Quick Volume Slider */}
+                    <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                          {webVolume === 0 ? (
+                            <VolumeX className="w-3.5 h-3.5 text-rose-500" />
+                          ) : webVolume < 0.5 ? (
+                            <Volume1 className="w-3.5 h-3.5 text-indigo-500" />
+                          ) : (
+                            <Volume2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                          )}
+                          Âm lượng web
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-[11px] bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200/80 dark:border-slate-700 shadow-xs">
+                            {Math.round(webVolume * 100)}%
+                          </span>
+                        </div>
+                      </div>
+                      <input 
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={Math.round(webVolume * 100)}
+                        onChange={(e) => setWebVolume(Number(e.target.value) / 100)}
+                        className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                        title={`Âm lượng: ${Math.round(webVolume * 100)}%`}
+                      />
+                    </div>
+
+                    <button 
+                      onClick={() => {
+                        setShowSettingsDropdown(false);
+                        setShowTTSSettingsModal(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-b border-slate-100 dark:border-slate-800"
+                    >
+                      <Volume2 className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                      Cài đặt Âm thanh
+                    </button>
                     <button 
                       onClick={() => {
                         setShowSettingsDropdown(false);
                         setShowSettingsModal(true);
                       }}
-                      className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-b border-slate-100 dark:border-slate-800"
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-b border-slate-100 dark:border-slate-800"
                     >
                       <BrainCircuit className="w-4 h-4 text-rose-500 dark:text-rose-400" />
                       Cài đặt Anki
@@ -575,19 +617,9 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     <button 
                       onClick={() => {
                         setShowSettingsDropdown(false);
-                        setShowTTSSettingsModal(true);
-                      }}
-                      className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-b border-slate-100 dark:border-slate-800"
-                    >
-                      <Volume2 className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                      Cài đặt Phát âm
-                    </button>
-                    <button 
-                      onClick={() => {
-                        setShowSettingsDropdown(false);
                         setShowGeminiSettingsModal(true);
                       }}
-                      className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-b border-slate-100 dark:border-slate-800"
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-b border-slate-100 dark:border-slate-800"
                     >
                       <Sparkles className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                       Cài đặt Gemini AI

@@ -1,4 +1,6 @@
-﻿"use client";
+"use client";
+
+import { getWebVolume } from "./tts-utils";
 
 class AudioFXSystem {
   private ctx: AudioContext | null = null;
@@ -12,6 +14,9 @@ class AudioFXSystem {
   }
 
   public playCorrect() {
+    const volume = getWebVolume();
+    if (volume <= 0) return;
+
     const ctx = this.getContext();
     if (!ctx) return;
     
@@ -34,8 +39,8 @@ class AudioFXSystem {
 
     // Hiệu ứng phai dần nhanh (decay)
     gainNode.gain.setValueAtTime(0, ctx.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.02); // Attack nhanh
-    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5); // Decay mượt
+    gainNode.gain.linearRampToValueAtTime(0.3 * volume, ctx.currentTime + 0.02); // Attack nhanh
+    gainNode.gain.exponentialRampToValueAtTime(0.001 * Math.max(0.01, volume), ctx.currentTime + 0.5); // Decay mượt
 
     osc1.connect(gainNode);
     osc2.connect(gainNode);
@@ -48,6 +53,9 @@ class AudioFXSystem {
   }
 
   public playWrong() {
+    const volume = getWebVolume();
+    if (volume <= 0) return;
+
     const ctx = this.getContext();
     if (!ctx) return;
 
@@ -66,8 +74,8 @@ class AudioFXSystem {
     osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.2); // Rớt tone
 
     gainNode.gain.setValueAtTime(0, ctx.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.02);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    gainNode.gain.linearRampToValueAtTime(0.4 * volume, ctx.currentTime + 0.02);
+    gainNode.gain.exponentialRampToValueAtTime(0.001 * Math.max(0.01, volume), ctx.currentTime + 0.3);
 
     osc.connect(gainNode);
     gainNode.connect(ctx.destination);

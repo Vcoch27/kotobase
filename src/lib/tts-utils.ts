@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Client } from '@gradio/client';
 
@@ -13,6 +14,7 @@ export interface TTSSettings {
   kotobaseSpeed?: number;
   kotobaseStyle?: string;
   kotobaseStyleWeight?: number;
+  volume?: number; // 0.0 - 1.0
 }
 
 export const KOTOBASE_VOICE_OPTIONS = [
@@ -32,6 +34,62 @@ export const KOTOBASE_STYLE_OPTIONS = [
   { value: "Disgust", label: "Disgust (Chán ghét)" },
 ];
 
+export const DEFAULT_WEB_VOLUME = 1.0;
+export const WEB_VOLUME_KEY = 'kotobase_web_volume';
+
+export function getWebVolume(): number {
+  if (typeof window === 'undefined') return DEFAULT_WEB_VOLUME;
+  try {
+    const saved = localStorage.getItem(WEB_VOLUME_KEY);
+    if (saved !== null) {
+      const parsed = parseFloat(saved);
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 1) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load web volume', e);
+  }
+  return DEFAULT_WEB_VOLUME;
+}
+
+export function setWebVolume(volume: number) {
+  if (typeof window === 'undefined') return;
+  const clamped = Math.max(0, Math.min(1, volume));
+  try {
+    localStorage.setItem(WEB_VOLUME_KEY, clamped.toString());
+    if (currentPlayingAudio) {
+      currentPlayingAudio.volume = clamped;
+    }
+    window.dispatchEvent(new CustomEvent('kotobase_volume_change', { detail: clamped }));
+  } catch (e) {
+    console.error('Failed to save web volume', e);
+  }
+}
+
+export function useWebVolume() {
+  const [volume, setVolumeState] = useState<number>(1.0);
+
+  useEffect(() => {
+    setVolumeState(getWebVolume());
+    const handleVolumeChange = (e: Event) => {
+      const customEvent = e as CustomEvent<number>;
+      if (typeof customEvent.detail === 'number') {
+        setVolumeState(customEvent.detail);
+      }
+    };
+    window.addEventListener('kotobase_volume_change', handleVolumeChange);
+    return () => window.removeEventListener('kotobase_volume_change', handleVolumeChange);
+  }, []);
+
+  const changeVolume = (newVolume: number) => {
+    setWebVolume(newVolume);
+    setVolumeState(newVolume);
+  };
+
+  return [volume, changeVolume] as const;
+}
+
 export const DEFAULT_TTS_SETTINGS: TTSSettings = {
   provider: 'browser',
   elevenLabsApiKey: '',
@@ -41,6 +99,7 @@ export const DEFAULT_TTS_SETTINGS: TTSSettings = {
   kotobaseSpeed: 1.0,
   kotobaseStyle: 'Neutral',
   kotobaseStyleWeight: 1.0,
+  volume: 1.0,
 };
 
 // Bộ nhớ đệm âm thanh trong phiên (Audio Cache)
@@ -49,6 +108,7 @@ let currentPlayingAudio: HTMLAudioElement | null = null;
 
 export const loadTTSSettings = (): TTSSettings => {
   if (typeof window === 'undefined') return DEFAULT_TTS_SETTINGS;
+  const currentVol = getWebVolume();
   try {
     const saved = localStorage.getItem('koto_tts_settings');
     if (saved) {
@@ -56,16 +116,19 @@ export const loadTTSSettings = (): TTSSettings => {
       if (parsed.provider === 'edge' || parsed.provider === 'voicevox') {
         parsed.provider = 'kotobase-ai';
       }
-      return { ...DEFAULT_TTS_SETTINGS, ...parsed };
+      return { ...DEFAULT_TTS_SETTINGS, volume: currentVol, ...parsed };
     }
   } catch (e) {
     console.error('Failed to load TTS settings', e);
   }
-  return DEFAULT_TTS_SETTINGS;
+  return { ...DEFAULT_TTS_SETTINGS, volume: currentVol };
 };
 
 export const saveTTSSettings = (settings: TTSSettings) => {
   if (typeof window !== 'undefined') {
+    if (settings.volume !== undefined) {
+      setWebVolume(settings.volume);
+    }
     localStorage.setItem('koto_tts_settings', JSON.stringify(settings));
   }
 };
@@ -156,6 +219,8 @@ const playKotobaseAI = async (text: string, settings?: TTSSettings): Promise<boo
 
     if (audioUrl) {
       const audio = new Audio(audioUrl);
+      const volume = settings?.volume ?? getWebVolume();
+      audio.volume = Math.max(0, Math.min(1, volume));
       currentPlayingAudio = audio;
       await audio.play();
       return true;
@@ -186,6 +251,8 @@ const playVoicevox = async (text: string): Promise<boolean> => {
 
     if (audioUrl) {
       const audio = new Audio(audioUrl);
+      const volume = getWebVolume();
+      audio.volume = Math.max(0, Math.min(1, volume));
       currentPlayingAudio = audio;
       await audio.play();
       return true;
@@ -204,6 +271,8 @@ const playBrowserTTS = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'ja-JP';
     utterance.rate = 0.85;
+    const vol = getWebVolume();
+    utterance.volume = Math.max(0, Math.min(1, vol));
     const voices = window.speechSynthesis.getVoices();
     const jaVoice = voices.find((v) => v.lang.includes('ja') || v.lang.includes('JP'));
     if (jaVoice) {
@@ -279,6 +348,8 @@ export const playAudio = async (text: string, tempSettings?: TTSSettings) => {
 
       if (audioUrl) {
         const audio = new Audio(audioUrl);
+        const volume = settings?.volume ?? getWebVolume();
+        audio.volume = Math.max(0, Math.min(1, volume));
         currentPlayingAudio = audio;
         await audio.play();
         return;
