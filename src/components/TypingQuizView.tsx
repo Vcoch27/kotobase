@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { HelpCircle, CheckCircle2, XCircle, SkipForward, Info, RotateCcw, Shuffle, Maximize, Minimize, Volume2, ArrowRight, Settings2 } from "lucide-react";
+import { HelpCircle, CheckCircle2, XCircle, SkipForward, Info, RotateCcw, Shuffle, Maximize, Minimize, Volume2, ArrowRight, Settings2, Clock } from "lucide-react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
 import { StudyScopeSelector } from "./StudyScopeSelector";
 import { audioFX } from "@/lib/audio-fx";
@@ -66,10 +66,48 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
   const [isShuffled, setIsShuffled] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showMobileSettings, setShowMobileSettings] = useState(false);
+  const [showDelaySettings, setShowDelaySettings] = useState(false);
   
+  // Thời gian hiển thị đáp án đúng trước khi chuyển câu (mặc định 5s)
+  const [quizDelay, setQuizDelay] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('kotobase_quiz_delay');
+      if (saved) {
+        const n = parseInt(saved, 10);
+        if (!isNaN(n) && n >= 1 && n <= 10) return n;
+      }
+    }
+    return 5;
+  });
+
+  const [countdown, setCountdown] = useState<number>(5);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   // Timeout ref để tự động chuyển câu sau khi hiển thị thông tin
   const nextTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const correctTimestampRef = useRef<number>(0);
+
+  // Đồng bộ thời gian chờ khi có thay đổi từ Settings dropdown
+  useEffect(() => {
+    const handleDelayChange = (e: any) => {
+      if (e.detail && typeof e.detail === 'number') {
+        setQuizDelay(e.detail);
+      }
+    };
+    window.addEventListener('kotobase_quiz_delay_change', handleDelayChange);
+    return () => {
+      window.removeEventListener('kotobase_quiz_delay_change', handleDelayChange);
+    };
+  }, []);
+
+  const handleUpdateQuizDelay = (val: number) => {
+    const clamped = Math.max(1, Math.min(val, 10));
+    setQuizDelay(clamped);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('kotobase_quiz_delay', String(clamped));
+      window.dispatchEvent(new CustomEvent('kotobase_quiz_delay_change', { detail: clamped }));
+    }
+  };
 
   // Danh sách từ làm đúng và từ đã bấm bỏ qua
   const [skippedList, setSkippedList] = useState<QuizItem[]>([]);
@@ -82,6 +120,10 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
     if (nextTimeoutRef.current) {
       clearTimeout(nextTimeoutRef.current);
       nextTimeoutRef.current = null;
+    }
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
     }
     setCurrentIndex(prev => {
       if (prev < quizList.length - 1) {
@@ -128,6 +170,9 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
       window.removeEventListener("keydown", handleGlobalKeyDown);
       if (nextTimeoutRef.current) {
         clearTimeout(nextTimeoutRef.current);
+      }
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
       }
     };
   }, [isActive]);
@@ -279,11 +324,28 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
       correctTimestampRef.current = Date.now();
       // Lưu vào danh sách đúng nếu chưa có
       setCorrectList(prev => prev.some(item => item.id === currentItem.id) ? prev : [...prev, currentItem]);
-      // Hiển thị đầy đủ thông tin từ vựng trong 2s để người dùng gợi nhớ Nghĩa & Âm Hán Việt
+
+      // Hiển thị đầy đủ thông tin từ vựng trong quizDelay giây (mặc định 5s)
       if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+
+      setCountdown(quizDelay);
+      let remaining = quizDelay;
+      countdownIntervalRef.current = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+          if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+          countdownIntervalRef.current = null;
+        } else {
+          setCountdown(remaining);
+        }
+      }, 1000);
+
       nextTimeoutRef.current = setTimeout(() => {
+        if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
         moveToNext();
-      }, 2000);
+      }, quizDelay * 1000);
     } else {
       audioFX.playWrong();
       setFeedback("wrong");
@@ -329,6 +391,7 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
         // nhằm tránh tình trạng dính phím / IME Enter bấm 2 lần nhảy cóc làm mất hiệu ứng viền xanh
         if (Date.now() - correctTimestampRef.current > 300) {
           if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
+          if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
           moveToNext();
         }
       } else {
@@ -337,6 +400,7 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
     } else if (e.key === "Tab") {
       e.preventDefault();
       if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
       handleSkip();
     }
   };
@@ -345,6 +409,10 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
     if (nextTimeoutRef.current) {
       clearTimeout(nextTimeoutRef.current);
       nextTimeoutRef.current = null;
+    }
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
     }
     const currentItem = quizList[currentIndex];
     if (currentItem) {
@@ -502,6 +570,72 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
+
+                {/* Nút cài đặt thời gian chờ chuyển câu */}
+                <div className="relative">
+                  <button 
+                    onClick={() => setShowDelaySettings(!showDelaySettings)}
+                    title={`Thời gian hiện đáp án: ${quizDelay}s (Bấm để đổi)`}
+                    className={`p-1.5 rounded-lg transition-all flex items-center gap-1 ${
+                      showDelaySettings
+                        ? "text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-500/40 shadow-sm"
+                        : "text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    }`}
+                  >
+                    <Clock className="w-3.5 h-3.5 text-emerald-500" />
+                    <span className="text-[10px] font-bold font-mono">{quizDelay}s</span>
+                  </button>
+
+                  {/* Popover cài đặt thời gian nhanh */}
+                  {showDelaySettings && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-40" 
+                        onClick={() => setShowDelaySettings(false)}
+                      />
+                      <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl z-50 animate-fadeIn space-y-2.5 text-xs text-left">
+                        <div className="flex items-center justify-between font-bold text-slate-800 dark:text-slate-200">
+                          <span className="flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-emerald-500" />
+                            Hiện đáp án Quiz
+                          </span>
+                          <span className="font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg border border-emerald-200/60 dark:border-emerald-800/60">
+                            {quizDelay}s
+                          </span>
+                        </div>
+                        <input 
+                          type="range"
+                          min="1"
+                          max="10"
+                          step="1"
+                          value={quizDelay}
+                          onChange={(e) => handleUpdateQuizDelay(Number(e.target.value))}
+                          className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                        />
+                        <div className="flex items-center justify-between gap-1 pt-1">
+                          {[1, 2, 3, 5, 8, 10].map((sec) => (
+                            <button
+                              key={sec}
+                              type="button"
+                              onClick={() => handleUpdateQuizDelay(sec)}
+                              className={`flex-1 py-1 rounded-md text-[11px] font-bold border transition-all ${
+                                quizDelay === sec
+                                  ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                                  : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-400"
+                              }`}
+                            >
+                              {sec}s
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">
+                          Thời gian dừng lại để xem cách đọc, Hán Việt & ví dụ trước khi tự động chuyển câu.
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+
                 <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
                 <button 
                   onClick={() => setIsFullscreen(!isFullscreen)} 
@@ -923,16 +1057,18 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
                   onTouchStart={(e) => {
                     e.preventDefault();
                     if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
+                    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
                     moveToNext();
                   }}
                   onClick={() => {
                     if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
+                    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
                     moveToNext();
                   }}
                   className="px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 active:scale-95 transition-all shadow-md shadow-emerald-500/30 select-none"
                   title="Sang câu tiếp theo"
                 >
-                  <span>Tiếp</span>
+                  <span>Tiếp ({countdown}s)</span>
                   <ArrowRight className="w-4 h-4 shrink-0" />
                 </button>
               ) : (
@@ -964,7 +1100,10 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
 
         {feedback === "correct" && (
           <div className="text-center text-emerald-600 dark:text-emerald-400 font-semibold text-sm animate-fadeIn flex items-center justify-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4" /> Chính xác! Đang chuẩn bị chuyển câu (hoặc bấm Enter để chuyển ngay)...
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>
+              Chính xác! Tự động chuyển câu sau <b className="font-mono text-emerald-700 dark:text-emerald-300">{countdown}s</b> (hoặc bấm Enter để chuyển ngay)...
+            </span>
           </div>
         )}
 
@@ -985,11 +1124,16 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
                 if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
+                if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
                 moveToNext();
               }}
               className="flex items-center gap-2 px-8 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all shadow-md shadow-emerald-500/30 text-sm active:scale-95"
             >
-              Tiếp tục (Enter)
+              <span>Tiếp tục (Enter)</span>
+              <span className="font-mono text-xs px-1.5 py-0.5 rounded-full bg-white/20 border border-white/30">
+                {countdown}s
+              </span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           ) : (
             <button

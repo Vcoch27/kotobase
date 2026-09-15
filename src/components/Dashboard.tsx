@@ -18,7 +18,7 @@ import {
   LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, 
   Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, ChevronUp, Volume2, Volume1, VolumeX, Loader2,
   User, Lock, Folder, X, FolderTree as FolderTreeIcon, ArrowDownNarrowWide, ArrowUpNarrowWide,
-  Sparkles, BookOpen, Smartphone, WifiOff, Plus
+  Sparkles, BookOpen, Smartphone, WifiOff, Plus, Clock
 } from "lucide-react";
 import { useWebVolume } from "@/lib/tts-utils";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
@@ -151,6 +151,25 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const [showTTSSettingsModal, setShowTTSSettingsModal] = useState(false);
   const [showGeminiSettingsModal, setShowGeminiSettingsModal] = useState(false);
   const [webVolume, setWebVolume] = useWebVolume();
+  const [quizDelay, setQuizDelay] = useState<number>(5);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('kotobase_quiz_delay');
+    if (saved) {
+      const val = parseInt(saved, 10);
+      if (!isNaN(val) && val >= 1 && val <= 10) {
+        setQuizDelay(val);
+      }
+    }
+    const handler = (e: any) => {
+      if (e.detail && typeof e.detail === 'number') {
+        setQuizDelay(e.detail);
+      }
+    };
+    window.addEventListener('kotobase_quiz_delay_change', handler);
+    return () => window.removeEventListener('kotobase_quiz_delay_change', handler);
+  }, []);
+
   const settingsDropdownRef = useRef<HTMLDivElement>(null);
   const addMenuRef = useRef<HTMLDivElement>(null);
 
@@ -592,6 +611,41 @@ export function Dashboard({ currentUser }: DashboardProps) {
                         className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                         title={`Âm lượng: ${Math.round(webVolume * 100)}%`}
                       />
+                    </div>
+
+                    {/* Thanh chỉnh thời gian hiển thị đáp án Quiz (1 - 10s) */}
+                    <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                          Hiện đáp án Quiz
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className="font-mono font-bold text-purple-600 dark:text-purple-400 text-[11px] bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200/80 dark:border-slate-700 shadow-xs">
+                            {quizDelay}s
+                          </span>
+                        </div>
+                      </div>
+                      <input 
+                        type="range"
+                        min="1"
+                        max="10"
+                        step="1"
+                        value={quizDelay}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setQuizDelay(val);
+                          localStorage.setItem('kotobase_quiz_delay', String(val));
+                          window.dispatchEvent(new CustomEvent('kotobase_quiz_delay_change', { detail: val }));
+                        }}
+                        className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                        title={`Thời gian hiển thị: ${quizDelay} giây`}
+                      />
+                      <div className="flex justify-between text-[10px] text-slate-400 font-medium px-0.5">
+                        <span>1s</span>
+                        <span className="text-purple-600 dark:text-purple-400 font-bold">5s (chuẩn)</span>
+                        <span>10s</span>
+                      </div>
                     </div>
 
                     <button 
