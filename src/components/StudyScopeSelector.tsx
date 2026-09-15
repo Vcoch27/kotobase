@@ -48,6 +48,7 @@ export function StudyScopeSelector({
   );
   const [selectedChunkIndex, setSelectedChunkIndex] = useState(0);
   const [randomCount, setRandomCount] = useState(30);
+  const [randomCountStr, setRandomCountStr] = useState('30');
   const [rangeStartStr, setRangeStartStr] = useState('1');
   const [rangeEndStr, setRangeEndStr] = useState(
     String(Math.min(30, allVocabularies.length || 30))
@@ -56,6 +57,16 @@ export function StudyScopeSelector({
 
   const total = allVocabularies.length;
   const CHUNK_SIZE = 30;
+
+  // Kích hoạt ngẫu nhiên theo số lượng mong muốn (clamp giữa 1 và total)
+  const triggerRandom = (count?: number) => {
+    const raw = count !== undefined ? count : parseInt(randomCountStr, 10);
+    const maxVal = Math.max(1, total);
+    const clamped = isNaN(raw) ? Math.min(30, maxVal) : Math.max(1, Math.min(raw, maxVal));
+    setRandomCount(clamped);
+    setRandomCountStr(String(clamped));
+    applyScope('random', selectedChunkIndex, clamped);
+  };
 
   // Tính các khối chunk 30 từ (1-30, 31-60, 61-90,...)
   const chunks = useMemo(() => {
@@ -248,23 +259,60 @@ export function StudyScopeSelector({
               </button>
             )}
 
-            {/* Nút: Ngẫu nhiên 30 từ */}
-            <button
-              type="button"
-              onClick={() => {
-                setIsExpanded(false);
-                setRandomCount(30);
-                applyScope('random', selectedChunkIndex, 30);
-              }}
-              className={`px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 text-xs ${
-                scopeType === 'random' && randomCount === 30 && !isExpanded
-                  ? activeBtnClasses
-                  : 'bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300'
+            {/* Nút: Ngẫu nhiên tùy chỉnh */}
+            <div
+              className={`flex items-center rounded-xl transition-all border text-xs overflow-hidden ${
+                scopeType === 'random' && !isExpanded
+                  ? `${activeBtnClasses} border-transparent`
+                  : 'bg-white dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700/80 hover:border-slate-300'
               }`}
             >
-              <Shuffle className="w-3 h-3" />
-              <span>Random 30</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsExpanded(false);
+                  triggerRandom();
+                }}
+                className={`px-2 py-1 font-bold flex items-center gap-1 transition-all ${
+                  scopeType === 'random' && !isExpanded
+                    ? 'hover:brightness-110'
+                    : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+                title={`Trộn ngẫu nhiên ${randomCount} từ`}
+              >
+                <Shuffle className="w-3 h-3" />
+                <span>Random</span>
+              </button>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={randomCountStr}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (/^\d*$/.test(val)) setRandomCountStr(val);
+                }}
+                onFocus={(e) => e.target.select()}
+                onBlur={() => {
+                  const num = parseInt(randomCountStr, 10);
+                  const maxVal = Math.max(1, total);
+                  const clamped = isNaN(num) ? Math.min(30, maxVal) : Math.max(1, Math.min(num, maxVal));
+                  setRandomCountStr(String(clamped));
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setIsExpanded(false);
+                    triggerRandom();
+                  }
+                }}
+                title={`Nhập số từ muốn random (1 - ${total})`}
+                className={`w-9 text-center font-bold text-xs py-0.5 px-1 mr-1 rounded border outline-none transition-colors ${
+                  scopeType === 'random' && !isExpanded
+                    ? 'bg-white/20 text-white border-white/30 focus:border-white focus:bg-white/30 placeholder-white/60'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-200 dark:border-slate-700 focus:border-amber-500'
+                }`}
+              />
+            </div>
 
             {/* Nút bấm mở rộng/thu gọn Dải STT & Khối tùy chỉnh */}
             <button
@@ -299,7 +347,7 @@ export function StudyScopeSelector({
         </div>
       )}
 
-      {/* Expanded Custom Panel (Dải STT & Chia khối theo đợt) */}
+      {/* Expanded Custom Panel (Dải STT & Trộn ngẫu nhiên & Chia khối theo đợt) */}
       {isExpanded && (
         <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 space-y-2 animate-fadeIn text-xs">
           {/* 1. Nhập Dải STT tùy chỉnh (Cho phép xóa tự do, gõ 31, 65 thoải mái) */}
@@ -343,6 +391,85 @@ export function StudyScopeSelector({
             >
               Áp dụng {currentRangeCount > 0 ? `(${currentRangeCount} từ)` : ''}
             </button>
+          </div>
+
+          {/* 2. Trộn ngẫu nhiên tùy chỉnh */}
+          <div className="flex flex-wrap items-center gap-2 p-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 shadow-sm">
+            <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+              <Shuffle className="w-3.5 h-3.5 text-amber-500" />
+              <span>Trộn ngẫu nhiên:</span>
+            </span>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={randomCountStr}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (/^\d*$/.test(val)) setRandomCountStr(val);
+              }}
+              onFocus={(e) => e.target.select()}
+              onBlur={() => {
+                const num = parseInt(randomCountStr, 10);
+                const maxVal = Math.max(1, total);
+                const clamped = isNaN(num) ? Math.min(30, maxVal) : Math.max(1, Math.min(num, maxVal));
+                setRandomCountStr(String(clamped));
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && triggerRandom()}
+              placeholder="30"
+              className="w-16 px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-center font-bold text-slate-900 dark:text-white outline-none focus:border-amber-500"
+            />
+            <span className="text-slate-500 dark:text-slate-400 font-medium">từ (tối đa {total})</span>
+
+            <button
+              type="button"
+              onClick={() => triggerRandom()}
+              className={`px-3 py-1 rounded-lg font-bold transition-all ${
+                scopeType === 'random'
+                  ? activeBtnClasses
+                  : 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm'
+              }`}
+            >
+              Trộn ngay
+            </button>
+
+            {/* Quick preset chips */}
+            <div className="flex items-center gap-1 ml-auto">
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 mr-0.5">Gợi ý:</span>
+              {[10, 20, 30, 50].filter((n) => n <= total).map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => {
+                    setRandomCountStr(String(n));
+                    triggerRandom(n);
+                  }}
+                  className={`px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all border ${
+                    scopeType === 'random' && randomCount === n
+                      ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700'
+                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+              {total > 50 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRandomCountStr(String(total));
+                    triggerRandom(total);
+                  }}
+                  className={`px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all border ${
+                    scopeType === 'random' && randomCount === total
+                      ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700'
+                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  Tất cả ({total})
+                </button>
+              )}
+            </div>
           </div>
 
           {/* 2. Chọn nhanh theo từng khối đợt 30 từ nếu danh sách dài */}
