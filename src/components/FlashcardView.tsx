@@ -63,6 +63,27 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
   const [isShuffled, setIsShuffled] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Synchronous refs to prevent race conditions and stale closures during fast navigation
+  const currentIndexRef = useRef(currentIndex);
+  currentIndexRef.current = currentIndex;
+  const deckRef = useRef<VocabularyData[]>(deck);
+  deckRef.current = deck;
+  const isFlippedRef = useRef(isFlipped);
+  isFlippedRef.current = isFlipped;
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
+  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const progressHistoryRef = useRef<{ id: string; wasKnown: boolean }[]>([]);
+
+  // Dọn dẹp timeout chuyển thẻ khi unmount
+  useEffect(() => {
+    return () => {
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     if (!isActive) return;
     const handleEsc = (e: KeyboardEvent) => {
@@ -174,18 +195,33 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
 
       // Chỉ reset tiến trình khi THỰC SỰ đổi chế độ học hoặc đổi phạm vi bộ thẻ
       if (modeChanged || scopeChanged) {
+        currentIndexRef.current = 0;
         setCurrentIndex(0);
         setIsFlipped(false);
+        isFlippedRef.current = false;
         setIsFinished(false);
         setIsShuffled(false);
         setKnownIds(new Set());
         setUnknownIds(new Set());
+        progressHistoryRef.current = [];
+        if (transitionTimeoutRef.current) {
+          clearTimeout(transitionTimeoutRef.current);
+          transitionTimeoutRef.current = null;
+        }
+        setIsTransitioning(false);
       } else {
-        // Giữ nguyên vị trí thẻ hiện tại đang học
-        setCurrentIndex(prev => Math.min(prev, Math.max(0, nextDeck.length - 1)));
+        // Giữ nguyên vị trí thẻ hiện tại đang học (clamp an toàn)
+        setCurrentIndex(prev => {
+          const clamped = Math.min(prev, Math.max(0, nextDeck.length - 1));
+          currentIndexRef.current = clamped;
+          return clamped;
+        });
       }
     } else {
       setDeck([]);
+      deckRef.current = [];
+      currentIndexRef.current = 0;
+      setCurrentIndex(0);
       setIsShuffled(false);
     }
   }, [scopedVocabs, mode]);
@@ -220,35 +256,64 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
 
   // Actions
   const flipCard = useCallback(() => {
-    setIsFlipped((prev) => !prev);
+    setIsFlipped((prev) => {
+      isFlippedRef.current = !prev;
+      return !prev;
+    });
   }, []);
 
   const handleNext = useCallback(() => {
-    if (currentIndex < deck.length - 1) {
-      setIsFlipped(false);
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setCurrentIndex((prev) => prev + 1);
-        setIsTransitioning(false);
-      }, 150);
-    } else {
+    const deckLen = deckRef.current.length;
+    if (deckLen === 0) return;
+
+    const curr = currentIndexRef.current;
+    if (curr >= deckLen - 1) {
       setIsFinished(true);
+      return;
     }
-  }, [currentIndex, deck.length]);
+
+    const next = Math.min(deckLen - 1, curr + 1);
+    currentIndexRef.current = next;
+    setCurrentIndex(next);
+    setIsFlipped(false);
+    isFlippedRef.current = false;
+
+    setIsTransitioning(true);
+    if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+    transitionTimeoutRef.current = setTimeout(() => {
+      setIsTransitioning(false);
+    }, 120);
+  }, []);
 
   const handlePrev = useCallback(() => {
-    if (currentIndex > 0) {
-      setIsFlipped(false);
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setCurrentIndex((prev) => prev - 1);
-        setIsTransitioning(false);
-      }, 150);
-    }
-  }, [currentIndex]);
+    const deckLen = deckRef.current.length;
+    if (deckLen === 0) return;
+
+    const curr = currentIndexRef.current;
+    if (curr <= 0) return;
+
+    const prev = Math.max(0, curr - 1);
+    currentIndexRef.current = prev;
+    setCurrentIndex(prev);
+    setIsFlipped(false);
+    isFlippedRef.current = false;
+
+    setIsTransitioning(true);
+    if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+    transitionTimeoutRef.current = setTimeout(() => {
+      setIsTransitioning(false);
+    }, 120);
+  }, []);
 
   const handleProgress = useCallback((isKnown: boolean) => {
-    const currentVocab = deck[currentIndex];
+    const currentDeck = deckRef.current;
+    const curr = currentIndexRef.current;
+    const currentVocab = currentDeck[curr];
+    if (!currentVocab) return;
+
+    // Lưu vào lịch sử tiến độ để hỗ trợ Undo chính xác
+    progressHistoryRef.current.push({ id: currentVocab.id, wasKnown: isKnown });
+
     if (isKnown) {
       setKnownIds((prev) => new Set(prev).add(currentVocab.id));
       setUnknownIds((prev) => {
@@ -264,11 +329,14 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
         return next;
       });
     }
+
     handleNext();
-  }, [currentIndex, deck, handleNext]);
+  }, [handleNext]);
 
   const handleAnkiRate = useCallback((rating: AnkiRating) => {
-    const currentVocab = deck[currentIndex];
+    const currentDeck = deckRef.current;
+    const curr = currentIndexRef.current;
+    const currentVocab = currentDeck[curr];
     if (!currentVocab) return;
     
     // Lưu lịch sử trước khi thay đổi
@@ -286,13 +354,13 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
     saveAnkiProgress(newAnkiProgress);
     
     handleNext();
-  }, [currentIndex, deck, ankiProgress, handleNext]);
+  }, [ankiProgress, handleNext]);
 
   const handleUndo = useCallback(() => {
     if (isFinished) {
       setIsFinished(false);
       // Revert Anki history for the last card
-      if (mode === "anki" && ankiHistory.length > 0) {
+      if (modeRef.current === "anki" && ankiHistory.length > 0) {
         const prevProgress = ankiHistory[ankiHistory.length - 1];
         setAnkiProgress(prevProgress);
         saveAnkiProgress(prevProgress);
@@ -301,23 +369,49 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
       return;
     }
     
-    if (currentIndex > 0) {
-      // Revert Anki history for the current card we are stepping back TO
-      if (mode === "anki" && ankiHistory.length > 0) {
-        const prevProgress = ankiHistory[ankiHistory.length - 1];
-        setAnkiProgress(prevProgress);
-        saveAnkiProgress(prevProgress);
-        setAnkiHistory(prev => prev.slice(0, -1));
+    const curr = currentIndexRef.current;
+    if (curr <= 0) return;
+
+    // Revert Progress mode history
+    if (modeRef.current === "progress" && progressHistoryRef.current.length > 0) {
+      const lastAction = progressHistoryRef.current.pop();
+      if (lastAction) {
+        if (lastAction.wasKnown) {
+          setKnownIds(prev => {
+            const next = new Set(prev);
+            next.delete(lastAction.id);
+            return next;
+          });
+        } else {
+          setUnknownIds(prev => {
+            const next = new Set(prev);
+            next.delete(lastAction.id);
+            return next;
+          });
+        }
       }
-      
-      setIsFlipped(false);
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setCurrentIndex((prev) => prev - 1);
-        setIsTransitioning(false);
-      }, 150);
     }
-  }, [currentIndex, mode, ankiHistory, isFinished]);
+
+    // Revert Anki history for the current card we are stepping back TO
+    if (modeRef.current === "anki" && ankiHistory.length > 0) {
+      const prevProgress = ankiHistory[ankiHistory.length - 1];
+      setAnkiProgress(prevProgress);
+      saveAnkiProgress(prevProgress);
+      setAnkiHistory(prev => prev.slice(0, -1));
+    }
+
+    const prev = Math.max(0, curr - 1);
+    currentIndexRef.current = prev;
+    setCurrentIndex(prev);
+    setIsFlipped(false);
+    isFlippedRef.current = false;
+
+    setIsTransitioning(true);
+    if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+    transitionTimeoutRef.current = setTimeout(() => {
+      setIsTransitioning(false);
+    }, 120);
+  }, [isFinished, ankiHistory]);
 
   // Swipe Handlers
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -406,7 +500,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
         case "v":
         case "V":
           e.preventDefault();
-          const card = deck[currentIndex];
+          const card = deck[currentIndexRef.current] || deck[0];
           if (!card) break;
           
           const textToPlayKey = getAudioTextToPlay(card);
@@ -427,6 +521,12 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
 
   // Restart Logic
   const restartAll = () => {
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+      transitionTimeoutRef.current = null;
+    }
+    currentIndexRef.current = 0;
+    progressHistoryRef.current = [];
     const targetVocabs = scopedVocabs.length > 0 ? scopedVocabs : vocabularies;
     setDeck(targetVocabs); // Normal mode behavior
     // If anki mode, it should ideally re-fetch from local storage.
@@ -452,6 +552,12 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
   };
 
   const toggleShuffle = () => {
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+      transitionTimeoutRef.current = null;
+    }
+    currentIndexRef.current = 0;
+    progressHistoryRef.current = [];
     if (!isShuffled) {
       setDeck(shuffleArray(deck));
       setIsShuffled(true);
@@ -477,8 +583,20 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
   };
 
   const studyUnknowns = () => {
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+      transitionTimeoutRef.current = null;
+    }
+    currentIndexRef.current = 0;
+    progressHistoryRef.current = [];
     const unknowns = vocabularies.filter(v => unknownIds.has(v.id));
     setScopedVocabs(unknowns);
+    setDeck(unknowns);
+    setCurrentIndex(0);
+    setIsFlipped(false);
+    setIsFinished(false);
+    setKnownIds(new Set());
+    setUnknownIds(new Set());
   };
 
   if (vocabularies.length === 0) {
@@ -507,9 +625,20 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
     );
   }
 
-  const currentVocab = deck[currentIndex];
+  if (deck.length === 0) {
+    return (
+      <div className="p-12 text-center bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 transition-colors">
+        <GraduationCap className="w-10 h-10 mx-auto mb-3 text-slate-400 dark:text-slate-600" />
+        <p className="text-base font-semibold text-slate-700 dark:text-slate-300">Không có thẻ nào để hiển thị</p>
+        <p className="text-xs text-slate-500 mt-1">Hãy chọn phạm vi học hoặc thêm từ vựng để bắt đầu.</p>
+      </div>
+    );
+  }
 
-  const progressPercent = ((currentIndex) / deck.length) * 100;
+  const safeIndex = Math.max(0, Math.min(currentIndex, deck.length - 1));
+  const currentVocab = deck[safeIndex];
+
+  const progressPercent = ((safeIndex) / deck.length) * 100;
 
   return (
     <div className={isFullscreen ? "fixed inset-0 z-[100] bg-slate-50 dark:bg-slate-950 p-4 md:p-8 overflow-y-auto w-full h-full flex flex-col items-center justify-center" : ""}>
@@ -680,7 +809,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
             {mode !== "normal" && (
               <button 
                 onClick={handleUndo} 
-                disabled={currentIndex === 0 && !isFinished}
+                disabled={safeIndex === 0 && !isFinished}
                 className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-all disabled:opacity-30" 
                 title="Quay lại"
               >
@@ -722,7 +851,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
       {/* Progress Bar */}
       <div className="w-full">
         <div className="flex justify-between text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 px-1">
-          <span>{currentIndex + 1} / {deck.length}</span>
+          <span>{safeIndex + 1} / {deck.length}</span>
           {mode === "progress" && (
             <span className="flex gap-4">
               <span className="text-emerald-600 dark:text-emerald-400">Thuộc: {knownIds.size}</span>
@@ -995,7 +1124,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
           <>
             <button 
               onClick={handlePrev} 
-              disabled={currentIndex === 0}
+              disabled={safeIndex === 0}
               className="flex items-center gap-2 px-4 md:px-6 py-3 rounded-2xl font-bold transition-all disabled:opacity-30 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white hover:bg-slate-50 dark:bg-transparent dark:hover:bg-slate-800 border border-slate-200 dark:border-transparent hover:border-slate-300 dark:hover:border-slate-700 shadow-sm dark:shadow-none"
             >
               <ArrowLeft className="w-5 h-5" /> Trước <span className="hidden sm:inline">(Left)</span>
