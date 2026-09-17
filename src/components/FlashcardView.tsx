@@ -65,11 +65,11 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
 
   // Synchronous refs to prevent race conditions and stale closures during fast navigation
   const currentIndexRef = useRef(currentIndex);
-  currentIndexRef.current = currentIndex;
+  // Do NOT auto-sync currentIndexRef.current = currentIndex; it must stay ahead of the visual state
   const deckRef = useRef<VocabularyData[]>(deck);
   deckRef.current = deck;
   const isFlippedRef = useRef(isFlipped);
-  isFlippedRef.current = isFlipped;
+  // Do NOT auto-sync isFlippedRef.current = isFlipped; it must stay ahead of the visual state
   const modeRef = useRef(mode);
   modeRef.current = mode;
   const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -268,21 +268,26 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
 
     const curr = currentIndexRef.current;
     if (curr >= deckLen - 1) {
-      setIsFinished(true);
+      setIsTransitioning(true);
+      if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+      transitionTimeoutRef.current = setTimeout(() => {
+        setIsFinished(true);
+        setIsTransitioning(false);
+      }, 150);
       return;
     }
 
     const next = Math.min(deckLen - 1, curr + 1);
     currentIndexRef.current = next;
-    setCurrentIndex(next);
-    setIsFlipped(false);
     isFlippedRef.current = false;
 
     setIsTransitioning(true);
     if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
     transitionTimeoutRef.current = setTimeout(() => {
+      setCurrentIndex(currentIndexRef.current);
+      setIsFlipped(false);
       setIsTransitioning(false);
-    }, 120);
+    }, 150);
   }, []);
 
   const handlePrev = useCallback(() => {
@@ -294,15 +299,15 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
 
     const prev = Math.max(0, curr - 1);
     currentIndexRef.current = prev;
-    setCurrentIndex(prev);
-    setIsFlipped(false);
     isFlippedRef.current = false;
 
     setIsTransitioning(true);
     if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
     transitionTimeoutRef.current = setTimeout(() => {
+      setCurrentIndex(currentIndexRef.current);
+      setIsFlipped(false);
       setIsTransitioning(false);
-    }, 120);
+    }, 150);
   }, []);
 
   const handleProgress = useCallback((isKnown: boolean) => {
@@ -402,15 +407,15 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
 
     const prev = Math.max(0, curr - 1);
     currentIndexRef.current = prev;
-    setCurrentIndex(prev);
-    setIsFlipped(false);
     isFlippedRef.current = false;
 
     setIsTransitioning(true);
     if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
     transitionTimeoutRef.current = setTimeout(() => {
+      setCurrentIndex(currentIndexRef.current);
+      setIsFlipped(false);
       setIsTransitioning(false);
-    }, 120);
+    }, 150);
   }, [isFinished, ankiHistory]);
 
   // Swipe Handlers
@@ -544,6 +549,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
       setDeck(ankiDeck);
     }
     setCurrentIndex(0);
+    isFlippedRef.current = false;
     setIsFlipped(false);
     setIsFinished(false);
     setIsShuffled(false);
@@ -578,6 +584,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
       setIsShuffled(false);
     }
     setCurrentIndex(0);
+    isFlippedRef.current = false;
     setIsFlipped(false);
     setIsFinished(false);
   };
@@ -593,6 +600,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
     setScopedVocabs(unknowns);
     setDeck(unknowns);
     setCurrentIndex(0);
+    isFlippedRef.current = false;
     setIsFlipped(false);
     setIsFinished(false);
     setKnownIds(new Set());
