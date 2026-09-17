@@ -63,20 +63,20 @@ export function MobileBottomNav() {
 
   const navItems = [
     {
-      href: "/listening",
-      label: "Nghe N3",
-      icon: Headphones,
-      isActive: pathname.startsWith("/listening"),
-      color: "text-primary",
-      activeBg: "bg-accent-muted"
-    },
-    {
       href: "/",
       label: "Từ vựng",
       icon: LayoutGrid,
       isActive: pathname === "/",
       color: "text-amber-500",
       activeBg: "bg-amber-500/10"
+    },
+    {
+      href: "/listening",
+      label: "Nghe N3",
+      icon: Headphones,
+      isActive: pathname.startsWith("/listening"),
+      color: "text-primary",
+      activeBg: "bg-accent-muted"
     },
     {
       href: "/grammar",
