@@ -2,6 +2,8 @@
 
 Route: `/listening`; mở từ sidebar kho từ vựng hoặc **Nghe N3** trên điện thoại.
 
+Yêu cầu phiên đăng nhập Google hợp lệ ở cả trang và API phát video. Mật khẩu workspace không thay thế đăng nhập Google. Khách thấy màn hình đăng nhập; API trả 401 trước khi gọi Drive. Service worker không lưu/phục vụ offline trang và API luyện nghe. Quyền chia sẻ công khai của các file trên Drive không bị thay đổi.
+
 - 7 tuần × 7 buổi, không gán ngày lịch, không lưu tiến độ và không xuất sheet.
 - 26 file MP4 trong thư mục công khai của người dùng, đối chiếu năm/tháng ngày 2026-09-17. ID được lưu cố định, không phụ thuộc thứ tự file hay quyền connector khi chạy web.
 - Trình phát HTML video đọc nguồn Drive trực tiếp, hỗ trợ tua, tốc độ, A–B tối thiểu 1 giây. Chuyển bài hoặc đóng player sẽ dừng media và hủy bộ đếm.
@@ -27,3 +29,15 @@ Kiểm tra trình phát thực tế trên trình duyệt; quyền Drive/giới h
 - [Thư mục Drive](https://drive.google.com/drive/folders/1isCyV5eflOsZCAR2bgJVRg_tABV1pagu)
 - [Cấu trúc JLPT](https://www.jlpt.jp/e/guideline/testsections.html)
 - [JLPT FAQ](https://www.jlpt.jp/e/faq/)
+
+## Bộ đoạn lặp cá nhân và chia sẻ
+
+- Trong trình phát, mở **Đoạn đã lưu** → **Của tôi**. Thêm từ A–B hiện tại hoặc nhập mốc phút:giây, đặt tên, sửa/xóa rồi **Lưu thay đổi**. Chọn một đoạn để nghe lặp ngay. Tối đa 100 đoạn/đề, tên 80 ký tự, mỗi đoạn ít nhất 1 giây.
+- **Chia sẻ bộ đoạn với nhóm** áp dụng khi lưu. Nhóm là mọi tài khoản đã đăng nhập KotoBase, không phải danh sách mời riêng. Người khác chỉ đọc/nghe hoặc sao chép thành bản riêng. Tắt chia sẻ không xóa các bản sao đã được tạo hay nội dung người khác đã tải trước đó.
+- Tab **Nhóm** chỉ tải khi mở, 20 bộ/trang; dùng con trỏ document ID, không dùng offset, không cần composite index. Bộ của một người chứa toàn bộ các đoạn nên không cần truy vấn từng đoạn.
+- Document riêng: `listening_loop_users/{sha256(uid)}/exams/{driveFileId}`. Snapshot chia sẻ: `listening_loop_groups/{driveFileId}/sets/{sha256(uid)}`. UID chủ sở hữu luôn lấy từ phiên máy chủ; không nhận UID tùy ý để sửa bộ của người khác. Snapshot nhóm không chứa email.
+- Cache máy chủ: riêng theo tài khoản/đề 1 giờ, nhóm theo đề/con trỏ 5 phút; xác thực nằm ngoài cache. Lưu sẽ vô hiệu hóa cache liên quan. Bộ nhớ trình duyệt giữ kết quả 5 phút và nháp chưa lưu theo tài khoản/đề; không dùng localStorage, polling hay `onSnapshot`. Nút tải bản mới bỏ qua cache khi người học cần cập nhật ngay.
+- Cache miss bộ riêng thường đọc 1 document; chọn đoạn/nghe lặp không đọc Firestore. Nhóm đọc tối đa 20 document mỗi trang cache miss (query rỗng vẫn có chi phí tối thiểu của Firestore). Lưu dùng transaction: 1 lượt đọc để kiểm tra revision, 1 write riêng và thêm 1 write/delete khi chia sẻ; tranh chấp có thể khiến transaction thử lại. Không ghi theo vị trí phát hay mỗi lần gõ.
+- Revision chống ghi đè khi nhiều tab/thiết bị sửa cùng bộ. Nếu xung đột, giữ nháp và yêu cầu tải bản mới; không tự ghi đè. Nháp còn khi đổi bài trong phiên, và có cảnh báo khi đóng/tải lại trang với nháp chưa lưu.
+- Rules Firestore hiện tại đã kiểm tra: chặn mọi đọc/ghi từ SDK trình duyệt. Feature chỉ dùng Admin SDK qua Server Actions có xác thực; không thay rules hay ghi dữ liệu thử vào Firestore thật.
+- Kiểm thử cô lập: `node --test scripts/test-listening-loops.cjs` (validation, quyền, cache, revision, chia sẻ, phân trang; không truy cập database thật).

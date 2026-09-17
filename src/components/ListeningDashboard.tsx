@@ -6,12 +6,13 @@ import { ArrowLeft, ArrowRight, ChevronDown, Clock3, ExternalLink, Headphones, M
 import { useTheme } from "next-themes";
 import { AppLogo } from "./AppLogo";
 import { ListeningPlayer } from "./ListeningPlayer";
+import { hasUnsavedListeningLoops } from "./ListeningLoopLibrary";
 import { listeningExams, listeningWeeks, DRIVE_FOLDER_URL, reservedExams, usedExams } from "@/lib/listening-plan";
 
 const panel = "rounded-2xl bg-surface shadow-elevation-sm";
 const button = "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-body-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
-export function ListeningDashboard() {
+export function ListeningDashboard({ userId }: { userId: string }) {
   const [weekIndex, setWeekIndex] = useState(0);
   const [dayIndex, setDayIndex] = useState(0);
   const [tab, setTab] = useState<"plan" | "method" | "library">("plan");
@@ -23,6 +24,14 @@ export function ListeningDashboard() {
   const day = week.days[dayIndex];
   const activeExam = libraryExam || day.exam;
   const exam = listeningExams.find(item => item.label === activeExam)!;
+
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => {
+      if (hasUnsavedListeningLoops(userId)) { event.preventDefault(); event.returnValue = ""; }
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [userId]);
 
   useEffect(() => {
     if (libraryExam) libraryPlayer.current?.scrollIntoView({ block: "start" });
@@ -103,7 +112,7 @@ export function ListeningDashboard() {
             </div>
             <div className="space-y-4 rounded-xl bg-bg p-4">
               <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="font-semibold">Đề N3 {day.exam}</p><p className="mt-1 text-body-sm text-text-muted">{day.mock ? "Làm lần đầu không dùng lặp A–B. Chỉ lặp khi chữa bài." : "Đặt đoạn A–B quanh câu khó để nghe kỹ."}</p></div><button className={`${button} bg-accent-muted`} onClick={() => setPlaying(playing ? null : day.exam)}>{playing ? "Đóng trình nghe" : "Mở bài nghe"}<Headphones size={16} /></button></div>
-              {playing && <ListeningPlayer key={exam.driveFileId} driveFileId={exam.driveFileId} label={exam.label} />}
+              {playing && <ListeningPlayer key={exam.driveFileId} userId={userId} driveFileId={exam.driveFileId} label={exam.label} />}
             </div>
             <div className="flex justify-between gap-4">
               <button disabled={weekIndex === 0 && dayIndex === 0} className={`${button} bg-surface-raised disabled:opacity-40`} onClick={() => dayIndex > 0 ? selectDay(weekIndex, dayIndex - 1) : selectDay(weekIndex - 1, 6)}><ArrowLeft size={16} />Buổi trước</button>
@@ -143,7 +152,7 @@ export function ListeningDashboard() {
 
       {tab === "library" && <section className={`${panel} space-y-6 p-4 md:p-6`}>
         <div><h2 className="text-heading-2 font-bold">Bộ đề của bạn</h2><p className="mt-3 max-w-prose text-body text-text-muted">26 file nghe trong thư mục Google Drive của bạn, sắp theo kỳ thi. Các đề ngoài lộ trình được giữ làm dự phòng cho vòng tiếp theo.</p></div>
-        {libraryExam && <div ref={libraryPlayer} className="scroll-mt-4 space-y-4 rounded-xl bg-bg p-4"><div className="flex items-center justify-between gap-4"><h3 className="text-heading-3">Đề {libraryExam}</h3><button className={`${button} bg-surface`} onClick={() => { setLibraryExam(null); setPlaying(null); }}>Đóng</button></div><ListeningPlayer key={exam.driveFileId} driveFileId={exam.driveFileId} label={exam.label} /></div>}
+        {libraryExam && <div ref={libraryPlayer} className="scroll-mt-4 space-y-4 rounded-xl bg-bg p-4"><div className="flex items-center justify-between gap-4"><h3 className="text-heading-3">Đề {libraryExam}</h3><button className={`${button} bg-surface`} onClick={() => { setLibraryExam(null); setPlaying(null); }}>Đóng</button></div><ListeningPlayer key={exam.driveFileId} userId={userId} driveFileId={exam.driveFileId} label={exam.label} /></div>}
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {listeningExams.map(item => <div key={item.driveFileId} className="flex flex-col items-start gap-3 rounded-xl bg-bg p-4">
             <div className="flex w-full items-center justify-between gap-2"><span className="text-caption text-text-muted">#{String(item.index).padStart(2, "0")} / GOOGLE DRIVE</span><span className="rounded-full bg-surface px-2 py-1 text-caption">{reservedExams.includes(item.label) ? "Để dành thi thử" : usedExams.has(item.label) ? "Trong lộ trình" : "Dự phòng"}</span></div>
