@@ -2,6 +2,8 @@
 
 Route: `/listening`; mở từ sidebar kho từ vựng hoặc **Nghe N3** trên điện thoại.
 
+Yêu cầu phiên đăng nhập Google hợp lệ ở cả trang và API phát video. Mật khẩu workspace không thay thế đăng nhập Google. Khách thấy màn hình đăng nhập; API trả 401 trước khi gọi Drive. Service worker không lưu/phục vụ offline trang và API luyện nghe. Quyền chia sẻ công khai của các file trên Drive không bị thay đổi.
+
 - 7 tuần × 7 buổi, không gán ngày lịch, không lưu tiến độ và không xuất sheet.
 - 26 file MP4 trong thư mục công khai của người dùng, đối chiếu năm/tháng ngày 2026-09-17. ID được lưu cố định, không phụ thuộc thứ tự file hay quyền connector khi chạy web.
 - Trình phát HTML video đọc nguồn Drive trực tiếp, hỗ trợ tua, tốc độ, A–B tối thiểu 1 giây. Chuyển bài hoặc đóng player sẽ dừng media và hủy bộ đếm.

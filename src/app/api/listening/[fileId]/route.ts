@@ -1,12 +1,15 @@
 import { NextRequest } from "next/server";
 import { listeningExams } from "@/lib/listening-plan";
 import { verifyToken } from "@/lib/auth-utils";
+import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 const CHUNK_SIZE = 2 * 1024 * 1024;
 const allowedFiles = new Set(listeningExams.map(exam => exam.driveFileId));
 
 export async function GET(request: NextRequest, { params }: { params: { fileId: string } }) {
+  const user = await getCurrentUser();
+  if (!user?.uid) return new Response("Google sign-in required", { status: 401, headers: { "Cache-Control": "private, no-store" } });
   if (process.env.APP_ACCESS_PASSWORD && !(await verifyToken(request.cookies.get("kotobase_auth_token")?.value || ""))) {
     return new Response("Authentication required", { status: 401 });
   }

@@ -35,6 +35,14 @@ self.addEventListener("activate", (event) => {
     })
   );
   self.clients.claim();
+  // Remove protected pages saved by earlier versions, including their '/' alias.
+  event.waitUntil(caches.open(CACHE_NAME).then(async (cache) => {
+    const requests = await cache.keys();
+    await Promise.all(requests.filter((request) => {
+      const path = new URL(request.url).pathname;
+      return path === "/" || path === "/listening" || path.startsWith("/listening/") || path.startsWith("/api/listening/");
+    }).map((request) => cache.delete(request)));
+  }));
 });
 
 // ── Fetch: chiến lược cache thông minh ──────────────────────────────────────
@@ -43,6 +51,12 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
+
+  // Always let the server verify the current session. Never serve these from cache.
+  if (url.pathname === "/listening" || url.pathname.startsWith("/listening/") || url.pathname.startsWith("/api/listening/")) {
+    event.respondWith(fetch(event.request, { cache: "no-store" }));
+    return;
+  }
 
   // Bỏ qua Firebase, auth, external APIs
   if (
