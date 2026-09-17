@@ -2,13 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ExternalLink, Repeat2 } from "lucide-react";
+import { ListeningLoopLibrary } from "./ListeningLoopLibrary";
+import type { ListeningLoop } from "@/lib/listening-loops";
 
 function timeLabel(time: number) {
   return `${Math.floor(time / 60)}:${String(Math.floor(time % 60)).padStart(2, "0")}`;
 }
 
 // Parent keys by Drive file ID so changing exams disposes playback and loop state.
-export function ListeningPlayer({ driveFileId, label }: { driveFileId: string; label: string }) {
+export function ListeningPlayer({ driveFileId, label, userId }: { driveFileId: string; label: string; userId: string }) {
   const video = useRef<HTMLVideoElement>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(false);
@@ -19,6 +21,7 @@ export function ListeningPlayer({ driveFileId, label }: { driveFileId: string; l
   const [loop, setLoop] = useState(false);
   const [message, setMessage] = useState("");
   const [speed, setSpeed] = useState("1");
+  const [duration, setDuration] = useState(0);
   const fileUrl = `https://drive.google.com/file/d/${driveFileId}`;
   const source = `/api/listening/${encodeURIComponent(driveFileId)}`;
   const control = "rounded-lg bg-surface-raised px-4 py-3 text-body-sm font-semibold hover:bg-accent-muted focus-visible:outline-none focus-visible:ring-2 disabled:opacity-50 disabled:cursor-not-allowed";
@@ -74,6 +77,14 @@ export function ListeningPlayer({ driveFileId, label }: { driveFileId: string; l
     video.current.currentTime = a; setLoop(true); void play();
   }
 
+  function selectSavedLoop(item: ListeningLoop) {
+    if (!video.current || !ready || preview) return;
+    if (item.end > video.current.duration) { setMessage("Đoạn này vượt thời lượng video. Hãy sửa mốc B trong bộ của bạn."); return; }
+    setA(item.start); setB(item.end); setLoop(true);
+    video.current.currentTime = item.start;
+    setMessage(`Đang lặp: ${item.name}`); void play();
+  }
+
   return <section aria-label={`Trình nghe đề ${label}`} className="space-y-4">
     {preview ? <>
       <iframe key={driveFileId} src={`${fileUrl}/preview`} title={`Google Drive · đề N3 ${label}`}
@@ -83,7 +94,7 @@ export function ListeningPlayer({ driveFileId, label }: { driveFileId: string; l
     </> : <>
       <video key={`${driveFileId}-${attempt}`} ref={video} controls playsInline preload="metadata"
         aria-label={`Đề nghe N3 ${label}`} className="aspect-video min-h-52 w-full rounded-xl bg-surface-raised"
-        onLoadedMetadata={() => { setReady(true); setError(false); }}
+        onLoadedMetadata={() => { setReady(true); setError(false); setDuration(video.current?.duration || 0); }}
         onError={() => { setError(true); setReady(false); setLoop(false); }}
         onEnded={() => { if (loop && a !== null && video.current) { video.current.currentTime = a; void play(); } }}
       />
@@ -109,6 +120,7 @@ export function ListeningPlayer({ driveFileId, label }: { driveFileId: string; l
       <p role="status" className="text-body-sm text-text-muted">{message || "Phát video, đặt A ở đầu câu và B ở cuối câu. Đổi đề sẽ xóa đoạn lặp."}</p>
       <button className={control} onClick={() => { reset(); setPreview(true); }}>Dùng chế độ xem Drive</button>
     </>}
+    <ListeningLoopLibrary userId={userId} fileId={driveFileId} a={a} b={b} duration={duration} canPlay={ready && !preview} onSelect={selectSavedLoop} />
     <a href={`${fileUrl}/view`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-body-sm font-semibold text-primary rounded-lg focus-visible:ring-2"><ExternalLink size={16} />Mở đề {label} trên Google Drive</a>
   </section>;
 }

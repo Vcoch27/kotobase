@@ -12,5 +12,5 @@ export const metadata: Metadata = {
 export default async function ListeningPage() {
   const user = await getCurrentUser();
   if (!user?.uid) return <ListeningSignIn />;
-  return <ListeningDashboard />;
+  return <ListeningDashboard userId={user.uid} />;
 }
