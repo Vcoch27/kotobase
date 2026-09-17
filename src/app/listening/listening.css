@@ -1,0 +1,12 @@
+/* Scoped semantic tokens: keep the rest of KotoBase unchanged. */
+.dark .listening-page {
+  --color-bg: 23% 0.018 255;
+  --color-surface: 28% 0.022 255;
+  --color-surface-raised: 33% 0.025 255;
+  --color-text-primary: 96% 0.006 255;
+  --color-text-muted: 79% 0.018 255;
+  --color-primary: 79% 0.10 245;
+  --color-primary-hover: 85% 0.08 245;
+  --color-accent-muted: 36% 0.055 250;
+  --ring: 79% 0.10 245;
+}
