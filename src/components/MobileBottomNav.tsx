@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
   BookOpen, MessageSquareQuote, Languages, 
-  Sparkles, Smartphone, GraduationCap, LayoutGrid 
+  Sparkles, Smartphone, GraduationCap, LayoutGrid, Headphones
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -63,6 +63,14 @@ export function MobileBottomNav() {
 
   const navItems = [
     {
+      href: "/listening",
+      label: "Nghe N3",
+      icon: Headphones,
+      isActive: pathname.startsWith("/listening"),
+      color: "text-primary",
+      activeBg: "bg-accent-muted"
+    },
+    {
       href: "/",
       label: "Từ vựng",
       icon: LayoutGrid,
@@ -118,7 +126,7 @@ export function MobileBottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "relative flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all duration-200",
+                "relative flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center py-1 px-1 sm:px-2 rounded-xl transition-all duration-200 focus-visible:ring-2",
                 item.isActive 
                   ? cn(item.color, item.activeBg, "font-bold scale-105") 
                   : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 font-medium"
