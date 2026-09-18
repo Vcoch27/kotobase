@@ -408,6 +408,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
   // Cập nhật riêng danh sách thư mục (KHÔNG chạm vào từ vựng, KHÔNG reset tiến trình học)
   const refreshFoldersOnly = async () => {
     try {
+      vocabCache.current = {};
       const fData = await getFolders();
       if (Array.isArray(fData)) {
         setFolders(fData);

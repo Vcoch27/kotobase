@@ -288,9 +288,21 @@ export function FolderTree({
 
     if (type === 'delete') {
       if (promptValue === 'XOA') {
-        // Optimistic update
-        setLocalFolders((prev) => prev.filter((f) => f.id !== targetId && f.parentId !== targetId));
-        if (selectedFolderId === targetId) {
+        // Optimistic update: thu thập đệ quy tất cả các id cần xóa (chính nó và con cháu)
+        const idsToRemove = new Set<string>([targetId]);
+        let added = true;
+        while (added) {
+          added = false;
+          localFolders.forEach(f => {
+            if (f.parentId && idsToRemove.has(f.parentId) && !idsToRemove.has(f.id)) {
+              idsToRemove.add(f.id);
+              added = true;
+            }
+          });
+        }
+
+        setLocalFolders((prev) => prev.filter((f) => !idsToRemove.has(f.id)));
+        if (selectedFolderId === targetId || (selectedFolderIds && selectedFolderIds.some(id => idsToRemove.has(id)))) {
           onSelectFolder('all');
         }
         setDeletingFolderId(targetId);

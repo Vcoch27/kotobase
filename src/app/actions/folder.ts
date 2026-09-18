@@ -152,6 +152,8 @@ export async function updateFolderVisibility(id: string, isPublic: boolean) {
       updatedAt: new Date().toISOString(),
     });
 
+    revalidatePath("/");
+    revalidateTag("folders");
     return { success: true, isPublic: !!isPublic };
   } catch (error) {
     console.error("Lỗi khi cập nhật trạng thái hiển thị thư mục:", error);
@@ -187,6 +189,8 @@ export async function renameFolder(id: string, newName: string) {
       updatedAt: new Date().toISOString()
     });
 
+    revalidatePath("/");
+    revalidateTag("folders");
     return { success: true };
   } catch (error) {
     console.error("Lỗi khi đổi tên thư mục:", error);
@@ -249,21 +253,24 @@ export async function deleteFolderAndVocabs(id: string) {
 
     const folderIdsArray = Array.from(folderIdsToDelete);
 
-    // Lấy tất cả từ vựng để xóa
-    const vocabSnapshot = await adminDb.collection("vocabularies").get();
-    const vocabsToDelete: string[] = [];
-    
-    vocabSnapshot.docs.forEach(doc => {
-      const folderIds = doc.data().folderIds || [];
-      const hasMatch = folderIds.some((fid: string) => folderIdsToDelete.has(fid));
-      if (hasMatch) {
-        vocabsToDelete.push(doc.id);
-      }
-    });
+    // Lấy từ vựng thuộc các thư mục này để xóa (chỉ query theo folderIds thay vì get() toàn bộ DB)
+    const vocabsToDelete = new Set<string>();
+    await Promise.all(
+      folderIdsArray.map(async (fid) => {
+        try {
+          const snap = await adminDb.collection("vocabularies")
+            .where("folderIds", "array-contains", fid)
+            .get();
+          snap.docs.forEach(doc => vocabsToDelete.add(doc.id));
+        } catch (err) {
+          console.error(`Lỗi khi lấy từ vựng thư mục ${fid}:`, err);
+        }
+      })
+    );
 
     const allDocRefsToDelete = [
       ...folderIdsArray.map(fid => adminDb.collection("folders").doc(fid)),
-      ...vocabsToDelete.map(vid => adminDb.collection("vocabularies").doc(vid))
+      ...Array.from(vocabsToDelete).map(vid => adminDb.collection("vocabularies").doc(vid))
     ];
 
     // Xóa theo batch để tránh giới hạn 500 của Firestore
@@ -275,6 +282,9 @@ export async function deleteFolderAndVocabs(id: string) {
       await batch.commit();
     }
 
+    revalidatePath("/");
+    revalidateTag("folders");
+    revalidateTag("vocabularies");
     return { success: true };
   } catch (error) {
     console.error("Lỗi khi xóa thư mục và từ vựng:", error);
@@ -308,6 +318,8 @@ export async function claimLegacyFolders() {
 
     if (count > 0) {
       await batch.commit();
+      revalidatePath("/");
+      revalidateTag("folders");
     }
 
     return { success: true, count };
