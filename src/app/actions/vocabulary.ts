@@ -2,7 +2,8 @@
 
 import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/session";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { getCachedFoldersRaw, getCachedVocabsByFolderId, getCachedAllVocabsLimit } from "@/lib/cache";
 
 export interface CreateVocabInput {
   word: string;
@@ -63,7 +64,7 @@ export async function createVocabulary(input: CreateVocabInput) {
       updatedAt: new Date().toISOString(),
     });
 
-    revalidatePath("/");
+    revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
     return { success: true, data: { id: docRef.id } };
   } catch (error) {
     console.error("Lỗi khi thêm từ vựng:", error);
@@ -125,7 +126,7 @@ export async function createBulkVocabulary(jsonString: string, targetFolderIds?:
 
     await batch.commit();
 
-    revalidatePath("/");
+    revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
     return { success: true, count };
   } catch (error) {
     console.error("Lỗi import hàng loạt:", error);
@@ -153,7 +154,7 @@ export async function assignVocabularyToFolder(vocabularyId: string, folderId: s
       updatedAt: new Date().toISOString()
     });
 
-    revalidatePath("/");
+    revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
     return { success: true };
   } catch (error) {
     console.error("Lỗi khi chuyển thư mục cho từ vựng:", error);
@@ -168,15 +169,8 @@ export async function getVocabularies(folderId?: string | string[], searchQuery?
     const currentUid = currentUser?.uid;
 
     // 1. Lấy danh sách folders để map tên & tìm cây thư mục con đệ quy
-    const foldersSnapshot = await adminDb.collection("folders").get();
+    const allFolders = await getCachedFoldersRaw();
     const folderMap = new Map<string, any>();
-    const allFolders = foldersSnapshot.docs.map(doc => ({
-      id: doc.id,
-      name: doc.data().name,
-      parentId: doc.data().parentId || null,
-      ownerId: doc.data().ownerId || null,
-      isPublic: doc.data().isPublic !== false,
-    }));
     allFolders.forEach(f => folderMap.set(f.id, f));
 
     // Hàm kiểm tra folder có hiển thị với user không (kế thừa theo cây thư mục)
@@ -235,26 +229,25 @@ export async function getVocabularies(folderId?: string | string[], searchQuery?
     if (inputFolderIds.length > 0) {
       // Nếu có chọn thư mục (1 hoặc nhiều), thực hiện query riêng cho từng folderId và khử trùng bằng docMap
       const promises = Array.from(targetFolderIds).map(fid => 
-        adminDb.collection("vocabularies").where("folderIds", "array-contains", fid).get()
+        getCachedVocabsByFolderId(fid)
       );
       const snapshots = await Promise.all(promises);
       
       const docMap = new Map();
-      snapshots.forEach(snap => {
-        snap.docs.forEach(doc => {
+      snapshots.forEach(snapDocs => {
+        snapDocs.forEach(doc => {
           docMap.set(doc.id, doc);
         });
       });
       snapshotDocs = Array.from(docMap.values());
     } else {
       // Nếu là tất cả thư mục, buộc phải get(). Để tránh vượt quota và load nhanh, giới hạn 100 từ vựng gần nhất
-      const snapshot = await adminDb.collection("vocabularies").orderBy("createdAt", "desc").limit(100).get();
-      snapshotDocs = snapshot.docs;
+      snapshotDocs = await getCachedAllVocabsLimit();
     }
 
     let vocabs = snapshotDocs
       .map(doc => {
-        const data = doc.data();
+        const data = doc;
         const folderVocabularies = (data.folderIds || []).map((fId: string) => ({
           folderId: fId,
           folder: folderMap.get(fId) || { id: fId, name: "Thư mục không xác định" }
@@ -334,7 +327,7 @@ export async function deleteVocabulary(id: string) {
     }
 
     await adminDb.collection("vocabularies").doc(id).delete();
-    revalidatePath("/");
+    revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
     return { success: true };
   } catch (error) {
     console.error("Lỗi khi xóa từ vựng:", error);
@@ -382,7 +375,7 @@ export async function updateVocabulary(id: string, input: Partial<CreateVocabInp
     if (input.folderIds !== undefined) updateData.folderIds = input.folderIds;
 
     await adminDb.collection("vocabularies").doc(id).update(updateData);
-    revalidatePath("/");
+    revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
     return { success: true };
   } catch (error) {
     console.error("Lỗi khi cập nhật từ vựng:", error);

@@ -2,6 +2,8 @@
 
 import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/session";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { getCachedFoldersRaw, getCachedFolderVocabCount } from "@/lib/cache";
 
 export async function getFolders() {
   try {
@@ -9,18 +11,7 @@ export async function getFolders() {
     const isAdmin = currentUser?.email === "hoangtungmy123@gmail.com";
     const currentUid = currentUser?.uid;
 
-    const snapshot = await adminDb.collection("folders").orderBy("name", "asc").get();
-    
-    // Map raw folders
-    const allRawFolders = snapshot.docs.map(doc => ({
-      id: doc.id,
-      name: doc.data().name,
-      parentId: doc.data().parentId || null,
-      ownerId: doc.data().ownerId || null,
-      ownerEmail: doc.data().ownerEmail || null,
-      ownerName: doc.data().ownerName || null,
-      isPublic: doc.data().isPublic !== false, // Mặc định là hiển thị (true)
-    }));
+    const allRawFolders = await getCachedFoldersRaw();
 
     // Tạo Map để tra cứu nhanh cha con
     const folderMap = new Map<string, typeof allRawFolders[0]>();
@@ -67,11 +58,7 @@ export async function getFolders() {
     // Tối ưu hoá: Dùng count() để đếm số lượng từ vựng trong mỗi thư mục hiển thị
     await Promise.all(visibleFolders.map(async (folder) => {
       try {
-        const countSnap = await adminDb.collection("vocabularies")
-          .where("folderIds", "array-contains", folder.id)
-          .count()
-          .get();
-        folder._count.folderVocabularies = countSnap.data().count;
+        folder._count.folderVocabularies = await getCachedFolderVocabCount(folder.id);
       } catch (e) {
         folder._count.folderVocabularies = 0;
       }
@@ -122,6 +109,8 @@ export async function createFolder(name: string, parentId?: string, isPublic: bo
       updatedAt: new Date().toISOString()
     });
 
+    revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
+    revalidateTag("folders");
     return { 
       success: true, 
       folder: { 

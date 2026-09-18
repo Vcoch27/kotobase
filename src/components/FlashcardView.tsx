@@ -649,8 +649,8 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
   const progressPercent = ((safeIndex) / deck.length) * 100;
 
   return (
-    <div className={isFullscreen ? "fixed inset-0 z-[100] bg-slate-50 dark:bg-slate-950 p-4 md:p-8 overflow-y-auto w-full h-full flex flex-col items-center justify-center" : ""}>
-      <div className={`w-full mx-auto flex flex-col gap-4 animate-fadeIn max-w-3xl ${isFullscreen ? "my-auto" : ""}`}>
+    <div className={isFullscreen ? "fixed inset-0 z-[100] bg-slate-50 dark:bg-slate-950 p-3 sm:p-4 md:p-6 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] w-full h-full flex flex-col items-center justify-center" : ""}>
+      <div className={`w-full mx-auto flex flex-col gap-3 sm:gap-4 animate-fadeIn max-w-3xl ${isFullscreen ? "my-auto" : ""}`}>
       {/* Bộ chọn linh hoạt phạm vi học (Study Scope Selector) */}
       <div className={isFullscreen ? "hidden" : "block"}>
         <StudyScopeSelector
@@ -884,30 +884,39 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
       {/* Flashcard 3D Container */}
       <div 
         key={currentVocab.id}
-        className={`relative w-full perspective-1000 cursor-pointer select-none touch-pan-y ${
+        className={`relative w-full mx-auto cursor-pointer select-none touch-pan-y shadow-2xl rounded-3xl ${
           isTransitioning ? "animate-fadeOut" : "animate-fadeIn"
         }`}
-        style={{ aspectRatio: '4/3' }}
+        style={{ 
+          aspectRatio: '4/3',
+          maxHeight: isFullscreen ? 'min(520px, calc(100dvh - 250px))' : undefined,
+          maxWidth: isFullscreen ? 'min(48rem, calc((100dvh - 250px) * 4 / 3))' : undefined,
+          perspective: '1200px',
+          WebkitPerspective: '1200px',
+        }}
         onClick={flipCard}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
         <div 
-          className="w-full h-full relative transform-style-3d shadow-2xl rounded-3xl"
+          className="w-full h-full relative transform-style-3d rounded-3xl"
           style={{ 
-            transition: 'transform 0.5s',
-            WebkitTransition: '-webkit-transform 0.5s',
+            transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+            WebkitTransition: '-webkit-transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
             transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
             WebkitTransform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+            transformStyle: 'preserve-3d',
+            WebkitTransformStyle: 'preserve-3d',
+            willChange: 'transform',
           }}
         >
           {/* Front */}
           {mode === "listening" ? (
             /* Listening Mode Front: Chỉ hiện âm thanh */
             <div 
-              className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-violet-50 to-slate-50 dark:from-violet-950/40 dark:to-slate-950 border border-violet-200 dark:border-violet-700/40 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center transition-all duration-300 ${
-                isFlipped ? "opacity-0 pointer-events-none invisible" : "opacity-100 pointer-events-auto visible"
+              className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-violet-50 to-slate-50 dark:from-violet-950/40 dark:to-slate-950 border border-violet-200 dark:border-violet-700/40 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center ${
+                isFlipped ? "pointer-events-none select-none" : "pointer-events-auto"
               }`}
               style={{ 
                 backfaceVisibility: 'hidden', 
@@ -957,8 +966,8 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
           ) : (
             /* Normal / Progress / Anki Front: Hiển thị từ vựng */
             <div 
-              className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-6 sm:p-8 text-center transition-all duration-300 ${
-                isFlipped ? "opacity-0 pointer-events-none invisible" : "opacity-100 pointer-events-auto visible"
+              className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-6 sm:p-8 text-center ${
+                isFlipped ? "pointer-events-none select-none" : "pointer-events-auto"
               }`}
               style={{ 
                 backfaceVisibility: 'hidden', 
@@ -983,8 +992,8 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
 
           {/* Back */}
           <div 
-            className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center transition-all duration-300 ${
-              !isFlipped ? "opacity-0 pointer-events-none invisible" : "opacity-100 pointer-events-auto visible"
+            className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center ${
+              !isFlipped ? "pointer-events-none select-none" : "pointer-events-auto"
             }`}
             style={{ 
               backfaceVisibility: 'hidden', 
@@ -1065,9 +1074,9 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
       </div>
 
       {/* Controls Footer */}
-      <div className="flex items-center justify-center gap-4 mt-2">
+      <div className="flex items-center justify-center gap-4 mt-2 min-h-[56px]">
         {mode === "anki" ? (
-          <div className="w-full max-w-xl mx-auto flex items-center gap-2 md:gap-4">
+          <div className="w-full max-w-xl mx-auto flex items-center gap-2 md:gap-4 min-h-[56px]">
             {!isFlipped ? (
                <div className="w-full text-center text-slate-500 dark:text-slate-400 text-sm font-semibold h-16 flex items-center justify-center">
                   Bấm lật thẻ hoặc [Space] để hiện kết quả

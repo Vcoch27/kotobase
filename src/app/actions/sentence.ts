@@ -2,7 +2,8 @@
 
 import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/session";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { getCachedSentenceFoldersRaw, getCachedSentenceCountByFolderId, getCachedSentencesByFolderId, getCachedAllSentences } from "@/lib/cache";
 
 // =========================================
 // THƯ MỤC MẪU CÂU (SENTENCE FOLDER)
@@ -10,28 +11,15 @@ import { revalidatePath } from "next/cache";
 
 export async function getSentenceFolders(): Promise<{ success: boolean; data?: any[]; error?: string }> {
   try {
-    const snapshot = await adminDb.collection("sentence_folders").orderBy("name", "asc").get();
-    
-    const folders = snapshot.docs.map(doc => ({
-      id: doc.id,
-      name: doc.data().name,
-      parentId: doc.data().parentId || null,
-      ownerId: doc.data().ownerId || null,
-      ownerEmail: doc.data().ownerEmail || null,
-      ownerName: doc.data().ownerName || null,
-      _count: {
-        folderSentences: 0
-      }
+    const rawFolders = await getCachedSentenceFoldersRaw();
+    const folders = rawFolders.map(f => ({
+      ...f,
+      _count: { folderSentences: 0 }
     }));
 
-    // Đếm số lượng mẫu câu trong mỗi thư mục
     await Promise.all(folders.map(async (folder) => {
       try {
-        const countSnap = await adminDb.collection("sentences")
-          .where("folderIds", "array-contains", folder.id)
-          .count()
-          .get();
-        folder._count.folderSentences = countSnap.data().count;
+        folder._count.folderSentences = await getCachedSentenceCountByFolderId(folder.id);
       } catch (e) {
         folder._count.folderSentences = 0;
       }
@@ -63,7 +51,7 @@ export async function createSentenceFolder(name: string, parentId?: string) {
       updatedAt: new Date().toISOString(),
     });
 
-    revalidatePath("/");
+    revalidatePath("/"); revalidateTag("sentence_folders"); revalidateTag("sentences");
     return { success: true, data: { id: docRef.id } };
   } catch (error) {
     console.error("Lỗi khi tạo thư mục mẫu câu:", error);
@@ -93,7 +81,7 @@ export async function updateSentenceFolder(id: string, name: string) {
       updatedAt: new Date().toISOString()
     });
 
-    revalidatePath("/");
+    revalidatePath("/"); revalidateTag("sentence_folders"); revalidateTag("sentences");
     return { success: true };
   } catch (error) {
     console.error("Lỗi khi cập nhật thư mục:", error);
@@ -129,7 +117,7 @@ export async function deleteSentenceFolder(id: string) {
     
     await batch.commit();
 
-    revalidatePath("/");
+    revalidatePath("/"); revalidateTag("sentence_folders"); revalidateTag("sentences");
     return { success: true };
   } catch (error) {
     console.error("Lỗi khi xóa thư mục mẫu câu:", error);
@@ -144,20 +132,13 @@ export async function deleteSentenceFolder(id: string) {
 
 export async function getSentencesByFolder(folderId: string | "all"): Promise<{ success: boolean; data?: any[]; error?: string }> {
   try {
-    let snapshot;
-    const collection = adminDb.collection("sentences");
-
+    let data;
     if (folderId === "all" || !folderId) {
-      snapshot = await collection.orderBy("createdAt", "desc").get();
+      data = await getCachedAllSentences();
     } else {
-      snapshot = await collection.where("folderIds", "array-contains", folderId).orderBy("createdAt", "desc").get();
+      data = await getCachedSentencesByFolderId(folderId);
     }
     
-    const data = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-
     return { success: true, data };
   } catch (error: any) {
     console.error("Lỗi lấy danh sách mẫu câu:", error);
@@ -195,7 +176,7 @@ export async function createSentence(input: {
       updatedAt: new Date().toISOString(),
     });
 
-    revalidatePath("/");
+    revalidatePath("/"); revalidateTag("sentence_folders"); revalidateTag("sentences");
     return { success: true, data: { id: docRef.id } };
   } catch (error) {
     console.error("Lỗi khi thêm mẫu câu:", error);
@@ -235,7 +216,7 @@ export async function updateSentence(id: string, input: {
       updatedAt: new Date().toISOString(),
     });
 
-    revalidatePath("/");
+    revalidatePath("/"); revalidateTag("sentence_folders"); revalidateTag("sentences");
     return { success: true };
   } catch (error) {
     console.error("Lỗi khi sửa mẫu câu:", error);
@@ -259,7 +240,7 @@ export async function deleteSentence(id: string) {
     }
 
     await docRef.delete();
-    revalidatePath("/");
+    revalidatePath("/"); revalidateTag("sentence_folders"); revalidateTag("sentences");
     return { success: true };
   } catch (error) {
     console.error("Lỗi khi xóa mẫu câu:", error);
@@ -314,7 +295,7 @@ export async function createBulkSentences(jsonString: string, targetFolderId?: s
       await batch.commit();
     }
 
-    revalidatePath("/");
+    revalidatePath("/"); revalidateTag("sentence_folders"); revalidateTag("sentences");
     return { success: true, count };
   } catch (error: any) {
     console.error("Lỗi khi lưu mẫu câu hàng loạt:", error);

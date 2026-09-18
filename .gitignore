@@ -44,3 +44,10 @@ next-env.d.ts
 # Backup dumps
 /backups/
 *.json.gz
+
+# Android release keys and cache
+*.jks
+android/.gradle_user_home/
+.agents/
+skills-lock.json
+/docs/runtime-architecture/

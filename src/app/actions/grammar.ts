@@ -1,22 +1,20 @@
-﻿"use server";
+"use server";
 
 import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/session";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { getCachedGrammarFoldersRaw, getCachedGrammarCountByFolderId, getCachedGrammarsByFolderId, getCachedAllGrammars } from "@/lib/cache";
 
 export async function getGrammarFolders(): Promise<{ success: boolean; data?: any[]; error?: string }> {
   try {
-    const snapshot = await adminDb.collection("grammar_folders").orderBy("name", "asc").get();
-    const folders = snapshot.docs.map(doc => ({
-      id: doc.id, name: doc.data().name,
-      parentId: doc.data().parentId || null,
-      ownerId: doc.data().ownerId || null,
+    const rawFolders = await getCachedGrammarFoldersRaw();
+    const folders = rawFolders.map(f => ({
+      ...f,
       _count: { folderGrammars: 0 }
     }));
     await Promise.all(folders.map(async (folder) => {
       try {
-        const countSnap = await adminDb.collection("grammars").where("folderIds", "array-contains", folder.id).count().get();
-        folder._count.folderGrammars = countSnap.data().count;
+        folder._count.folderGrammars = await getCachedGrammarCountByFolderId(folder.id);
       } catch { folder._count.folderGrammars = 0; }
     }));
     return { success: true, data: folders };
@@ -35,7 +33,7 @@ export async function createGrammarFolder(name: string, parentId?: string) {
       ownerId: currentUser.uid, ownerEmail: currentUser.email,
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     });
-    revalidatePath("/grammar");
+    revalidatePath("/grammar"); revalidateTag("grammar_folders"); revalidateTag("grammars");
     return { success: true, data: { id: docRef.id } };
   } catch { return { success: false, error: "Không thể tạo thư mục." }; }
 }
@@ -50,7 +48,7 @@ export async function updateGrammarFolder(id: string, name: string) {
     if (!doc.exists) return { success: false, error: "Thư mục không tồn tại." };
     if (doc.data()?.ownerId !== currentUser.uid && currentUser.email !== "hoangtungmy123@gmail.com") return { success: false, error: "Không có quyền." };
     await docRef.update({ name: name.trim(), updatedAt: new Date().toISOString() });
-    revalidatePath("/grammar");
+    revalidatePath("/grammar"); revalidateTag("grammar_folders"); revalidateTag("grammars");
     return { success: true };
   } catch { return { success: false, error: "Không thể cập nhật thư mục." }; }
 }
@@ -68,21 +66,20 @@ export async function deleteGrammarFolder(id: string) {
     grammarsQuery.docs.forEach(gDoc => batch.delete(gDoc.ref));
     batch.delete(docRef);
     await batch.commit();
-    revalidatePath("/grammar");
+    revalidatePath("/grammar"); revalidateTag("grammar_folders"); revalidateTag("grammars");
     return { success: true };
   } catch { return { success: false, error: "Không thể xóa thư mục." }; }
 }
 
 export async function getGrammarsByFolder(folderId: string | "all"): Promise<{ success: boolean; data?: any[]; error?: string }> {
   try {
-    let snapshot;
-    const collection = adminDb.collection("grammars");
+    let data;
     if (folderId === "all" || !folderId) {
-      snapshot = await collection.orderBy("createdAt", "desc").get();
+      data = await getCachedAllGrammars();
     } else {
-      snapshot = await collection.where("folderIds", "array-contains", folderId).orderBy("createdAt", "desc").get();
+      data = await getCachedGrammarsByFolderId(folderId);
     }
-    return { success: true, data: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) };
+    return { success: true, data };
   } catch (error: any) {
     return { success: false, error: "Lỗi lấy danh sách ngữ pháp." };
   }
@@ -105,7 +102,7 @@ export async function createGrammar(input: {
       folderIds: input.folderId ? [input.folderId] : [],
       ownerId: currentUser.uid, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     });
-    revalidatePath("/grammar");
+    revalidatePath("/grammar"); revalidateTag("grammar_folders"); revalidateTag("grammars");
     return { success: true, data: { id: docRef.id } };
   } catch { return { success: false, error: "Không thể thêm ngữ pháp." }; }
 }
@@ -130,7 +127,7 @@ export async function updateGrammar(id: string, input: {
       folderIds: input.folderId ? [input.folderId] : (doc.data()?.folderIds || []),
       updatedAt: new Date().toISOString(),
     });
-    revalidatePath("/grammar");
+    revalidatePath("/grammar"); revalidateTag("grammar_folders"); revalidateTag("grammars");
     return { success: true };
   } catch { return { success: false, error: "Không thể sửa ngữ pháp." }; }
 }
@@ -144,7 +141,7 @@ export async function deleteGrammar(id: string) {
     if (!doc.exists) return { success: false, error: "Ngữ pháp không tồn tại." };
     if (doc.data()?.ownerId !== currentUser.uid && currentUser.email !== "hoangtungmy123@gmail.com") return { success: false, error: "Không có quyền." };
     await docRef.delete();
-    revalidatePath("/grammar");
+    revalidatePath("/grammar"); revalidateTag("grammar_folders"); revalidateTag("grammars");
     return { success: true };
   } catch { return { success: false, error: "Không thể xóa ngữ pháp." }; }
 }
@@ -189,7 +186,7 @@ export async function createBulkGrammars(jsonString: string, targetFolderId?: st
 
     if (count % 500 !== 0) await batch.commit();
 
-    revalidatePath("/grammar");
+    revalidatePath("/grammar"); revalidateTag("grammar_folders"); revalidateTag("grammars");
     return { success: true, count };
   } catch (error: any) {
     console.error("Lỗi import ngữ pháp:", error);
