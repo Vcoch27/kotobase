@@ -208,7 +208,14 @@ export async function deleteFolderAndVocabs(id: string) {
 
   // Kiểm tra owner của thư mục gốc
   const folderDoc = await adminDb.collection("folders").doc(id).get();
-  if (!folderDoc.exists) return { success: false, error: "Thư mục không tồn tại." };
+  if (!folderDoc.exists) {
+    // Thư mục đã không còn tồn tại trên Firebase (đã bị xóa trước đó hoặc do cache cũ)
+    // Revalidate cache ngay để dọn sạch thư mục ma khỏi UI
+    revalidatePath("/");
+    revalidateTag("folders");
+    revalidateTag("vocabularies");
+    return { success: true };
+  }
   
   const folderData = folderDoc.data();
   const isOwner = !!folderData?.ownerId && folderData.ownerId === currentUser.uid;

@@ -99,7 +99,12 @@ export async function deleteSentenceFolder(id: string) {
     const docRef = adminDb.collection("sentence_folders").doc(id);
     const doc = await docRef.get();
     
-    if (!doc.exists) return { success: false, error: "Thư mục không tồn tại." };
+    if (!doc.exists) {
+      revalidatePath("/");
+      revalidateTag("sentence_folders");
+      revalidateTag("sentences");
+      return { success: true };
+    }
     if (doc.data()?.ownerId !== currentUser.uid && currentUser.email !== "hoangtungmy123@gmail.com") {
       return { success: false, error: "Bạn không có quyền xóa thư mục này." };
     }

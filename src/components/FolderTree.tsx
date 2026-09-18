@@ -310,7 +310,7 @@ export function FolderTree({
         const res = await deleteFolderAndVocabs(targetId);
         setDeletingFolderId(null);
 
-        if (res.success) {
+        if (res.success || res.error === "Thư mục không tồn tại.") {
           toast.success(`Đã xoá thư mục ${targetName}`);
           onRefresh();
         } else {

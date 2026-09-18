@@ -59,7 +59,12 @@ export async function deleteGrammarFolder(id: string) {
   try {
     const docRef = adminDb.collection("grammar_folders").doc(id);
     const doc = await docRef.get();
-    if (!doc.exists) return { success: false, error: "Thư mục không tồn tại." };
+    if (!doc.exists) {
+      revalidatePath("/grammar");
+      revalidateTag("grammar_folders");
+      revalidateTag("grammars");
+      return { success: true };
+    }
     if (doc.data()?.ownerId !== currentUser.uid && currentUser.email !== "hoangtungmy123@gmail.com") return { success: false, error: "Không có quyền." };
     const grammarsQuery = await adminDb.collection("grammars").where("folderIds", "array-contains", id).get();
     const batch = adminDb.batch();
