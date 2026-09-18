@@ -87,7 +87,12 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
   useEffect(() => {
     if (!isActive) return;
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsFullscreen(false);
+      if (e.key === "Escape") {
+        // Nếu có popup/modal nào đang hiển thị (ví dụ KanjiModal z-[9999]), ưu tiên đóng modal trước, không thoát fullscreen
+        const isModalOpen = !!document.querySelector('[data-kanji-modal="true"], .z-\\[9999\\], [role="dialog"]');
+        if (isModalOpen) return;
+        setIsFullscreen(false);
+      }
     };
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);

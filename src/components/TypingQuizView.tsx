@@ -147,6 +147,8 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
     if (!isActive) return;
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        const isModalOpen = !!document.querySelector('[data-kanji-modal="true"], .z-\\[9999\\], [role="dialog"]');
+        if (isModalOpen) return;
         setIsFullscreen(false);
       }
       // Phím tắt ` (cạnh số 1) để bật/tắt gợi ý Âm Hán Việt (khi không focus vào ô input)

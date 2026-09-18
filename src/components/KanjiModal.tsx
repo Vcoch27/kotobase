@@ -70,10 +70,15 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        onClose();
+      }
     };
-    if (isOpen) window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    if (isOpen) window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [isOpen, onClose]);
 
   if (!isOpen || !character || !mounted) return null;
@@ -115,6 +120,7 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
 
   return createPortal(
     <div 
+      data-kanji-modal="true"
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn tracking-normal font-sans text-base font-normal text-left leading-normal cursor-default"
       onClick={onClose}
     >
