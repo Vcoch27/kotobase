@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ExternalLink, Repeat2 } from "lucide-react";
+import { Maximize, Scissors, X, Pause, Play, Repeat2, Volume2, VolumeX } from "lucide-react";
 import { ListeningLoopLibrary } from "./ListeningLoopLibrary";
 import type { ListeningLoop } from "@/lib/listening-loops";
 
@@ -12,6 +12,11 @@ function timeLabel(time: number) {
 // Parent keys by Drive file ID so changing exams disposes playback and loop state.
 export function ListeningPlayer({ driveFileId, label, userId }: { driveFileId: string; label: string; userId: string }) {
   const video = useRef<HTMLVideoElement>(null);
+  const frame = useRef<HTMLElement>(null);
+  const [position, setPosition] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [cutting, setCutting] = useState(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(false);
   const [preview, setPreview] = useState(false);
@@ -24,7 +29,7 @@ export function ListeningPlayer({ driveFileId, label, userId }: { driveFileId: s
   const [duration, setDuration] = useState(0);
   const fileUrl = `https://drive.google.com/file/d/${driveFileId}`;
   const source = `/api/listening/${encodeURIComponent(driveFileId)}`;
-  const control = "rounded-lg bg-surface-raised px-4 py-3 text-body-sm font-semibold hover:bg-accent-muted focus-visible:outline-none focus-visible:ring-2 disabled:opacity-50 disabled:cursor-not-allowed";
+  const control = "rounded-lg bg-surface-raised px-3 py-2 min-h-10 text-body-sm font-semibold hover:bg-accent-muted focus-visible:outline-none focus-visible:ring-2 disabled:opacity-50 disabled:cursor-not-allowed";
 
   useEffect(() => {
     if (preview) return;
@@ -49,26 +54,26 @@ export function ListeningPlayer({ driveFileId, label, userId }: { driveFileId: s
   }, [loop, a, b, ready, preview]);
 
   function reset() {
-    setLoop(false); setA(null); setB(null); setReady(false); setError(false);
-    setSpeed("1"); setMessage("");
+    setLoop(false); setA(null); setB(null); setReady(false); setError(false); setCutting(false);
+    setSpeed("1"); setPosition(0); setDuration(0); setPlaying(false); setMessage("");
   }
 
   async function play() {
     try { await video.current?.play(); }
-    catch { setLoop(false); setMessage("Chưa phát được. Bấm phát trên video hoặc dùng chế độ xem Drive."); }
+    catch { setLoop(false); setMessage("Chưa phát được. Bấm Phát hoặc mở chế độ Drive trong menu ⋯."); }
   }
 
   function markA() {
     if (!video.current) return;
     setA(video.current.currentTime); setB(null); setLoop(false);
-    setMessage("Đã đặt A. Phát đến hết câu rồi đặt B (cách A ít nhất 1 giây).");
+    setMessage("");
   }
 
   function markB() {
     if (!video.current || a === null) return;
     const end = video.current.currentTime;
     if (end - a < 1) { setMessage("B cần nằm sau A ít nhất 1 giây."); return; }
-    setB(end); setLoop(false); setMessage("Đã đặt đoạn. Bấm Lặp A–B để nghe lại.");
+    setB(end); setLoop(true); video.current.currentTime = a; void play(); setMessage("");
   }
 
   function toggleLoop() {
@@ -82,45 +87,62 @@ export function ListeningPlayer({ driveFileId, label, userId }: { driveFileId: s
     if (item.end > video.current.duration) { setMessage("Đoạn này vượt thời lượng video. Hãy sửa mốc B trong bộ của bạn."); return; }
     setA(item.start); setB(item.end); setLoop(true);
     video.current.currentTime = item.start;
-    setMessage(`Đang lặp: ${item.name}`); void play();
+    setCutting(false); setMessage(""); void play();
   }
 
-  return <section aria-label={`Trình nghe đề ${label}`} className="space-y-4">
-    {preview ? <>
-      <iframe key={driveFileId} src={`${fileUrl}/preview`} title={`Google Drive · đề N3 ${label}`}
-        className="aspect-video min-h-52 w-full rounded-xl bg-surface-raised" allow="autoplay; fullscreen" allowFullScreen />
-      <p className="text-body-sm text-text-muted">Chế độ xem Drive: dùng nút phát trong khung. Lặp A–B chỉ có ở trình phát trực tiếp.</p>
-      <button className={control} onClick={() => { reset(); setPreview(false); }}>Thử trình phát trực tiếp</button>
-    </> : <>
-      <video key={`${driveFileId}-${attempt}`} ref={video} controls playsInline preload="metadata"
-        aria-label={`Đề nghe N3 ${label}`} className="aspect-video min-h-52 w-full rounded-xl bg-surface-raised"
+  function seek(value: number) {
+    if (!video.current) return;
+    video.current.currentTime = value; setPosition(value);
+    if (a !== null && b !== null && (value < a || value >= b)) setLoop(false);
+  }
+
+  return <section ref={frame} aria-label={`Trình nghe đề ${label}`} className="overflow-hidden rounded-xl bg-surface shadow-elevation-sm">
+    {preview ? <iframe src={`${fileUrl}/preview`} title={`Google Drive · đề N3 ${label}`} className="aspect-video w-full bg-bg" allow="autoplay; fullscreen" allowFullScreen /> :
+      <video key={`${driveFileId}-${attempt}`} ref={video} playsInline preload="metadata"
+        aria-label={`Đề nghe N3 ${label}`} className="aspect-video max-h-[45vh] w-full bg-black object-contain"
+        onClick={() => playing ? video.current?.pause() : void play()}
+        onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)}
+        onTimeUpdate={() => setPosition(video.current?.currentTime || 0)}
+        onVolumeChange={() => setMuted(!!video.current?.muted)}
         onLoadedMetadata={() => { setReady(true); setError(false); setDuration(video.current?.duration || 0); }}
         onError={() => { setError(true); setReady(false); setLoop(false); }}
         onEnded={() => { if (loop && a !== null && video.current) { video.current.currentTime = a; void play(); } }}
-      />
-      {!ready && !error && <p role="status" className="text-body-sm text-text-muted">Đang tải video từ Google Drive…</p>}
-      {error && <div role="alert" className="space-y-3 rounded-xl bg-accent-muted p-4 text-body-sm">
-        <p>Chưa tải được video trực tiếp. Drive có thể đang giới hạn truy cập hoặc kết nối chậm. Thử lại, dùng chế độ xem Drive hoặc mở file bên dưới.</p>
-        <button className={control} onClick={() => { reset(); setAttempt(n => n + 1); }}>Thử lại</button>
-      </div>}
-      <div className="flex flex-wrap items-center gap-2">
-        <button className={control} disabled={!ready} onClick={markA}>Đặt A {a !== null && timeLabel(a)}</button>
-        <button className={control} disabled={!ready || a === null} onClick={markB}>Đặt B {b !== null && timeLabel(b)}</button>
-        <button className={`${control} inline-flex items-center gap-2 ${loop ? "bg-accent-muted text-primary" : ""}`} disabled={!ready || b === null} onClick={toggleLoop} aria-pressed={loop}><Repeat2 size={16} />{loop ? "Dừng lặp" : "Lặp A–B"}</button>
-        <button className={control} disabled={a === null} onClick={() => { setLoop(false); setA(null); setB(null); setMessage("Đã xóa đoạn lặp."); }}>Xóa đoạn</button>
-        <label className="flex items-center gap-2 text-body-sm">Tốc độ
-          <select className={control} value={speed} disabled={!ready} onChange={event => {
-            setSpeed(event.target.value);
-            if (video.current) video.current.playbackRate = Number(event.target.value);
-          }}>
-            {["0.75", "1", "1.25", "1.5"].map(value => <option key={value} value={value}>{value}×</option>)}
-          </select>
-        </label>
-      </div>
-      <p role="status" className="text-body-sm text-text-muted">{message || "Phát video, đặt A ở đầu câu và B ở cuối câu. Đổi đề sẽ xóa đoạn lặp."}</p>
-      <button className={control} onClick={() => { reset(); setPreview(true); }}>Dùng chế độ xem Drive</button>
-    </>}
-    <ListeningLoopLibrary userId={userId} fileId={driveFileId} a={a} b={b} duration={duration} canPlay={ready && !preview} onSelect={selectSavedLoop} />
-    <a href={`${fileUrl}/view`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-body-sm font-semibold text-primary rounded-lg focus-visible:ring-2"><ExternalLink size={16} />Mở đề {label} trên Google Drive</a>
+      />}
+    <ListeningLoopLibrary userId={userId} fileId={driveFileId} a={a} b={b} duration={duration} canPlay={ready && !preview} onSelect={selectSavedLoop} renderPlayer={(segments, saveSelection, canSave) => <div className="px-3 pt-2 pb-1 space-y-1">
+      {!preview && <>
+        <div className="relative flex h-7 items-center">
+          <div className="pointer-events-none absolute inset-x-0 h-2 overflow-hidden rounded-full bg-surface-raised">
+            <div className="absolute h-full bg-text-muted/30" style={{ width: `${duration ? position / duration * 100 : 0}%` }} />
+            {segments.map(item => <span key={item.id} className="absolute h-full bg-primary/30" style={{ left: `${duration ? item.start / duration * 100 : 0}%`, width: `${duration ? (item.end - item.start) / duration * 100 : 0}%` }} />)}
+            {a !== null && duration > 0 && <span className="absolute h-full bg-primary" style={{ left: `${a / duration * 100}%`, width: `${b !== null ? (b - a) / duration * 100 : 0.3}%` }} />}
+          </div>
+          <input type="range" min={0} max={duration || 1} step={0.1} value={position} disabled={!ready} onChange={event => seek(Number(event.target.value))} aria-label="Tua bài nghe" aria-valuetext={`${timeLabel(position)} trên ${timeLabel(duration)}`} className="listening-seek relative z-10 w-full cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" />
+        </div>
+        <div className="flex flex-wrap items-center gap-1">
+          <button className={`${control} text-primary`} disabled={!ready} aria-label={playing ? "Tạm dừng" : "Phát"} onClick={() => playing ? video.current?.pause() : void play()}>{playing ? <Pause size={19} /> : <Play size={19} />}</button>
+          <span className="mr-auto text-caption tabular-nums text-text-muted">{timeLabel(position)} / {timeLabel(duration)}</span>
+          <button className={`${control} ${loop ? "text-primary bg-accent-muted" : ""}`} aria-label={loop ? "Tắt lặp A–B" : "Bật lặp A–B"} title="Lặp A–B" disabled={!ready || b === null} onClick={toggleLoop} aria-pressed={loop}><Repeat2 size={18} /></button>
+          <select aria-label="Tốc độ phát" className={`${control} max-w-20`} value={speed} disabled={!ready} onChange={event => { setSpeed(event.target.value); if (video.current) video.current.playbackRate = Number(event.target.value); }}>{["0.75", "1", "1.25", "1.5"].map(value => <option key={value} value={value}>{value}×</option>)}</select>
+          <button className={`${control} ${cutting ? "text-primary bg-accent-muted" : ""}`} disabled={!ready} title="Tạo đoạn lặp" aria-label="Tạo đoạn lặp" aria-pressed={cutting} onClick={() => { setCutting(!cutting); if (!cutting) markA(); }}><Scissors size={18} /></button>
+        </div>
+        {cutting && <div className="flex flex-wrap items-center gap-2 rounded-lg bg-bg p-2">
+          <button className={`${control} ${a !== null && b === null ? "text-primary bg-accent-muted" : ""}`} disabled={!ready} onClick={a === null || b !== null ? markA : markB}>{a === null || b !== null ? "Đặt A" : "Đặt B"}</button>
+          <span className="min-w-0 text-caption text-text-muted tabular-nums">{a === null ? "Đánh dấu đầu → cuối đoạn cần lặp" : `${timeLabel(a)} → ${b === null ? "Đặt B ở cuối câu" : timeLabel(b)}`}</span>
+          <button className={`${control} ml-auto text-primary`} disabled={!canSave || b === null} onClick={() => { saveSelection(); setCutting(false); }}>Lưu đoạn</button>
+          <button className={control} aria-label="Đóng công cụ cắt đoạn" onClick={() => setCutting(false)}><X size={16} /></button>
+        </div>}
+      </>}
+      {(message || error || !ready || preview) && <p role="status" className="py-1 text-caption text-text-muted">{preview ? "Chế độ Drive không hỗ trợ lặp A–B." : error ? "Chưa tải được video. Mở menu ⋯ để thử lại hoặc chọn chế độ Drive." : !ready ? "Đang tải video…" : message}</p>}
+    </div>} playerOptions={<div className="flex flex-wrap items-center gap-2 rounded-lg bg-bg p-2">
+        {!preview && <>
+          <button className={control} aria-label={muted ? "Bật tiếng" : "Tắt tiếng"} onClick={() => { if (video.current) video.current.muted = !muted; }}>{muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button>
+          <input type="range" min="0" max="1" step="0.05" defaultValue="1" aria-label="Âm lượng" className="w-20 accent-primary" onChange={event => { if (video.current) { video.current.volume = Number(event.target.value); video.current.muted = false; } }} />
+          <button className={control} aria-label="Toàn màn hình" onClick={() => { if (document.fullscreenElement) void document.exitFullscreen(); else void frame.current?.requestFullscreen().catch(() => setMessage("Thiết bị chưa hỗ trợ toàn màn hình.")); }}><Maximize size={18} /></button>
+          {a !== null && <button className={control} onClick={() => { setA(null); setB(null); setLoop(false); setMessage(""); }}>Bỏ mốc A–B</button>}
+        </>}
+        <button className={control} onClick={() => { reset(); setPreview(!preview);  }}>{preview ? "Trình phát A–B" : "Chế độ Drive"}</button>
+        <a className={control} href={`${fileUrl}/view`} target="_blank" rel="noreferrer">Mở file Drive ↗</a>
+        {error && <button className={control} onClick={() => { reset(); setAttempt(n => n + 1); }}>Thử tải lại</button>}
+      </div>} />
   </section>;
 }

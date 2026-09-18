@@ -58,7 +58,7 @@ export async function getSharedListeningLoops(file: string, expectedUserId: stri
     }, [tag, cursor || "first"], { tags: [tag], revalidate: 300 })();
     return { success: true as const, data };
   } catch {
-    return { success: false as const, error: "Chưa tải được bộ đoạn của nhóm. Kiểm tra đăng nhập và thử lại." };
+    return { success: false as const, error: "Chưa tải được bộ đoạn Public. Kiểm tra đăng nhập và thử lại." };
   }
 }
 

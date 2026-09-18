@@ -10,3 +10,11 @@
   --color-accent-muted: 36% 0.055 250;
   --ring: 79% 0.10 245;
 }
+
+/* Transparent seek track keeps the saved ranges and active A–B visible. */
+.listening-seek { appearance: none; background: transparent; height: 28px; }
+.listening-seek::-webkit-slider-runnable-track { background: transparent; height: 8px; }
+.listening-seek::-moz-range-track { background: transparent; height: 8px; }
+.listening-seek::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; margin-top: -4px; border-radius: 50%; background: oklch(var(--color-primary)); border: 2px solid oklch(var(--color-surface)); }
+.listening-seek::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: oklch(var(--color-primary)); border: 2px solid oklch(var(--color-surface)); }
+.listening-page section:fullscreen { overflow-y: auto; }
