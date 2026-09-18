@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Maximize, Scissors, X, Pause, Play, Repeat2, Volume2, VolumeX } from "lucide-react";
+import { ListeningSelect } from "./ListeningSelect";
 import { ListeningLoopLibrary } from "./ListeningLoopLibrary";
 import type { ListeningLoop } from "@/lib/listening-loops";
 
@@ -13,6 +14,8 @@ function timeLabel(time: number) {
 export function ListeningPlayer({ driveFileId, label, userId }: { driveFileId: string; label: string; userId: string }) {
   const video = useRef<HTMLVideoElement>(null);
   const frame = useRef<HTMLElement>(null);
+  const resume = useRef<{ time: number; play: boolean } | null>(null);
+  const [buffering, setBuffering] = useState(false);
   const [position, setPosition] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -40,7 +43,7 @@ export function ListeningPlayer({ driveFileId, label, userId }: { driveFileId: s
 
   useEffect(() => {
     if (ready || preview || error) return;
-    const timer = window.setTimeout(() => setError(true), 25000);
+    const timer = window.setTimeout(() => setMessage("Drive đang phản hồi chậm. Bạn có thể tải lại hoặc chờ thêm."), 25000);
     return () => clearTimeout(timer);
   }, [ready, preview, error, attempt]);
 
@@ -56,6 +59,11 @@ export function ListeningPlayer({ driveFileId, label, userId }: { driveFileId: s
   function reset() {
     setLoop(false); setA(null); setB(null); setReady(false); setError(false); setCutting(false);
     setSpeed("1"); setPosition(0); setDuration(0); setPlaying(false); setMessage("");
+  }
+
+  function retry() {
+    resume.current = { time: video.current?.currentTime || position, play: playing };
+    setError(false); setReady(false); setBuffering(true); setMessage(""); setAttempt(n => n + 1);
   }
 
   async function play() {
@@ -104,8 +112,17 @@ export function ListeningPlayer({ driveFileId, label, userId }: { driveFileId: s
         onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)}
         onTimeUpdate={() => setPosition(video.current?.currentTime || 0)}
         onVolumeChange={() => setMuted(!!video.current?.muted)}
-        onLoadedMetadata={() => { setReady(true); setError(false); setDuration(video.current?.duration || 0); }}
-        onError={() => { setError(true); setReady(false); setLoop(false); }}
+        onWaiting={() => setBuffering(true)} onSeeking={() => setBuffering(true)}
+        onPlaying={() => { setBuffering(false); setMessage(""); }} onSeeked={() => setBuffering(false)}
+        onLoadedMetadata={() => {
+          const current = video.current;
+          setReady(true); setError(false); setBuffering(false); setMessage(""); setDuration(current?.duration || 0);
+          if (current) {
+            current.playbackRate = Number(speed); current.muted = muted;
+            if (resume.current) { current.currentTime = Math.min(resume.current.time, current.duration); const shouldPlay = resume.current.play; resume.current = null; if (shouldPlay) void play(); }
+          }
+        }}
+        onError={() => { setError(true); setReady(false); setBuffering(false); }}
         onEnded={() => { if (loop && a !== null && video.current) { video.current.currentTime = a; void play(); } }}
       />}
     <ListeningLoopLibrary userId={userId} fileId={driveFileId} a={a} b={b} duration={duration} canPlay={ready && !preview} onSelect={selectSavedLoop} renderPlayer={(segments, saveSelection, canSave) => <div className="px-3 pt-2 pb-1 space-y-1">
@@ -122,7 +139,7 @@ export function ListeningPlayer({ driveFileId, label, userId }: { driveFileId: s
           <button className={`${control} text-primary`} disabled={!ready} aria-label={playing ? "Tạm dừng" : "Phát"} onClick={() => playing ? video.current?.pause() : void play()}>{playing ? <Pause size={19} /> : <Play size={19} />}</button>
           <span className="mr-auto text-caption tabular-nums text-text-muted">{timeLabel(position)} / {timeLabel(duration)}</span>
           <button className={`${control} ${loop ? "text-primary bg-accent-muted" : ""}`} aria-label={loop ? "Tắt lặp A–B" : "Bật lặp A–B"} title="Lặp A–B" disabled={!ready || b === null} onClick={toggleLoop} aria-pressed={loop}><Repeat2 size={18} /></button>
-          <select aria-label="Tốc độ phát" className={`${control} max-w-20`} value={speed} disabled={!ready} onChange={event => { setSpeed(event.target.value); if (video.current) video.current.playbackRate = Number(event.target.value); }}>{["0.75", "1", "1.25", "1.5"].map(value => <option key={value} value={value}>{value}×</option>)}</select>
+          <ListeningSelect label="Tốc độ phát" className="w-20" value={speed} disabled={!ready} options={["0.75", "1", "1.25", "1.5"].map(value => ({ value, label: `${value}×` }))} onChange={value => { setSpeed(value); if (video.current) video.current.playbackRate = Number(value); }} />
           <button className={`${control} ${cutting ? "text-primary bg-accent-muted" : ""}`} disabled={!ready} title="Tạo đoạn lặp" aria-label="Tạo đoạn lặp" aria-pressed={cutting} onClick={() => { setCutting(!cutting); if (!cutting) markA(); }}><Scissors size={18} /></button>
         </div>
         {cutting && <div className="flex flex-wrap items-center gap-2 rounded-lg bg-bg p-2">
@@ -132,7 +149,8 @@ export function ListeningPlayer({ driveFileId, label, userId }: { driveFileId: s
           <button className={control} aria-label="Đóng công cụ cắt đoạn" onClick={() => setCutting(false)}><X size={16} /></button>
         </div>}
       </>}
-      {(message || error || !ready || preview) && <p role="status" className="py-1 text-caption text-text-muted">{preview ? "Chế độ Drive không hỗ trợ lặp A–B." : error ? "Chưa tải được video. Mở menu ⋯ để thử lại hoặc chọn chế độ Drive." : !ready ? "Đang tải video…" : message}</p>}
+      {(message || error || !ready || preview || buffering) && <p role="status" className="py-1 text-caption text-text-muted">{preview ? "Chế độ Drive không hỗ trợ lặp A–B." : error ? "Kết nối video bị gián đoạn. Tải lại để tiếp tục tại vị trí đang nghe." : !ready ? "Đang tải video…" : buffering ? "Đang tải đoạn nghe…" : message}</p>}
+      {(error || (!ready && message)) && <button className={control} onClick={retry}>Tải lại tại {timeLabel(position)}</button>}
     </div>} playerOptions={<div className="flex flex-wrap items-center gap-2 rounded-lg bg-bg p-2">
         {!preview && <>
           <button className={control} aria-label={muted ? "Bật tiếng" : "Tắt tiếng"} onClick={() => { if (video.current) video.current.muted = !muted; }}>{muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button>
@@ -142,7 +160,7 @@ export function ListeningPlayer({ driveFileId, label, userId }: { driveFileId: s
         </>}
         <button className={control} onClick={() => { reset(); setPreview(!preview);  }}>{preview ? "Trình phát A–B" : "Chế độ Drive"}</button>
         <a className={control} href={`${fileUrl}/view`} target="_blank" rel="noreferrer">Mở file Drive ↗</a>
-        {error && <button className={control} onClick={() => { reset(); setAttempt(n => n + 1); }}>Thử tải lại</button>}
+        {error && <button className={control} onClick={retry}>Thử tải lại</button>}
       </div>} />
   </section>;
 }

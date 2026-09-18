@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { ListeningSelect } from "./ListeningSelect";
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 import { getMyListeningLoops, getSharedListeningLoops, saveListeningLoops } from "@/app/actions/listening-loops";
 import { emptyLoopSet, loopTime, parseLoopTime, validateLoops, MAX_LOOPS, type ListeningLoop, type LoopSet, type SharedLoopPage } from "@/lib/listening-loops";
@@ -163,19 +164,14 @@ export function ListeningLoopLibrary({ userId, fileId, a, b, duration, canPlay, 
     {renderPlayer(visibleLoops, () => { setTab("mine"); edit(); }, loaded && !busy && data.loops.length < MAX_LOOPS)}
     <div className="border-t border-text-muted/15 p-3 space-y-2">
       <div className="flex items-center gap-2">
-        <select aria-label="Nguồn đoạn nghe" className="min-h-10 rounded-lg bg-transparent text-body-sm font-semibold text-text-muted focus-visible:ring-2" value={tab} onChange={event => { const next = event.target.value as "mine" | "group"; setTab(next); setMenu(false); if (next === "group" && !groups && !groupBusy) void loadGroup(); }}>
-          <option value="mine">Của tôi {loaded ? `(${data.loops.length})` : ""}</option><option value="group">Public</option>
-        </select>
+        <ListeningSelect label="Nguồn đoạn nghe" value={tab} options={[{ value: "mine", label: `Của tôi${loaded ? ` (${data.loops.length})` : ""}`, detail: "Các đoạn bạn đã lưu" }, { value: "group", label: "Public", detail: "Bộ đoạn được chia sẻ" }]} onChange={value => { const next = value as "mine" | "group"; setTab(next); setMenu(false); if (next === "group" && !groups && !groupBusy) void loadGroup(); }} />
         {dirty && <button className={`${control} ml-auto text-primary`} disabled={busy || conflict || editor} onClick={() => void save()}>{busy ? "Đang lưu…" : "Lưu nháp"}</button>}
         <button className={`${control} ${dirty ? "" : "ml-auto"}`} aria-label="Tùy chọn nghe và bộ đoạn" title="Âm lượng, tạo/sửa đoạn và Public" aria-expanded={menu} onClick={() => setMenu(!menu)}><MoreHorizontal size={18} /></button>
       </div>
-      {tab === "group" && publicSets.length > 0 && <select aria-label="Chọn bộ đoạn Public" className={input} value={publicSet?.ownerId || ""} onChange={event => setPublicOwner(event.target.value)}>{publicSets.map(set => <option key={set.ownerId} value={set.ownerId}>{set.ownerName} · {set.loops.length} đoạn</option>)}</select>}
+      {tab === "group" && publicSets.length > 0 && <ListeningSelect label="Chọn bộ đoạn Public" className="w-full" value={publicSet?.ownerId || ""} onChange={setPublicOwner} options={publicSets.map(set => ({ value: set.ownerId, label: set.ownerName, detail: `${set.loops.length} đoạn` }))} />}
       {visibleLoops.length > 0 ? <div className="flex items-center gap-1">
         <button className={control} aria-label="Đoạn trước" disabled={!canPlay || activeIndex <= 0} onClick={() => onSelect(visibleLoops[activeIndex - 1])}><ChevronLeft size={18} /></button>
-        <select aria-label="Chọn đoạn nghe lặp" className={`${input} min-w-0 flex-1 font-semibold`} value={active?.id || ""} disabled={!canPlay} onChange={event => { const item = visibleLoops.find(item => item.id === event.target.value); if (item) onSelect(item); }}>
-          <option value="" disabled>Chọn đoạn · {visibleLoops.length} đoạn</option>
-          {visibleLoops.map((item, index) => <option key={item.id} value={item.id}>{index + 1}. {item.name} · {loopTime(item.start).split(".")[0]}–{loopTime(item.end).split(".")[0]}</option>)}
-        </select>
+        <ListeningSelect label="Chọn đoạn nghe lặp" className="flex-1" value={active?.id || ""} placeholder={`Chọn đoạn · ${visibleLoops.length} đoạn`} disabled={!canPlay} options={visibleLoops.map((item, index) => ({ value: item.id, label: `${index + 1}. ${item.name}`, detail: `${loopTime(item.start).split(".")[0]} → ${loopTime(item.end).split(".")[0]}` }))} onChange={value => { const item = visibleLoops.find(item => item.id === value); if (item) onSelect(item); }} />
         <button className={control} aria-label="Đoạn tiếp theo" disabled={!canPlay || activeIndex >= visibleLoops.length - 1} onClick={() => onSelect(visibleLoops[activeIndex + 1])}><ChevronRight size={18} /></button>
       </div> : <p className="px-1 text-caption text-text-muted">{busy || groupBusy ? "Đang tải đoạn…" : tab === "mine" ? "Bấm biểu tượng kéo để tạo đoạn, hoặc chọn Public để nghe bộ có sẵn." : "Chưa có bộ đoạn Public."}</p>}
       {menu && <div className="rounded-lg bg-bg p-3 space-y-3">

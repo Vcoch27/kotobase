@@ -8,7 +8,7 @@ Yêu cầu phiên đăng nhập Google hợp lệ ở cả trang và API phát v
 - 26 file MP4 trong thư mục công khai của người dùng, đối chiếu năm/tháng ngày 2026-09-17. ID được lưu cố định, không phụ thuộc thứ tự file hay quyền connector khi chạy web.
 - Trình phát HTML video đọc nguồn Drive trực tiếp, hỗ trợ tua, tốc độ, A–B tối thiểu 1 giây. Chuyển bài hoặc đóng player sẽ dừng media và hủy bộ đếm.
 - Nếu tải trực tiếp lỗi: thử lại, chuyển sang iframe Drive preview hoặc mở file trong tab mới. Preview không cung cấp điều khiển A–B từ web.
-- Route `/api/listening/[fileId]` truyền video từ Drive theo HTTP Range, tối đa 2 MiB mỗi phản hồi, không nạp cả file vào bộ nhớ. Chỉ cho phép 26 ID đã biết; áp dụng cookie mật khẩu hiện có. Không đưa video vào Git. Drive vẫn cần quyền xem/tải công khai và có thể giới hạn lưu lượng.
+- Route `/api/listening/[fileId]` truyền video từ Drive đúng HTTP Range do trình duyệt yêu cầu (kể cả range mở và suffix), không nạp cả file vào bộ nhớ. Timeout 25 giây chỉ chờ header, được hủy trước khi truyền body để không ngắt playback vì backpressure. Chỉ cho phép 26 ID đã biết; áp dụng cookie mật khẩu hiện có. Không đưa video vào Git. Drive vẫn cần quyền xem/tải công khai và có thể giới hạn lưu lượng.
 - Dark mode sử dụng token riêng trong `src/app/listening/listening.css`: nền sáng hơn, chữ phụ rõ hơn và trạng thái chọn xanh trầm; không đổi theme các trang khác.
 
 ## Chiến lược
@@ -43,3 +43,6 @@ Kiểm tra trình phát thực tế trên trình duyệt; quyền Drive/giới h
 - Kiểm thử cô lập: `node --test scripts/test-listening-loops.cjs` (validation, quyền, cache, revision, chia sẻ, phân trang; không truy cập database thật).
 
 - Bộ riêng tải khi mở trình phát (có cache), Public vẫn chỉ tải khi chọn tab. Không đọc lại khi tua/đổi đoạn. Chế độ Drive, âm lượng, toàn màn hình và quản lý bộ đoạn nằm trong một menu ⋯ chung. Công cụ cắt ẩn khi nghe bình thường; chọn nguồn Của tôi/Public bằng bộ chọn gọn. Video giới hạn 45vh để giữ điều khiển và bộ chọn đoạn gần nhau trên mobile.
+
+- Kiểm thử streaming: `node --test scripts/test-listening-stream.cjs` kiểm tra range lớn/mở/suffix, phản hồi 200/206/416, hủy timeout trước body, chặn HTML và quyền đăng nhập. Đã probe luồng Drive thật sau 27 giây và range tua xa/cuối file; không lưu video hay ghi Firestore.
+- Trình phát phân biệt buffering với lỗi; nút tải lại giữ vị trí, tốc độ và A–B. Các bộ chọn nguồn/đoạn/tốc độ dùng menu tùy chỉnh hỗ trợ bàn phím và portal chống bị cắt bởi khung video.
