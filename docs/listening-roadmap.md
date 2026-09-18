@@ -32,7 +32,7 @@ Kiểm tra trình phát thực tế trên trình duyệt; quyền Drive/giới h
 
 ## Bộ đoạn lặp cá nhân và chia sẻ
 
-- Trình phát gọn: thanh tua tô các đoạn đã lưu và highlight A–B hiện tại; một nút tuần tự **Đặt A → Đặt B** tự bật lặp. Bộ chọn đoạn và nút trước/sau nằm ngay dưới điều khiển. Bấm **+** để đặt tên rồi **Lưu đoạn**; sửa/xóa và Public ở menu ⋯. Mỗi thao tác xác nhận lưu một lần; nếu lỗi giữ nháp và hiện **Lưu nháp**. Tối đa 100 đoạn/đề, tên 80 ký tự, mỗi đoạn ít nhất 1 giây.
+- Trình phát gọn: thanh tua tô các đoạn đã lưu và highlight A–B hiện tại; bấm biểu tượng kéo lấy vị trí hiện tại làm A, sau đó **Đặt B** tự bật lặp. Bộ chọn đoạn và nút trước/sau nằm ngay dưới điều khiển. Trong công cụ cắt, bấm **Lưu đoạn** để đặt tên và xác nhận; sửa/xóa và Public ở menu ⋯. Mỗi thao tác xác nhận lưu một lần; nếu lỗi giữ nháp và hiện **Lưu nháp**. Tối đa 100 đoạn/đề, tên 80 ký tự, mỗi đoạn ít nhất 1 giây.
 - **Public bộ đoạn này** trong menu áp dụng ngay khi bật/tắt. Public dành cho mọi tài khoản đã đăng nhập KotoBase, không phải danh sách mời riêng. Người khác chỉ đọc/nghe hoặc sao chép thành bản riêng. Tắt chia sẻ không xóa các bản sao đã được tạo hay nội dung người khác đã tải trước đó.
 - Tab **Public** chỉ tải khi mở, 20 bộ/trang; dùng con trỏ document ID, không dùng offset, không cần composite index. Bộ của một người chứa toàn bộ các đoạn nên không cần truy vấn từng đoạn.
 - Document riêng: `listening_loop_users/{sha256(uid)}/exams/{driveFileId}`. Snapshot chia sẻ: `listening_loop_groups/{driveFileId}/sets/{sha256(uid)}`. UID chủ sở hữu luôn lấy từ phiên máy chủ; không nhận UID tùy ý để sửa bộ của người khác. Snapshot nhóm không chứa email.
@@ -42,4 +42,4 @@ Kiểm tra trình phát thực tế trên trình duyệt; quyền Drive/giới h
 - Rules Firestore hiện tại đã kiểm tra: chặn mọi đọc/ghi từ SDK trình duyệt. Feature chỉ dùng Admin SDK qua Server Actions có xác thực; không thay rules hay ghi dữ liệu thử vào Firestore thật.
 - Kiểm thử cô lập: `node --test scripts/test-listening-loops.cjs` (validation, quyền, cache, revision, chia sẻ, phân trang; không truy cập database thật).
 
-- Bộ riêng tải khi mở trình phát (có cache), Public vẫn chỉ tải khi chọn tab. Không đọc lại khi tua/đổi đoạn. Chế độ Drive, âm lượng và toàn màn hình nằm trong menu trình phát. Video giới hạn 45vh để giữ điều khiển và bộ chọn đoạn gần nhau trên mobile.
+- Bộ riêng tải khi mở trình phát (có cache), Public vẫn chỉ tải khi chọn tab. Không đọc lại khi tua/đổi đoạn. Chế độ Drive, âm lượng, toàn màn hình và quản lý bộ đoạn nằm trong một menu ⋯ chung. Công cụ cắt ẩn khi nghe bình thường; chọn nguồn Của tôi/Public bằng bộ chọn gọn. Video giới hạn 45vh để giữ điều khiển và bộ chọn đoạn gần nhau trên mobile.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { ChevronLeft, ChevronRight, MoreHorizontal, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 import { getMyListeningLoops, getSharedListeningLoops, saveListeningLoops } from "@/app/actions/listening-loops";
 import { emptyLoopSet, loopTime, parseLoopTime, validateLoops, MAX_LOOPS, type ListeningLoop, type LoopSet, type SharedLoopPage } from "@/lib/listening-loops";
 
@@ -34,10 +34,11 @@ async function loadOwn(key: string, file: string, uid: string, refresh: boolean)
   } finally { reads.delete(key); }
 }
 
-export function ListeningLoopLibrary({ userId, fileId, a, b, duration, canPlay, onSelect, renderPlayer }: {
+export function ListeningLoopLibrary({ userId, fileId, a, b, duration, canPlay, onSelect, renderPlayer, playerOptions }: {
   userId: string; fileId: string; a: number | null; b: number | null; duration: number;
   canPlay: boolean; onSelect: (loop: ListeningLoop) => void;
-  renderPlayer: (loops: ListeningLoop[]) => ReactNode;
+  renderPlayer: (loops: ListeningLoop[], saveSelection: () => void, canSave: boolean) => ReactNode;
+  playerOptions: ReactNode;
 }) {
   const key = `${userId}:${fileId}`;
   const [publicOwner, setPublicOwner] = useState("");
@@ -159,14 +160,14 @@ export function ListeningLoopLibrary({ userId, fileId, a, b, duration, canPlay, 
   const active = visibleLoops[activeIndex];
 
   return <>
-    {renderPlayer(visibleLoops)}
+    {renderPlayer(visibleLoops, () => { setTab("mine"); edit(); }, loaded && !busy && data.loops.length < MAX_LOOPS)}
     <div className="border-t border-text-muted/15 p-3 space-y-2">
-      <div className="flex items-center gap-1">
-        <button className={`${control} ${tab === "mine" ? "text-primary bg-accent-muted" : ""}`} aria-pressed={tab === "mine"} onClick={() => { setTab("mine"); setMenu(false); }}>Của tôi <span className="text-caption">{loaded ? data.loops.length : "…"}</span></button>
-        <button className={`${control} ${tab === "group" ? "text-primary bg-accent-muted" : ""}`} aria-pressed={tab === "group"} onClick={() => { setTab("group"); setMenu(false); if (!groups && !groupBusy) void loadGroup(); }}>Public</button>
+      <div className="flex items-center gap-2">
+        <select aria-label="Nguồn đoạn nghe" className="min-h-10 rounded-lg bg-transparent text-body-sm font-semibold text-text-muted focus-visible:ring-2" value={tab} onChange={event => { const next = event.target.value as "mine" | "group"; setTab(next); setMenu(false); if (next === "group" && !groups && !groupBusy) void loadGroup(); }}>
+          <option value="mine">Của tôi {loaded ? `(${data.loops.length})` : ""}</option><option value="group">Public</option>
+        </select>
         {dirty && <button className={`${control} ml-auto text-primary`} disabled={busy || conflict || editor} onClick={() => void save()}>{busy ? "Đang lưu…" : "Lưu nháp"}</button>}
-        <button className={`${control} ${dirty ? "" : "ml-auto"}`} disabled={!loaded || busy || data.loops.length >= MAX_LOOPS} onClick={() => { setTab("mine"); edit(); }} aria-label="Tạo đoạn mới" title="Tạo đoạn từ A–B hoặc nhập thời gian"><Plus size={18} /></button>
-        <button className={control} aria-label="Tùy chọn bộ đoạn" aria-expanded={menu} onClick={() => setMenu(!menu)}><MoreHorizontal size={18} /></button>
+        <button className={`${control} ${dirty ? "" : "ml-auto"}`} aria-label="Tùy chọn nghe và bộ đoạn" title="Âm lượng, tạo/sửa đoạn và Public" aria-expanded={menu} onClick={() => setMenu(!menu)}><MoreHorizontal size={18} /></button>
       </div>
       {tab === "group" && publicSets.length > 0 && <select aria-label="Chọn bộ đoạn Public" className={input} value={publicSet?.ownerId || ""} onChange={event => setPublicOwner(event.target.value)}>{publicSets.map(set => <option key={set.ownerId} value={set.ownerId}>{set.ownerName} · {set.loops.length} đoạn</option>)}</select>}
       {visibleLoops.length > 0 ? <div className="flex items-center gap-1">
@@ -176,9 +177,11 @@ export function ListeningLoopLibrary({ userId, fileId, a, b, duration, canPlay, 
           {visibleLoops.map((item, index) => <option key={item.id} value={item.id}>{index + 1}. {item.name} · {loopTime(item.start).split(".")[0]}–{loopTime(item.end).split(".")[0]}</option>)}
         </select>
         <button className={control} aria-label="Đoạn tiếp theo" disabled={!canPlay || activeIndex >= visibleLoops.length - 1} onClick={() => onSelect(visibleLoops[activeIndex + 1])}><ChevronRight size={18} /></button>
-      </div> : <p className="px-1 text-caption text-text-muted">{busy || groupBusy ? "Đang tải đoạn…" : tab === "mine" ? "Đặt A → B rồi bấm + để lưu đoạn đầu tiên." : "Chưa có bộ đoạn Public."}</p>}
+      </div> : <p className="px-1 text-caption text-text-muted">{busy || groupBusy ? "Đang tải đoạn…" : tab === "mine" ? "Bấm biểu tượng kéo để tạo đoạn, hoặc chọn Public để nghe bộ có sẵn." : "Chưa có bộ đoạn Public."}</p>}
       {menu && <div className="rounded-lg bg-bg p-3 space-y-3">
+        {playerOptions}
         <div className="flex flex-wrap gap-2">
+          <button className={control} disabled={!loaded || busy || data.loops.length >= MAX_LOOPS} onClick={() => { setTab("mine"); edit(); }}>Nhập đoạn thủ công</button>
           {tab === "mine" && active && <>
             <button className={control} disabled={busy} onClick={() => edit(active)}>Sửa đoạn này</button>
             <button className={`${control} text-danger`} disabled={busy} onClick={() => {
