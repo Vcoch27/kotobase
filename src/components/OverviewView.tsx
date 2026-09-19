@@ -51,6 +51,9 @@ interface OverviewViewProps {
   onSelectionChange?: (ids: string[]) => void;
   onNavigateToStudyMode?: (mode: 'focus' | 'flashcard' | 'quiz', selectedIds?: string[]) => void;
   isActive?: boolean;
+  folderKey?: string;
+  searchQuery?: string;
+  sortOrder?: string;
 }
 
 export function OverviewView({
@@ -61,20 +64,45 @@ export function OverviewView({
   onSelectionChange,
   onNavigateToStudyMode,
   isActive = true,
+  folderKey,
+  searchQuery,
+  sortOrder,
 }: OverviewViewProps) {
   const [editingVocab, setEditingVocab] = useState<VocabularyData | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 40;
 
-  const prevVocabIdsRef = useRef<string>(vocabularies.map(v => v.id).join(","));
+  const prevFolderKeyRef = useRef<string | undefined>(folderKey);
+  const prevSearchQueryRef = useRef<string | undefined>(searchQuery);
+  const prevSortOrderRef = useRef<string | undefined>(sortOrder);
+  const prevVocabIdsRef = useRef<string[]>(vocabularies.map(v => v.id));
 
   useEffect(() => {
-    const currentIds = vocabularies.map(v => v.id).join(",");
-    if (prevVocabIdsRef.current !== currentIds) {
-      prevVocabIdsRef.current = currentIds;
+    const isFolderChanged = prevFolderKeyRef.current !== undefined && prevFolderKeyRef.current !== folderKey;
+    const isSearchChanged = prevSearchQueryRef.current !== undefined && prevSearchQueryRef.current !== searchQuery;
+    const isSortChanged = prevSortOrderRef.current !== undefined && prevSortOrderRef.current !== sortOrder;
+
+    prevFolderKeyRef.current = folderKey;
+    prevSearchQueryRef.current = searchQuery;
+    prevSortOrderRef.current = sortOrder;
+
+    const currentIds = vocabularies.map(v => v.id);
+    const prevIds = prevVocabIdsRef.current;
+    prevVocabIdsRef.current = currentIds;
+
+    if (isFolderChanged || isSearchChanged || isSortChanged) {
+      setCurrentPage(1);
+      return;
+    }
+
+    // Nếu danh sách mới chỉ là subset (xóa từ) hoặc chỉnh sửa (giữ nguyên ID) -> KHÔNG reset trang
+    const prevIdsSet = new Set(prevIds);
+    const hasNewItems = currentIds.some(id => !prevIdsSet.has(id));
+
+    if (hasNewItems && prevIds.length > 0) {
       setCurrentPage(1);
     }
-  }, [vocabularies]);
+  }, [vocabularies, folderKey, searchQuery, sortOrder]);
 
   const [localVocabs, setLocalVocabs] = useState<VocabularyData[]>([]);
 
@@ -287,13 +315,16 @@ export function OverviewView({
     if (confirm(`Bạn có chắc chắn muốn xóa từ "${word}" không?`)) {
       // Optimistic delete
       setLocalVocabs((prev) => prev.filter((v) => v.id !== id));
+      if (selectedIds.includes(id)) {
+        handleSelectionChange(selectedIds.filter((x) => x !== id));
+      }
 
       const res = await deleteVocabulary(id);
-      if (res.success && onRefresh) {
-        onRefresh();
+      if (res.success) {
+        if (onRefresh) onRefresh();
       } else {
         setLocalVocabs(vocabularies); // Rollback
-        toast.error('Lỗi khi xóa từ vựng!');
+        toast.error(res.error || 'Lỗi khi xóa từ vựng!');
       }
     }
   };

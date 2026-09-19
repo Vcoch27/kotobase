@@ -1107,6 +1107,9 @@ export function Dashboard({ currentUser }: DashboardProps) {
                       setViewMode(mode);
                     }}
                     isActive={viewMode === "overview"}
+                    folderKey={(selectedFolderIds || []).slice().sort().join(",") || "all"}
+                    searchQuery={debouncedSearchQuery}
+                    sortOrder={sortOrder}
                   />
                 </div>
                 <div className={viewMode === "focus" ? "block" : "hidden"}>
@@ -1115,6 +1118,9 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     onRefresh={fetchData}
                     selectedVocabIds={selectedVocabIds}
                     isActive={viewMode === "focus"}
+                    folderKey={(selectedFolderIds || []).slice().sort().join(",") || "all"}
+                    searchQuery={debouncedSearchQuery}
+                    sortOrder={sortOrder}
                   />
                 </div>
                 <div className={viewMode === "quiz" ? "block" : "hidden"}>

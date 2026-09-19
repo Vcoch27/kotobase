@@ -15,6 +15,7 @@ import {
 import { deleteVocabulary } from '@/app/actions/vocabulary';
 import { playAudio } from '@/lib/tts-utils';
 import { StudyScopeSelector } from './StudyScopeSelector';
+import toast from 'react-hot-toast';
 
 interface VocabularyData {
   id: string;
@@ -36,9 +37,20 @@ interface FocusRecallViewProps {
   selectedVocabIds?: string[];
   onRefresh?: () => void;
   isActive?: boolean;
+  folderKey?: string;
+  searchQuery?: string;
+  sortOrder?: string;
 }
 
-export function FocusRecallView({ vocabularies, selectedVocabIds = [], onRefresh, isActive = true }: FocusRecallViewProps) {
+export function FocusRecallView({
+  vocabularies,
+  selectedVocabIds = [],
+  onRefresh,
+  isActive = true,
+  folderKey,
+  searchQuery,
+  sortOrder,
+}: FocusRecallViewProps) {
   const getScopedFromSelection = useCallback((all: VocabularyData[], selIds: string[]) => {
     if (selIds && selIds.length > 0) {
       const set = new Set(selIds);
@@ -76,21 +88,49 @@ export function FocusRecallView({ vocabularies, selectedVocabIds = [], onRefresh
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vocabIdsStr, selectedVocabIdsStr]);
 
-  const prevVocabIdsRef = useRef<string>(scopedVocabs.map(v => v.id).join(","));
+  const prevFolderKeyRef = useRef<string | undefined>(folderKey);
+  const prevSearchQueryRef = useRef<string | undefined>(searchQuery);
+  const prevSortOrderRef = useRef<string | undefined>(sortOrder);
+  const prevScopedIdsRef = useRef<string[]>(scopedVocabs.map(v => v.id));
 
   useEffect(() => {
-    const currentScopedIds = scopedVocabs.map(v => v.id).join(",");
-    if (prevVocabIdsRef.current !== currentScopedIds) {
-      prevVocabIdsRef.current = currentScopedIds;
+    const isFolderChanged = prevFolderKeyRef.current !== undefined && prevFolderKeyRef.current !== folderKey;
+    const isSearchChanged = prevSearchQueryRef.current !== undefined && prevSearchQueryRef.current !== searchQuery;
+    const isSortChanged = prevSortOrderRef.current !== undefined && prevSortOrderRef.current !== sortOrder;
+
+    prevFolderKeyRef.current = folderKey;
+    prevSearchQueryRef.current = searchQuery;
+    prevSortOrderRef.current = sortOrder;
+
+    const currentIds = scopedVocabs.map(v => v.id);
+    const prevIds = prevScopedIdsRef.current;
+    prevScopedIdsRef.current = currentIds;
+
+    if (isFolderChanged || isSearchChanged || isSortChanged) {
+      setCurrentPage(1);
+      return;
+    }
+
+    // Nếu danh sách mới chỉ là subset (xóa từ) hoặc chỉnh sửa (giữ nguyên ID) -> KHÔNG reset trang
+    const prevIdsSet = new Set(prevIds);
+    const hasNewItems = currentIds.some(id => !prevIdsSet.has(id));
+
+    if (hasNewItems && prevIds.length > 0) {
       setCurrentPage(1);
     }
-  }, [scopedVocabs]);
+  }, [scopedVocabs, folderKey, searchQuery, sortOrder]);
 
-  const totalPages = Math.ceil(scopedVocabs.length / ITEMS_PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(scopedVocabs.length / ITEMS_PER_PAGE));
   const paginatedVocabularies = scopedVocabs.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(Math.max(1, totalPages));
+    }
+  }, [totalPages, currentPage]);
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) => ({
@@ -110,9 +150,13 @@ export function FocusRecallView({ vocabularies, selectedVocabIds = [], onRefresh
   const handleDelete = async (id: string, word: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (confirm(`Bạn có chắc muốn xóa từ "${word}" không?`)) {
+      setScopedVocabs((prev) => prev.filter((v) => v.id !== id));
       const res = await deleteVocabulary(id);
-      if (res.success && onRefresh) {
-        onRefresh();
+      if (res.success) {
+        if (onRefresh) onRefresh();
+      } else {
+        setScopedVocabs(getScopedFromSelection(vocabularies, selectedVocabIds)); // Rollback
+        toast.error(res.error || 'Lỗi khi xóa từ vựng!');
       }
     }
   };
