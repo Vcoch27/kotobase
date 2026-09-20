@@ -46,37 +46,8 @@ function decodeUTF8Base64(str: string): string {
 }
 
 // ============================================================
-// Mật khẩu truy cập chung (giữ nguyên)
+// Helpers: HMAC-SHA256 (Web Crypto API - Edge-compatible)
 // ============================================================
-export async function signToken(payload: string): Promise<string> {
-  const dataToSign = `${payload}:${SECRET_KEY}`;
-  return btoa(dataToSign);
-}
-
-export async function verifyToken(token: string): Promise<boolean> {
-  try {
-    const decoded = atob(token);
-    const expectedData = `authenticated:${SECRET_KEY}`;
-    return decoded === expectedData;
-  } catch (e) {
-    return false;
-  }
-}
-
-// ============================================================
-// Google / Firebase Auth Session (JWT HS256 - Edge-safe)
-// ============================================================
-
-export interface UserSession {
-  uid: string;
-  email: string;
-  name: string;
-  picture?: string;
-  iat: number;
-  exp: number;
-}
-
-// Tạo HMAC-SHA256 signature dùng Web Crypto API (Edge-compatible)
 async function hmacSign(data: string): Promise<string> {
   const encoder = new TextEncoder();
   const keyData = encoder.encode(JWT_SECRET);
@@ -98,6 +69,84 @@ async function hmacVerify(data: string, signature: string): Promise<boolean> {
   } catch (e) {
     return false;
   }
+}
+
+// ============================================================
+// Mật khẩu truy cập chung (Token có hạn dùng & kiểm tra hạn)
+// ============================================================
+export const KEY_EXPIRY_SECONDS = 60 * 60 * 24 * 30; // 30 ngày mặc định
+
+export async function signToken(
+  payload: string = "authenticated",
+  expiresInSeconds: number = KEY_EXPIRY_SECONDS
+): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  const exp = now + expiresInSeconds;
+  const dataToSign = `${payload}:${exp}`;
+  const signature = await hmacSign(dataToSign);
+  return btoa(`${dataToSign}:${signature}`);
+}
+
+export async function verifyToken(token: string): Promise<boolean> {
+  if (!token || typeof token !== "string") return false;
+  try {
+    const decoded = atob(token.trim());
+
+    // 1. Kiểm tra token có hạn sử dụng (exp): "authenticated:1758000000:signature"
+    const parts = decoded.split(":");
+    if (parts.length >= 3) {
+      const [payload, expStr, ...sigParts] = parts;
+      const signature = sigParts.join(":");
+      const exp = parseInt(expStr, 10);
+
+      // Kiểm tra xem key còn hạn hay đã hết hạn
+      if (isNaN(exp) || exp < Math.floor(Date.now() / 1000)) {
+        return false; // Đã hết hạn (expired)
+      }
+
+      if (payload !== "authenticated") {
+        return false;
+      }
+
+      const isValid = await hmacVerify(`${payload}:${expStr}`, signature);
+      return isValid;
+    }
+
+    // 2. Fallback cho token cũ dạng legacy (chưa có exp): "authenticated:SECRET_KEY"
+    const expectedData = `authenticated:${SECRET_KEY}`;
+    return decoded === expectedData;
+  } catch (e) {
+    return false;
+  }
+}
+
+export async function getTokenRemainingSeconds(token: string): Promise<number | null> {
+  if (!token || typeof token !== "string") return null;
+  try {
+    const decoded = atob(token.trim());
+    const parts = decoded.split(":");
+    if (parts.length >= 3) {
+      const exp = parseInt(parts[1], 10);
+      if (!isNaN(exp)) {
+        const remaining = exp - Math.floor(Date.now() / 1000);
+        return remaining > 0 ? remaining : 0;
+      }
+    }
+  } catch (e) {}
+  return null;
+}
+
+// ============================================================
+// Google / Firebase Auth Session (JWT HS256 - Edge-safe)
+// ============================================================
+
+export interface UserSession {
+  uid: string;
+  email: string;
+  name: string;
+  picture?: string;
+  iat: number;
+  exp: number;
 }
 
 // Ký Google session token (JWT: header.payload.signature)

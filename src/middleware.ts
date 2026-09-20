@@ -5,12 +5,13 @@ import { verifyToken } from "./lib/auth-utils";
 const AUTH_COOKIE_NAME = "kotobase_auth_token";
 
 export async function middleware(request: NextRequest) {
-  // Bỏ qua nếu route là login, download hoặc các file tĩnh
+  const { pathname } = request.nextUrl;
+
+  // Bỏ qua nếu route là download hoặc các file tĩnh
   if (
-    request.nextUrl.pathname.startsWith("/login") ||
-    request.nextUrl.pathname.startsWith("/download") ||
-    request.nextUrl.pathname.startsWith("/_next") ||
-    request.nextUrl.pathname.includes(".")
+    pathname.startsWith("/download") ||
+    pathname.startsWith("/_next") ||
+    pathname.includes(".")
   ) {
     return NextResponse.next();
   }
@@ -20,19 +21,41 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // KIỂM TRA BẮT BUỘC: Phải có password token
   const passwordToken = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-  if (passwordToken && (await verifyToken(passwordToken))) {
+  const isTokenValid = passwordToken ? await verifyToken(passwordToken) : false;
+  const isLoginPage = pathname === "/login" || pathname.startsWith("/login/");
+
+  // Nếu người dùng đang truy cập trang /login:
+  if (isLoginPage) {
+    // Nếu key CÒN HẠN -> chuyển hướng ngay về trang chủ, không bắt đăng nhập lại
+    if (isTokenValid) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+    // Nếu key HẾT HẠN hoặc KHÔNG HỢP LỆ -> dọn dẹp cookie cũ và cho phép hiển thị trang login
+    const response = NextResponse.next();
+    if (passwordToken) {
+      response.cookies.delete(AUTH_COOKIE_NAME);
+    }
+    return response;
+  }
+
+  // Đối với tất cả các trang cần bảo vệ:
+  // Nếu key CÒN HẠN và hợp lệ -> cho qua
+  if (isTokenValid) {
     return NextResponse.next();
   }
 
-  // Chuyển hướng về login nếu không có password token hợp lệ
+  // Nếu key không hợp lệ hoặc đã hết hạn -> chuyển hướng về /login và dọn dẹp cookie hết hạn
   const loginUrl = new URL("/login", request.url);
-  return NextResponse.redirect(loginUrl);
+  const response = NextResponse.redirect(loginUrl);
+  if (passwordToken) {
+    response.cookies.delete(AUTH_COOKIE_NAME);
+  }
+  return response;
 }
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|login|download).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|download).*)',
   ],
 };

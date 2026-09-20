@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { signToken, signGoogleSession } from "@/lib/auth-utils";
+import { signToken, signGoogleSession, KEY_EXPIRY_SECONDS } from "@/lib/auth-utils";
 import { adminAuth } from "@/lib/firebase-admin";
 import { GOOGLE_SESSION_COOKIE } from "@/lib/session";
 
@@ -31,7 +31,7 @@ export async function login(password: string) {
         value: token,
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        maxAge: 60 * 60 * 24, // 1 ngày
+        maxAge: KEY_EXPIRY_SECONDS, // 30 ngày
         path: "/",
         sameSite: "lax",
       });
