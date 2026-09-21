@@ -16,7 +16,18 @@ import {
 import { StudyScopeSelector } from "./StudyScopeSelector";
 import { extractKanji } from "@/lib/kanji-parser";
 import { HighlightMnemonic } from "./HighlightMnemonic";
-import { getAllKanjiNotesMap } from "@/app/actions/kanji";
+// Fetch mẹo nhớ Hán tự qua API Route (tránh dùng Server Action vì Next.js serialize response đặc biệt không phải JSON thuần)
+async function fetchKanjiNotesMap(): Promise<Record<string, { character: string; hanviet?: string; meaning?: string; mnemonic?: string }>> {
+  try {
+    const res = await fetch("/api/kanji/notes-map", { cache: "no-store" });
+    if (!res.ok) return {};
+    const data = await res.json();
+    if (data && typeof data === "object" && !Array.isArray(data)) return data;
+    return {};
+  } catch {
+    return {};
+  }
+}
 
 interface VocabularyData {
   id: string;
@@ -177,7 +188,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
         const shouldSync = !lastSync || now - parseInt(lastSync, 10) > 15 * 60 * 1000 || Object.keys(kanjiNotesMap).length === 0;
 
         if (shouldSync) {
-          const map = await getAllKanjiNotesMap();
+          const map = await fetchKanjiNotesMap();
           if (isMounted && map && Object.keys(map).length > 0) {
             setKanjiNotesMap(map);
             try {
@@ -635,7 +646,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
 
           if (!hasMnemonic) {
             // Nếu chưa thấy trong state hiện tại, thử tải lại nhanh (phòng trường hợp cache vừa cập nhật hoặc chưa nạp kịp)
-            getAllKanjiNotesMap().then((freshMap) => {
+            fetchKanjiNotesMap().then((freshMap) => {
               if (freshMap && Object.keys(freshMap).length > 0) {
                 setKanjiNotesMap(freshMap);
                 try {
