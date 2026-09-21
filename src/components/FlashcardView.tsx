@@ -1180,32 +1180,32 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
                 showMnemonic ? (
                   <div 
                     onClick={(e) => e.stopPropagation()} 
-                    className="mt-3 sm:mt-5 w-full max-w-lg mx-auto bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200/90 dark:border-amber-500/25 rounded-2xl p-3 sm:p-4 text-left shadow-xs animate-fadeIn transition-all select-text"
+                    className="mt-4 sm:mt-5 w-full max-w-xl mx-auto bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200/90 dark:border-amber-500/25 rounded-2xl p-4 sm:p-5 text-left shadow-sm animate-fadeIn transition-all select-text"
                   >
-                    <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-amber-200/70 dark:border-amber-500/20">
-                      <span className="text-[11px] sm:text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5 uppercase tracking-wider">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-amber-200/70 dark:border-amber-500/20">
+                      <span className="text-xs sm:text-sm font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5 uppercase tracking-wider">
+                        <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
                         Mẹo nhớ Hán tự ({availableMnemonics.length})
                       </span>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
                         Phím [M] để ẩn
                       </span>
                     </div>
 
-                    <div className="space-y-2.5 max-h-[140px] sm:max-h-[190px] overflow-y-auto pr-1 [scrollbar-width:thin]">
+                    <div className="space-y-3 max-h-[220px] sm:max-h-[280px] overflow-y-auto pr-1 [scrollbar-width:thin]">
                       {availableMnemonics.map(({ char, hanviet, mnemonic }) => (
-                        <div key={char} className="flex items-start gap-2.5 text-xs sm:text-sm leading-relaxed">
-                          <div className="shrink-0 flex items-center gap-1 bg-white dark:bg-slate-800 border border-amber-200 dark:border-slate-700 px-2 py-0.5 rounded-lg shadow-2xs">
-                            <span className="font-black text-amber-600 dark:text-amber-400 text-sm sm:text-base font-japanese">
+                        <div key={char} className="flex items-start gap-3 text-sm sm:text-base leading-relaxed">
+                          <div className="shrink-0 flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-amber-200 dark:border-slate-700 px-2.5 py-1 rounded-xl shadow-xs">
+                            <span className="font-black text-amber-600 dark:text-amber-400 text-xl sm:text-2xl font-japanese">
                               {char}
                             </span>
                             {hanviet && (
-                              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
+                              <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
                                 {hanviet}
                               </span>
                             )}
                           </div>
-                          <div className="flex-1 text-slate-700 dark:text-slate-200 pt-0.5">
+                          <div className="flex-1 text-slate-700 dark:text-slate-200 pt-1 text-sm sm:text-base">
                             <HighlightMnemonic text={mnemonic} />
                           </div>
                         </div>
@@ -1219,12 +1219,12 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
                       e.stopPropagation();
                       toggleMnemonic();
                     }}
-                    className="mt-3 sm:mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50/90 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 border border-amber-200/80 dark:border-amber-500/30 transition-all active:scale-95 shadow-2xs"
+                    className="mt-3 sm:mt-4 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-semibold text-amber-700 dark:text-amber-300 bg-amber-50/90 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 border border-amber-200/80 dark:border-amber-500/30 transition-all active:scale-95 shadow-xs"
                     title="Bấm để xem câu chuyện mẹo nhớ Hán tự (Phím M)"
                   >
-                    <Sparkles className="w-3 h-3 text-amber-500" />
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                     <span>Mẹo nhớ ({availableMnemonics.length})</span>
-                    <kbd className="text-[10px] opacity-70 bg-amber-200/50 dark:bg-amber-500/30 px-1 rounded font-sans">M</kbd>
+                    <kbd className="text-[11px] opacity-70 bg-amber-200/50 dark:bg-amber-500/30 px-1.5 rounded font-sans">M</kbd>
                   </button>
                 )
               )}
@@ -1307,31 +1307,31 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
             {showMnemonic && availableMnemonics.length > 0 && (
               <div 
                 onClick={(e) => e.stopPropagation()} 
-                className="w-full max-w-lg mx-auto bg-amber-50/80 dark:bg-amber-950/25 border border-amber-200/70 dark:border-amber-500/20 rounded-2xl p-2.5 sm:p-3 text-left shadow-2xs animate-fadeIn select-text mb-3 sm:mb-4"
+                className="w-full max-w-xl mx-auto bg-amber-50/80 dark:bg-amber-950/25 border border-amber-200/70 dark:border-amber-500/20 rounded-2xl p-4 sm:p-5 text-left shadow-xs animate-fadeIn select-text mb-3 sm:mb-4"
               >
-                <div className="flex items-center justify-between gap-2 mb-1.5 pb-1 border-b border-amber-200/50 dark:border-amber-500/15">
-                  <span className="text-[11px] sm:text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5 uppercase tracking-wider">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-amber-200/50 dark:border-amber-500/15">
+                  <span className="text-xs sm:text-sm font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5 uppercase tracking-wider">
+                    <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
                     Mẹo nhớ Hán tự ({availableMnemonics.length})
                   </span>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
                     Phím [M]
                   </span>
                 </div>
-                <div className="space-y-2 max-h-[110px] sm:max-h-[140px] overflow-y-auto pr-1 [scrollbar-width:thin]">
+                <div className="space-y-3 max-h-[160px] sm:max-h-[200px] overflow-y-auto pr-1 [scrollbar-width:thin]">
                   {availableMnemonics.map(({ char, hanviet, mnemonic }) => (
-                    <div key={char} className="flex items-start gap-2 text-xs leading-relaxed">
-                      <div className="shrink-0 flex items-center gap-1 bg-white dark:bg-slate-800 border border-amber-200 dark:border-slate-700 px-1.5 py-0.5 rounded shadow-2xs">
-                        <span className="font-black text-amber-600 dark:text-amber-400 text-xs sm:text-sm font-japanese">
+                    <div key={char} className="flex items-start gap-3 text-sm sm:text-base leading-relaxed">
+                      <div className="shrink-0 flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-amber-200 dark:border-slate-700 px-2.5 py-1 rounded-xl shadow-xs">
+                        <span className="font-black text-amber-600 dark:text-amber-400 text-xl sm:text-2xl font-japanese">
                           {char}
                         </span>
                         {hanviet && (
-                          <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase">
+                          <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
                             {hanviet}
                           </span>
                         )}
                       </div>
-                      <div className="flex-1 text-slate-700 dark:text-slate-200 pt-0.5">
+                      <div className="flex-1 text-slate-700 dark:text-slate-200 pt-1 text-sm sm:text-base">
                         <HighlightMnemonic text={mnemonic} />
                       </div>
                     </div>
