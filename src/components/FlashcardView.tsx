@@ -78,7 +78,12 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
     if (typeof window !== "undefined") {
       try {
         const saved = localStorage.getItem("kotobase_cached_kanji_notes");
-        if (saved) return JSON.parse(saved);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+            return parsed;
+          }
+        }
       } catch {}
     }
     return {};
@@ -722,6 +727,31 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
     setUnknownIds(new Set());
   };
 
+  const safeIndex = deck.length > 0 ? Math.max(0, Math.min(currentIndex, deck.length - 1)) : 0;
+  const currentVocab = deck[safeIndex];
+
+  const currentKanjiList = useMemo(() => {
+    if (!currentVocab?.word) return [];
+    return extractKanji(currentVocab.word);
+  }, [currentVocab?.word]);
+
+  const availableMnemonics = useMemo(() => {
+    if (!currentKanjiList.length || !kanjiNotesMap || typeof kanjiNotesMap !== "object") return [];
+    return currentKanjiList
+      .map((char) => {
+        const note = kanjiNotesMap[char];
+        if (note && note.mnemonic && note.mnemonic.trim()) {
+          return {
+            char,
+            hanviet: note.hanviet || "",
+            mnemonic: note.mnemonic.trim(),
+          };
+        }
+        return null;
+      })
+      .filter(Boolean) as { char: string; hanviet: string; mnemonic: string }[];
+  }, [currentKanjiList, kanjiNotesMap]);
+
   if (vocabularies.length === 0) {
     return (
       <div className="p-12 text-center bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 transition-colors">
@@ -758,32 +788,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
     );
   }
 
-  const safeIndex = Math.max(0, Math.min(currentIndex, deck.length - 1));
-  const currentVocab = deck[safeIndex];
-
-  const currentKanjiList = useMemo(() => {
-    if (!currentVocab?.word) return [];
-    return extractKanji(currentVocab.word);
-  }, [currentVocab?.word]);
-
-  const availableMnemonics = useMemo(() => {
-    if (!currentKanjiList.length) return [];
-    return currentKanjiList
-      .map((char) => {
-        const note = kanjiNotesMap[char];
-        if (note && note.mnemonic && note.mnemonic.trim()) {
-          return {
-            char,
-            hanviet: note.hanviet || "",
-            mnemonic: note.mnemonic.trim(),
-          };
-        }
-        return null;
-      })
-      .filter(Boolean) as { char: string; hanviet: string; mnemonic: string }[];
-  }, [currentKanjiList, kanjiNotesMap]);
-
-  const progressPercent = ((safeIndex) / deck.length) * 100;
+  const progressPercent = deck.length > 0 ? ((safeIndex) / deck.length) * 100 : 0;
 
   return (
     <div className={isFullscreen ? "fixed inset-0 z-[100] bg-slate-50 dark:bg-slate-950 p-3 sm:p-4 md:p-6 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] w-full h-full flex flex-col items-center justify-center" : ""}>
