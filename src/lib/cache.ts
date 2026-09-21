@@ -202,26 +202,64 @@ export interface CachedKanjiNote {
   updatedAt?: string;
 }
 
-export const getCachedAllKanjiNotes = unstable_cache(
-  async () => {
-    const snapshot = await adminDb.collection("kanji_notes").get();
-    const map: Record<string, CachedKanjiNote> = {};
-    snapshot.docs.forEach((doc) => {
-      const data = doc.data() as any;
-      const char = (data.character || doc.id || "").trim();
-      if (char) {
-        map[char] = {
-          character: char,
-          hanviet: data.hanviet || "",
-          meaning: data.meaning || "",
-          mnemonic: data.mnemonic || "",
-          updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : (data.updatedAt?.toDate?.().toISOString() || ''),
-        };
-      }
-    });
-    return map;
-  },
-  ['all-kanji-notes-map'],
-  { tags: ['kanji_notes'], revalidate: 3600 }
-);
+// In-memory process cache (Tồn tại trong RAM server Node.js, 0ms, 0 read, chống lỗi missing incrementalCache)
+let memoryKanjiNotesCache: { data: Record<string, CachedKanjiNote>; expiresAt: number } | null = null;
+
+export const clearKanjiNotesMemoryCache = () => {
+  memoryKanjiNotesCache = null;
+};
+
+const fetchRawKanjiNotesMap = async (): Promise<Record<string, CachedKanjiNote>> => {
+  const snapshot = await adminDb.collection("kanji_notes").get();
+  const map: Record<string, CachedKanjiNote> = {};
+  snapshot.docs.forEach((doc) => {
+    const data = doc.data() as any;
+    const char = (data.character || doc.id || "").trim();
+    if (char) {
+      map[char] = {
+        character: char,
+        hanviet: data.hanviet || "",
+        meaning: data.meaning || "",
+        mnemonic: data.mnemonic || "",
+        updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : (data.updatedAt?.toDate?.().toISOString() || ''),
+      };
+    }
+  });
+  return map;
+};
+
+export const getCachedAllKanjiNotes = async (): Promise<Record<string, CachedKanjiNote>> => {
+  const now = Date.now();
+  // 1. Kiểm tra RAM cache trước (siêu tốc 0ms, 0 lượt đọc Firebase)
+  if (memoryKanjiNotesCache && now < memoryKanjiNotesCache.expiresAt && Object.keys(memoryKanjiNotesCache.data).length > 0) {
+    return memoryKanjiNotesCache.data;
+  }
+
+  // 2. Thử Next.js Data Cache nếu có sẵn trong runtime
+  try {
+    const cachedFn = unstable_cache(
+      fetchRawKanjiNotesMap,
+      ['all-kanji-notes-map-v1'],
+      { tags: ['kanji_notes'], revalidate: 3600 }
+    );
+    const data = await cachedFn();
+    if (data && Object.keys(data).length > 0) {
+      memoryKanjiNotesCache = { data, expiresAt: now + 3600 * 1000 };
+      return data;
+    }
+  } catch (e) {
+    // unstable_cache incrementalCache missing trong Server Action context, tự động fallback xuống bước 3
+  }
+
+  // 3. Fallback: Đọc Firestore 1 lần duy nhất và lưu vào RAM trong 1 giờ
+  try {
+    const data = await fetchRawKanjiNotesMap();
+    memoryKanjiNotesCache = { data, expiresAt: now + 3600 * 1000 };
+    return data;
+  } catch (err) {
+    console.error("Lỗi khi đọc Firestore kanji_notes:", err);
+    return memoryKanjiNotesCache?.data || {};
+  }
+};
+
 

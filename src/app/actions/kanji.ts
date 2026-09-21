@@ -2,7 +2,7 @@
 
 import { adminDb } from "@/lib/firebase-admin";
 import { revalidatePath, revalidateTag, unstable_noStore as noStore } from "next/cache";
-import { getCachedAllKanjiNotes, type CachedKanjiNote } from "@/lib/cache";
+import { getCachedAllKanjiNotes, clearKanjiNotesMemoryCache, type CachedKanjiNote } from "@/lib/cache";
 
 export async function getKanjiNote(character: string): Promise<{ id: string; hanviet?: string; mnemonic?: string; meaning?: string; character: string } | null> {
   noStore();
@@ -92,7 +92,10 @@ export async function upsertKanjiNote(
 
     await docRef.set(payload, { merge: true });
 
-    revalidateTag("kanji_notes");
+    clearKanjiNotesMemoryCache();
+    try {
+      revalidateTag("kanji_notes");
+    } catch {}
     revalidatePath("/");
     revalidatePath("/kanji");
     return {

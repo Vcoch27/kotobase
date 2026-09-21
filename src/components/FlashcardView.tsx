@@ -169,6 +169,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
 
   // Tải & đồng bộ bản đồ mẹo nhớ Hán tự (tối ưu hóa Quota: chỉ fetch khi cần, lưu localStorage, 0 read Firebase nếu đã có cache)
   useEffect(() => {
+    let isMounted = true;
     const loadKanjiNotes = async () => {
       try {
         const lastSync = localStorage.getItem("kotobase_kanji_notes_synced_at");
@@ -177,7 +178,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
 
         if (shouldSync) {
           const map = await getAllKanjiNotesMap();
-          if (map && Object.keys(map).length > 0) {
+          if (isMounted && map && Object.keys(map).length > 0) {
             setKanjiNotesMap(map);
             try {
               localStorage.setItem("kotobase_cached_kanji_notes", JSON.stringify(map));
@@ -190,9 +191,10 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
       }
     };
 
-    if (isActive) {
-      loadKanjiNotes();
-    }
+    loadKanjiNotes();
+    return () => {
+      isMounted = false;
+    };
   }, [isActive]);
 
   // Lắng nghe sự kiện lưu Hán tự từ Modal để cập nhật ngay lập tức vào Flashcard mà không cần tải lại
@@ -621,17 +623,37 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
           const curCard = deck[currentIndexRef.current] || deck[0];
           if (!curCard) break;
           const kanjis = extractKanji(curCard.word);
+          if (kanjis.length === 0) {
+            toast("Từ này không chứa chữ Hán (Kanji)", { icon: "ℹ️", id: "no-kanji" });
+            break;
+          }
+
           const hasMnemonic = kanjis.some((char) => {
             const n = kanjiNotesMap[char];
             return n && n.mnemonic && n.mnemonic.trim();
           });
 
           if (!hasMnemonic) {
-            if (kanjis.length === 0) {
-              toast("Từ này không chứa chữ Hán (Kanji)", { icon: "ℹ️", id: "no-kanji" });
-            } else {
+            // Nếu chưa thấy trong state hiện tại, thử tải lại nhanh (phòng trường hợp cache vừa cập nhật hoặc chưa nạp kịp)
+            getAllKanjiNotesMap().then((freshMap) => {
+              if (freshMap && Object.keys(freshMap).length > 0) {
+                setKanjiNotesMap(freshMap);
+                try {
+                  localStorage.setItem("kotobase_cached_kanji_notes", JSON.stringify(freshMap));
+                } catch {}
+                const hasAfterFetch = kanjis.some((char) => {
+                  const n = freshMap[char];
+                  return n && n.mnemonic && n.mnemonic.trim();
+                });
+                if (hasAfterFetch) {
+                  toggleMnemonic();
+                  return;
+                }
+              }
               toast(`Chưa có câu chuyện mẹo nhớ cho ${kanjis.join(", ")}. Bấm vào chữ Hán để thêm!`, { icon: "💡", id: "no-mnemonic" });
-            }
+            }).catch(() => {
+              toast(`Chưa có câu chuyện mẹo nhớ cho ${kanjis.join(", ")}. Bấm vào chữ Hán để thêm!`, { icon: "💡", id: "no-mnemonic" });
+            });
           } else {
             toggleMnemonic();
           }
