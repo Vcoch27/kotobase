@@ -1,17 +1,22 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
 import { 
   RotateCcw, Shuffle, ArrowLeft, ArrowRight, X, Check, 
-  Rotate3D, GraduationCap, LayoutList, RefreshCcw, BrainCircuit, Undo2, Eye, EyeOff, Volume2, Headphones, Maximize, Minimize
+  Rotate3D, GraduationCap, LayoutList, RefreshCcw, BrainCircuit, Undo2, Eye, EyeOff, Volume2, Headphones, Maximize, Minimize,
+  Sparkles
 } from "lucide-react";
+import toast from "react-hot-toast";
 import { playAudio } from "@/lib/tts-utils";
 import { 
   AnkiRating, AnkiCardData, DEFAULT_ANKI_DATA, 
   calculateNextReview, loadAnkiProgress, saveAnkiProgress, formatInterval 
 } from "@/lib/anki-utils";
 import { StudyScopeSelector } from "./StudyScopeSelector";
+import { extractKanji } from "@/lib/kanji-parser";
+import { HighlightMnemonic } from "./HighlightMnemonic";
+import { getAllKanjiNotesMap } from "@/app/actions/kanji";
 
 interface VocabularyData {
   id: string;
@@ -60,6 +65,24 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
   const [isFinished, setIsFinished] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showSino, setShowSino] = useState(true);
+  const [showMnemonic, setShowMnemonic] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("kotobase_flashcard_show_mnemonic");
+        if (saved !== null) return saved === "true";
+      } catch {}
+    }
+    return false;
+  });
+  const [kanjiNotesMap, setKanjiNotesMap] = useState<Record<string, { character: string; hanviet?: string; meaning?: string; mnemonic?: string }>>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("kotobase_cached_kanji_notes");
+        if (saved) return JSON.parse(saved);
+      } catch {}
+    }
+    return {};
+  });
   const [isShuffled, setIsShuffled] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -128,6 +151,71 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
       localStorage.setItem("kotobase_flashcard_audio_mode", newMode);
     } catch {}
   };
+
+  const toggleMnemonic = useCallback(() => {
+    setShowMnemonic((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("kotobase_flashcard_show_mnemonic", String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  // Tải & đồng bộ bản đồ mẹo nhớ Hán tự (tối ưu hóa Quota: chỉ fetch khi cần, lưu localStorage, 0 read Firebase nếu đã có cache)
+  useEffect(() => {
+    const loadKanjiNotes = async () => {
+      try {
+        const lastSync = localStorage.getItem("kotobase_kanji_notes_synced_at");
+        const now = Date.now();
+        const shouldSync = !lastSync || now - parseInt(lastSync, 10) > 15 * 60 * 1000 || Object.keys(kanjiNotesMap).length === 0;
+
+        if (shouldSync) {
+          const map = await getAllKanjiNotesMap();
+          if (map && Object.keys(map).length > 0) {
+            setKanjiNotesMap(map);
+            try {
+              localStorage.setItem("kotobase_cached_kanji_notes", JSON.stringify(map));
+              localStorage.setItem("kotobase_kanji_notes_synced_at", now.toString());
+            } catch {}
+          }
+        }
+      } catch (err) {
+        console.warn("Không thể tải mẹo nhớ Hán tự:", err);
+      }
+    };
+
+    if (isActive) {
+      loadKanjiNotes();
+    }
+  }, [isActive]);
+
+  // Lắng nghe sự kiện lưu Hán tự từ Modal để cập nhật ngay lập tức vào Flashcard mà không cần tải lại
+  useEffect(() => {
+    const handleKanjiSaved = (e: any) => {
+      if (e.detail && e.detail.character) {
+        setKanjiNotesMap((prev) => {
+          const updated = {
+            ...prev,
+            [e.detail.character]: {
+              character: e.detail.character,
+              hanviet: e.detail.hanviet,
+              meaning: e.detail.meaning,
+              mnemonic: e.detail.mnemonic,
+            },
+          };
+          try {
+            localStorage.setItem("kotobase_cached_kanji_notes", JSON.stringify(updated));
+          } catch {}
+          return updated;
+        });
+      }
+    };
+
+    window.addEventListener("kanji-note-saved", handleKanjiSaved);
+    return () => window.removeEventListener("kanji-note-saved", handleKanjiSaved);
+  }, []);
+
 
   const getAudioTextToPlay = useCallback((card: VocabularyData) => {
     const wordText = card.reading || card.word;
@@ -522,12 +610,34 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
             playAudio(textToPlayKey);
           }
           break;
+        case "m":
+        case "M": {
+          e.preventDefault();
+          const curCard = deck[currentIndexRef.current] || deck[0];
+          if (!curCard) break;
+          const kanjis = extractKanji(curCard.word);
+          const hasMnemonic = kanjis.some((char) => {
+            const n = kanjiNotesMap[char];
+            return n && n.mnemonic && n.mnemonic.trim();
+          });
+
+          if (!hasMnemonic) {
+            if (kanjis.length === 0) {
+              toast("Từ này không chứa chữ Hán (Kanji)", { icon: "ℹ️", id: "no-kanji" });
+            } else {
+              toast(`Chưa có câu chuyện mẹo nhớ cho ${kanjis.join(", ")}. Bấm vào chữ Hán để thêm!`, { icon: "💡", id: "no-mnemonic" });
+            }
+          } else {
+            toggleMnemonic();
+          }
+          break;
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isActive, isFinished, deck, currentIndex, mode, handleNext, handlePrev, handleProgress, handleAnkiRate, handleUndo, flipCard, isFlipped, getAudioTextToPlay]);
+  }, [isActive, isFinished, deck, currentIndex, mode, handleNext, handlePrev, handleProgress, handleAnkiRate, handleUndo, flipCard, isFlipped, getAudioTextToPlay, kanjiNotesMap, toggleMnemonic]);
 
   // Restart Logic
   const restartAll = () => {
@@ -650,6 +760,28 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
 
   const safeIndex = Math.max(0, Math.min(currentIndex, deck.length - 1));
   const currentVocab = deck[safeIndex];
+
+  const currentKanjiList = useMemo(() => {
+    if (!currentVocab?.word) return [];
+    return extractKanji(currentVocab.word);
+  }, [currentVocab?.word]);
+
+  const availableMnemonics = useMemo(() => {
+    if (!currentKanjiList.length) return [];
+    return currentKanjiList
+      .map((char) => {
+        const note = kanjiNotesMap[char];
+        if (note && note.mnemonic && note.mnemonic.trim()) {
+          return {
+            char,
+            hanviet: note.hanviet || "",
+            mnemonic: note.mnemonic.trim(),
+          };
+        }
+        return null;
+      })
+      .filter(Boolean) as { char: string; hanviet: string; mnemonic: string }[];
+  }, [currentKanjiList, kanjiNotesMap]);
 
   const progressPercent = ((safeIndex) / deck.length) * 100;
 
@@ -814,9 +946,21 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
             <button 
               onClick={() => setShowSino(prev => !prev)} 
               className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-all" 
-              title={showSino ? "Ẩn âm Hán Việt" : "Hiện âm Hán Việt"}
+              title={showSino ? "Ẩn âm Hán Việt (H)" : "Hiện âm Hán Việt (H)"}
             >
               {showSino ? <Eye className="w-4 h-4 sm:w-5 sm:h-5" /> : <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" />}
+            </button>
+
+            <button 
+              onClick={toggleMnemonic} 
+              className={`p-2 rounded-lg transition-all ${
+                showMnemonic
+                  ? "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-500/40 shadow-xs"
+                  : "text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10"
+              }`} 
+              title={showMnemonic ? "Ẩn câu chuyện mẹo nhớ Kanji (Phím M)" : "Hiện câu chuyện mẹo nhớ Kanji (Phím M)"}
+            >
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
             
             {mode !== "normal" && (
@@ -988,9 +1132,63 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
                 <ClickableKanjiString text={currentVocab.word} />
               </div>
               {currentVocab.sinoVietnamese && showSino && (
-                <div className="mt-4 sm:mt-8 text-xs sm:text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] animate-fadeIn">
+                <div className="mt-3 sm:mt-5 text-xs sm:text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] animate-fadeIn">
                   {currentVocab.sinoVietnamese}
                 </div>
+              )}
+
+              {/* Mẹo nhớ Hán tự (Mnemonic) - Hỗ trợ hiển thị 1 hoặc nhiều Hán tự */}
+              {availableMnemonics.length > 0 && (
+                showMnemonic ? (
+                  <div 
+                    onClick={(e) => e.stopPropagation()} 
+                    className="mt-3 sm:mt-5 w-full max-w-lg mx-auto bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200/90 dark:border-amber-500/25 rounded-2xl p-3 sm:p-4 text-left shadow-xs animate-fadeIn transition-all select-text"
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-amber-200/70 dark:border-amber-500/20">
+                      <span className="text-[11px] sm:text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5 uppercase tracking-wider">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        Mẹo nhớ Hán tự ({availableMnemonics.length})
+                      </span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                        Phím [M] để ẩn
+                      </span>
+                    </div>
+
+                    <div className="space-y-2.5 max-h-[140px] sm:max-h-[190px] overflow-y-auto pr-1 [scrollbar-width:thin]">
+                      {availableMnemonics.map(({ char, hanviet, mnemonic }) => (
+                        <div key={char} className="flex items-start gap-2.5 text-xs sm:text-sm leading-relaxed">
+                          <div className="shrink-0 flex items-center gap-1 bg-white dark:bg-slate-800 border border-amber-200 dark:border-slate-700 px-2 py-0.5 rounded-lg shadow-2xs">
+                            <span className="font-black text-amber-600 dark:text-amber-400 text-sm sm:text-base font-japanese">
+                              {char}
+                            </span>
+                            {hanviet && (
+                              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
+                                {hanviet}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex-1 text-slate-700 dark:text-slate-200 pt-0.5">
+                            <HighlightMnemonic text={mnemonic} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleMnemonic();
+                    }}
+                    className="mt-3 sm:mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50/90 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 border border-amber-200/80 dark:border-amber-500/30 transition-all active:scale-95 shadow-2xs"
+                    title="Bấm để xem câu chuyện mẹo nhớ Hán tự (Phím M)"
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-500" />
+                    <span>Mẹo nhớ ({availableMnemonics.length})</span>
+                    <kbd className="text-[10px] opacity-70 bg-amber-200/50 dark:bg-amber-500/30 px-1 rounded font-sans">M</kbd>
+                  </button>
+                )
               )}
             </div>
           )}
@@ -1065,6 +1263,43 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
                   {currentVocab.meaning}
                 </div>
               </>
+            )}
+
+            {/* Mẹo nhớ Hán tự trên mặt sau thẻ */}
+            {showMnemonic && availableMnemonics.length > 0 && (
+              <div 
+                onClick={(e) => e.stopPropagation()} 
+                className="w-full max-w-lg mx-auto bg-amber-50/80 dark:bg-amber-950/25 border border-amber-200/70 dark:border-amber-500/20 rounded-2xl p-2.5 sm:p-3 text-left shadow-2xs animate-fadeIn select-text mb-3 sm:mb-4"
+              >
+                <div className="flex items-center justify-between gap-2 mb-1.5 pb-1 border-b border-amber-200/50 dark:border-amber-500/15">
+                  <span className="text-[11px] sm:text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5 uppercase tracking-wider">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    Mẹo nhớ Hán tự ({availableMnemonics.length})
+                  </span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                    Phím [M]
+                  </span>
+                </div>
+                <div className="space-y-2 max-h-[110px] sm:max-h-[140px] overflow-y-auto pr-1 [scrollbar-width:thin]">
+                  {availableMnemonics.map(({ char, hanviet, mnemonic }) => (
+                    <div key={char} className="flex items-start gap-2 text-xs leading-relaxed">
+                      <div className="shrink-0 flex items-center gap-1 bg-white dark:bg-slate-800 border border-amber-200 dark:border-slate-700 px-1.5 py-0.5 rounded shadow-2xs">
+                        <span className="font-black text-amber-600 dark:text-amber-400 text-xs sm:text-sm font-japanese">
+                          {char}
+                        </span>
+                        {hanviet && (
+                          <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase">
+                            {hanviet}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 text-slate-700 dark:text-slate-200 pt-0.5">
+                        <HighlightMnemonic text={mnemonic} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
             {/* Ví dụ minh họa */}

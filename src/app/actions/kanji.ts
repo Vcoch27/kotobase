@@ -1,7 +1,8 @@
 "use server";
 
 import { adminDb } from "@/lib/firebase-admin";
-import { revalidatePath, unstable_noStore as noStore } from "next/cache";
+import { revalidatePath, revalidateTag, unstable_noStore as noStore } from "next/cache";
+import { getCachedAllKanjiNotes, type CachedKanjiNote } from "@/lib/cache";
 
 export async function getKanjiNote(character: string): Promise<{ id: string; hanviet?: string; mnemonic?: string; meaning?: string; character: string } | null> {
   noStore();
@@ -91,6 +92,7 @@ export async function upsertKanjiNote(
 
     await docRef.set(payload, { merge: true });
 
+    revalidateTag("kanji_notes");
     revalidatePath("/");
     revalidatePath("/kanji");
     return {
@@ -105,6 +107,19 @@ export async function upsertKanjiNote(
   } catch (error: any) {
     console.error("Lỗi khi lưu Hán tự:", error);
     return { success: false, error: error.message || "Không thể lưu ghi chú Hán tự." };
+  }
+}
+
+/**
+ * Lấy toàn bộ Map Hán tự đã lưu (Kèm Mnemonic) có áp dụng Next.js Data Cache.
+ * Tối ưu cực đại Quota Firebase (hầu hết các lượt gọi đều lấy từ Cache RAM 0 lượt đọc).
+ */
+export async function getAllKanjiNotesMap(): Promise<Record<string, CachedKanjiNote>> {
+  try {
+    return await getCachedAllKanjiNotes();
+  } catch (error) {
+    console.error("Lỗi getAllKanjiNotesMap:", error);
+    return {};
   }
 }
 

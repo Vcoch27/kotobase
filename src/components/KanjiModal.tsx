@@ -98,6 +98,13 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
         setIsEditingMnemonic(false);
         toast.success("Đã lưu ghi chú Hán tự thành công!");
         setMessage({ type: "success", text: "Đã cập nhật Hán tự thành công!" });
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("kanji-note-saved", {
+              detail: res.data,
+            })
+          );
+        }
         setTimeout(() => setMessage(null), 3000);
       } else {
         toast.error(res.error || "Lỗi khi lưu!");

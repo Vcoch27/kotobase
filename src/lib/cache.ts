@@ -190,3 +190,38 @@ export const getCachedAllSentences = async () => {
     { tags: ['sentences'], revalidate: 3600 }
   )();
 };
+
+// ==========================================
+// KANJI NOTES CACHE (Tối ưu tuyệt đối lượt đọc Firebase)
+// ==========================================
+export interface CachedKanjiNote {
+  character: string;
+  hanviet?: string;
+  meaning?: string;
+  mnemonic?: string;
+  updatedAt?: string;
+}
+
+export const getCachedAllKanjiNotes = unstable_cache(
+  async () => {
+    const snapshot = await adminDb.collection("kanji_notes").get();
+    const map: Record<string, CachedKanjiNote> = {};
+    snapshot.docs.forEach((doc) => {
+      const data = doc.data() as any;
+      const char = (data.character || doc.id || "").trim();
+      if (char) {
+        map[char] = {
+          character: char,
+          hanviet: data.hanviet || "",
+          meaning: data.meaning || "",
+          mnemonic: data.mnemonic || "",
+          updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : (data.updatedAt?.toDate?.().toISOString() || ''),
+        };
+      }
+    });
+    return map;
+  },
+  ['all-kanji-notes-map'],
+  { tags: ['kanji_notes'], revalidate: 3600 }
+);
+
