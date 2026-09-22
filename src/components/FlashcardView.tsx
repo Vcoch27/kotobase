@@ -628,6 +628,28 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
             playAudio(textToPlayKey);
           }
           break;
+        case "a":
+        case "A": {
+          e.preventDefault();
+          // Cycle: both → word → example → both
+          const nextAudioMode: Record<"both" | "word" | "example", "both" | "word" | "example"> = {
+            both: "word",
+            word: "example",
+            example: "both",
+          };
+          const modeLabels: Record<"both" | "word" | "example", string> = {
+            both: "🔊 Cả hai (từ + câu ví dụ)",
+            word: "🔤 Chỉ từ vựng",
+            example: "📖 Chỉ câu ví dụ",
+          };
+          setAudioMode((prev) => {
+            const next = nextAudioMode[prev];
+            try { localStorage.setItem("kotobase_flashcard_audio_mode", next); } catch {}
+            toast(modeLabels[next], { id: "audio-mode-change", icon: "🎵", duration: 1800 });
+            return next;
+          });
+          break;
+        }
         case "m":
         case "M": {
           e.preventDefault();
@@ -948,7 +970,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
                   ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/50 dark:border-slate-600/50"
                   : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
-              title="Đọc cả Từ vựng và Câu ví dụ khi bấm phím V"
+              title="Đọc cả Từ vựng và Câu ví dụ khi bấm V — Phím [A] để chuyển chế độ"
             >
               <span className="hidden xs:inline sm:inline">Cả hai</span>
               <span className="xs:hidden sm:hidden">Cả 2</span>
@@ -960,7 +982,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
                   ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/50 dark:border-slate-600/50"
                   : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
-              title="Chỉ đọc Từ vựng khi bấm phím V"
+              title="Chỉ đọc Từ vựng khi bấm V — Phím [A] để chuyển chế độ"
             >
               <span className="hidden xs:inline sm:inline">Từ vựng</span>
               <span className="xs:hidden sm:hidden">Từ</span>
@@ -972,11 +994,12 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
                   ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/50 dark:border-slate-600/50"
                   : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
-              title="Chỉ đọc Câu ví dụ khi bấm phím V"
+              title="Chỉ đọc Câu ví dụ khi bấm V — Phím [A] để chuyển chế độ"
             >
               <span className="hidden xs:inline sm:inline">Câu ví dụ</span>
               <span className="xs:hidden sm:hidden">Câu</span>
             </button>
+            <kbd className="hidden sm:inline-flex ml-0.5 mr-1 text-[10px] text-slate-400 dark:text-slate-500 bg-slate-200/70 dark:bg-slate-700/60 border border-slate-300/50 dark:border-slate-600/50 px-1 py-0.5 rounded font-sans">A</kbd>
           </div>
 
           {/* Action buttons (Bên phải) */}
