@@ -13,6 +13,7 @@ import {
   AnkiRating, AnkiCardData, DEFAULT_ANKI_DATA, 
   calculateNextReview, loadAnkiProgress, saveAnkiProgress, formatInterval 
 } from "@/lib/anki-utils";
+import { StudyCardArtwork } from "./StudyCardArtwork";
 import { StudyScopeSelector } from "./StudyScopeSelector";
 import { extractKanji } from "@/lib/kanji-parser";
 import { HighlightMnemonic } from "./HighlightMnemonic";
@@ -1124,7 +1125,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
           {mode === "listening" ? (
             /* Listening Mode Front: Chỉ hiện âm thanh */
             <div 
-              className={`absolute inset-0 w-full h-full backface-hidden study-card study-card--flashcard bg-gradient-to-br from-violet-50 to-slate-50 dark:from-violet-950/40 dark:to-slate-950 border border-violet-200 dark:border-violet-700/40 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center ${
+              className={`absolute inset-0 w-full h-full backface-hidden study-card bg-gradient-to-br from-violet-50 to-slate-50 dark:from-violet-950/40 dark:to-slate-950 border border-violet-200 dark:border-violet-700/40 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center ${
                 isFlipped ? "pointer-events-none select-none" : "pointer-events-auto"
               }`}
               style={{ 
@@ -1134,6 +1135,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
                 WebkitTransform: 'rotateY(0deg) translateZ(1px)'
               }}
             >
+              <StudyCardArtwork side="front" />
               <span className="absolute top-3 left-3 sm:top-6 sm:left-6 text-[10px] sm:text-xs font-bold text-violet-400 dark:text-violet-500 uppercase tracking-wider flex items-center gap-1">
                 <Headphones className="w-3 h-3 sm:w-4 sm:h-4" /> Chế độ Nghe — Bấm để lật
               </span>
@@ -1175,7 +1177,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
           ) : (
             /* Normal / Progress / Anki Front: Hiển thị từ vựng */
             <div 
-              className={`absolute inset-0 w-full h-full backface-hidden study-card study-card--flashcard bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-6 sm:p-8 text-center ${
+              className={`absolute inset-0 w-full h-full backface-hidden study-card bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-6 sm:p-8 text-center ${
                 isFlipped ? "pointer-events-none select-none" : "pointer-events-auto"
               }`}
               style={{ 
@@ -1185,6 +1187,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
                 WebkitTransform: 'rotateY(0deg) translateZ(1px)'
               }}
             >
+              <StudyCardArtwork side="front" />
               <span className="absolute top-3 left-3 sm:top-6 sm:left-6 text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
                 <Rotate3D className="w-3 h-3 sm:w-4 sm:h-4" /> Bấm để lật
               </span>
@@ -1255,7 +1258,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
 
           {/* Back */}
           <div 
-            className={`absolute inset-0 w-full h-full backface-hidden study-card study-card--flashcard bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center ${
+            className={`absolute inset-0 w-full h-full backface-hidden study-card bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center ${
               !isFlipped ? "pointer-events-none select-none" : "pointer-events-auto"
             }`}
             style={{ 
@@ -1265,6 +1268,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
               WebkitTransform: 'rotateY(180deg) translateZ(1px)',
             }}
           >
+            <StudyCardArtwork side="back" />
             <span className="absolute top-3 left-3 sm:top-6 sm:left-6 text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
               <Rotate3D className="w-4 h-4" /> Bấm để lật
             </span>

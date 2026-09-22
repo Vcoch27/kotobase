@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { HelpCircle, CheckCircle2, XCircle, SkipForward, Info, RotateCcw, Shuffle, Maximize, Minimize, Volume2, ArrowRight, Settings2, Clock } from "lucide-react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
+import { StudyCardArtwork } from "./StudyCardArtwork";
 import { StudyScopeSelector } from "./StudyScopeSelector";
 import { audioFX } from "@/lib/audio-fx";
 import { playAudio } from "@/lib/tts-utils";
@@ -801,7 +802,7 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
         <>
 
       {/* Card Câu hỏi */}
-      <div className={`study-card study-card--quiz bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 md:p-12 shadow-2xl relative overflow-hidden transition-all duration-300 ${
+      <div className={`study-card bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 md:p-12 shadow-2xl relative overflow-hidden transition-all duration-300 ${
         feedback === "correct"
           ? "border-2 border-emerald-500 dark:border-emerald-400 ring-4 ring-emerald-500/20 dark:ring-emerald-500/30 shadow-emerald-500/15"
           : feedback === "wrong"
@@ -809,6 +810,7 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
           : "border border-slate-200 dark:border-slate-800"
       }`}>
         
+        <StudyCardArtwork side={feedback === "correct" ? "back" : "front"} />
         {/* Nhãn Dạng câu hỏi */}
         <div className="absolute top-0 left-0 right-0 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 px-4 sm:px-6 py-2 sm:py-2.5 flex items-center justify-center gap-2">
           <Info className="w-4 h-4 text-slate-400 shrink-0" />

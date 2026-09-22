@@ -28,20 +28,39 @@
 
 .study-card {
   background-color: #fffdf6;
-  /* Zoom inside the supplied frame, excluding its transparent outer margin.
-     CSS owns the radius and shadow so the frame adapts to every card size. */
-  background-image: linear-gradient(#ffffff20, #ffffff20), var(--study-card-art);
-  background-size: 100% 100%, 110% 141%;
-  background-position: center, center 49%;
-  background-repeat: no-repeat;
+  background-image: none;
+  isolation: isolate;
   overflow-wrap: anywhere;
 }
 
-.study-card--flashcard {
+.study-card-artwork {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  overflow: hidden;
+  container-type: size;
+  opacity: 0.4;
+}
+
+.study-card-artwork::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--study-card-art);
+  background-repeat: no-repeat;
+  /* Cover the inner frame, preserving the original 4:3 image ratio. The
+     artwork container measures itself without affecting the card's height. */
+  background-size: max(110cqw, 188cqh) auto;
+  background-position: center 49%;
+}
+
+.study-card-artwork--front {
   --study-card-art: url('/images/study/flashcard-frog.webp');
 }
 
-.study-card--quiz {
+.study-card-artwork--back {
   --study-card-art: url('/images/study/quiz-frog.webp');
 }
 
@@ -59,12 +78,16 @@
 
 .dark .study-dashboard {
   background-color: #0f172a;
-  background-image: linear-gradient(#0f172ae8, #0f172ae8), url('/images/study/sakura-landscape.webp');
+  background-image: none;
 }
 
 .dark .study-card {
   background-color: #172033;
-  background-image: linear-gradient(#0f172ae8, #0f172ae8), var(--study-card-art);
+  background-image: none;
+}
+
+.dark .study-card-artwork {
+  display: none;
 }
 
 @media (min-width: 1280px) {
@@ -98,12 +121,6 @@
     min-height: 520px;
   }
 
-  .study-card {
-    /* Keep the artwork quiet behind longer meanings and memory hints. */
-    background-image: linear-gradient(#ffffff65, #ffffff65), var(--study-card-art);
-    background-size: 100% 100%, auto 141%;
-    background-position: center, 90% 49%;
-  }
 }
 
 @media (max-width: 380px) {
