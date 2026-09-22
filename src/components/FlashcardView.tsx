@@ -1094,11 +1094,10 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
       {/* Flashcard 3D Container */}
       <div 
         key={currentVocab.id}
-        className={`relative w-full mx-auto cursor-pointer select-none touch-pan-y shadow-2xl rounded-3xl ${
+        className={`study-flashcard relative w-full mx-auto cursor-pointer select-none touch-pan-y shadow-2xl rounded-3xl ${
           isTransitioning ? "animate-fadeOut" : "animate-fadeIn"
         }`}
         style={{ 
-          aspectRatio: '4/3',
           maxHeight: isFullscreen ? 'min(520px, calc(100dvh - 250px))' : undefined,
           maxWidth: isFullscreen ? 'min(48rem, calc((100dvh - 250px) * 4 / 3))' : undefined,
           perspective: '1200px',
@@ -1125,7 +1124,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
           {mode === "listening" ? (
             /* Listening Mode Front: Chỉ hiện âm thanh */
             <div 
-              className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-violet-50 to-slate-50 dark:from-violet-950/40 dark:to-slate-950 border border-violet-200 dark:border-violet-700/40 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center ${
+              className={`absolute inset-0 w-full h-full backface-hidden study-card study-card--flashcard bg-gradient-to-br from-violet-50 to-slate-50 dark:from-violet-950/40 dark:to-slate-950 border border-violet-200 dark:border-violet-700/40 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center ${
                 isFlipped ? "pointer-events-none select-none" : "pointer-events-auto"
               }`}
               style={{ 
@@ -1176,7 +1175,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
           ) : (
             /* Normal / Progress / Anki Front: Hiển thị từ vựng */
             <div 
-              className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-6 sm:p-8 text-center ${
+              className={`absolute inset-0 w-full h-full backface-hidden study-card study-card--flashcard bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-6 sm:p-8 text-center ${
                 isFlipped ? "pointer-events-none select-none" : "pointer-events-auto"
               }`}
               style={{ 
@@ -1256,7 +1255,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
 
           {/* Back */}
           <div 
-            className={`absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center ${
+            className={`absolute inset-0 w-full h-full backface-hidden study-card study-card--flashcard bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center ${
               !isFlipped ? "pointer-events-none select-none" : "pointer-events-auto"
             }`}
             style={{ 

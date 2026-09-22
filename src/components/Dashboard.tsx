@@ -474,7 +474,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased pb-24 md:pb-0 flex flex-col transition-colors duration-300">
+    <div className="study-dashboard min-h-screen text-slate-900 dark:text-slate-100 font-sans antialiased pb-24 md:pb-0 flex flex-col transition-colors duration-300">
       {/* Top Navbar */}
       <header className="sticky top-0 z-40 shadow-elevation-sm bg-[oklch(var(--color-surface)/0.85)] backdrop-blur-xl transition-colors duration-300">
         <div className="max-w-screen-2xl mx-auto px-4 lg:px-6 py-3 md:h-16 flex flex-wrap items-center justify-between gap-3 md:gap-4">
@@ -751,11 +751,11 @@ export function Dashboard({ currentUser }: DashboardProps) {
       </header>
 
       {/* Main Layout (2 Columns) */}
-      <main className="flex-1 max-w-screen-2xl w-full mx-auto px-4 lg:px-6 pt-6 pb-36 md:pb-10 flex flex-col md:flex-row gap-6">
+      <main className="study-layout flex-1 w-full mx-auto px-4 lg:px-6 pt-6 pb-36 md:pb-10 flex flex-col md:flex-row gap-6">
         
         {/* LEFT SIDEBAR: Folder Tree */}
         <div className="w-full md:w-64 lg:w-72 shrink-0 space-y-4 md:sticky md:top-20 md:self-start">
-          <div className="bg-[oklch(var(--color-surface))] rounded-2xl p-4 shadow-elevation-md transition-colors duration-300 md:h-[calc(100vh-6rem)] md:max-h-[calc(100vh-6rem)] flex flex-col overflow-hidden">
+          <div className="study-sidebar rounded-2xl p-4 shadow-elevation-md transition-colors duration-300 md:h-[calc(100vh-6rem)] md:max-h-[calc(100vh-6rem)] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <h2 
                 className="text-sm font-bold text-[oklch(var(--color-text-primary))] flex items-center justify-between w-full md:w-auto cursor-pointer md:cursor-default"

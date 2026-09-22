@@ -2,6 +2,116 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Original artwork lives in /public/images/study. Backgrounds are decorative;
+   all study content remains selectable, accessible HTML. */
+.study-dashboard {
+  background-color: #edf5ff;
+  background-image: url('/images/study/sakura-landscape.webp');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.study-layout {
+  max-width: 1800px;
+}
+
+.study-dashboard #study-main-content {
+  gap: 16px;
+}
+
+.study-sidebar {
+  background: oklch(var(--color-surface) / 0.9);
+  border: 1px solid oklch(var(--color-border) / 0.35);
+  backdrop-filter: blur(12px);
+}
+
+.study-card {
+  background-color: #fffdf6;
+  /* Zoom inside the supplied frame, excluding its transparent outer margin.
+     CSS owns the radius and shadow so the frame adapts to every card size. */
+  background-image: linear-gradient(#ffffff20, #ffffff20), var(--study-card-art);
+  background-size: 100% 100%, 110% 141%;
+  background-position: center, center 49%;
+  background-repeat: no-repeat;
+  overflow-wrap: anywhere;
+}
+
+.study-card--flashcard {
+  --study-card-art: url('/images/study/flashcard-frog.webp');
+}
+
+.study-card--quiz {
+  --study-card-art: url('/images/study/quiz-frog.webp');
+}
+
+.study-flashcard {
+  aspect-ratio: 4 / 3;
+  min-height: 480px;
+  box-shadow: 0 20px 45px -15px rgb(57 86 126 / 0.35);
+}
+
+@media (min-width: 768px) {
+  .study-dashboard .study-flashcard {
+    aspect-ratio: 8 / 5;
+  }
+}
+
+.dark .study-dashboard {
+  background-color: #0f172a;
+  background-image: linear-gradient(#0f172ae8, #0f172ae8), url('/images/study/sakura-landscape.webp');
+}
+
+.dark .study-card {
+  background-color: #172033;
+  background-image: linear-gradient(#0f172ae8, #0f172ae8), var(--study-card-art);
+}
+
+@media (min-width: 1280px) {
+  .study-layout {
+    padding-inline: clamp(24px, 3vw, 56px);
+    gap: clamp(32px, 4vw, 72px);
+  }
+
+}
+
+@media (max-width: 767px) {
+  .study-sidebar > :last-child {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .study-dashboard {
+    background-attachment: scroll;
+    background-size: auto 100dvh;
+    background-position: center top;
+    background-repeat: no-repeat;
+  }
+
+  .study-layout {
+    padding-top: 16px;
+    gap: 16px;
+  }
+
+  .study-flashcard {
+    min-height: 520px;
+  }
+
+  .study-card {
+    /* Keep the artwork quiet behind longer meanings and memory hints. */
+    background-image: linear-gradient(#ffffff65, #ffffff65), var(--study-card-art);
+    background-size: 100% 100%, auto 141%;
+    background-position: center, 90% 49%;
+  }
+}
+
+@media (max-width: 380px) {
+  .study-flashcard {
+    min-height: 580px;
+  }
+}
+
 /* ══════════════════════════════════════════════════════════════
    CSS CUSTOM PROPERTIES — Design Tokens (OKLCH)
    Tham chiếu: DESIGN.md § 2. Bảng Màu
@@ -189,4 +299,3 @@
 header.sticky {
   padding-top: max(0px, env(safe-area-inset-top));
 }
-

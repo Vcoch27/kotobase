@@ -801,7 +801,7 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
         <>
 
       {/* Card Câu hỏi */}
-      <div className={`bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 md:p-12 shadow-2xl relative overflow-hidden transition-all duration-300 ${
+      <div className={`study-card study-card--quiz bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 md:p-12 shadow-2xl relative overflow-hidden transition-all duration-300 ${
         feedback === "correct"
           ? "border-2 border-emerald-500 dark:border-emerald-400 ring-4 ring-emerald-500/20 dark:ring-emerald-500/30 shadow-emerald-500/15"
           : feedback === "wrong"
