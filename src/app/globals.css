@@ -44,8 +44,7 @@
   opacity: 0.4;
 }
 
-.study-card-artwork::before {
-  content: "";
+.study-card-artwork-layer {
   position: absolute;
   inset: 0;
   background-image: var(--study-card-art);
@@ -54,14 +53,20 @@
      artwork container measures itself without affecting the card's height. */
   background-size: max(110cqw, 188cqh) auto;
   background-position: center 49%;
+  opacity: 0;
 }
 
-.study-card-artwork--front {
+.study-card-artwork-layer--front {
   --study-card-art: url('/images/study/flashcard-frog.webp');
 }
 
-.study-card-artwork--back {
+.study-card-artwork-layer--back {
   --study-card-art: url('/images/study/quiz-frog.webp');
+}
+
+.study-card-artwork--front > .study-card-artwork-layer--front,
+.study-card-artwork--back > .study-card-artwork-layer--back {
+  opacity: 1;
 }
 
 .study-flashcard {
@@ -86,7 +91,13 @@
   background-image: none;
 }
 
-.dark .study-card-artwork {
+.study-dashboard[data-hide-background="true"] {
+  background-color: oklch(var(--color-bg));
+  background-image: none;
+}
+
+.dark .study-card-artwork,
+.study-dashboard[data-hide-background="true"] .study-card-artwork {
   display: none;
 }
 

@@ -1329,43 +1329,6 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
               </>
             )}
 
-            {/* Mẹo nhớ Hán tự trên mặt sau thẻ */}
-            {showMnemonic && availableMnemonics.length > 0 && (
-              <div 
-                onClick={(e) => e.stopPropagation()} 
-                className="w-full max-w-xl mx-auto bg-amber-50/80 dark:bg-amber-950/25 border border-amber-200/70 dark:border-amber-500/20 rounded-2xl p-4 sm:p-5 text-left shadow-xs animate-fadeIn select-text mb-3 sm:mb-4"
-              >
-                <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-amber-200/50 dark:border-amber-500/15">
-                  <span className="text-xs sm:text-sm font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5 uppercase tracking-wider">
-                    <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-                    Mẹo nhớ Hán tự ({availableMnemonics.length})
-                  </span>
-                  <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-                    Phím [M]
-                  </span>
-                </div>
-                <div className="space-y-3 max-h-[160px] sm:max-h-[200px] overflow-y-auto pr-1 [scrollbar-width:thin]">
-                  {availableMnemonics.map(({ char, hanviet, mnemonic }) => (
-                    <div key={char} className="flex items-start gap-3 text-sm sm:text-base leading-relaxed">
-                      <div className="shrink-0 flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-amber-200 dark:border-slate-700 px-2.5 py-1 rounded-xl shadow-xs">
-                        <span className="font-black text-amber-600 dark:text-amber-400 text-xl sm:text-2xl font-japanese">
-                          {char}
-                        </span>
-                        {hanviet && (
-                          <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
-                            {hanviet}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex-1 text-slate-700 dark:text-slate-200 pt-1 text-sm sm:text-base">
-                        <HighlightMnemonic text={mnemonic} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Ví dụ minh họa */}
             {currentVocab.example && (
               <div className="p-3 sm:p-4 bg-white/50 dark:bg-slate-950/50 rounded-2xl border border-slate-200 dark:border-slate-700/50 w-full max-w-lg">

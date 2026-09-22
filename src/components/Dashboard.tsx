@@ -205,6 +205,25 @@ export function Dashboard({ currentUser }: DashboardProps) {
 
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [hideBackground, setHideBackground] = useState(false);
+
+  useEffect(() => {
+    try {
+      setHideBackground(localStorage.getItem("kotobase_hide_background") === "true");
+    } catch {
+      // Keep the default when browser storage is unavailable.
+    }
+  }, []);
+
+  const toggleBackground = () => {
+    const next = !hideBackground;
+    setHideBackground(next);
+    try {
+      localStorage.setItem("kotobase_hide_background", String(next));
+    } catch {
+      // The setting still works for this session without persistent storage.
+    }
+  };
   const isOnline = useOnlineStatus();
   const [isOfflineMode, setIsOfflineMode] = useState(false);
 
@@ -474,7 +493,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
   }
 
   return (
-    <div className="study-dashboard min-h-screen text-slate-900 dark:text-slate-100 font-sans antialiased pb-24 md:pb-0 flex flex-col transition-colors duration-300">
+    <div data-hide-background={hideBackground} className="study-dashboard min-h-screen text-slate-900 dark:text-slate-100 font-sans antialiased pb-24 md:pb-0 flex flex-col transition-colors duration-300">
       {/* Top Navbar */}
       <header className="sticky top-0 z-40 shadow-elevation-sm bg-[oklch(var(--color-surface)/0.85)] backdrop-blur-xl transition-colors duration-300">
         <div className="max-w-screen-2xl mx-auto px-4 lg:px-6 py-3 md:h-16 flex flex-wrap items-center justify-between gap-3 md:gap-4">
@@ -583,7 +602,24 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     className="fixed inset-0 z-40" 
                     onClick={() => setShowSettingsDropdown(false)}
                   ></div>
-                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden animate-fadeIn">
+                  <div className="absolute right-0 mt-2 w-56 max-h-[calc(100dvh-6rem)] overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 animate-fadeIn">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={hideBackground}
+                      aria-label="Ẩn ảnh nền"
+                      aria-describedby="background-setting-description"
+                      onClick={toggleBackground}
+                      className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500"
+                    >
+                      <span>
+                        <span className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Ẩn ảnh nền</span>
+                        <span id="background-setting-description" className="block mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">Nền trang và thẻ học</span>
+                      </span>
+                      <span aria-hidden="true" className={`flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition-colors ${hideBackground ? "bg-indigo-600" : "bg-slate-300 dark:bg-slate-600"}`}>
+                        <span className={`h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${hideBackground ? "translate-x-4" : "translate-x-0"}`} />
+                      </span>
+                    </button>
                     {/* Quick Volume Slider */}
                     <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
