@@ -34,15 +34,19 @@ export default async function DownloadPage() {
     if (res.ok) {
       const data = await res.json();
       if (data.tag_name) {
-        displayVersion = data.tag_name.replace('v', '');
-        displayGithubUrl = data.html_url;
-      }
-      
-      // Tìm file .apk trong danh sách assets
-      const apkAsset = data.assets?.find((a: any) => a.name.endsWith('.apk'));
-      if (apkAsset) {
-        displayApkUrl = apkAsset.browser_download_url;
-        displayApkSize = (apkAsset.size / (1024 * 1024)).toFixed(2) + " MB";
+        const ghVersion = data.tag_name.replace('v', '');
+        // Chỉ lấy dữ liệu từ GitHub nếu phiên bản trên GitHub >= phiên bản trong file config (tránh bị hạ cấp khi vừa release code nhưng chưa tạo release trên GitHub)
+        if (ghVersion.localeCompare(version, undefined, { numeric: true, sensitivity: 'base' }) >= 0) {
+          displayVersion = ghVersion;
+          displayGithubUrl = data.html_url;
+          
+          // Tìm file .apk trong danh sách assets
+          const apkAsset = data.assets?.find((a: any) => a.name.endsWith('.apk'));
+          if (apkAsset) {
+            displayApkUrl = apkAsset.browser_download_url;
+            displayApkSize = (apkAsset.size / (1024 * 1024)).toFixed(2) + " MB";
+          }
+        }
       }
     }
   } catch (e) {
