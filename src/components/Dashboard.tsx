@@ -11,6 +11,8 @@ import { FolderTree } from "./FolderTree";
 import { AnkiSettingsModal } from "./AnkiSettingsModal";
 import { TTSSettingsModal } from "./TTSSettingsModal";
 import { GeminiSettingsModal } from "./GeminiSettingsModal";
+import { BgSettingsModal } from "./BgSettingsModal";
+import { useCustomBg } from "@/hooks/useCustomBg";
 import { JishoSearchResults } from "./JishoSearchResults";
 import { getVocabularies } from "@/app/actions/vocabulary";
 import { getFolders, createFolder } from "@/app/actions/folder";
@@ -18,7 +20,7 @@ import {
   LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, 
   Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, ChevronUp, Volume2, Volume1, VolumeX, Loader2,
   User, Lock, Folder, X, FolderTree as FolderTreeIcon, ArrowDownNarrowWide, ArrowUpNarrowWide,
-  Sparkles, BookOpen, Smartphone, WifiOff, Plus, Clock, Headphones
+  Sparkles, BookOpen, Smartphone, WifiOff, Plus, Clock, Headphones, Image as ImageIcon
 } from "lucide-react";
 import { useWebVolume } from "@/lib/tts-utils";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
@@ -150,6 +152,8 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showTTSSettingsModal, setShowTTSSettingsModal] = useState(false);
   const [showGeminiSettingsModal, setShowGeminiSettingsModal] = useState(false);
+  const [showBgSettingsModal, setShowBgSettingsModal] = useState(false);
+  const customBg = useCustomBg();
   const [webVolume, setWebVolume] = useWebVolume();
   const [quizDelay, setQuizDelay] = useState<number>(5);
 
@@ -493,7 +497,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
   }
 
   return (
-    <div data-hide-background={hideBackground} className="study-dashboard min-h-screen text-slate-900 dark:text-slate-100 font-sans antialiased pb-24 md:pb-0 flex flex-col transition-colors duration-300">
+    <div data-hide-background={hideBackground} className="study-dashboard min-h-screen text-slate-900 dark:text-slate-100 font-sans antialiased pb-24 md:pb-0 flex flex-col transition-colors duration-300" style={{ ...(customBg.dashboard && !hideBackground ? { backgroundImage: `url(${customBg.dashboard.dataUrl})` } : {}) }}>
       {/* Top Navbar */}
       <header className="sticky top-0 z-40 shadow-elevation-sm bg-[oklch(var(--color-surface)/0.85)] backdrop-blur-xl transition-colors duration-300">
         <div className="max-w-screen-2xl mx-auto px-4 lg:px-6 py-3 md:h-16 flex flex-wrap items-center justify-between gap-3 md:gap-4">
@@ -1327,6 +1331,10 @@ export function Dashboard({ currentUser }: DashboardProps) {
       )}
 
       {/* Modal Cài đặt Gemini AI */}
+      {showBgSettingsModal && (
+        <BgSettingsModal onClose={() => setShowBgSettingsModal(false)} />
+      )}
+
       {showGeminiSettingsModal && (
         <GeminiSettingsModal onClose={() => setShowGeminiSettingsModal(false)} />
       )}

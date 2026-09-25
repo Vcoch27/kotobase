@@ -64,6 +64,14 @@
   --study-card-art: url('/images/study/quiz-frog.webp');
 }
 
+.study-card-artwork-layer--custom {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+}
+
 .study-card-artwork--front > .study-card-artwork-layer--front,
 .study-card-artwork--back > .study-card-artwork-layer--back {
   opacity: 1;
