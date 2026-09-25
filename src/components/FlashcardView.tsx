@@ -5,7 +5,7 @@ import { ClickableKanjiString } from "./ClickableKanjiString";
 import { 
   RotateCcw, Shuffle, ArrowLeft, ArrowRight, X, Check, 
   Rotate3D, GraduationCap, LayoutList, RefreshCcw, BrainCircuit, Undo2, Eye, EyeOff, Volume2, Headphones, Maximize, Minimize,
-  Sparkles
+  Sparkles, Play, Pause, SlidersHorizontal, Timer
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { playAudio } from "@/lib/tts-utils";
@@ -103,6 +103,53 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
   const [isShuffled, setIsShuffled] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Auto-play (Tự động lật và chuyển thẻ) cho Mode Bình Thường
+  const [isAutoPlay, setIsAutoPlay] = useState(false);
+  const [autoPlayFrontSec, setAutoPlayFrontSec] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("kotobase_flashcard_autoplay_front_sec");
+        if (saved) {
+          const parsed = parseFloat(saved);
+          if (!isNaN(parsed) && parsed >= 0.5 && parsed <= 60) return parsed;
+        }
+      } catch {}
+    }
+    return 2;
+  });
+  const [autoPlayBackSec, setAutoPlayBackSec] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("kotobase_flashcard_autoplay_back_sec");
+        if (saved) {
+          const parsed = parseFloat(saved);
+          if (!isNaN(parsed) && parsed >= 0.5 && parsed <= 60) return parsed;
+        }
+      } catch {}
+    }
+    return 3;
+  });
+  const [autoPlayLoop, setAutoPlayLoop] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("kotobase_flashcard_autoplay_loop");
+        if (saved !== null) return saved === "true";
+      } catch {}
+    }
+    return true;
+  });
+  const [autoPlaySound, setAutoPlaySound] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("kotobase_flashcard_autoplay_sound");
+        if (saved !== null) return saved === "true";
+      } catch {}
+    }
+    return false;
+  });
+  const [showAutoPlaySettings, setShowAutoPlaySettings] = useState(false);
+  const autoPlaySettingsRef = useRef<HTMLDivElement | null>(null);
+
   // Synchronous refs to prevent race conditions and stale closures during fast navigation
   const currentIndexRef = useRef(currentIndex);
   // Do NOT auto-sync currentIndexRef.current = currentIndex; it must stay ahead of the visual state
@@ -128,6 +175,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
     if (!isActive) return;
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        if (showAutoPlaySettings) { setShowAutoPlaySettings(false); return; }
         // Nếu có popup/modal nào đang hiển thị (ví dụ KanjiModal z-[9999]), ưu tiên đóng modal trước, không thoát fullscreen
         const isModalOpen = !!document.querySelector('[data-kanji-modal="true"], .z-\\[9999\\], [role="dialog"]');
         if (isModalOpen) return;
@@ -136,7 +184,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
     };
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
-  }, [isActive]);
+  }, [isActive, showAutoPlaySettings]);
 
   const vocabIdsStr = vocabularies.map(v => v.id).join(',');
   const selectedVocabIdsStr = selectedVocabIds.join(',');
@@ -178,6 +226,71 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
       return next;
     });
   }, []);
+
+  const updateAutoPlayFrontSec = (sec: number) => {
+    const val = Math.max(0.5, Math.min(60, Number(sec.toFixed(1))));
+    setAutoPlayFrontSec(val);
+    try {
+      localStorage.setItem("kotobase_flashcard_autoplay_front_sec", val.toString());
+    } catch {}
+  };
+
+  const updateAutoPlayBackSec = (sec: number) => {
+    const val = Math.max(0.5, Math.min(60, Number(sec.toFixed(1))));
+    setAutoPlayBackSec(val);
+    try {
+      localStorage.setItem("kotobase_flashcard_autoplay_back_sec", val.toString());
+    } catch {}
+  };
+
+  const updateAutoPlayLoop = (loop: boolean) => {
+    setAutoPlayLoop(loop);
+    try {
+      localStorage.setItem("kotobase_flashcard_autoplay_loop", String(loop));
+    } catch {}
+  };
+
+  const updateAutoPlaySound = (sound: boolean) => {
+    setAutoPlaySound(sound);
+    try {
+      localStorage.setItem("kotobase_flashcard_autoplay_sound", String(sound));
+    } catch {}
+  };
+
+  const toggleAutoPlay = useCallback(() => {
+    if (mode !== "normal") {
+      setMode("normal");
+    }
+    setIsAutoPlay((prev) => {
+      const next = !prev;
+      if (next) {
+        toast(`Bật tự động chạy (${autoPlayFrontSec}s / ${autoPlayBackSec}s)`, { id: "autoplay-toast", icon: "▶️" });
+      } else {
+        toast("Đã tạm dừng tự động chạy", { id: "autoplay-toast", icon: "⏸️" });
+      }
+      return next;
+    });
+  }, [mode, autoPlayFrontSec, autoPlayBackSec]);
+
+  // Đóng popup cài đặt tự động chạy khi click ra ngoài
+  useEffect(() => {
+    if (!showAutoPlaySettings) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (autoPlaySettingsRef.current && !autoPlaySettingsRef.current.contains(e.target as Node)) {
+        setShowAutoPlaySettings(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showAutoPlaySettings]);
+
+  // Tạm dừng tự động chạy khi đổi sang chế độ khác
+  useEffect(() => {
+    if (mode !== "normal") {
+      setIsAutoPlay(false);
+      setShowAutoPlaySettings(false);
+    }
+  }, [mode]);
 
   // Tải & đồng bộ bản đồ mẹo nhớ Hán tự (tối ưu hóa Quota: chỉ fetch khi cần, lưu localStorage, 0 read Firebase nếu đã có cache)
   useEffect(() => {
@@ -530,6 +643,72 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
     }, 150);
   }, [isFinished, ankiHistory]);
 
+  // Auto-play (Tự động lật và chuyển thẻ) cho Mode Bình Thường
+  useEffect(() => {
+    if (!isActive || mode !== "normal" || !isAutoPlay || isFinished || deck.length === 0) {
+      return;
+    }
+
+    const currentVocab = deck[currentIndex];
+    if (!currentVocab) return;
+
+    // Tự động phát âm thanh ở mặt trước nếu bật tùy chọn
+    if (autoPlaySound && !isFlipped) {
+      const textToPlay = getAudioTextToPlay(currentVocab);
+      playAudio(textToPlay);
+    }
+
+    const duration = Math.max(500, Math.round((isFlipped ? autoPlayBackSec : autoPlayFrontSec) * 1000));
+
+    const timer = setTimeout(() => {
+      if (!isFlipped) {
+        // Đang ở mặt trước -> Lật sang mặt sau
+        flipCard();
+      } else {
+        // Đang ở mặt sau -> Chuyển sang thẻ tiếp theo
+        const deckLen = deckRef.current.length;
+        const curr = currentIndexRef.current;
+        if (curr >= deckLen - 1) {
+          if (autoPlayLoop) {
+            // Lặp lại từ đầu bộ thẻ
+            currentIndexRef.current = 0;
+            isFlippedRef.current = false;
+            setIsTransitioning(true);
+            setTimeout(() => {
+              setCurrentIndex(0);
+              setIsFlipped(false);
+              setIsTransitioning(false);
+            }, 150);
+          } else {
+            // Dừng ở màn hình kết thúc
+            setIsAutoPlay(false);
+            setIsFinished(true);
+            toast("Đã hoàn thành lượt học tự động!", { icon: "🎉", id: "autoplay-finished" });
+          }
+        } else {
+          handleNext();
+        }
+      }
+    }, duration);
+
+    return () => clearTimeout(timer);
+  }, [
+    isActive,
+    mode,
+    isAutoPlay,
+    isFinished,
+    deck,
+    currentIndex,
+    isFlipped,
+    autoPlayFrontSec,
+    autoPlayBackSec,
+    autoPlayLoop,
+    autoPlaySound,
+    flipCard,
+    handleNext,
+    getAudioTextToPlay
+  ]);
+
   // Swipe Handlers
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
@@ -693,12 +872,20 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
           }
           break;
         }
+        case "p":
+        case "P": {
+          if (mode === "normal") {
+            e.preventDefault();
+            toggleAutoPlay();
+          }
+          break;
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isActive, isFinished, deck, currentIndex, mode, handleNext, handlePrev, handleProgress, handleAnkiRate, handleUndo, flipCard, isFlipped, getAudioTextToPlay, kanjiNotesMap, toggleMnemonic]);
+  }, [isActive, isFinished, deck, currentIndex, mode, handleNext, handlePrev, handleProgress, handleAnkiRate, handleUndo, flipCard, isFlipped, getAudioTextToPlay, kanjiNotesMap, toggleMnemonic, toggleAutoPlay]);
 
   // Restart Logic
   const restartAll = () => {
@@ -1024,6 +1211,230 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
             >
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
+
+            {mode === "normal" && (
+              <div className="relative" ref={autoPlaySettingsRef}>
+                <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700/60">
+                  <button 
+                    type="button"
+                    onClick={toggleAutoPlay}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold transition-all ${
+                      isAutoPlay
+                        ? "bg-emerald-600 text-white shadow-xs"
+                        : "text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white/60 dark:hover:bg-slate-700/60"
+                    }`}
+                    title={isAutoPlay ? "Tạm dừng tự động chạy thẻ (Phím P)" : "Bật tự động chạy qua từng thẻ (Phím P)"}
+                  >
+                    {isAutoPlay ? (
+                      <>
+                        <Pause className="w-3.5 h-3.5 text-white" />
+                        <span className="hidden sm:inline">Dừng</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                        <span className="hidden sm:inline">Tự động</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowAutoPlaySettings(prev => !prev)}
+                    className={`p-1 rounded-md text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-slate-700/60 transition-all ${
+                      showAutoPlaySettings ? "text-emerald-600 dark:text-emerald-400 bg-white dark:bg-slate-700 shadow-2xs" : ""
+                    }`}
+                    title="Cài đặt thời gian hiển thị mặt trước và mặt sau"
+                  >
+                    <SlidersHorizontal className="w-3 h-3" />
+                  </button>
+                </div>
+
+                {/* Popover Cài đặt thời gian tự động */}
+                {showAutoPlaySettings && (
+                  <div 
+                    role="dialog"
+                    aria-modal="true"
+                    data-popover="true"
+                    className="absolute right-0 top-full mt-2 z-[120] w-72 sm:w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-4 animate-fadeIn select-none text-left"
+                  >
+                    <div className="flex items-center justify-between pb-2 mb-3 border-b border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center gap-1.5 font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100">
+                        <Timer className="w-4 h-4 text-emerald-500" />
+                        <span>Cài đặt tự động chạy</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowAutoPlaySettings(false)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {/* Mặt trước */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1 text-xs">
+                          <span className="font-semibold text-slate-600 dark:text-slate-300">
+                            Mặt trước (Từ vựng)
+                          </span>
+                          <span className="font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/40">
+                            {autoPlayFrontSec}s
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => updateAutoPlayFrontSec(autoPlayFrontSec - 0.5)}
+                            disabled={autoPlayFrontSec <= 0.5}
+                            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 disabled:opacity-30 transition-all active:scale-95"
+                          >
+                            -0.5s
+                          </button>
+                          <input 
+                            type="range"
+                            min="0.5"
+                            max="15"
+                            step="0.5"
+                            value={autoPlayFrontSec}
+                            onChange={(e) => updateAutoPlayFrontSec(parseFloat(e.target.value))}
+                            className="flex-1 accent-emerald-500 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => updateAutoPlayFrontSec(autoPlayFrontSec + 0.5)}
+                            disabled={autoPlayFrontSec >= 30}
+                            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 disabled:opacity-30 transition-all active:scale-95"
+                          >
+                            +0.5s
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-1 mt-1.5">
+                          {[1, 2, 3, 5].map((sec) => (
+                            <button
+                              key={sec}
+                              type="button"
+                              onClick={() => updateAutoPlayFrontSec(sec)}
+                              className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+                                autoPlayFrontSec === sec
+                                  ? "bg-emerald-600 text-white shadow-2xs"
+                                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                              }`}
+                            >
+                              {sec}s
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Mặt sau */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1 text-xs">
+                          <span className="font-semibold text-slate-600 dark:text-slate-300">
+                            Mặt sau (Nghĩa & Ví dụ)
+                          </span>
+                          <span className="font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/40">
+                            {autoPlayBackSec}s
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => updateAutoPlayBackSec(autoPlayBackSec - 0.5)}
+                            disabled={autoPlayBackSec <= 0.5}
+                            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 disabled:opacity-30 transition-all active:scale-95"
+                          >
+                            -0.5s
+                          </button>
+                          <input 
+                            type="range"
+                            min="0.5"
+                            max="20"
+                            step="0.5"
+                            value={autoPlayBackSec}
+                            onChange={(e) => updateAutoPlayBackSec(parseFloat(e.target.value))}
+                            className="flex-1 accent-emerald-500 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => updateAutoPlayBackSec(autoPlayBackSec + 0.5)}
+                            disabled={autoPlayBackSec >= 30}
+                            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 disabled:opacity-30 transition-all active:scale-95"
+                          >
+                            +0.5s
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-1 mt-1.5">
+                          {[2, 3, 4, 6].map((sec) => (
+                            <button
+                              key={sec}
+                              type="button"
+                              onClick={() => updateAutoPlayBackSec(sec)}
+                              className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+                                autoPlayBackSec === sec
+                                  ? "bg-emerald-600 text-white shadow-2xs"
+                                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                              }`}
+                            >
+                              {sec}s
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Tùy chọn */}
+                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                        <label className="flex items-center justify-between cursor-pointer text-xs">
+                          <span className="text-slate-700 dark:text-slate-300 font-medium">Lặp lại liên tục</span>
+                          <input 
+                            type="checkbox"
+                            checked={autoPlayLoop}
+                            onChange={(e) => updateAutoPlayLoop(e.target.checked)}
+                            className="w-4 h-4 text-emerald-600 rounded accent-emerald-500 cursor-pointer"
+                          />
+                        </label>
+                        <label className="flex items-center justify-between cursor-pointer text-xs">
+                          <span className="text-slate-700 dark:text-slate-300 font-medium">Phát âm thanh tự động</span>
+                          <input 
+                            type="checkbox"
+                            checked={autoPlaySound}
+                            onChange={(e) => updateAutoPlaySound(e.target.checked)}
+                            className="w-4 h-4 text-emerald-600 rounded accent-emerald-500 cursor-pointer"
+                          />
+                        </label>
+                      </div>
+
+                      {/* Action */}
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            toggleAutoPlay();
+                            setShowAutoPlaySettings(false);
+                          }}
+                          className={`w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-98 ${
+                            isAutoPlay
+                              ? "bg-amber-500 hover:bg-amber-600 text-white"
+                              : "bg-emerald-600 hover:bg-emerald-500 text-white"
+                          }`}
+                        >
+                          {isAutoPlay ? (
+                            <>
+                              <Pause className="w-4 h-4" /> Tạm dừng tự động [P]
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-4 h-4 fill-current" /> Bắt đầu chạy ngay [P]
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             
             {mode !== "normal" && (
               <button 
@@ -1091,6 +1502,39 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
           ></div>
         </div>
       </div>
+
+      {/* Autoplay Active Status Banner */}
+      {isAutoPlay && mode === "normal" && (
+        <div className="w-full flex items-center justify-between px-3.5 py-2 rounded-2xl bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold animate-fadeIn shadow-2xs">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span>Tự động chạy:</span>
+            <span className="font-extrabold text-emerald-800 dark:text-emerald-200 bg-white/70 dark:bg-slate-800/80 px-2 py-0.5 rounded-md border border-emerald-200/50 dark:border-emerald-700/50">
+              {isFlipped ? `Mặt sau (${autoPlayBackSec}s)` : `Mặt trước (${autoPlayFrontSec}s)`}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => setShowAutoPlaySettings(true)}
+              className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 hover:underline flex items-center gap-1"
+            >
+              <SlidersHorizontal className="w-3 h-3" /> Cài đặt
+            </button>
+            <button
+              type="button"
+              onClick={toggleAutoPlay}
+              className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-emerald-200/70 dark:bg-emerald-800/60 text-emerald-800 dark:text-emerald-100 hover:bg-emerald-300 dark:hover:bg-emerald-700 flex items-center gap-1 transition-all active:scale-95"
+            >
+              <Pause className="w-3 h-3" /> Tạm dừng [P]
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Flashcard 3D Container */}
       <div 
@@ -1188,6 +1632,18 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
               }}
             >
               <StudyCardArtwork side="front" />
+              {/* Thanh tiến trình đếm ngược lật thẻ tự động */}
+              {isAutoPlay && mode === "normal" && (
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-emerald-100/70 dark:bg-emerald-950/40 overflow-hidden rounded-t-3xl pointer-events-none z-20">
+                  <div 
+                    key={`front-${currentIndex}-${isFlipped}`}
+                    className="h-full bg-emerald-500 rounded-r"
+                    style={{
+                      animation: `autoPlayCountdown ${autoPlayFrontSec}s linear forwards`
+                    }}
+                  />
+                </div>
+              )}
               <span className="absolute top-3 left-3 sm:top-6 sm:left-6 text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
                 <Rotate3D className="w-3 h-3 sm:w-4 sm:h-4" /> Bấm để lật
               </span>
@@ -1269,6 +1725,18 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
             }}
           >
             <StudyCardArtwork side="back" />
+            {/* Thanh tiến trình đếm ngược chuyển thẻ tự động */}
+            {isAutoPlay && mode === "normal" && (
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-emerald-100/70 dark:bg-emerald-950/40 overflow-hidden rounded-t-3xl pointer-events-none z-20">
+                <div 
+                  key={`back-${currentIndex}-${isFlipped}`}
+                  className="h-full bg-emerald-500 rounded-r"
+                  style={{
+                    animation: `autoPlayCountdown ${autoPlayBackSec}s linear forwards`
+                  }}
+                />
+              </div>
+            )}
             <span className="absolute top-3 left-3 sm:top-6 sm:left-6 text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
               <Rotate3D className="w-4 h-4" /> Bấm để lật
             </span>
@@ -1439,6 +1907,12 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
       </div>
         </>
       ) : null}
+      <style>{`
+        @keyframes autoPlayCountdown {
+          0% { width: 0%; }
+          100% { width: 100%; }
+        }
+      `}</style>
       </div>
     </div>
   );
