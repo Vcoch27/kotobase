@@ -5,6 +5,7 @@ import { HelpCircle, CheckCircle2, XCircle, SkipForward, Info, RotateCcw, Shuffl
 import { ClickableKanjiString } from "./ClickableKanjiString";
 import { StudyCardArtwork } from "./StudyCardArtwork";
 import { StudyScopeSelector } from "./StudyScopeSelector";
+import { useCustomBg } from "@/hooks/useCustomBg";
 import { audioFX } from "@/lib/audio-fx";
 import { playAudio } from "@/lib/tts-utils";
 
@@ -45,6 +46,7 @@ function cleanString(str: string): string {
 }
 
 export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive = true }: TypingQuizViewProps) {
+  const customBg = useCustomBg();
   const getScopedFromSelection = useCallback((all: VocabularyData[], selIds: string[]) => {
     if (selIds && selIds.length > 0) {
       const set = new Set(selIds);
@@ -810,7 +812,12 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
           : "border border-slate-200 dark:border-slate-800"
       }`}>
         
-        <StudyCardArtwork side={feedback === "correct" ? "back" : "front"} />
+        <StudyCardArtwork 
+          side={feedback === "correct" ? "back" : "front"} 
+          customFrontUrl={customBg.cardFront?.dataUrl}
+          customBackUrl={customBg.cardBack?.dataUrl}
+          cardWash={customBg.washSettings?.cardWash}
+        />
         {/* Nhãn Dạng câu hỏi */}
         <div className="absolute top-0 left-0 right-0 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 px-4 sm:px-6 py-2 sm:py-2.5 flex items-center justify-center gap-2">
           <Info className="w-4 h-4 text-slate-400 shrink-0" />

@@ -125,30 +125,30 @@ export function BgSettingsModal({ onClose }: BgSettingsModalProps) {
   function getTabLabel(key: BgKey) {
     switch (key) {
       case 'dashboard': return 'Nền ứng dụng';
-      case 'cardFront': return 'Mặt trước thẻ';
-      case 'cardBack': return 'Mặt sau thẻ';
+      case 'cardFront': return 'Mặt trước (Thẻ & Quiz)';
+      case 'cardBack': return 'Mặt sau (Thẻ & Quiz)';
     }
   }
 
   if (!isLoaded) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 pt-6 sm:pt-10 pb-6 overflow-y-auto">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-slate-950/70 backdrop-blur-md transition-opacity animate-fadeIn"
+        className="fixed inset-0 bg-slate-950/70 backdrop-blur-md transition-opacity animate-fadeIn"
         onClick={onClose}
       />
 
       {/* Modal Dialog */}
       <div 
-        className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-hidden border border-slate-200/80 dark:border-slate-800 flex flex-col animate-fadeIn scale-in"
+        className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden border border-slate-200/80 dark:border-slate-800 flex flex-col animate-fadeIn scale-in my-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4.5 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-amber-500/20">
+        {/* Header - đệm trên và đệm trong rộng rãi, chỉn chu */}
+        <div className="flex items-center justify-between px-6 sm:px-8 py-5 sm:py-6 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-amber-500/20 shrink-0">
               <ImageIcon className="w-5 h-5" />
             </div>
             <div>
@@ -158,7 +158,7 @@ export function BgSettingsModal({ onClose }: BgSettingsModalProps) {
                   Cá nhân
                 </span>
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Thay đổi ảnh nền và độ tán trắng để học tập thoải mái nhất
               </p>
             </div>
@@ -172,7 +172,7 @@ export function BgSettingsModal({ onClose }: BgSettingsModalProps) {
         </div>
 
         {/* Tab Selector Buttons */}
-        <div className="px-6 pt-4 pb-1 shrink-0 bg-slate-50/60 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-800/80">
+        <div className="px-6 sm:px-8 pt-4 pb-2 shrink-0 bg-slate-50/60 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-800/80">
           <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-200/70 dark:bg-slate-800/80 rounded-2xl">
             {/* Tab 1: Dashboard */}
             <button
@@ -200,7 +200,7 @@ export function BgSettingsModal({ onClose }: BgSettingsModalProps) {
               }`}
             >
               <CreditCard className="w-4 h-4 shrink-0" />
-              <span className="truncate">Mặt trước thẻ</span>
+              <span className="truncate">Mặt trước (Thẻ & Quiz)</span>
               {cardFront && (
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title="Đang dùng ảnh tuỳ chỉnh" />
               )}
@@ -216,7 +216,7 @@ export function BgSettingsModal({ onClose }: BgSettingsModalProps) {
               }`}
             >
               <RotateCcw className="w-4 h-4 shrink-0" />
-              <span className="truncate">Mặt sau thẻ</span>
+              <span className="truncate">Mặt sau (Thẻ & Quiz)</span>
               {cardBack && (
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title="Đang dùng ảnh tuỳ chỉnh" />
               )}
@@ -393,7 +393,7 @@ export function BgSettingsModal({ onClose }: BgSettingsModalProps) {
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                 <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-500" />
-                {activeTab === 'dashboard' ? 'Độ phủ trắng nền tổng quát:' : 'Độ tán trắng thẻ học:'}
+                {activeTab === 'dashboard' ? 'Độ phủ trắng nền tổng quát:' : 'Độ tán trắng thẻ học & Quiz:'}
               </label>
               <span className="text-xs font-black font-mono px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300">
                 {currentWash}%
