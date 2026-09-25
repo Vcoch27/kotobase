@@ -1688,7 +1688,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
                               </span>
                             )}
                           </div>
-                          <div className="flex-1 text-slate-700 dark:text-slate-200 pt-1 text-sm sm:text-base">
+                          <div className="flex-1 text-slate-800 dark:text-slate-100 pt-0.5 text-base sm:text-lg font-medium leading-relaxed">
                             <HighlightMnemonic text={mnemonic} />
                           </div>
                         </div>

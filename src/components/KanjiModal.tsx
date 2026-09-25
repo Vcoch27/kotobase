@@ -117,7 +117,23 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
         setIsEditingMnemonic(false);
         toast.success("Đã lưu ghi chú Hán tự thành công!");
         setMessage({ type: "success", text: "Đã cập nhật Hán tự thành công!" });
+        
         if (typeof window !== "undefined") {
+          // Update localStorage cache directly
+          try {
+            const saved = localStorage.getItem("kotobase_cached_kanji_notes");
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              parsed[character] = {
+                character: res.data.character,
+                hanviet: res.data.hanviet,
+                meaning: res.data.meaning,
+                mnemonic: res.data.mnemonic,
+              };
+              localStorage.setItem("kotobase_cached_kanji_notes", JSON.stringify(parsed));
+            }
+          } catch {}
+
           window.dispatchEvent(
             new CustomEvent("kanji-note-saved", {
               detail: res.data,
@@ -332,9 +348,9 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
                     className="group p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 hover:border-amber-400/80 dark:hover:border-amber-500/60 cursor-pointer transition-all relative"
                     title="Bấm để chỉnh sửa mẹo nhớ"
                   >
-                    <div className="text-sm font-medium leading-relaxed text-slate-800 dark:text-slate-200">
-                      <HighlightMnemonic text={mnemonic} />
-                    </div>
+                      <div className="text-base font-medium leading-relaxed text-slate-800 dark:text-slate-200">
+                        <HighlightMnemonic text={mnemonic} />
+                      </div>
                     <div className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-100/90 dark:bg-amber-500/20 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-500/30 shadow-xs">
                         <Pencil className="w-2.5 h-2.5" /> Sửa
@@ -375,7 +391,7 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
                       <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">
                         Xem trước trực quan:
                       </span>
-                      <div className="text-sm font-medium leading-relaxed text-slate-800 dark:text-slate-200">
+                      <div className="text-base font-medium leading-relaxed text-slate-800 dark:text-slate-200">
                         <HighlightMnemonic text={mnemonic} />
                       </div>
                     </div>

@@ -12,8 +12,8 @@ export async function GET() {
     const map = await getCachedAllKanjiNotes();
     return NextResponse.json(map, {
       headers: {
-        // Client cache 5 phút, stale-while-revalidate 10 phút
-        "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+        // Tell browser to not cache, rely on Next.js server-side cache (unstable_cache)
+        "Cache-Control": "public, max-age=0, must-revalidate",
       },
     });
   } catch (error: any) {
