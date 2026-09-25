@@ -497,7 +497,18 @@ export function Dashboard({ currentUser }: DashboardProps) {
   }
 
   return (
-    <div data-hide-background={hideBackground} className="study-dashboard min-h-screen text-slate-900 dark:text-slate-100 font-sans antialiased pb-24 md:pb-0 flex flex-col transition-colors duration-300" style={{ ...(customBg.dashboard && !hideBackground ? { backgroundImage: `url(${customBg.dashboard.dataUrl})` } : {}) }}>
+    <div 
+      data-hide-background={hideBackground} 
+      className="study-dashboard min-h-screen text-slate-900 dark:text-slate-100 font-sans antialiased pb-24 md:pb-0 flex flex-col transition-colors duration-300 relative" 
+      style={{ ...(customBg.dashboard && !hideBackground ? { backgroundImage: `url(${customBg.dashboard.dataUrl})` } : {}) }}
+    >
+      {/* Lớp phủ trắng nền tổng quát (Dashboard) - không blur (tắt độ mờ) nhưng phủ trắng dịu mắt, dễ đọc */}
+      {!hideBackground && (
+        <div 
+          className="fixed inset-0 pointer-events-none z-0 transition-opacity duration-300 bg-white dark:bg-slate-950" 
+          style={{ opacity: (customBg.washSettings?.dashboardWash ?? 75) / 100 }}
+        />
+      )}
       {/* Top Navbar */}
       <header className="sticky top-0 z-40 shadow-elevation-sm bg-[oklch(var(--color-surface)/0.85)] backdrop-blur-xl transition-colors duration-300">
         <div className="max-w-screen-2xl mx-auto px-4 lg:px-6 py-3 md:h-16 flex flex-wrap items-center justify-between gap-3 md:gap-4">
@@ -802,7 +813,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
       </header>
 
       {/* Main Layout (2 Columns) */}
-      <main className="study-layout flex-1 w-full mx-auto px-4 lg:px-6 pt-6 pb-36 md:pb-10 flex flex-col md:flex-row gap-6">
+      <main className="study-layout flex-1 w-full mx-auto px-4 lg:px-6 pt-6 pb-36 md:pb-10 flex flex-col md:flex-row gap-6 relative z-10">
         
         {/* LEFT SIDEBAR: Folder Tree */}
         <div className="w-full md:w-64 lg:w-72 shrink-0 space-y-4 md:sticky md:top-20 md:self-start">

@@ -109,6 +109,19 @@
   display: none;
 }
 
+/* Custom artwork overrides - giữ độ sắc nét cao (tắt độ mờ mờ) và hiển thị cả dark mode */
+.study-card-artwork.study-card-artwork--custom {
+  opacity: 0.95;
+}
+
+.dark .study-card-artwork.study-card-artwork--custom {
+  display: block;
+}
+
+.study-dashboard[data-hide-background="true"] .study-card-artwork.study-card-artwork--custom {
+  display: none;
+}
+
 @media (min-width: 1280px) {
   .study-layout {
     padding-inline: clamp(24px, 3vw, 56px);

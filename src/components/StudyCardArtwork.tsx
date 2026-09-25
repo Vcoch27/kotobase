@@ -3,21 +3,29 @@ interface StudyCardArtworkProps {
   side: "front" | "back";
   customFrontUrl?: string | null;
   customBackUrl?: string | null;
+  cardWash?: number; // % tán trắng thẻ (30 - 95, mặc định 65)
 }
 
-export function StudyCardArtwork({ side, customFrontUrl, customBackUrl }: StudyCardArtworkProps) {
-  // Keep both images mounted so the answer artwork loads before it is revealed.
-  
+export function StudyCardArtwork({ 
+  side, 
+  customFrontUrl, 
+  customBackUrl,
+  cardWash = 65 
+}: StudyCardArtworkProps) {
   const customUrl = side === "front" ? customFrontUrl : customBackUrl;
   
   if (customUrl) {
     return (
-      <span aria-hidden="true" className={`study-card-artwork study-card-artwork--${side}`}>
+      <span aria-hidden="true" className={`study-card-artwork study-card-artwork--${side} study-card-artwork--custom`}>
         <span 
           className="study-card-artwork-layer--custom" 
           style={{ backgroundImage: `url(${customUrl})` }} 
         />
-        <span className="absolute inset-0 bg-white/30 dark:bg-slate-900/60 pointer-events-none" />
+        {/* Lớp phủ tán trắng trên thẻ học: giữ tương phản cao để chữ Hán, Furigana và mẹo nhớ siêu sắc nét */}
+        <span 
+          className="absolute inset-0 bg-white dark:bg-slate-950 pointer-events-none transition-opacity duration-200" 
+          style={{ opacity: (cardWash ?? 65) / 100 }}
+        />
       </span>
     );
   }

@@ -51,8 +51,8 @@ function compressImage(file: File): Promise<string> {
         if (!ctx) return reject(new Error("Không thể tạo canvas context"));
         
         ctx.drawImage(img, 0, 0, width, height);
-        // Lưu dưới dạng WebP để nén tốt hơn
-        resolve(canvas.toDataURL('image/webp', 0.8));
+        // Lưu dưới dạng WebP với chất lượng cao (0.9) để ảnh luôn sắc nét, không bị nhòe
+        resolve(canvas.toDataURL('image/webp', 0.9));
       };
       img.src = e.target?.result as string;
     };

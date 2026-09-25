@@ -1581,7 +1581,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
                 WebkitTransform: 'rotateY(0deg) translateZ(1px)'
               }}
             >
-              <StudyCardArtwork side="front" customFrontUrl={customBg.cardFront?.dataUrl} customBackUrl={customBg.cardBack?.dataUrl} />
+              <StudyCardArtwork side="front" customFrontUrl={customBg.cardFront?.dataUrl} customBackUrl={customBg.cardBack?.dataUrl} cardWash={customBg.washSettings?.cardWash} />
               <span className="absolute top-3 left-3 sm:top-6 sm:left-6 text-[10px] sm:text-xs font-bold text-violet-400 dark:text-violet-500 uppercase tracking-wider flex items-center gap-1">
                 <Headphones className="w-3 h-3 sm:w-4 sm:h-4" /> Chế độ Nghe — Bấm để lật
               </span>
@@ -1633,7 +1633,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
                 WebkitTransform: 'rotateY(0deg) translateZ(1px)'
               }}
             >
-              <StudyCardArtwork side="front" customFrontUrl={customBg.cardFront?.dataUrl} customBackUrl={customBg.cardBack?.dataUrl} />
+              <StudyCardArtwork side="front" customFrontUrl={customBg.cardFront?.dataUrl} customBackUrl={customBg.cardBack?.dataUrl} cardWash={customBg.washSettings?.cardWash} />
               {/* Thanh tiến trình đếm ngược lật thẻ tự động */}
               {isAutoPlay && mode === "normal" && (
                 <div className="absolute top-0 left-0 right-0 h-1.5 bg-emerald-100/70 dark:bg-emerald-950/40 overflow-hidden rounded-t-3xl pointer-events-none z-20">
@@ -1726,7 +1726,7 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
               WebkitTransform: 'rotateY(180deg) translateZ(1px)',
             }}
           >
-            <StudyCardArtwork side="back" customFrontUrl={customBg.cardFront?.dataUrl} customBackUrl={customBg.cardBack?.dataUrl} />
+            <StudyCardArtwork side="back" customFrontUrl={customBg.cardFront?.dataUrl} customBackUrl={customBg.cardBack?.dataUrl} cardWash={customBg.washSettings?.cardWash} />
             {/* Thanh tiến trình đếm ngược chuyển thẻ tự động */}
             {isAutoPlay && mode === "normal" && (
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-emerald-100/70 dark:bg-emerald-950/40 overflow-hidden rounded-t-3xl pointer-events-none z-20">
