@@ -624,6 +624,17 @@ export function Dashboard({ currentUser }: DashboardProps) {
                         <span className={`h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${hideBackground ? "translate-x-4" : "translate-x-0"}`} />
                       </span>
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowBgSettingsModal(true);
+                        setShowSettingsDropdown(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500 text-sm font-semibold text-slate-700 dark:text-slate-300"
+                    >
+                      <ImageIcon className="w-4 h-4 text-indigo-500" />
+                      Tuỳ chỉnh ảnh nền
+                    </button>
                     {/* Quick Volume Slider */}
                     <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
