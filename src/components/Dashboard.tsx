@@ -489,6 +489,26 @@ export function Dashboard({ currentUser }: DashboardProps) {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
+      const res = await loginWithGoogle(idToken);
+      if (res.success) {
+        toast.success('Đăng nhập thành công!');
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        toast.error(res.error || 'Đăng nhập Google thất bại');
+      }
+    } catch (error: any) {
+      console.error(error);
+      if (error.code !== "auth/popup-closed-by-user") {
+        toast.error('Lỗi đăng nhập Google: ' + error.message);
+      }
+    }
+  };
+
   if (!mounted) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center pb-20">
@@ -561,25 +581,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
               </div>
             ) : (
               <button
-                onClick={async () => {
-                  try {
-                    const provider = new GoogleAuthProvider();
-                    const result = await signInWithPopup(auth, provider);
-                    const idToken = await result.user.getIdToken();
-                    const res = await loginWithGoogle(idToken);
-                    if (res.success) {
-                      toast.success('Đăng nhập thành công!');
-                      setTimeout(() => window.location.reload(), 1000);
-                    } else {
-                      toast.error(res.error || 'Đăng nhập Google thất bại');
-                    }
-                  } catch (error: any) {
-                    console.error(error);
-                    if (error.code !== "auth/popup-closed-by-user") {
-                      toast.error('Lỗi đăng nhập Google: ' + error.message);
-                    }
-                  }
-                }}
+                onClick={handleGoogleLogin}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold border border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors cursor-pointer"
                 title="Đăng nhập Google để quản lý thư mục cá nhân"
               >
@@ -1114,7 +1116,13 @@ export function Dashboard({ currentUser }: DashboardProps) {
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
-                      onClick={() => setViewMode(tab.id as typeof viewMode)}
+                      onClick={() => {
+                        if (tab.id === "quiz" && !isGoogleUser) {
+                          toast.error("Vui lòng đăng nhập Google để sử dụng chế độ Quiz phản xạ!", { icon: "🔒" });
+                          return;
+                        }
+                        setViewMode(tab.id as typeof viewMode);
+                      }}
                       className={cn(
                         "relative flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-colors duration-150",
                         viewMode === tab.id
@@ -1134,8 +1142,11 @@ export function Dashboard({ currentUser }: DashboardProps) {
                       <span className={cn("relative z-10 transition-colors", viewMode === tab.id && tab.color)}>
                         {tab.icon}
                       </span>
-                      <span className="relative z-10 whitespace-nowrap">
+                      <span className="relative z-10 whitespace-nowrap flex items-center gap-1">
                         {tab.label}
+                        {tab.id === "quiz" && !isGoogleUser && (
+                          <Lock className="w-3 h-3 text-amber-500 shrink-0" />
+                        )}
                       </span>
                     </button>
                   ))}
@@ -1188,6 +1199,10 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     selectedVocabIds={selectedVocabIds}
                     onSelectionChange={setSelectedVocabIds}
                     onNavigateToStudyMode={(mode, ids) => {
+                      if (mode === "quiz" && !isGoogleUser) {
+                        toast.error("Vui lòng đăng nhập Google để sử dụng chế độ Quiz phản xạ!", { icon: "🔒" });
+                        return;
+                      }
                       if (ids) setSelectedVocabIds(ids);
                       setViewMode(mode);
                     }}
@@ -1209,11 +1224,40 @@ export function Dashboard({ currentUser }: DashboardProps) {
                   />
                 </div>
                 <div className={viewMode === "quiz" ? "block" : "hidden"}>
-                  <TypingQuizView 
-                    vocabularies={filteredVocabularies}
-                    selectedVocabIds={selectedVocabIds}
-                    isActive={viewMode === "quiz"}
-                  />
+                  {isGoogleUser ? (
+                    <TypingQuizView 
+                      vocabularies={filteredVocabularies}
+                      selectedVocabIds={selectedVocabIds}
+                      isActive={viewMode === "quiz"}
+                    />
+                  ) : (
+                    <div className="study-card bg-white dark:bg-slate-900 rounded-3xl p-8 sm:p-12 text-center border border-slate-200/80 dark:border-slate-800 shadow-xl flex flex-col items-center justify-center max-w-lg mx-auto my-8 animate-fadeIn">
+                      <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4 shadow-sm border border-amber-200/60 dark:border-amber-500/20">
+                        <Lock className="w-8 h-8" />
+                      </div>
+                      <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-2">
+                        Chế độ Quiz yêu cầu Đăng nhập
+                      </h3>
+                      <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-sm leading-relaxed">
+                        Vui lòng đăng nhập tài khoản Google để tham gia luyện phản xạ gõ phím, lưu điểm số và đồng bộ tiến độ học tập của bạn.
+                      </p>
+                      <div className="flex flex-col sm:flex-row items-center gap-3 w-full justify-center">
+                        <button
+                          onClick={handleGoogleLogin}
+                          className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs shadow-md shadow-indigo-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <User className="w-4 h-4" />
+                          <span>Đăng nhập với Google</span>
+                        </button>
+                        <button
+                          onClick={() => setViewMode("flashcard")}
+                          className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                        >
+                          Học Flashcard thay thế
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className={viewMode === "flashcard" ? "block" : "hidden"}>
                   <FlashcardView 
