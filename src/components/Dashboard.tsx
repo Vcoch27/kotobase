@@ -20,8 +20,10 @@ import {
   LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, 
   Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, ChevronUp, Volume2, Volume1, VolumeX, Loader2,
   User, Lock, Folder, X, FolderTree as FolderTreeIcon, ArrowDownNarrowWide, ArrowUpNarrowWide,
-  Sparkles, BookOpen, Smartphone, WifiOff, Plus, Clock, Headphones, Image as ImageIcon
+  Sparkles, BookOpen, Smartphone, WifiOff, Plus, Clock, Headphones, Image as ImageIcon,
+  ShieldCheck
 } from "lucide-react";
+import { isAdminEmail } from "@/lib/admin-shared";
 import { useWebVolume } from "@/lib/tts-utils";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { OfflineSyncButton } from "./OfflineSyncButton";
@@ -741,6 +743,16 @@ export function Dashboard({ currentUser }: DashboardProps) {
                       <Sparkles className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                       Cài đặt Gemini AI
                     </button>
+                    {isAdminEmail(currentUser?.email) && (
+                      <Link 
+                        href="/admin"
+                        onClick={() => setShowSettingsDropdown(false)}
+                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors text-left border-b border-slate-100 dark:border-slate-800"
+                      >
+                        <ShieldCheck className="w-4 h-4 text-rose-500" />
+                        Quản trị hệ thống (Admin)
+                      </Link>
+                    )}
                     {isGoogleUser && (
                       <button 
                         onClick={async () => {
@@ -890,6 +902,17 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 <span className="flex-1">Ngữ Pháp</span>
                 <ChevronRight className="w-3.5 h-3.5 opacity-50" />
               </Link>
+
+              {isAdminEmail(currentUser?.email) && (
+                <Link 
+                  href="/admin"
+                  className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50/70 dark:bg-rose-500/10 hover:bg-rose-100/70 dark:hover:bg-rose-500/20 border border-rose-200/60 dark:border-rose-500/20 transition-all mt-1 shadow-xs"
+                >
+                  <ShieldCheck className="w-4 h-4 shrink-0 text-rose-500" />
+                  <span className="flex-1">Quản trị hệ thống</span>
+                  <ChevronRight className="w-3.5 h-3.5 opacity-50" />
+                </Link>
+              )}
             </div>
           </div>
         </div>

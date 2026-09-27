@@ -81,6 +81,42 @@ export async function loginWithGoogle(idToken: string) {
       sameSite: "lax",
     });
 
+    // Tự động đồng bộ / cập nhật thông tin người dùng vào Firestore users/{uid}
+    try {
+      const { adminDb } = await import("@/lib/firebase-admin");
+      const { isAdminEmail } = await import("@/lib/admin");
+      const userRef = adminDb.collection("users").doc(uid);
+      const userDoc = await userRef.get();
+      const now = new Date().toISOString();
+      const isAdmin = isAdminEmail(email);
+
+      if (!userDoc.exists) {
+        await userRef.set({
+          uid,
+          email,
+          displayName: name || email.split("@")[0] || "Người dùng",
+          photoURL: picture || null,
+          role: isAdmin ? "admin" : "user",
+          status: "active",
+          createdAt: now,
+          lastLoginAt: now,
+        }, { merge: true });
+      } else {
+        const existing = userDoc.data();
+        const updates: any = {
+          lastLoginAt: now,
+          displayName: name || existing?.displayName || email.split("@")[0],
+          photoURL: picture || existing?.photoURL || null,
+        };
+        if (isAdmin && existing?.role !== "admin") {
+          updates.role = "admin";
+        }
+        await userRef.set(updates, { merge: true });
+      }
+    } catch (syncErr) {
+      console.warn("Lỗi auto-sync user vào Firestore:", syncErr);
+    }
+
     return { 
       success: true, 
       user: { uid, email, name: name || email, picture } 
