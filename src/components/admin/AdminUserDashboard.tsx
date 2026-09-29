@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { AdminHeader } from "./AdminHeader";
 import { AdminStatsOverview } from "./AdminStatsOverview";
+import { FirestoreUsagePanel } from "./FirestoreUsagePanel";
 import { UserFilterBar } from "./UserFilterBar";
 import { UserTable } from "./UserTable";
 import { UserDetailModal } from "./UserDetailModal";
@@ -41,6 +42,7 @@ export function AdminUserDashboard({
   const [stats, setStats] = useState<AdminStats | null>(initialStats);
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const lastFetchedFilter = useRef("|all|all|1");
 
   // Filters
   const [search, setSearch] = useState("");
@@ -111,8 +113,11 @@ export function AdminUserDashboard({
 
   // Fetch when filters or page changes
   useEffect(() => {
+    const filterKey = `${debouncedSearch}|${role}|${status}|${page}`;
+    if (lastFetchedFilter.current === filterKey) return;
+    lastFetchedFilter.current = filterKey;
     fetchUsers();
-  }, [fetchUsers]);
+  }, [fetchUsers, debouncedSearch, role, status, page]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -255,6 +260,8 @@ export function AdminUserDashboard({
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* KPI Overview */}
         <AdminStatsOverview stats={stats} />
+
+        <FirestoreUsagePanel />
 
         {/* Filters and Search */}
         <UserFilterBar

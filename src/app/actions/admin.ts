@@ -137,7 +137,7 @@ export async function getAdminUsers(filters: GetUsersFilter = {}) {
 /**
  * Lấy số liệu thống kê tổng quan
  */
-export async function getAdminOverviewStats() {
+export async function getAdminOverviewStats(includeUsers = false) {
   const { isAdmin } = await verifyAdminSession();
   if (!isAdmin) {
     return { success: false as const, error: "Bạn không có quyền truy cập trang quản trị." };
@@ -180,7 +180,7 @@ export async function getAdminOverviewStats() {
       totalVocabs,
     };
 
-    return { success: true as const, stats };
+    return { success: true as const, stats, users: includeUsers ? allUsers : undefined };
   } catch (error: any) {
     console.error("Lỗi getAdminOverviewStats:", error);
     return { success: false as const, error: error.message || "Không thể lấy số liệu thống kê." };
