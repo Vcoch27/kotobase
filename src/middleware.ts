@@ -24,6 +24,13 @@ export async function middleware(request: NextRequest) {
   // 2. Kiểm tra thông minh: Chặn Bot/Crawler độc hại & Giới hạn tần suất thích ứng
   // Phân biệt chính xác giữa bot tự động và người dùng học tập thường xuyên (Zero False Positives)
   const isApi = pathname.startsWith("/api/");
+
+  // Bỏ qua bot-protection cho các Kanji API (tra cứu tương tác người dùng, không phải mục tiêu bot)
+  // Người dùng học tập bấm Kanji liên tục khi flashcard / quiz → không được rate-limit nhầm
+  if (pathname.startsWith("/api/kanji/")) {
+    return NextResponse.next();
+  }
+
   const botCheck = await checkBotAndRateLimit(request);
   if (!botCheck.allowed) {
     return createBlockedResponse(botCheck, isApi);

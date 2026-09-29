@@ -157,22 +157,19 @@ export async function getBulkKanjiNotes(characters: string[]) {
 }
 
 export async function fetchAllKanjiNotes() {
-  noStore();
+  // Dùng getCachedAllKanjiNotes() để tận dụng cache 1 giờ (in-memory + Next.js cache)
+  // Tránh đọc Firestore mỗi lần tải trang → tiết kiệm quota đáng kể
   try {
-    const snapshot = await adminDb.collection("kanji_notes").get();
-    const notes: any[] = [];
-    snapshot.docs.forEach((doc) => {
-      const data = doc.data() as any;
-      notes.push({ 
-        id: doc.id, 
-        character: data.character || "",
-        hanviet: data.hanviet || "",
-        meaning: data.meaning || "",
-        mnemonic: data.mnemonic || "",
-        updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : (data.updatedAt?.toDate?.().toISOString() || new Date().toISOString())
-      });
-    });
-    // Sort by updated time desc (optional)
+    const notesMap = await getCachedAllKanjiNotes();
+    const notes = Object.values(notesMap).map((note: CachedKanjiNote) => ({
+      id: note.character, // Dùng character làm ID (khớp với doc ID trong Firestore)
+      character: note.character,
+      hanviet: note.hanviet || "",
+      meaning: note.meaning || "",
+      mnemonic: note.mnemonic || "",
+      updatedAt: note.updatedAt || new Date().toISOString(),
+    }));
+    // Sắp xếp theo thời gian cập nhật mới nhất
     notes.sort((a, b) => {
       const dateA = new Date(a.updatedAt || 0).getTime();
       const dateB = new Date(b.updatedAt || 0).getTime();
