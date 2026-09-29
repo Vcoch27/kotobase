@@ -262,4 +262,89 @@ export const getCachedAllKanjiNotes = async (): Promise<Record<string, CachedKan
   }
 };
 
+// ==========================================
+// VOCABULARIES ALL CACHE (Dành cho tra cứu Kanji & Từ vựng liên quan)
+// ==========================================
+export interface CachedVocabSummary {
+  id: string;
+  word: string;
+  meaning: string;
+  reading?: string | null;
+  sinoVietnamese?: string | null;
+  example?: string | null;
+  note?: string | null;
+  folderIds?: string[];
+  createdAt?: string;
+  folderVocabularies?: { folderId: string; folder: { id: string; name: string } }[];
+}
+
+let memoryAllVocabsCache: {
+  vocabs: CachedVocabSummary[];
+  expiresAt: number;
+} | null = null;
+
+export const clearAllVocabsMemoryCache = () => {
+  memoryAllVocabsCache = null;
+};
+
+const fetchRawAllVocabsWithFolders = async (): Promise<CachedVocabSummary[]> => {
+  const [vocabsSnap, foldersSnap] = await Promise.all([
+    adminDb.collection("vocabularies").get(),
+    adminDb.collection("folders").get(),
+  ]);
+
+  const folderMap = new Map<string, { id: string; name: string }>();
+  foldersSnap.docs.forEach((doc) => {
+    folderMap.set(doc.id, {
+      id: doc.id,
+      name: String(doc.data().name || "Thư mục"),
+    });
+  });
+
+  const list: CachedVocabSummary[] = [];
+  vocabsSnap.docs.forEach((doc) => {
+    const d = doc.data();
+    const word = String(d.word || "").trim();
+    if (!word) return;
+
+    const folderIds: string[] = Array.isArray(d.folderIds) ? d.folderIds : [];
+    const folderVocabularies = folderIds.map((fId) => ({
+      folderId: fId,
+      folder: folderMap.get(fId) || { id: fId, name: "Thư mục" },
+    }));
+
+    list.push({
+      id: doc.id,
+      word,
+      meaning: String(d.meaning || "").trim(),
+      reading: d.reading ? String(d.reading).trim() : null,
+      sinoVietnamese: d.sinoVietnamese ? String(d.sinoVietnamese).trim() : null,
+      example: d.example ? String(d.example).trim() : null,
+      note: d.note ? String(d.note).trim() : null,
+      folderIds,
+      createdAt: typeof d.createdAt === "string" ? d.createdAt : (d.createdAt?.toDate?.().toISOString() || new Date(0).toISOString()),
+      folderVocabularies,
+    });
+  });
+
+  return list;
+};
+
+export const getCachedAllVocabsForKanji = async (): Promise<CachedVocabSummary[]> => {
+  const now = Date.now();
+  if (memoryAllVocabsCache && now < memoryAllVocabsCache.expiresAt && memoryAllVocabsCache.vocabs.length > 0) {
+    return memoryAllVocabsCache.vocabs;
+  }
+
+  try {
+    const vocabs = await fetchRawAllVocabsWithFolders();
+    memoryAllVocabsCache = { vocabs, expiresAt: now + 3600 * 1000 };
+    return vocabs;
+  } catch (err) {
+    console.error("Lỗi khi nạp bộ nhớ cache từ vựng:", err);
+    return memoryAllVocabsCache?.vocabs || [];
+  }
+};
+
+
 

@@ -3,7 +3,13 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/session";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { getCachedFoldersRaw, getCachedVocabsByFolderId, getCachedAllVocabsLimit } from "@/lib/cache";
+import {
+  getCachedFoldersRaw,
+  getCachedVocabsByFolderId,
+  getCachedAllVocabsLimit,
+  getCachedAllVocabsForKanji,
+  clearAllVocabsMemoryCache,
+} from "@/lib/cache";
 
 export interface CreateVocabInput {
   word: string;
@@ -64,6 +70,7 @@ export async function createVocabulary(input: CreateVocabInput) {
       updatedAt: new Date().toISOString(),
     });
 
+    clearAllVocabsMemoryCache();
     revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
     return { success: true, data: { id: docRef.id } };
   } catch (error) {
@@ -126,6 +133,7 @@ export async function createBulkVocabulary(jsonString: string, targetFolderIds?:
 
     await batch.commit();
 
+    clearAllVocabsMemoryCache();
     revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
     return { success: true, count };
   } catch (error) {
@@ -154,6 +162,7 @@ export async function assignVocabularyToFolder(vocabularyId: string, folderId: s
       updatedAt: new Date().toISOString()
     });
 
+    clearAllVocabsMemoryCache();
     revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
     return { success: true };
   } catch (error) {
@@ -327,6 +336,7 @@ export async function deleteVocabulary(id: string) {
     }
 
     await adminDb.collection("vocabularies").doc(id).delete();
+    clearAllVocabsMemoryCache();
     revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
     return { success: true };
   } catch (error) {
@@ -375,6 +385,7 @@ export async function updateVocabulary(id: string, input: Partial<CreateVocabInp
     if (input.folderIds !== undefined) updateData.folderIds = input.folderIds;
 
     await adminDb.collection("vocabularies").doc(id).update(updateData);
+    clearAllVocabsMemoryCache();
     revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
     return { success: true };
   } catch (error) {
@@ -383,61 +394,21 @@ export async function updateVocabulary(id: string, input: Partial<CreateVocabInp
   }
 }
 
-// Cache bộ nhớ tạm trên Server (tồn tại trong vòng đời của Server Node.js)
-let cachedAllVocabs: any[] | null = null;
-let cachedAllFolders: Map<string, any> | null = null;
-let lastCacheTime = 0;
-const CACHE_TTL = 1000 * 60 * 15; // 15 phút
-
 export async function getVocabulariesByKanji(character: string) {
   if (!character) return [];
   try {
-    const now = Date.now();
-    // Nếu cache đã quá hạn hoặc chưa có, ta mới fetch từ Firebase (Tối ưu cực đại Quota)
-    if (!cachedAllVocabs || !cachedAllFolders || now - lastCacheTime > CACHE_TTL) {
-      console.log("[CACHE MISS] Fetching ALL Vocabs & Folders for Kanji lookup...");
-      const snapshot = await adminDb.collection("vocabularies").get();
-      const foldersSnapshot = await adminDb.collection("folders").get();
-      
-      const folderMap = new Map<string, any>();
-      foldersSnapshot.docs.forEach(doc => {
-        folderMap.set(doc.id, { id: doc.id, name: doc.data().name, parentId: doc.data().parentId });
-      });
-
-      const allVocabs: any[] = [];
-      snapshot.docs.forEach(doc => {
-        allVocabs.push({ id: doc.id, ...doc.data() });
-      });
-
-      cachedAllVocabs = allVocabs;
-      cachedAllFolders = folderMap;
-      lastCacheTime = now;
-    } else {
-      console.log("[CACHE HIT] Using in-memory vocabs & folders for Kanji lookup.");
-    }
-
-    let vocabs: any[] = [];
-    cachedAllVocabs.forEach(data => {
-      if (data.word && data.word.includes(character)) {
-        const folderVocabularies = (data.folderIds || []).map((fId: string) => ({
-          folderId: fId,
-          folder: cachedAllFolders!.get(fId) || { id: fId, name: "Thư mục không xác định" }
-        }));
-        vocabs.push({
-          ...data,
-          folderVocabularies
-        });
-      }
-    });
+    const char = character.trim();
+    const allVocabs = await getCachedAllVocabsForKanji();
+    const matches = allVocabs.filter((v) => v.word && v.word.includes(char));
 
     // Sort by createdAt desc
-    vocabs.sort((a: any, b: any) => {
+    matches.sort((a, b) => {
       const dateA = new Date(a.createdAt || 0).getTime();
       const dateB = new Date(b.createdAt || 0).getTime();
       return dateB - dateA;
     });
 
-    return vocabs;
+    return matches;
   } catch (error) {
     console.error("Lỗi khi tìm từ vựng theo Kanji:", error);
     return [];

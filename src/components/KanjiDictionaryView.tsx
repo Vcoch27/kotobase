@@ -100,7 +100,7 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
         });
       }
 
-      // 2. Từ vựng liên quan: Hiển thị ngay từ danh sách đã tải ở client (0ms latency!)
+      // 2. Từ vựng liên quan: Ưu tiên lấy từ cache client, sau đó fetch qua API endpoint siêu tốc
       const localMatches = (vocabularies || []).filter(v => v.word && v.word.includes(char));
       
       // Nếu đã có cache đầy đủ từ trước, dùng ngay
@@ -112,21 +112,34 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
         setRelatedVocabularies(localMatches);
         setLoadingRelated(true);
 
-        // Fetch đồng bộ thêm từ server trong nền
-        getVocabulariesByKanji(char)
-          .then(vocabs => {
+        // Fetch qua API endpoint chuyên dụng
+        fetch(`/api/kanji/vocabularies?kanji=${encodeURIComponent(char)}`)
+          .then((res) => res.json())
+          .then((json) => {
             if (isMounted) {
-              const list = Array.isArray(vocabs) && vocabs.length > 0 ? vocabs : localMatches;
+              const list = Array.isArray(json.data) && json.data.length > 0 ? json.data : (Array.isArray(json.data) ? json.data : localMatches);
               relatedVocabsCache.current.set(char, list);
               setRelatedVocabularies(list);
               setLoadingRelated(false);
             }
           })
-          .catch(err => {
-            console.error("Lỗi tải từ vựng liên quan:", err);
-            if (isMounted) {
-              setLoadingRelated(false);
-            }
+          .catch((err) => {
+            console.error("Lỗi fetch API từ vựng liên quan:", err);
+            // Fallback sang Server Action nếu API có lỗi kết nối
+            getVocabulariesByKanji(char)
+              .then((vocabs) => {
+                if (isMounted) {
+                  const list = Array.isArray(vocabs) ? vocabs : localMatches;
+                  relatedVocabsCache.current.set(char, list);
+                  setRelatedVocabularies(list);
+                  setLoadingRelated(false);
+                }
+              })
+              .catch(() => {
+                if (isMounted) {
+                  setLoadingRelated(false);
+                }
+              });
           });
       }
     } else {
@@ -637,6 +650,9 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
           onClose={() => setEditingVocab(null)} 
           onSuccess={() => {
             setEditingVocab(null);
+            if (selectedKanji?.character) {
+              relatedVocabsCache.current.delete(selectedKanji.character.trim());
+            }
             if (onRefreshVocab) onRefreshVocab();
           }} 
         />
