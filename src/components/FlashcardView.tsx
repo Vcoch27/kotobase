@@ -44,6 +44,7 @@ interface FlashcardViewProps {
   vocabularies: VocabularyData[];
   selectedVocabIds?: string[];
   isActive?: boolean;
+  onFullscreenChange?: (isFullscreen: boolean) => void;
 }
 
 type StudyMode = "normal" | "progress" | "anki" | "listening";
@@ -58,7 +59,12 @@ const shuffleArray = <T,>(array: T[]): T[] => {
   return newArr;
 };
 
-export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = true }: FlashcardViewProps) {
+export function FlashcardView({
+  vocabularies,
+  selectedVocabIds = [],
+  isActive = true,
+  onFullscreenChange,
+}: FlashcardViewProps) {
   const customBg = useCustomBg();
   const getScopedFromSelection = useCallback((all: VocabularyData[], selIds: string[]) => {
     if (selIds && selIds.length > 0) {
@@ -104,6 +110,25 @@ export function FlashcardView({ vocabularies, selectedVocabIds = [], isActive = 
   });
   const [isShuffled, setIsShuffled] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Thông báo trạng thái Fullscreen lên component cha (Dashboard) để ẩn/hiện Header
+  useEffect(() => {
+    onFullscreenChange?.(isFullscreen);
+  }, [isFullscreen, onFullscreenChange]);
+
+  // Nếu chuyển tab hoặc không còn active, tự động thoát Fullscreen
+  useEffect(() => {
+    if (!isActive && isFullscreen) {
+      setIsFullscreen(false);
+    }
+  }, [isActive, isFullscreen]);
+
+  // Dọn dẹp khi unmount
+  useEffect(() => {
+    return () => {
+      onFullscreenChange?.(false);
+    };
+  }, [onFullscreenChange]);
 
   // Auto-play (Tự động lật và chuyển thẻ) cho Mode Bình Thường
   const [isAutoPlay, setIsAutoPlay] = useState(false);

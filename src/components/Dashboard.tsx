@@ -55,6 +55,12 @@ interface DashboardProps {
 
 export function Dashboard({ currentUser }: DashboardProps) {
   const [viewMode, setViewMode] = useState<"overview" | "focus" | "flashcard" | "quiz">("overview");
+  const [isStudyFullscreen, setIsStudyFullscreen] = useState(false);
+
+  // Thoát trạng thái toàn màn hình khi chuyển đổi viewMode
+  useEffect(() => {
+    setIsStudyFullscreen(false);
+  }, [viewMode]);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
   const [showBulkImportModal, setShowBulkImportModal] = useState(false);
@@ -532,7 +538,10 @@ export function Dashboard({ currentUser }: DashboardProps) {
         />
       )}
       {/* Top Navbar */}
-      <header className="sticky top-0 z-40 shadow-elevation-sm bg-[oklch(var(--color-surface)/0.85)] backdrop-blur-xl transition-colors duration-300">
+      <header className={cn(
+        "sticky top-0 z-40 shadow-elevation-sm bg-[oklch(var(--color-surface)/0.85)] backdrop-blur-xl transition-colors duration-300",
+        isStudyFullscreen && "hidden"
+      )}>
         <div className="max-w-screen-2xl mx-auto px-4 lg:px-6 py-3 md:h-16 flex flex-wrap items-center justify-between gap-3 md:gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2 md:gap-3 shrink-0">
@@ -827,10 +836,16 @@ export function Dashboard({ currentUser }: DashboardProps) {
       </header>
 
       {/* Main Layout (2 Columns) */}
-      <main className="study-layout flex-1 w-full mx-auto px-4 lg:px-6 pt-6 pb-36 md:pb-10 flex flex-col md:flex-row gap-6 relative z-10">
+      <main className={cn(
+        "study-layout flex-1 w-full mx-auto px-4 lg:px-6 pt-6 pb-36 md:pb-10 flex flex-col md:flex-row gap-6 relative z-10",
+        isStudyFullscreen && "!p-0 !pt-0 !pb-0 !m-0 !max-w-none !gap-0"
+      )}>
         
         {/* LEFT SIDEBAR: Folder Tree */}
-        <div className="w-full md:w-64 lg:w-72 shrink-0 space-y-4 md:sticky md:top-20 md:self-start">
+        <div className={cn(
+          "w-full md:w-64 lg:w-72 shrink-0 space-y-4 md:sticky md:top-20 md:self-start",
+          isStudyFullscreen && "hidden"
+        )}>
           <div className="study-sidebar rounded-2xl p-4 shadow-elevation-md transition-colors duration-300 md:h-[calc(100vh-6rem)] md:max-h-[calc(100vh-6rem)] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <h2 
@@ -920,10 +935,16 @@ export function Dashboard({ currentUser }: DashboardProps) {
         </div>
 
         {/* RIGHT MAIN CONTENT */}
-        <div id="study-main-content" className="flex-1 flex flex-col gap-6 min-w-0 scroll-mt-20">
+        <div id="study-main-content" className={cn(
+          "flex-1 flex flex-col gap-6 min-w-0 scroll-mt-20",
+          isStudyFullscreen && "!gap-0"
+        )}>
           
           {/* Thanh Toolbar Ngang Hợp Nhất: + Thêm nội dung, Đang chọn Thư mục, Offline & Sắp xếp */}
-          <div className="relative z-20 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-2 sm:px-3 shadow-sm flex flex-wrap items-center justify-between gap-2.5">
+          <div className={cn(
+            "relative z-20 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-2 sm:px-3 shadow-sm flex flex-wrap items-center justify-between gap-2.5",
+            isStudyFullscreen && "hidden"
+          )}>
             {/* Vùng bên trái: Nút + Thêm nội dung & Đang chọn Thư mục */}
             <div className="flex items-center gap-2 flex-wrap min-w-0">
               {isGoogleUser && (
@@ -1111,7 +1132,10 @@ export function Dashboard({ currentUser }: DashboardProps) {
             ] as const;
 
             return (
-              <div className="bg-[oklch(var(--color-surface))] p-1.5 px-2.5 rounded-2xl shadow-elevation-sm w-full flex items-center justify-between gap-2 overflow-x-auto scrollbar-hide transition-colors duration-300">
+              <div className={cn(
+                "bg-[oklch(var(--color-surface))] p-1.5 px-2.5 rounded-2xl shadow-elevation-sm w-full flex items-center justify-between gap-2 overflow-x-auto scrollbar-hide transition-colors duration-300",
+                isStudyFullscreen && "hidden"
+              )}>
                 <div className="flex items-center bg-[oklch(var(--color-surface-raised))] p-1 rounded-xl gap-0.5">
                   {tabs.map((tab) => (
                     <button
@@ -1166,7 +1190,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
             );
           })()}
 
-          <div className="pb-24 md:pb-10">
+          <div className={cn("pb-24 md:pb-10", isStudyFullscreen && "!p-0 !pb-0")}>
             {quotaExceeded ? (
               <div className="p-8 my-8 text-center bg-rose-50 dark:bg-rose-900/10 rounded-2xl border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400">
                 <BrainCircuit className="w-12 h-12 mx-auto mb-4 text-rose-500 opacity-80" />
@@ -1229,6 +1253,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                       vocabularies={filteredVocabularies}
                       selectedVocabIds={selectedVocabIds}
                       isActive={viewMode === "quiz"}
+                      onFullscreenChange={setIsStudyFullscreen}
                     />
                   ) : (
                     <div className="study-card bg-white dark:bg-slate-900 rounded-3xl p-8 sm:p-12 text-center border border-slate-200/80 dark:border-slate-800 shadow-xl flex flex-col items-center justify-center max-w-lg mx-auto my-8 animate-fadeIn">
@@ -1264,6 +1289,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     vocabularies={filteredVocabularies}
                     selectedVocabIds={selectedVocabIds}
                     isActive={viewMode === "flashcard"}
+                      onFullscreenChange={setIsStudyFullscreen}
                   />
                 </div>
               </>
@@ -1281,7 +1307,10 @@ export function Dashboard({ currentUser }: DashboardProps) {
         </div>
       </main>
 
-      <footer className="relative z-10 w-full border-t border-slate-200/70 bg-white/70 px-4 py-4 text-[11px] text-slate-500 dark:border-slate-800/70 dark:bg-slate-950/70 dark:text-slate-400">
+      <footer className={cn(
+        "relative z-10 w-full border-t border-slate-200/70 bg-white/70 px-4 py-4 text-[11px] text-slate-500 dark:border-slate-800/70 dark:bg-slate-950/70 dark:text-slate-400",
+        isStudyFullscreen && "hidden"
+      )}>
         <div className="mx-auto flex max-w-screen-2xl flex-wrap items-center justify-center gap-x-4 gap-y-2 text-center sm:justify-between">
           <span>© {new Date().getFullYear()} Nguyễn Văn Hoàng · KotoBase</span>
           <nav aria-label="Liên hệ và mạng xã hội" className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">

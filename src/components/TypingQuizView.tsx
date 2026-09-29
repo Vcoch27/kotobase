@@ -22,6 +22,7 @@ interface TypingQuizViewProps {
   vocabularies: VocabularyData[];
   selectedVocabIds?: string[];
   isActive?: boolean;
+  onFullscreenChange?: (isFullscreen: boolean) => void;
 }
 
 type QuizType = 1 | 2; // 1: Xem Từ -> Gõ Cách đọc, 2: Xem Nghĩa -> Gõ Từ/Cách đọc
@@ -45,7 +46,12 @@ function cleanString(str: string): string {
   return str.toLowerCase().replace(/\s+/g, "");
 }
 
-export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive = true }: TypingQuizViewProps) {
+export function TypingQuizView({
+  vocabularies,
+  selectedVocabIds = [],
+  isActive = true,
+  onFullscreenChange,
+}: TypingQuizViewProps) {
   const customBg = useCustomBg();
   const getScopedFromSelection = useCallback((all: VocabularyData[], selIds: string[]) => {
     if (selIds && selIds.length > 0) {
@@ -68,6 +74,25 @@ export function TypingQuizView({ vocabularies, selectedVocabIds = [], isActive =
   const [quizMode, setQuizMode] = useState<"mix" | "type1" | "type2">("mix");
   const [isShuffled, setIsShuffled] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Thông báo trạng thái Fullscreen lên component cha (Dashboard) để ẩn/hiện Header
+  useEffect(() => {
+    onFullscreenChange?.(isFullscreen);
+  }, [isFullscreen, onFullscreenChange]);
+
+  // Nếu chuyển tab hoặc không còn active, tự động thoát Fullscreen
+  useEffect(() => {
+    if (!isActive && isFullscreen) {
+      setIsFullscreen(false);
+    }
+  }, [isActive, isFullscreen]);
+
+  // Dọn dẹp khi unmount
+  useEffect(() => {
+    return () => {
+      onFullscreenChange?.(false);
+    };
+  }, [onFullscreenChange]);
   const [showMobileSettings, setShowMobileSettings] = useState(false);
   const [showDelaySettings, setShowDelaySettings] = useState(false);
   
