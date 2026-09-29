@@ -1,22 +1,45 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { verifyToken } from "./lib/auth-utils";
+import { checkBotAndRateLimit, createBlockedResponse } from "./lib/bot-protection";
 
 const AUTH_COOKIE_NAME = "kotobase_auth_token";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Bỏ qua nếu route là download hoặc các file tĩnh
-  if (
-    pathname.startsWith("/download") ||
+  // 1. Bỏ qua các file tĩnh và tài nguyên hệ thống (không tính vào rate limit)
+  const isStaticAsset =
     pathname.startsWith("/_next") ||
-    pathname.includes(".")
-  ) {
+    pathname === "/manifest.json" ||
+    pathname === "/favicon.ico" ||
+    pathname === "/sw.js" ||
+    pathname === "/robots.txt" ||
+    /\.(?:png|jpg|jpeg|gif|webp|svg|ico|css|js|woff|woff2|ttf|mp3|wav|ogg)$/i.test(pathname);
+
+  if (isStaticAsset) {
     return NextResponse.next();
   }
 
-  // Nếu chưa cấu hình biến môi trường, tạm thời bỏ qua
+  // 2. Kiểm tra thông minh: Chặn Bot/Crawler độc hại & Giới hạn tần suất thích ứng
+  // Phân biệt chính xác giữa bot tự động và người dùng học tập thường xuyên (Zero False Positives)
+  const isApi = pathname.startsWith("/api/");
+  const botCheck = await checkBotAndRateLimit(request);
+  if (!botCheck.allowed) {
+    return createBlockedResponse(botCheck, isApi);
+  }
+
+  // 3. Nếu là API route đã được xác thực an toàn qua bộ lọc Anti-Bot -> Cho phép xử lý
+  if (isApi) {
+    return NextResponse.next();
+  }
+
+  // 4. Tuyến đường công khai tải ứng dụng (download)
+  if (pathname.startsWith("/download")) {
+    return NextResponse.next();
+  }
+
+  // 5. Nếu chưa cấu hình biến môi trường, tạm thời bỏ qua kiểm tra mật khẩu ứng dụng
   if (!process.env.APP_ACCESS_PASSWORD) {
     return NextResponse.next();
   }
@@ -56,6 +79,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|download).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|mp3|wav|ogg)$).*)',
   ],
 };
