@@ -2,6 +2,10 @@
 
 **Japanese vocabulary learning, flashcards & Kanji dictionary.** KotoBase giúp bạn lưu từ mới theo chủ đề, tra cứu và ôn tập ngay trên cùng một nơi. Mở ứng dụng tại **[kotobase.vanhoang.online](https://kotobase.vanhoang.online/)**.
 
+![Giao diện desktop KotoBase: thư mục từ vựng, flashcard và mẹo nhớ chữ Hán](docs/previews/study-theme/flashcard-desktop.png)
+
+*Học từ vựng theo thư mục với flashcard, phát âm, mẹo nhớ Hán tự và chế độ Anki SRS.*
+
 ## Bắt đầu học
 
 1. Tạo thư mục cho giáo trình, chủ đề hoặc cấp độ JLPT.
@@ -23,6 +27,31 @@
 | **Lặp lại ngắt quãng** | Đánh giá thẻ bằng Again / Hard / Good / Easy để lên lịch ôn tiếp theo; tiến độ được lưu trên thiết bị. |
 | **Quiz gõ phím** | Luyện nhập câu trả lời và xem lại các từ cần củng cố sau lượt học. |
 | **Phát âm** | Nghe từ vựng bằng tính năng đọc tiếng Nhật và điều chỉnh cài đặt TTS. |
+
+## Xem giao diện desktop
+
+Các ảnh chụp từ ứng dụng thực tế ở kích thước desktop. Nhấn vào từng mục để xem thêm; giao diện có thể thay đổi theo phiên bản và cài đặt cá nhân.
+
+<details>
+<summary><strong>Flashcard — cách đọc, nghĩa và câu ví dụ ở mặt sau</strong></summary>
+
+![Mặt sau flashcard KotoBase hiển thị cách đọc Hiragana, nghĩa tiếng Việt và câu ví dụ Nhật–Việt](docs/previews/study-theme/flashcard-back-desktop.png)
+
+</details>
+
+<details>
+<summary><strong>Quiz gõ phím — tự nhớ và nhập từ tiếng Nhật</strong></summary>
+
+![Quiz từ vựng trên desktop: nhìn nghĩa tiếng Việt và nhập đáp án bằng Hiragana hoặc Kanji](docs/previews/study-theme/quiz-desktop.png)
+
+</details>
+
+<details>
+<summary><strong>Sổ tay Kanji — tra cứu các chữ Hán đã lưu</strong></summary>
+
+![Trang Kanji trên desktop với lưới chữ Hán, âm Hán Việt, nghĩa và ô tìm kiếm](docs/previews/kanji-desktop.png)
+
+</details>
 
 ## Các phần học khác
 
