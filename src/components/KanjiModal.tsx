@@ -7,6 +7,7 @@ import { X, Save, Sparkles, BookOpen, FileText, Type, Volume2, Wand2, Pencil, Ey
 import { playAudio } from "@/lib/tts-utils";
 import { KanjiDetail } from "@/app/api/kanji/lookup/route";
 import { HighlightMnemonic } from "./HighlightMnemonic";
+import { getCachedKanjiDetail, setCachedKanjiDetail, fetchKanjiDetailWithCache } from "@/lib/kanji-cache";
 import toast from "react-hot-toast";
 
 interface KanjiModalProps {
@@ -32,43 +33,71 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
 
   useEffect(() => {
     if (isOpen && character) {
-      setLoading(true);
       setMessage(null);
-      setApiDetail(null);
       setIsEditingMnemonic(false);
-      setMnemonic("");
-      setMeaning("");
-      setHanviet("");
 
-      let isCurrent = true;
       const targetChar = character.trim();
+      let isCurrent = true;
+
+      // 1. Kiểm tra cache tức thì (In-memory & LocalStorage)
+      const cached = getCachedKanjiDetail(targetChar);
+      let localNote: any = null;
+      try {
+        const saved = localStorage.getItem("kotobase_cached_kanji_notes");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          localNote = parsed[targetChar];
+        }
+      } catch (e) {}
+
+      const initialHanviet = localNote?.hanviet || cached?.hanviet || "";
+      const initialMeaning = localNote?.meaning || cached?.mean || "";
+      const initialMnemonic = localNote?.mnemonic || cached?.mnemonic || "";
+
+      if (initialHanviet || initialMeaning || initialMnemonic) {
+        setHanviet(initialHanviet);
+        setMeaning(initialMeaning);
+        setMnemonic(initialMnemonic);
+      } else {
+        setHanviet("");
+        setMeaning("");
+        setMnemonic("");
+      }
+
+      // Nếu đã có cache đầy đủ kèm âm đọc, mở tức thì 0ms
+      if (cached && (cached.on_readings?.length > 0 || cached.kun_readings?.length > 0 || cached.stroke_count)) {
+        setApiDetail(cached);
+        setLoading(false);
+        return;
+      }
+
+      if (cached) {
+        setApiDetail(cached);
+      }
+
+      setLoading(true);
 
       Promise.all([
-        getKanjiNote(character).catch(() => null),
-        fetch(`/api/kanji/lookup?query=${encodeURIComponent(character.trim())}`)
-          .then((r) => r.json())
-          .catch(() => ({ data: [] })),
-      ]).then(([dbRes, apiRes]) => {
+        getKanjiNote(targetChar).catch(() => null),
+        fetchKanjiDetailWithCache(targetChar),
+      ]).then(([dbRes, apiData]) => {
         if (!isCurrent) return;
-        const apiData: KanjiDetail | null =
-          apiRes?.data && apiRes.data.length > 0 ? apiRes.data[0] : null;
-        setApiDetail(apiData);
+        if (apiData) setApiDetail(apiData);
 
-        // Nguồn ưu tiên: dữ liệu đã lưu từ DB (getKanjiNote hoặc apiData.savedNote)
-        const savedData = dbRes || (apiData?.isSaved ? apiData.savedNote : null);
+        const savedData = dbRes || (apiData?.isSaved ? apiData.savedNote : null) || localNote;
 
         if (savedData) {
-          const finalHanviet = savedData.hanviet || apiData?.hanviet || "";
-          const finalMeaning = savedData.meaning || apiData?.mean || "";
-          const finalMnemonic = savedData.mnemonic || "";
+          const finalHanviet = savedData.hanviet || apiData?.hanviet || initialHanviet || "";
+          const finalMeaning = savedData.meaning || apiData?.mean || initialMeaning || "";
+          const finalMnemonic = savedData.mnemonic || initialMnemonic || "";
 
           setMnemonic(finalMnemonic);
           setMeaning(finalMeaning);
           setHanviet(finalHanviet);
-        } else {
-          setMnemonic(apiData?.mnemonic || "");
-          setMeaning(apiData?.mean || "");
-          setHanviet(apiData?.hanviet || "");
+        } else if (apiData) {
+          setMnemonic(apiData.mnemonic || initialMnemonic || "");
+          setMeaning(apiData.mean || initialMeaning || "");
+          setHanviet(apiData.hanviet || initialHanviet || "");
         }
         setLoading(false);
       });
@@ -118,20 +147,38 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
         toast.success("Đã lưu ghi chú Hán tự thành công!");
         setMessage({ type: "success", text: "Đã cập nhật Hán tự thành công!" });
         
+        // Cập nhật cả kanji-cache
+        const currentDetail = getCachedKanjiDetail(character) || {
+          kanji: character,
+          meanings: [meaning],
+          kun_readings: [],
+          on_readings: [],
+        };
+        setCachedKanjiDetail(character, {
+          ...currentDetail,
+          hanviet: res.data.hanviet,
+          mean: res.data.meaning,
+          mnemonic: res.data.mnemonic,
+          isSaved: true,
+          savedNote: {
+            hanviet: res.data.hanviet,
+            meaning: res.data.meaning,
+            mnemonic: res.data.mnemonic,
+          }
+        });
+
         if (typeof window !== "undefined") {
           // Update localStorage cache directly
           try {
             const saved = localStorage.getItem("kotobase_cached_kanji_notes");
-            if (saved) {
-              const parsed = JSON.parse(saved);
-              parsed[character] = {
-                character: res.data.character,
-                hanviet: res.data.hanviet,
-                meaning: res.data.meaning,
-                mnemonic: res.data.mnemonic,
-              };
-              localStorage.setItem("kotobase_cached_kanji_notes", JSON.stringify(parsed));
-            }
+            const parsed = saved ? JSON.parse(saved) : {};
+            parsed[character] = {
+              character: res.data.character,
+              hanviet: res.data.hanviet,
+              meaning: res.data.meaning,
+              mnemonic: res.data.mnemonic,
+            };
+            localStorage.setItem("kotobase_cached_kanji_notes", JSON.stringify(parsed));
           } catch {}
 
           window.dispatchEvent(
@@ -170,6 +217,13 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
         className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 shadow-2xl text-slate-900 dark:text-slate-100 transition-colors my-auto max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Loading Progress Bar */}
+        {loading && (
+          <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500/20 overflow-hidden z-30">
+            <div className="w-full h-full bg-gradient-to-r from-amber-400 via-rose-500 to-amber-400 animate-shimmer" />
+          </div>
+        )}
+
         {/* Header với hiệu ứng gradient */}
         <div className="relative p-6 bg-gradient-to-br from-indigo-50 dark:from-indigo-900/60 via-white dark:via-slate-900 to-purple-50 dark:to-purple-900/40 border-b border-slate-200 dark:border-slate-700/60 transition-colors flex-shrink-0">
           <button
@@ -188,17 +242,21 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/20 text-xs font-semibold uppercase tracking-wider">
                   <Sparkles className="w-3.5 h-3.5" /> Chi tiết Hán tự
                 </span>
-                {!loading && apiDetail?.jlpt && (
+                {loading && !apiDetail?.jlpt ? (
+                  <span className="h-4 w-10 bg-slate-200/80 dark:bg-slate-700/60 rounded-md animate-pulse" />
+                ) : apiDetail?.jlpt ? (
                   <span className="text-xs font-bold uppercase px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30">
                     N{String(apiDetail.jlpt).replace(/^N/i, "")}
                   </span>
-                )}
-                {!loading && apiDetail?.stroke_count && (
+                ) : null}
+                {loading && !apiDetail?.stroke_count ? (
+                  <span className="h-4 w-12 bg-slate-200/80 dark:bg-slate-700/60 rounded-md animate-pulse" />
+                ) : apiDetail?.stroke_count ? (
                   <span className="text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
                     {apiDetail.stroke_count} nét
                   </span>
-                )}
-                {!loading && (mnemonic || apiDetail?.isSaved) && (
+                ) : null}
+                {(mnemonic || apiDetail?.isSaved) && (
                   <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
                     ✓ Đã có ghi chú
                   </span>
@@ -206,21 +264,20 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
               </div>
               <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 Hán tự {character}
-                {!loading && hanviet && (
+                {hanviet ? (
                   <span className="text-sm font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-200 dark:border-rose-500/20">
                     {hanviet}
                   </span>
-                )}
-                {loading && (
+                ) : loading ? (
                   <span className="inline-block w-14 h-6 bg-slate-200/80 dark:bg-slate-700/60 rounded-md animate-pulse" />
-                )}
+                ) : null}
               </h2>
             </div>
           </div>
         </div>
 
         {/* Content Body */}
-        {loading ? (
+        {loading && !hanviet && !meaning && !mnemonic ? (
           <div className="p-12 text-center text-slate-500 dark:text-slate-400">
             <div className="inline-block w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin mb-3"></div>
             <p className="text-sm font-medium">Đang tải thông tin Hán tự từ từ điển...</p>
@@ -240,7 +297,15 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
             )}
 
             {/* Thông tin Tra cứu Từ điển (Onyomi / Kunyomi) */}
-            {apiDetail && (apiDetail.on_readings.length > 0 || apiDetail.kun_readings.length > 0) && (
+            {loading && (!apiDetail || (!apiDetail.on_readings?.length && !apiDetail.kun_readings?.length)) ? (
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-2 text-xs animate-pulse">
+                <div className="flex items-center gap-2 text-slate-400 text-[11px] font-medium">
+                  <div className="w-3 h-3 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span>Đang tải âm On / Kun từ từ điển...</span>
+                </div>
+                <div className="h-4 bg-slate-200/80 dark:bg-slate-700/60 rounded w-2/3"></div>
+              </div>
+            ) : apiDetail && (apiDetail.on_readings.length > 0 || apiDetail.kun_readings.length > 0) ? (
               <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-2 text-xs">
                 <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase">
                   <span>Thông tin từ điển Hán Việt</span>
@@ -287,7 +352,7 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
                   </div>
                 )}
               </div>
-            )}
+            ) : null}
 
             {/* Hanviet / Âm Hán Việt */}
             <div>

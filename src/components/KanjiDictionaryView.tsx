@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Search, Library, FileText, BookOpen, Edit3, Loader2, Type, Volume2, Wand2, X } from "lucide-react";
 import Link from "next/link";
 import { upsertKanjiNote } from "@/app/actions/kanji";
@@ -10,6 +11,8 @@ import { KanjiLookupResults } from "./KanjiLookupResults";
 import { playAudio } from "@/lib/tts-utils";
 import { KanjiDetail } from "@/app/api/kanji/lookup/route";
 import { HighlightMnemonic } from "./HighlightMnemonic";
+import { cn } from "@/lib/cn";
+import { getCachedKanjiDetail, setCachedKanjiDetail, fetchKanjiDetailWithCache, primeKanjiDetailCache } from "@/lib/kanji-cache";
 import toast from "react-hot-toast";
 
 interface KanjiNote {
@@ -43,9 +46,12 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
   const [kanjiNotes, setKanjiNotes] = useState<KanjiNote[]>(initialKanjiNotes || []);
   const [loading] = useState(false); // Không cần loading vì dữ liệu đã có sẵn từ Server
   const [searchQuery, setSearchQuery] = useState("");
+  const [mounted, setMounted] = useState(false);
   
   const [selectedKanji, setSelectedKanji] = useState<KanjiNote | null>(null);
+  const [loadingChar, setLoadingChar] = useState<string | null>(null);
   const [apiDetail, setApiDetail] = useState<KanjiDetail | null>(null);
+  const [loadingApiDetail, setLoadingApiDetail] = useState(false);
   const [editingVocab, setEditingVocab] = useState<VocabularyData | null>(null);
   const [relatedVocabularies, setRelatedVocabularies] = useState<VocabularyData[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
@@ -55,50 +61,90 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
   const [editKanjiForm, setEditKanjiForm] = useState({ hanviet: "", meaning: "", mnemonic: "" });
   const [savingKanji, setSavingKanji] = useState(false);
 
-  // Khi chọn Kanji, lấy danh sách từ vựng từ server & thông tin từ điển
+  // Bộ nhớ đệm client cho từ vựng liên quan
+  const relatedVocabsCache = useRef<Map<string, VocabularyData[]>>(new Map());
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Nạp trước dữ liệu 295 Hán tự vào cache bộ nhớ ngay khi trang tải xong
+  useEffect(() => {
+    if (initialKanjiNotes && initialKanjiNotes.length > 0) {
+      primeKanjiDetailCache(initialKanjiNotes);
+    }
+  }, [initialKanjiNotes]);
+
+  // Khi chọn Kanji, hiển thị dữ liệu ngay lập tức & đồng bộ thêm thông tin chi tiết
   useEffect(() => {
     let isMounted = true;
     if (selectedKanji) {
-      setLoadingRelated(true);
-      setApiDetail(null);
+      const char = selectedKanji.character.trim();
 
-      // 1. Tải từ vựng liên quan
-      getVocabulariesByKanji(selectedKanji.character)
-        .then(vocabs => {
+      // 1. Kiểm tra cache API chi tiết (On/Kun, stroke_count, jlpt)
+      const cached = getCachedKanjiDetail(char);
+      if (cached && (cached.on_readings?.length > 0 || cached.kun_readings?.length > 0 || cached.stroke_count)) {
+        setApiDetail(cached);
+        setLoadingApiDetail(false);
+      } else {
+        // Nếu có cache một phần, vẫn hiển thị ngay
+        if (cached) setApiDetail(cached);
+        setLoadingApiDetail(true);
+        fetchKanjiDetailWithCache(char).then((detail) => {
           if (isMounted) {
-            setRelatedVocabularies(Array.isArray(vocabs) ? vocabs : []);
-            setLoadingRelated(false);
+            if (detail) setApiDetail(detail);
+            setLoadingApiDetail(false);
           }
-        })
-        .catch(err => {
-          console.error("Lỗi tải từ vựng liên quan:", err);
-          if (isMounted) {
-            setRelatedVocabularies([]);
-            setLoadingRelated(false);
-          }
+        }).catch(() => {
+          if (isMounted) setLoadingApiDetail(false);
         });
+      }
 
-      // 2. Tải thông tin từ điển chi tiết (JLPT, On/Kun, nghĩa chuẩn)
-      fetch(`/api/kanji/lookup?query=${encodeURIComponent(selectedKanji.character)}`)
-        .then(r => r.json())
-        .then(res => {
-          if (isMounted && res.data && res.data.length > 0) {
-            setApiDetail(res.data[0]);
-          }
-        })
-        .catch(err => console.error("Lỗi tải thông tin API Kanji:", err));
+      // 2. Từ vựng liên quan: Hiển thị ngay từ danh sách đã tải ở client (0ms latency!)
+      const localMatches = (vocabularies || []).filter(v => v.word && v.word.includes(char));
+      
+      // Nếu đã có cache đầy đủ từ trước, dùng ngay
+      if (relatedVocabsCache.current.has(char)) {
+        setRelatedVocabularies(relatedVocabsCache.current.get(char)!);
+        setLoadingRelated(false);
+      } else {
+        // Đặt ngay kết quả local để người dùng không phải nhìn spinner trống
+        setRelatedVocabularies(localMatches);
+        setLoadingRelated(true);
+
+        // Fetch đồng bộ thêm từ server trong nền
+        getVocabulariesByKanji(char)
+          .then(vocabs => {
+            if (isMounted) {
+              const list = Array.isArray(vocabs) && vocabs.length > 0 ? vocabs : localMatches;
+              relatedVocabsCache.current.set(char, list);
+              setRelatedVocabularies(list);
+              setLoadingRelated(false);
+            }
+          })
+          .catch(err => {
+            console.error("Lỗi tải từ vựng liên quan:", err);
+            if (isMounted) {
+              setLoadingRelated(false);
+            }
+          });
+      }
     } else {
+      setLoadingChar(null);
       setRelatedVocabularies([]);
       setApiDetail(null);
+      setLoadingApiDetail(false);
+      setLoadingRelated(false);
     }
     return () => { isMounted = false; };
-  }, [selectedKanji]);
+  }, [selectedKanji, vocabularies]);
 
   // Đóng modal Kanji detail bằng phím Esc
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && selectedKanji && !editingVocab && !isEditingKanji) {
         setSelectedKanji(null);
+        setLoadingChar(null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -121,7 +167,29 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
       const updatedKanji = { ...selectedKanji, hanviet: res.data.hanviet, meaning: res.data.meaning, mnemonic: res.data.mnemonic };
       setSelectedKanji(updatedKanji);
       setKanjiNotes(prev => prev.map(k => k.id === updatedKanji.id ? updatedKanji : k));
+      
+      // Cập nhật kanji-cache
+      const currentDetail = getCachedKanjiDetail(selectedKanji.character) || {
+        kanji: selectedKanji.character,
+        meanings: [res.data.meaning || ""],
+        kun_readings: [],
+        on_readings: [],
+      };
+      setCachedKanjiDetail(selectedKanji.character, {
+        ...currentDetail,
+        hanviet: res.data.hanviet,
+        mean: res.data.meaning,
+        mnemonic: res.data.mnemonic,
+        isSaved: true,
+        savedNote: {
+          hanviet: res.data.hanviet,
+          meaning: res.data.meaning,
+          mnemonic: res.data.mnemonic,
+        }
+      });
+
       setIsEditingKanji(false);
+      toast.success("Đã cập nhật Hán tự thành công!");
     } else if (!res.success) {
       toast.error(res.error || "Có lỗi xảy ra khi lưu!");
     }
@@ -189,25 +257,40 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {(filteredKanji || []).map((kanji) => (
-            <div
-              key={kanji.id}
-              onClick={() => setSelectedKanji(kanji)}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-500 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer hover:shadow-lg transition-all group active:scale-95"
-            >
-              <span className="text-4xl font-bold text-slate-800 dark:text-slate-100 mb-2 group-hover:scale-110 transition-transform">
-                {kanji.character}
-              </span>
-              <span className="text-sm font-black text-rose-600 dark:text-rose-400 text-center truncate w-full uppercase tracking-wider">
-                {kanji.hanviet || (kanji.meaning && kanji.meaning.length <= 6 ? kanji.meaning.toUpperCase() : "---")}
-              </span>
-              {kanji.meaning && kanji.hanviet && (
-                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 text-center truncate w-full mt-0.5">
-                  {kanji.meaning}
+          {(filteredKanji || []).map((kanji) => {
+            const isCardActive = (selectedKanji?.character === kanji.character) || (loadingChar === kanji.character);
+            return (
+              <div
+                key={kanji.id}
+                onClick={() => {
+                  setLoadingChar(kanji.character);
+                  setSelectedKanji(kanji);
+                }}
+                className={cn(
+                  "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-500 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer hover:shadow-lg transition-all group active:scale-95 relative overflow-hidden",
+                  isCardActive && "ring-2 ring-amber-500 bg-amber-50/50 dark:bg-amber-950/20 border-amber-400"
+                )}
+              >
+                {isCardActive && (
+                  <span className="absolute top-2.5 right-2.5 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                  </span>
+                )}
+                <span className="text-4xl font-bold text-slate-800 dark:text-slate-100 mb-2 group-hover:scale-110 transition-transform">
+                  {kanji.character}
                 </span>
-              )}
-            </div>
-          ))}
+                <span className="text-sm font-black text-rose-600 dark:text-rose-400 text-center truncate w-full uppercase tracking-wider">
+                  {kanji.hanviet || (kanji.meaning && kanji.meaning.length <= 6 ? kanji.meaning.toUpperCase() : "---")}
+                </span>
+                {kanji.meaning && kanji.hanviet && (
+                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 text-center truncate w-full mt-0.5">
+                    {kanji.meaning}
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -232,25 +315,38 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
       />
 
       {/* Modal Chi tiết Hán tự & Từ vựng liên quan */}
-      {selectedKanji && (
+      {selectedKanji && mounted && typeof document !== "undefined" && createPortal(
         <div 
-          className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-transparent animate-fadeIn"
-          onClick={() => setSelectedKanji(null)}
+          data-kanji-modal="true"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn cursor-default tracking-normal font-sans"
+          onClick={() => {
+            setSelectedKanji(null);
+            setIsEditingKanji(false);
+            setLoadingChar(null);
+          }}
         >
           <div 
-            className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] relative"
+            className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] relative animate-scaleIn"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Thanh loading mỏng trên đỉnh khi đang tra cứu API / tải từ vựng */}
+            {(loadingApiDetail || loadingRelated) && (
+              <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500/20 overflow-hidden z-30">
+                <div className="w-full h-full bg-gradient-to-r from-amber-400 via-rose-500 to-amber-400 animate-shimmer" />
+              </div>
+            )}
+
             {/* Header / Đóng */}
             <div className="absolute top-4 right-4 z-20">
               <button 
                 onClick={() => {
                   setSelectedKanji(null);
                   setIsEditingKanji(false);
+                  setLoadingChar(null);
                 }}
-                className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 backdrop-blur-sm rounded-full transition-colors shadow-sm"
+                className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 backdrop-blur-sm rounded-full transition-colors shadow-sm cursor-pointer"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -262,11 +358,13 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
                   <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-tr from-amber-500 to-rose-500 text-white font-bold text-4xl sm:text-5xl flex items-center justify-center shadow-lg shadow-amber-500/30">
                     {selectedKanji.character}
                   </div>
-                  {apiDetail?.stroke_count && (
+                  {loadingApiDetail ? (
+                    <span className="h-3 w-12 bg-slate-200/80 dark:bg-slate-700/60 rounded mt-2 animate-pulse" />
+                  ) : apiDetail?.stroke_count ? (
                     <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-2">
                       {apiDetail.stroke_count} nét
                     </span>
-                  )}
+                  ) : null}
                 </div>
 
                 <div className="flex-1 w-full min-w-0 pr-8">
@@ -275,11 +373,13 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
                       <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Thông tin Hán tự
                       </span>
-                      {apiDetail?.jlpt && (
+                      {loadingApiDetail ? (
+                        <span className="h-4 w-10 bg-slate-200/80 dark:bg-slate-700/60 rounded-md animate-pulse" />
+                      ) : apiDetail?.jlpt ? (
                         <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30">
                           N{String(apiDetail.jlpt).replace(/^N/i, "")}
                         </span>
-                      )}
+                      ) : null}
                     </div>
 
                     {isEditingKanji && apiDetail && (
@@ -404,9 +504,20 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
                         </div>
 
                         {/* On / Kun từ điển */}
-                        {apiDetail && (apiDetail.on_readings.length > 0 || apiDetail.kun_readings.length > 0) && (
+                        {loadingApiDetail ? (
+                          <div className="p-3 rounded-xl bg-slate-100/70 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 mb-3 space-y-2 text-xs">
+                            <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium">
+                              <div className="w-3 h-3 border-2 border-amber-500 border-t-transparent rounded-full animate-spin shrink-0"></div>
+                              <span>Đang tải âm đọc On / Kun...</span>
+                            </div>
+                            <div className="space-y-1.5 pt-1">
+                              <div className="h-3.5 bg-slate-200/80 dark:bg-slate-700/60 rounded animate-pulse w-3/4"></div>
+                              <div className="h-3.5 bg-slate-200/80 dark:bg-slate-700/60 rounded animate-pulse w-1/2"></div>
+                            </div>
+                          </div>
+                        ) : apiDetail && (apiDetail.on_readings?.length > 0 || apiDetail.kun_readings?.length > 0) ? (
                           <div className="p-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 mb-3 space-y-1.5 text-xs">
-                            {apiDetail.on_readings.length > 0 && (
+                            {apiDetail.on_readings?.length > 0 && (
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className="text-[10px] font-bold text-rose-500 uppercase">On:</span>
                                 <span className="font-semibold text-slate-800 dark:text-slate-200">
@@ -425,7 +536,7 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
                                 </button>
                               </div>
                             )}
-                            {apiDetail.kun_readings.length > 0 && (
+                            {apiDetail.kun_readings?.length > 0 && (
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className="text-[10px] font-bold text-indigo-500 uppercase">Kun:</span>
                                 <span className="font-semibold text-slate-800 dark:text-slate-200">
@@ -445,7 +556,7 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
                               </div>
                             )}
                           </div>
-                        )}
+                        ) : null}
                         
                         <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 mb-0.5 mt-2">
                           <BookOpen className="w-3.5 h-3.5" /> MẸO NHỚ
@@ -466,49 +577,56 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
               {/* List Từ vựng */}
               <div className="p-6 flex-1 bg-slate-50 dark:bg-slate-950/30">
                 <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center justify-between">
-                  Từ vựng chứa {selectedKanji.character}
-                  {!loadingRelated && (
+                  <span>Từ vựng chứa {selectedKanji.character}</span>
+                  <div className="flex items-center gap-2">
+                    {loadingRelated && (
+                      <span className="text-[10px] font-medium text-indigo-500 dark:text-indigo-400 flex items-center gap-1">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Đang đồng bộ...
+                      </span>
+                    )}
                     <span className="text-xs font-medium text-slate-500 bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-full">
                       {(relatedVocabularies || []).length} từ
                     </span>
-                  )}
+                  </div>
                 </h4>
                 
-                {loadingRelated ? (
+                {loadingRelated && (relatedVocabularies || []).length === 0 ? (
                   <div className="text-center p-8 text-slate-500 flex flex-col items-center">
                     <Loader2 className="w-6 h-6 animate-spin mb-2 text-indigo-500" />
                     <span className="text-xs">Đang tìm từ vựng trong CSDL...</span>
                   </div>
                 ) : (relatedVocabularies || []).length === 0 ? (
-                <div className="text-center p-8 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl text-slate-500 dark:text-slate-400 text-sm">
-                  Chưa có từ vựng nào trong CSDL chứa Hán tự này.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {(relatedVocabularies || []).map(vocab => (
-                    <div 
-                      key={vocab.id}
-                      onClick={() => setEditingVocab(vocab)}
-                      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-500 rounded-xl p-3 cursor-pointer group transition-all hover:shadow-md"
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="text-lg font-black text-slate-800 dark:text-slate-100">{vocab.word}</span>
-                        <Edit3 className="w-4 h-4 text-slate-400 group-hover:text-indigo-500 transition-colors opacity-0 group-hover:opacity-100" />
+                  <div className="text-center p-8 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl text-slate-500 dark:text-slate-400 text-sm">
+                    Chưa có từ vựng nào trong CSDL chứa Hán tự này.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {(relatedVocabularies || []).map(vocab => (
+                      <div 
+                        key={vocab.id}
+                        onClick={() => setEditingVocab(vocab)}
+                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-500 rounded-xl p-3 cursor-pointer group transition-all hover:shadow-md"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="text-lg font-black text-slate-800 dark:text-slate-100">{vocab.word}</span>
+                          <Edit3 className="w-4 h-4 text-slate-400 group-hover:text-indigo-500 transition-colors opacity-0 group-hover:opacity-100" />
+                        </div>
+                        <div className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1">
+                          {vocab.reading || "---"}
+                        </div>
+                        <div className="text-sm font-medium text-emerald-600 dark:text-emerald-400 line-clamp-1">
+                          {vocab.meaning}
+                        </div>
                       </div>
-                      <div className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1">
-                        {vocab.reading || "---"}
-                      </div>
-                      <div className="text-sm font-medium text-emerald-600 dark:text-emerald-400 line-clamp-1">
-                        {vocab.meaning}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </div>,
+        document.body
       )}
 
       {/* Tái sử dụng VocabularyEditModal */}
