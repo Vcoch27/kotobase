@@ -238,7 +238,7 @@ const fetchRawKanjiNotesMap = async (): Promise<Record<string, CachedKanjiNote>>
 
 const getPersistentKanjiNotes = unstable_cache(
   fetchRawKanjiNotesMap,
-  ['all-kanji-notes-map-v2'],
+  ['all-kanji-notes-map-v1'],
   { tags: ['kanji_notes'], revalidate: KANJI_DATA_TTL_SECONDS }
 );
 
