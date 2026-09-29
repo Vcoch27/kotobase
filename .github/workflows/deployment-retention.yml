@@ -1,0 +1,49 @@
+name: Retain recent production deployments
+
+on:
+  deployment_status:
+  workflow_dispatch:
+
+permissions:
+  deployments: write
+
+concurrency:
+  group: production-deployment-retention
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' &&
+       startsWith(github.event.deployment.environment, 'Production'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Keep 10 latest GitHub production deployments
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          rows=$(gh api "repos/$GITHUB_REPOSITORY/deployments?per_page=100" --paginate \
+            --jq '.[] | select(.environment | startswith("Production")) | [.created_at, (.id | tostring)] | @tsv')
+          mapfile -t old_ids < <(printf '%s\n' "$rows" | sort -r | tail -n +11 | cut -f2)
+
+          for id in "${old_ids[@]}"; do
+            endpoint="repos/$GITHUB_REPOSITORY/deployments/$id"
+            if response=$(gh api -X DELETE "$endpoint" 2>&1); then
+              echo "Deleted deployment $id"
+              continue
+            fi
+
+            if [[ "$response" != *"active deployment"* ]]; then
+              echo "$response" >&2
+              exit 1
+            fi
+
+            gh api -X POST "$endpoint/statuses" \
+              -f state=inactive \
+              -f description='Retired during deployment history cleanup' >/dev/null
+            gh api -X DELETE "$endpoint" >/dev/null
+            echo "Deleted deployment $id"
+          done
