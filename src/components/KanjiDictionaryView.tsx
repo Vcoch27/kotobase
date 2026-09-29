@@ -5,7 +5,6 @@ import { createPortal } from "react-dom";
 import { Search, Library, FileText, BookOpen, Edit3, Loader2, Type, Volume2, Wand2, X } from "lucide-react";
 import Link from "next/link";
 import { upsertKanjiNote } from "@/app/actions/kanji";
-import { getVocabulariesByKanji } from "@/app/actions/vocabulary";
 import { VocabularyEditModal } from "./VocabularyEditModal";
 import { KanjiLookupResults } from "./KanjiLookupResults";
 import { playAudio } from "@/lib/tts-utils";
@@ -38,12 +37,14 @@ interface KanjiDictionaryViewProps {
   vocabularies: VocabularyData[];
   folders: any[];
   initialKanjiNotes: KanjiNote[];
+  notesUnavailable?: boolean;
   onRefreshVocab?: () => void;
 }
 
-export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, onRefreshVocab }: KanjiDictionaryViewProps) {
+export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, notesUnavailable = false, onRefreshVocab }: KanjiDictionaryViewProps) {
   // Khởi tạo state trực tiếp từ initialKanjiNotes (không cần fetch nữa)
   const [kanjiNotes, setKanjiNotes] = useState<KanjiNote[]>(initialKanjiNotes || []);
+  const [usingSavedNotes, setUsingSavedNotes] = useState(false);
   const [loading] = useState(false); // Không cần loading vì dữ liệu đã có sẵn từ Server
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
@@ -68,7 +69,30 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
     setMounted(true);
   }, []);
 
-  // Nạp trước dữ liệu 295 Hán tự vào cache bộ nhớ ngay khi trang tải xong
+  useEffect(() => {
+    try {
+      if (initialKanjiNotes.length > 0) {
+        const map = Object.fromEntries(initialKanjiNotes.map((note) => [note.character, note]));
+        localStorage.setItem("kotobase_cached_kanji_notes", JSON.stringify(map));
+        setKanjiNotes(initialKanjiNotes);
+        setUsingSavedNotes(false);
+      } else if (notesUnavailable) {
+        const saved = localStorage.getItem("kotobase_cached_kanji_notes");
+        const map = saved ? JSON.parse(saved) : {};
+        const notes = Object.values(map).filter((note): note is KanjiNote =>
+          !!note && typeof note === "object" && typeof (note as KanjiNote).character === "string"
+        );
+        if (notes.length > 0) {
+          setKanjiNotes(notes);
+          setUsingSavedNotes(true);
+        }
+      }
+    } catch (error) {
+      console.warn("Không thể đọc bộ nhớ Hán tự trên trình duyệt:", error);
+    }
+  }, [initialKanjiNotes, notesUnavailable]);
+
+  // Nạp trước ghi chú Hán tự vào cache trình duyệt ngay khi trang tải xong
   useEffect(() => {
     if (initialKanjiNotes && initialKanjiNotes.length > 0) {
       primeKanjiDetailCache(initialKanjiNotes);
@@ -114,10 +138,13 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
 
         // Fetch qua API endpoint chuyên dụng
         fetch(`/api/kanji/vocabularies?kanji=${encodeURIComponent(char)}`)
-          .then((res) => res.json())
+          .then((res) => {
+            if (!res.ok) throw new Error(`Related vocabulary request failed: ${res.status}`);
+            return res.json();
+          })
           .then((json) => {
             if (isMounted) {
-              const list = Array.isArray(json.data) && json.data.length > 0 ? json.data : (Array.isArray(json.data) ? json.data : localMatches);
+              const list = Array.isArray(json.data) ? json.data : localMatches;
               relatedVocabsCache.current.set(char, list);
               setRelatedVocabularies(list);
               setLoadingRelated(false);
@@ -125,21 +152,7 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
           })
           .catch((err) => {
             console.error("Lỗi fetch API từ vựng liên quan:", err);
-            // Fallback sang Server Action nếu API có lỗi kết nối
-            getVocabulariesByKanji(char)
-              .then((vocabs) => {
-                if (isMounted) {
-                  const list = Array.isArray(vocabs) ? vocabs : localMatches;
-                  relatedVocabsCache.current.set(char, list);
-                  setRelatedVocabularies(list);
-                  setLoadingRelated(false);
-                }
-              })
-              .catch(() => {
-                if (isMounted) {
-                  setLoadingRelated(false);
-                }
-              });
+            if (isMounted) setLoadingRelated(false);
           });
       }
     } else {
@@ -180,6 +193,14 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
       const updatedKanji = { ...selectedKanji, hanviet: res.data.hanviet, meaning: res.data.meaning, mnemonic: res.data.mnemonic };
       setSelectedKanji(updatedKanji);
       setKanjiNotes(prev => prev.map(k => k.id === updatedKanji.id ? updatedKanji : k));
+      try {
+        const saved = localStorage.getItem("kotobase_cached_kanji_notes");
+        const map = saved ? JSON.parse(saved) : {};
+        map[updatedKanji.character] = updatedKanji;
+        localStorage.setItem("kotobase_cached_kanji_notes", JSON.stringify(map));
+      } catch (error) {
+        console.warn("Không thể lưu ghi chú Hán tự trên trình duyệt:", error);
+      }
       
       // Cập nhật kanji-cache
       const currentDetail = getCachedKanjiDetail(selectedKanji.character) || {
@@ -237,7 +258,11 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">Tra cứu Hán tự</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Có tổng cộng {(kanjiNotes || []).length} Hán tự đã lưu ghi chú</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {notesUnavailable && kanjiNotes.length === 0
+                ? "Tạm thời không tải được ghi chú Hán tự"
+                : `Có tổng cộng ${kanjiNotes.length} Hán tự đã lưu ghi chú`}
+            </p>
           </div>
         </div>
 
@@ -261,6 +286,13 @@ export function KanjiDictionaryView({ vocabularies, folders, initialKanjiNotes, 
           />
         </div>
       </div>
+      {notesUnavailable && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
+          {usingSavedNotes
+            ? "Không thể tải dữ liệu mới từ Firestore. Đây là danh sách Hán tự đã lưu trên trình duyệt; thay đổi mới sẽ xuất hiện khi dữ liệu tải lại được."
+            : "Không thể tải dữ liệu Hán tự từ Firestore và trình duyệt chưa có bản lưu. Hãy thử lại sau."}
+        </div>
+      )}
 
       {/* Grid danh sách Hán tự */}
       {(filteredKanji || []).length === 0 ? (

@@ -9,22 +9,25 @@ export const revalidate = 0;
 
 export default async function KanjiPage() {
   // Đọc dữ liệu phía server
-  const [currentUser, vocabData, folderData, kanjiData] = await Promise.all([
+  const [currentUser, vocabData, folderData, kanjiResult] = await Promise.all([
     getCurrentUser(),
     getVocabularies("all"),
-    getFolders(),
-    fetchAllKanjiNotes(),
+    getFolders(false),
+    fetchAllKanjiNotes()
+      .then((notes) => ({ notes, failed: false }))
+      .catch(() => ({ notes: [], failed: true })),
   ]);
 
   const vocabularies = Array.isArray(vocabData) ? vocabData : [];
   const folders = Array.isArray(folderData) ? folderData : [];
-  const initialKanjiNotes = Array.isArray(kanjiData) ? kanjiData : [];
+  const initialKanjiNotes = Array.isArray(kanjiResult.notes) ? kanjiResult.notes : [];
 
   return (
     <KanjiPageClient
       vocabularies={vocabularies}
       folders={folders}
       initialKanjiNotes={initialKanjiNotes}
+      notesUnavailable={kanjiResult.failed}
       currentUser={currentUser ? {
         uid: currentUser.uid,
         email: currentUser.email,

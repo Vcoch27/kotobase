@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/session";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { getCachedFoldersRaw, getCachedFolderVocabCount } from "@/lib/cache";
 
-export async function getFolders() {
+export async function getFolders(includeCounts = true) {
   try {
     const currentUser = await getCurrentUser();
     const isAdmin = currentUser?.email === "hoangtungmy123@gmail.com";
@@ -55,14 +55,16 @@ export async function getFolders() {
       }
     }));
 
-    // Tối ưu hoá: Dùng count() để đếm số lượng từ vựng trong mỗi thư mục hiển thị
-    await Promise.all(visibleFolders.map(async (folder) => {
-      try {
-        folder._count.folderVocabularies = await getCachedFolderVocabCount(folder.id);
-      } catch (e) {
-        folder._count.folderVocabularies = 0;
-      }
-    }));
+    // The Kanji editor only needs folder names; avoid a count query per folder there.
+    if (includeCounts) {
+      await Promise.all(visibleFolders.map(async (folder) => {
+        try {
+          folder._count.folderVocabularies = await getCachedFolderVocabCount(folder.id);
+        } catch (e) {
+          folder._count.folderVocabularies = 0;
+        }
+      }));
+    }
     
     return visibleFolders;
   } catch (error: any) {

@@ -202,11 +202,19 @@ export interface CachedKanjiNote {
   updatedAt?: string;
 }
 
-// In-memory process cache (Tồn tại trong RAM server Node.js, 0ms, 0 read, chống lỗi missing incrementalCache)
+// Keep hot results briefly in each process. Next's Data Cache is the shared layer.
+const KANJI_DATA_TTL_SECONDS = 6 * 60 * 60;
+const HOT_CACHE_TTL_MS = 60 * 1000;
+const RETRY_DELAY_MS = 5 * 60 * 1000;
+
 let memoryKanjiNotesCache: { data: Record<string, CachedKanjiNote>; expiresAt: number } | null = null;
+let pendingKanjiNotes: Promise<Record<string, CachedKanjiNote>> | null = null;
+let retryKanjiNotesAt = 0;
+let kanjiNotesError: Error | null = null;
 
 export const clearKanjiNotesMemoryCache = () => {
   memoryKanjiNotesCache = null;
+  retryKanjiNotesAt = 0;
 };
 
 const fetchRawKanjiNotesMap = async (): Promise<Record<string, CachedKanjiNote>> => {
@@ -228,38 +236,53 @@ const fetchRawKanjiNotesMap = async (): Promise<Record<string, CachedKanjiNote>>
   return map;
 };
 
+const getPersistentKanjiNotes = unstable_cache(
+  fetchRawKanjiNotesMap,
+  ['all-kanji-notes-map-v2'],
+  { tags: ['kanji_notes'], revalidate: KANJI_DATA_TTL_SECONDS }
+);
+
 export const getCachedAllKanjiNotes = async (): Promise<Record<string, CachedKanjiNote>> => {
   const now = Date.now();
-  // 1. Kiểm tra RAM cache trước (siêu tốc 0ms, 0 lượt đọc Firebase)
-  if (memoryKanjiNotesCache && now < memoryKanjiNotesCache.expiresAt && Object.keys(memoryKanjiNotesCache.data).length > 0) {
+  if (memoryKanjiNotesCache && now < memoryKanjiNotesCache.expiresAt) {
     return memoryKanjiNotesCache.data;
   }
+  if (pendingKanjiNotes) return pendingKanjiNotes;
+  if (now < retryKanjiNotesAt) {
+    if (memoryKanjiNotesCache) return memoryKanjiNotesCache.data;
+    throw kanjiNotesError || new Error('Kanji notes are temporarily unavailable');
+  }
 
-  // 2. Thử Next.js Data Cache nếu có sẵn trong runtime
-  try {
-    const cachedFn = unstable_cache(
-      fetchRawKanjiNotesMap,
-      ['all-kanji-notes-map-v1'],
-      { tags: ['kanji_notes'], revalidate: 3600 }
-    );
-    const data = await cachedFn();
-    if (data && Object.keys(data).length > 0) {
-      memoryKanjiNotesCache = { data, expiresAt: now + 3600 * 1000 };
+  pendingKanjiNotes = (async () => {
+    try {
+      // A shared cache entry prevents every Vercel instance from scanning the collection.
+      const data = await getPersistentKanjiNotes();
+      memoryKanjiNotesCache = { data, expiresAt: Date.now() + HOT_CACHE_TTL_MS };
+      kanjiNotesError = null;
       return data;
+    } catch (error) {
+      // Some Server Action contexts have no incremental cache. Read once there,
+      // while keeping the same single-flight and retry protection.
+      if (String(error).includes('incrementalCache missing')) {
+        try {
+          const data = await fetchRawKanjiNotesMap();
+          memoryKanjiNotesCache = { data, expiresAt: Date.now() + KANJI_DATA_TTL_SECONDS * 1000 };
+          kanjiNotesError = null;
+          return data;
+        } catch (fallbackError) {
+          error = fallbackError;
+        }
+      }
+      console.error('Lỗi khi đọc Firestore kanji_notes:', error);
+      kanjiNotesError = error instanceof Error ? error : new Error(String(error));
+      retryKanjiNotesAt = Date.now() + RETRY_DELAY_MS;
+      if (memoryKanjiNotesCache) return memoryKanjiNotesCache.data;
+      throw kanjiNotesError;
+    } finally {
+      pendingKanjiNotes = null;
     }
-  } catch (e) {
-    // unstable_cache incrementalCache missing trong Server Action context, tự động fallback xuống bước 3
-  }
-
-  // 3. Fallback: Đọc Firestore 1 lần duy nhất và lưu vào RAM trong 1 giờ
-  try {
-    const data = await fetchRawKanjiNotesMap();
-    memoryKanjiNotesCache = { data, expiresAt: now + 3600 * 1000 };
-    return data;
-  } catch (err) {
-    console.error("Lỗi khi đọc Firestore kanji_notes:", err);
-    return memoryKanjiNotesCache?.data || {};
-  }
+  })();
+  return pendingKanjiNotes;
 };
 
 // ==========================================
@@ -282,9 +305,13 @@ let memoryAllVocabsCache: {
   vocabs: CachedVocabSummary[];
   expiresAt: number;
 } | null = null;
+let pendingAllVocabs: Promise<CachedVocabSummary[]> | null = null;
+let retryAllVocabsAt = 0;
+let allVocabsError: Error | null = null;
 
 export const clearAllVocabsMemoryCache = () => {
   memoryAllVocabsCache = null;
+  retryAllVocabsAt = 0;
 };
 
 const fetchRawAllVocabsWithFolders = async (): Promise<CachedVocabSummary[]> => {
@@ -330,20 +357,50 @@ const fetchRawAllVocabsWithFolders = async (): Promise<CachedVocabSummary[]> => 
   return list;
 };
 
+const getPersistentAllVocabsForKanji = unstable_cache(
+  fetchRawAllVocabsWithFolders,
+  ['all-vocabs-for-kanji-v2'],
+  { tags: ['vocabularies', 'folders'], revalidate: KANJI_DATA_TTL_SECONDS }
+);
+
 export const getCachedAllVocabsForKanji = async (): Promise<CachedVocabSummary[]> => {
   const now = Date.now();
-  if (memoryAllVocabsCache && now < memoryAllVocabsCache.expiresAt && memoryAllVocabsCache.vocabs.length > 0) {
+  if (memoryAllVocabsCache && now < memoryAllVocabsCache.expiresAt) {
     return memoryAllVocabsCache.vocabs;
   }
-
-  try {
-    const vocabs = await fetchRawAllVocabsWithFolders();
-    memoryAllVocabsCache = { vocabs, expiresAt: now + 3600 * 1000 };
-    return vocabs;
-  } catch (err) {
-    console.error("Lỗi khi nạp bộ nhớ cache từ vựng:", err);
-    return memoryAllVocabsCache?.vocabs || [];
+  if (pendingAllVocabs) return pendingAllVocabs;
+  if (now < retryAllVocabsAt) {
+    if (memoryAllVocabsCache) return memoryAllVocabsCache.vocabs;
+    throw allVocabsError || new Error('Kanji vocabulary is temporarily unavailable');
   }
+
+  pendingAllVocabs = (async () => {
+    try {
+      const vocabs = await getPersistentAllVocabsForKanji();
+      memoryAllVocabsCache = { vocabs, expiresAt: Date.now() + HOT_CACHE_TTL_MS };
+      allVocabsError = null;
+      return vocabs;
+    } catch (error) {
+      if (String(error).includes('incrementalCache missing')) {
+        try {
+          const vocabs = await fetchRawAllVocabsWithFolders();
+          memoryAllVocabsCache = { vocabs, expiresAt: Date.now() + KANJI_DATA_TTL_SECONDS * 1000 };
+          allVocabsError = null;
+          return vocabs;
+        } catch (fallbackError) {
+          error = fallbackError;
+        }
+      }
+      console.error('Lỗi khi nạp bộ nhớ cache từ vựng:', error);
+      allVocabsError = error instanceof Error ? error : new Error(String(error));
+      retryAllVocabsAt = Date.now() + RETRY_DELAY_MS;
+      if (memoryAllVocabsCache) return memoryAllVocabsCache.vocabs;
+      throw allVocabsError;
+    } finally {
+      pendingAllVocabs = null;
+    }
+  })();
+  return pendingAllVocabs;
 };
 
 

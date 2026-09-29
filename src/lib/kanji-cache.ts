@@ -84,7 +84,10 @@ export async function fetchKanjiDetailWithCache(character: string): Promise<Kanj
   // 3. Perform network fetch
   const fetchPromise = (async () => {
     try {
-      const res = await fetch(`/api/kanji/lookup?query=${encodeURIComponent(char)}`);
+      const res = await fetch(`/api/kanji/lookup?query=${encodeURIComponent(char)}`, {
+        signal: AbortSignal.timeout(12000),
+      });
+      if (!res.ok) return null;
       const data = await res.json();
       if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
         const detail = data.data[0] as KanjiDetail;

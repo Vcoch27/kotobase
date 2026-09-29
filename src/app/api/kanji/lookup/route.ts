@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractKanji } from "@/lib/kanji-parser";
-import { adminDb } from "@/lib/firebase-admin";
+import { getCachedAllKanjiNotes } from "@/lib/cache";
 
 export interface KanjiDetail {
   kanji: string;
@@ -24,38 +24,10 @@ export interface KanjiDetail {
 async function attachSavedNotes(list: KanjiDetail[]): Promise<KanjiDetail[]> {
   if (!list || list.length === 0) return [];
   try {
-    const chars = list.map((item) => item.kanji).filter(Boolean);
-    const notesMap = new Map<string, any>();
-
-    // 1. Thử truy vấn hàng loạt qua 'in' query
-    const chunkSize = 10;
-    for (let i = 0; i < chars.length; i += chunkSize) {
-      const chunk = chars.slice(i, i + chunkSize);
-      const snapshot = await adminDb.collection("kanji_notes")
-        .where("character", "in", chunk)
-        .get();
-      snapshot.docs.forEach((doc) => {
-        const d = doc.data();
-        if (d.character) notesMap.set(d.character, d);
-      });
-    }
-
-    // 2. Thử tìm thêm theo doc ID trực tiếp nếu chưa có trong map
-    await Promise.all(
-      chars.map(async (char) => {
-        if (!notesMap.has(char)) {
-          try {
-            const directDoc = await adminDb.collection("kanji_notes").doc(char).get();
-            if (directDoc.exists) {
-              notesMap.set(char, directDoc.data());
-            }
-          } catch (e) {}
-        }
-      })
-    );
+    const notesMap = await getCachedAllKanjiNotes();
 
     return list.map((item) => {
-      const saved = notesMap.get(item.kanji);
+      const saved = notesMap[item.kanji];
       if (saved) {
         return {
           ...item,
@@ -102,6 +74,7 @@ export async function GET(request: NextRequest) {
           page: 1,
           limit: 10
         }),
+        signal: AbortSignal.timeout(5000),
         next: { revalidate: 86400 } // Cache 24h
       });
 
@@ -197,7 +170,9 @@ export async function GET(request: NextRequest) {
     if (extracted.length > 0) {
       kanjiList = extracted;
     } else {
-      const jishoRes = await fetch(`https://jisho.org/api/v1/search/words?keyword=${encodeURIComponent(query)}`);
+      const jishoRes = await fetch(`https://jisho.org/api/v1/search/words?keyword=${encodeURIComponent(query)}`, {
+        signal: AbortSignal.timeout(5000),
+      });
       if (jishoRes.ok) {
         const jishoData = await jishoRes.json();
         const foundKanji = new Set<string>();
@@ -221,7 +196,8 @@ export async function GET(request: NextRequest) {
       targetKanji.map(async (char) => {
         try {
           const res = await fetch(`https://kanjiapi.dev/v1/kanji/${encodeURIComponent(char)}`, {
-            next: { revalidate: 86400 }
+            next: { revalidate: 86400 },
+            signal: AbortSignal.timeout(5000),
           });
           if (res.ok) {
             const json = await res.json();

@@ -4,7 +4,7 @@ import { getCachedAllKanjiNotes } from "@/lib/cache";
 /**
  * GET /api/kanji/notes-map
  * Trả về toàn bộ Map {character -> {hanviet, meaning, mnemonic}} đã lưu trong Firestore.
- * Dùng bộ nhớ đệm RAM phía server, tiêu tốn 0 lượt đọc Firebase sau lần đầu tiên.
+ * Dùng Data Cache phía server để tránh quét Firestore trên mỗi lần mở trang.
  * Client (FlashcardView) gọi endpoint này để tải dữ liệu mẹo nhớ.
  */
 export async function GET() {
@@ -12,7 +12,7 @@ export async function GET() {
     const map = await getCachedAllKanjiNotes();
     return NextResponse.json(map, {
       headers: {
-        // Tell browser to not cache, rely on Next.js server-side cache (unstable_cache)
+        // Client keeps its own local copy; the server uses Next's Data Cache.
         "Cache-Control": "public, max-age=0, must-revalidate",
       },
     });

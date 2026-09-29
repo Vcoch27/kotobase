@@ -1,46 +1,15 @@
 "use server";
 
 import { adminDb } from "@/lib/firebase-admin";
-import { revalidatePath, revalidateTag, unstable_noStore as noStore } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getCachedAllKanjiNotes, clearKanjiNotesMemoryCache, type CachedKanjiNote } from "@/lib/cache";
 
 export async function getKanjiNote(character: string): Promise<{ id: string; hanviet?: string; mnemonic?: string; meaning?: string; character: string } | null> {
-  noStore();
   if (!character) return null;
   const trimmed = character.trim();
   try {
-    // 1. Thử tìm trực tiếp theo Doc ID = character
-    const docRef = await adminDb.collection("kanji_notes").doc(trimmed).get();
-    if (docRef.exists) {
-      const data = docRef.data() as any;
-      return {
-        id: docRef.id,
-        character: data.character || trimmed,
-        hanviet: data.hanviet || "",
-        meaning: data.meaning || "",
-        mnemonic: data.mnemonic || "",
-      };
-    }
-
-    // 2. Fallback: Tìm theo field character
-    const snapshot = await adminDb.collection("kanji_notes")
-      .where("character", "==", trimmed)
-      .limit(1)
-      .get();
-
-    if (!snapshot.empty) {
-      const doc = snapshot.docs[0];
-      const data = doc.data() as any;
-      return {
-        id: doc.id,
-        character: data.character || trimmed,
-        hanviet: data.hanviet || "",
-        meaning: data.meaning || "",
-        mnemonic: data.mnemonic || "",
-      };
-    }
-
-    return null;
+    const note = (await getCachedAllKanjiNotes())[trimmed];
+    return note ? { id: trimmed, ...note } : null;
   } catch (error) {
     console.error("Lỗi khi lấy thông tin Hán tự:", error);
     return null;
@@ -114,8 +83,7 @@ export async function upsertKanjiNote(
 }
 
 /**
- * Lấy toàn bộ Map Hán tự đã lưu (Kèm Mnemonic) có áp dụng Next.js Data Cache.
- * Tối ưu cực đại Quota Firebase (hầu hết các lượt gọi đều lấy từ Cache RAM 0 lượt đọc).
+ * Lấy toàn bộ ghi chú qua Data Cache; Firestore chỉ được đọc khi cache cần làm mới.
  */
 export async function getAllKanjiNotesMap(): Promise<Record<string, CachedKanjiNote>> {
   try {
@@ -129,27 +97,10 @@ export async function getAllKanjiNotesMap(): Promise<Record<string, CachedKanjiN
 export async function getBulkKanjiNotes(characters: string[]) {
   if (!characters.length) return [];
   try {
-    // Firestore 'in' query has a limit of 10 items.
-    // If characters list is large, we need to chunk it.
-    const chunkSize = 10;
-    const chunks = [];
-    for (let i = 0; i < characters.length; i += chunkSize) {
-      chunks.push(characters.slice(i, i + chunkSize));
-    }
-
-    const allNotes: any[] = [];
-    
-    for (const chunk of chunks) {
-      const snapshot = await adminDb.collection("kanji_notes")
-        .where("character", "in", chunk)
-        .get();
-        
-      snapshot.docs.forEach(doc => {
-        allNotes.push({ id: doc.id, ...doc.data() });
-      });
-    }
-    
-    return allNotes;
+    const notes = await getCachedAllKanjiNotes();
+    return Array.from(new Set(characters.map((char) => char.trim())))
+      .filter((char) => !!notes[char])
+      .map((char) => ({ id: char, ...notes[char] }));
   } catch (error) {
     console.error("Lỗi khi lấy danh sách Hán tự:", error);
     return [];
@@ -157,8 +108,7 @@ export async function getBulkKanjiNotes(characters: string[]) {
 }
 
 export async function fetchAllKanjiNotes() {
-  // Dùng getCachedAllKanjiNotes() để tận dụng cache 1 giờ (in-memory + Next.js cache)
-  // Tránh đọc Firestore mỗi lần tải trang → tiết kiệm quota đáng kể
+  // Data Cache dùng chung giữa các request; lỗi đọc được báo cho trang để dùng bản lưu cục bộ.
   try {
     const notesMap = await getCachedAllKanjiNotes();
     const notes = Object.values(notesMap).map((note: CachedKanjiNote) => ({
@@ -178,6 +128,6 @@ export async function fetchAllKanjiNotes() {
     return notes;
   } catch (error) {
     console.error("Lỗi khi lấy toàn bộ Hán tự:", error);
-    return [];
+    throw error;
   }
 }

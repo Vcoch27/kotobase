@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { getKanjiNote, upsertKanjiNote } from "@/app/actions/kanji";
+import { upsertKanjiNote } from "@/app/actions/kanji";
 import { X, Save, Sparkles, BookOpen, FileText, Type, Volume2, Wand2, Pencil, Eye } from "lucide-react";
 import { playAudio } from "@/lib/tts-utils";
 import { KanjiDetail } from "@/app/api/kanji/lookup/route";
@@ -77,14 +77,11 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
 
       setLoading(true);
 
-      Promise.all([
-        getKanjiNote(targetChar).catch(() => null),
-        fetchKanjiDetailWithCache(targetChar),
-      ]).then(([dbRes, apiData]) => {
+      fetchKanjiDetailWithCache(targetChar).then((apiData) => {
         if (!isCurrent) return;
         if (apiData) setApiDetail(apiData);
 
-        const savedData = dbRes || (apiData?.isSaved ? apiData.savedNote : null) || localNote;
+        const savedData = (apiData?.isSaved ? apiData.savedNote : null) || localNote;
 
         if (savedData) {
           const finalHanviet = savedData.hanviet || apiData?.hanviet || initialHanviet || "";

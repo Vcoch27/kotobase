@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/kanji/vocabularies?kanji=津
  * Tìm tất cả các từ vựng trong CSDL chứa Hán tự này.
- * Sử dụng bộ nhớ RAM cache trên server (< 1ms, 0 lượt đọc Firestore sau lần nạp đầu).
+ * Sử dụng Data Cache phía server; Firestore chỉ được quét khi cache cần làm mới.
  */
 export async function GET(request: NextRequest) {
   try {
