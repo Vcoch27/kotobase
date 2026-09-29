@@ -1281,6 +1281,17 @@ export function Dashboard({ currentUser }: DashboardProps) {
         </div>
       </main>
 
+      <footer className="relative z-10 w-full border-t border-slate-200/70 bg-white/70 px-4 py-4 text-[11px] text-slate-500 dark:border-slate-800/70 dark:bg-slate-950/70 dark:text-slate-400">
+        <div className="mx-auto flex max-w-screen-2xl flex-wrap items-center justify-center gap-x-4 gap-y-2 text-center sm:justify-between">
+          <span>© {new Date().getFullYear()} Nguyễn Văn Hoàng · KotoBase</span>
+          <nav aria-label="Liên hệ và mạng xã hội" className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            <a href="https://github.com/Vcoch27" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 hover:underline focus-visible:rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500">GitHub</a>
+            <a href="https://www.instagram.com/vcoch_27/" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 hover:underline focus-visible:rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500">Instagram</a>
+            <a href="mailto:vanhoang.vcoch27@gmail.com" className="hover:text-indigo-600 hover:underline focus-visible:rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500">Email</a>
+          </nav>
+        </div>
+      </footer>
+
       {/* Modal Tạo Thư Mục */}
       {showFolderModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] bg-slate-950/60 backdrop-blur-sm animate-fadeIn">

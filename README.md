@@ -1,143 +1,78 @@
-# KotoBase - Nền tảng Quản lý và Học Từ vựng Tiếng Nhật Thông minh
+# KotoBase — Học từ vựng tiếng Nhật theo cách của bạn
 
-KotoBase là ứng dụng web hiện đại hỗ trợ người học tiếng Nhật xây dựng, tổ chức và ghi nhớ hệ thống từ vựng, chữ Hán (Kanji) theo cấu trúc thư mục lồng nhau, kết hợp các phương pháp ghi nhớ khoa học (Spaced Repetition System - Anki SM-2, Active Recall).
+**Japanese vocabulary learning, flashcards & Kanji dictionary.** KotoBase giúp bạn lưu từ mới theo chủ đề, tra cứu và ôn tập ngay trên cùng một nơi. Mở ứng dụng tại **[kotobase.vanhoang.online](https://kotobase.vanhoang.online/)**.
 
----
+## Bắt đầu học
 
-## 1. Giới thiệu tổng quan
+1. Tạo thư mục cho giáo trình, chủ đề hoặc cấp độ JLPT.
+2. Thêm từ vựng từng từ, tra cứu qua Jisho hoặc nhập cả danh sách bằng JSON. Nếu có Gemini API key cá nhân, bạn có thể dùng AI để phân tích văn bản thành danh sách từ rồi xem trước trước khi lưu.
+3. Chọn một hoặc nhiều thư mục và học bằng chế độ phù hợp: xem tổng quan, ôn tập che đáp án, flashcard hoặc quiz gõ phím.
+4. Nhấn vào chữ Hán trong từ vựng để xem cách đọc, nghĩa và các từ ghép liên quan.
 
-KotoBase được thiết kế nhằm giải quyết bài toán phân mảnh dữ liệu khi học tiếng Nhật:
-- Quản lý từ vựng theo cây thư mục nhiều cấp (Nested Folders), hỗ trợ thao tác kéo thả.
-- Tự động tích hợp từ điển trực tuyến (Jisho, Mazii) để tra cứu nhanh ngữ nghĩa, âm Hán Việt, cách đọc On/Kun, cấp độ JLPT và số nét.
-- Đa dạng hóa hình thức ôn tập thông qua các chế độ: Flashcard SRS, Focus Recall và Trắc nghiệm gõ phím (Typing Quiz).
-- Hỗ trợ phát âm chuẩn tiếng Nhật qua Web Speech API / TTS.
+> Quiz gõ phím yêu cầu đăng nhập Google. Một số khả năng tra cứu và tạo nội dung bằng AI cần kết nối mạng hoặc API key riêng.
 
----
+## Học từ vựng
 
-## 2. Các tính năng chính
+| Tính năng | Bạn có thể làm gì? |
+| --- | --- |
+| **Kho từ vựng** | Tạo, sửa, tìm kiếm và sắp xếp từ theo cây thư mục nhiều cấp; chọn nhiều thư mục để học cùng lúc. |
+| **Thêm nhanh & nhập hàng loạt** | Thêm từ ngay trên trang học; dán JSON hoặc để Gemini phân tích danh sách thô, xem trước rồi mới nhập. |
+| **Tra cứu khi học** | Tìm từ bằng chữ Nhật, cách đọc hoặc nghĩa; mở kết quả Jisho từ giao diện học và tương tác trực tiếp với chữ Hán. |
+| **Ôn tập che đáp án** | Tự nhớ cách đọc và nghĩa trước khi hiện đáp án (active recall). |
+| **Flashcard** | Lật thẻ, xáo trộn, tự động chuyển thẻ, nghe phát âm; chọn chế độ thường, theo tiến độ, nghe hoặc Anki SRS. |
+| **Lặp lại ngắt quãng** | Đánh giá thẻ bằng Again / Hard / Good / Easy để lên lịch ôn tiếp theo; tiến độ được lưu trên thiết bị. |
+| **Quiz gõ phím** | Luyện nhập câu trả lời và xem lại các từ cần củng cố sau lượt học. |
+| **Phát âm** | Nghe từ vựng bằng tính năng đọc tiếng Nhật và điều chỉnh cài đặt TTS. |
 
-### 2.1. Quản lý kho từ vựng và Thư mục
-- Cây thư mục đa cấp: Tạo, đổi tên, phân cấp và xóa thư mục với cơ chế cập nhật giao diện tức thì (Optimistic UI).
-- Kéo thả trực quan: Kéo từ vựng thả trực tiếp vào thư mục trên thanh điều hướng bên trái.
-- Thêm nhanh (Quick Add): Tự động kiểm tra trùng lặp từ vựng trong cơ sở dữ liệu khi nhập liệu.
-- Nhập dữ liệu hàng loạt (Bulk Import): Hỗ trợ nhập liệu nhanh danh sách từ vựng theo định dạng phân tách.
+## Các phần học khác
 
-### 2.2. Các chế độ học tập và ôn tập
-- Chế độ Tổng quan (Overview): Hiển thị toàn bộ từ vựng theo bảng, hỗ trợ phân trang, lọc theo thư mục và tương tác nhanh với từng chữ Hán.
-- Chế độ Tập trung (Focus Recall): Ẩn nghĩa và cách đọc để rèn luyện phản xạ nhớ chủ động, hỗ trợ phát âm từng từ.
-- Thẻ ghi nhớ (Flashcard):
-  - Chế độ Thường (Normal): Lật thẻ hai chiều, xáo trộn thứ tự (Shuffle) và hoàn tác.
-  - Chế độ Tiến độ (Progress): Đánh dấu Đã thuộc / Chưa thuộc để lọc danh sách cần ôn lại.
-  - Chế độ Anki SRS: Áp dụng thuật toán lặp lại ngắt quãng (Spaced Repetition System), tự động tính toán chu kỳ ôn tập tiếp theo (Again, Hard, Good, Easy) dựa trên độ khó của từng từ.
-- Sổ tay Hán tự (Kanji Dictionary):
-  - Tự động bóc tách các chữ Hán có trong kho từ vựng.
-  - Hiển thị âm Hán Việt in hoa nổi bật dưới từng chữ Hán.
-  - Tra cứu trực tiếp từ API từ điển Mazii: số nét, cấp độ JLPT, âm On, âm Kun, nghĩa tiếng Việt và mẹo nhớ (Mnemonic).
-- Trắc nghiệm gõ phím (Typing Quiz): Luyện gõ cách đọc từ vựng bằng bàn phím, kiểm tra độ chính xác theo thời gian thực và tổng kết danh sách từ cần củng cố.
+- **[Sổ tay Hán tự](https://kotobase.vanhoang.online/kanji):** xem các chữ Hán đã lưu, âm On/Kun, nghĩa, ghi chú và từ vựng liên quan. Popup tra cứu cũng có trong các chế độ học từ vựng.
+- **[Ngữ pháp](https://kotobase.vanhoang.online/grammar)** và **[mẫu câu](https://kotobase.vanhoang.online/sentences):** lưu nội dung học theo thư mục riêng.
+- **[Luyện nghe N3](https://kotobase.vanhoang.online/listening):** lộ trình luyện nghe 7 tuần.
+- **[Ứng dụng trên điện thoại](https://kotobase.vanhoang.online/download):** giao diện tương thích màn hình nhỏ, hỗ trợ cài đặt PWA và sử dụng dữ liệu từ vựng đã lưu trên máy khi mất kết nối. Trang tải cũng cung cấp bản Android.
+- **Trang quản trị:** quản lý người dùng và theo dõi mức sử dụng Firestore dành cho tài khoản quản trị.
 
-### 2.3. Tối ưu hóa hiệu năng và Trải nghiệm người dùng
-- Cơ chế Debounce thanh tìm kiếm: Giảm thiểu số lượng truy vấn tới máy chủ khi nhập từ khóa.
-- Tải động thành phần (Dynamic Imports): Phân tách các module nặng để tối ưu hóa thời gian hiển thị ban đầu (TTI).
-- Giao diện Sáng / Tối (Dark / Light Mode): Hỗ trợ chuyển đổi chủ đề màu sắc mượt mà.
+KotoBase có giao diện sáng/tối và dùng Firebase Authentication cùng Cloud Firestore để đồng bộ dữ liệu khi trực tuyến.
 
----
+## Công nghệ
 
-## 3. Công nghệ sử dụng
+Next.js 14 (App Router, Server Actions), React 18, TypeScript, Tailwind CSS, Firebase Authentication, Cloud Firestore và Capacitor cho bản ứng dụng di động.
 
-- Framework: Next.js 14 (App Router, Server Actions)
-- Ngôn ngữ: TypeScript
-- Thư viện giao diện: React 18, Tailwind CSS, Lucide Icons
-- Cơ sở dữ liệu: Google Firebase / Cloud Firestore
-- Quản trị giao diện & Chủ đề: Next Themes, Tailwind Merge, CLSX
-- API bên thứ ba: Jisho API, Mazii API
+## Chạy tại máy
 
----
+Yêu cầu Node.js 18.17+ và một dự án Firebase đã bật Authentication, Cloud Firestore.
 
-## 4. Cấu trúc thư mục dự án
-
-```text
-KotoBase/
-├── src/
-│   ├── app/
-│   │   ├── actions/          # Server Actions xử lý dữ liệu (Vocabulary, Folder, Kanji)
-│   │   ├── api/              # API Route Handlers (Jisho Proxy, Kanji Lookup)
-│   │   ├── layout.tsx        # Layout chính của ứng dụng
-│   │   └── page.tsx          # Trang chủ Dashboard
-│   ├── components/           # Các thành phần giao diện người dùng (UI Components)
-│   │   ├── Dashboard.tsx     # Bảng điều khiển trung tâm
-│   │   ├── FolderTree.tsx    # Cây quản lý thư mục
-│   │   ├── OverviewView.tsx  # Bảng tổng quan danh sách từ
-│   │   ├── FocusRecallView.tsx # Giao diện ôn tập phản xạ
-│   │   ├── FlashcardView.tsx # Giao diện Flashcard & Anki SRS
-│   │   ├── KanjiDictionaryView.tsx # Quản lý và tra cứu Hán tự
-│   │   ├── TypingQuizView.tsx # Giao diện trắc nghiệm gõ phím
-│   │   ├── QuickAddForm.tsx  # Form thêm nhanh từ vựng
-│   │   └── ...
-│   ├── hooks/                # Custom React Hooks (useDebounce, ...)
-│   └── lib/                  # Tiện ích bổ trợ (TTS, Anki Algorithm, Firebase Config)
-├── public/                   # Tài nguyên tĩnh
-├── package.json              # Cấu hình phụ thuộc và scripts
-├── tailwind.config.ts        # Cấu hình Tailwind CSS
-└── tsconfig.json             # Cấu hình TypeScript
+```bash
+git clone https://github.com/Vcoch27/kotobase.git
+cd kotobase
+npm install
 ```
 
----
+Tạo `.env.local` với cấu hình Firebase của **dự án riêng**:
 
-## 5. Hướng dẫn cài đặt và chạy môi trường cục bộ
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 
-### 5.1. Yêu cầu hệ thống
-- Node.js phiên bản 18.17.0 trở lên.
-- Trình quản lý gói: npm hoặc yarn hoặc pnpm.
+# Chỉ dùng ở phía máy chủ cho các chức năng cần Firebase Admin SDK.
+FIREBASE_CLIENT_EMAIL=your_service_account_email
+FIREBASE_PRIVATE_KEY=your_service_account_private_key
+```
 
-### 5.2. Các bước cài đặt
+Giữ `FIREBASE_PRIVATE_KEY` ở môi trường máy chủ; không đưa khóa này vào biến `NEXT_PUBLIC_` hoặc commit lên Git. Thiết lập quy tắc Firestore và phương thức đăng nhập Google trong Firebase Console theo dự án của bạn.
 
-1. Sao chép mã nguồn về máy:
-   ```bash
-   git clone <URL_REPOSITORY>
-   cd KotoBase
-   ```
+```bash
+npm run dev
+```
 
-2. Cài đặt các gói phụ thuộc:
-   ```bash
-   npm install
-   ```
+Mở [http://localhost:3000](http://localhost:3000). Để kiểm tra mã nguồn: `npx tsc --noEmit` và `npm run build`.
 
-3. Cấu hình biến môi trường:
-   Tạo file `.env.local` tại thư mục gốc và khai báo các khóa kết nối Firebase:
-   ```env
-   NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
-   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-   NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
-   ```
+## Góp ý & liên hệ
 
-4. Khởi chạy máy chủ phát triển (Development Server):
-   ```bash
-   npm run dev
-   ```
-   Mở trình duyệt và truy cập: `http://localhost:3000`
+Nếu gặp lỗi hoặc có ý tưởng cải thiện trải nghiệm học, hãy mở [GitHub Issue](https://github.com/Vcoch27/kotobase/issues).
 
----
-
-## 6. Lệnh xây dựng dự án
-
-- Kiểm tra lỗi TypeScript:
-  ```bash
-  npm run lint
-  ```
-- Đóng gói dự án (Production Build):
-  ```bash
-  npm run build
-  ```
-- Khởi chạy bản đóng gói:
-  ```bash
-  npm run start
-  ```
-
----
-
-## 7. Giấy phép
-
-Dự án được phát triển phục vụ mục đích học tập và nghiên cứu cá nhân.
+© 2026 Nguyễn Văn Hoàng · [GitHub](https://github.com/Vcoch27) · [Instagram](https://www.instagram.com/vcoch_27/) · [Email](mailto:vanhoang.vcoch27@gmail.com)
