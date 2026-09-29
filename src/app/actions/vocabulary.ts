@@ -7,9 +7,9 @@ import {
   getCachedFoldersRaw,
   getCachedVocabsByFolderId,
   getCachedAllVocabsLimit,
-  getCachedAllVocabsForKanji,
-  clearAllVocabsMemoryCache,
+  getCachedVocabsByKanji,
 } from "@/lib/cache";
+import { extractKanji } from "@/lib/kanji-parser";
 
 export interface CreateVocabInput {
   word: string;
@@ -59,6 +59,7 @@ export async function createVocabulary(input: CreateVocabInput) {
   try {
     const docRef = await adminDb.collection("vocabularies").add({
       word: input.word.trim(),
+      kanjiCharacters: extractKanji(input.word.trim()),
       meaning: input.meaning.trim(),
       reading: input.reading?.trim() || null,
       sinoVietnamese: input.sinoVietnamese?.trim() || null,
@@ -70,7 +71,6 @@ export async function createVocabulary(input: CreateVocabInput) {
       updatedAt: new Date().toISOString(),
     });
 
-    clearAllVocabsMemoryCache();
     revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
     return { success: true, data: { id: docRef.id } };
   } catch (error) {
@@ -118,6 +118,7 @@ export async function createBulkVocabulary(jsonString: string, targetFolderIds?:
 
       batch.set(newDocRef, {
         word: item.word.trim(),
+        kanjiCharacters: extractKanji(item.word.trim()),
         meaning: item.meaning.trim(),
         reading: item.reading?.trim() || null,
         sinoVietnamese: item.sinoVietnamese?.trim() || null,
@@ -133,7 +134,6 @@ export async function createBulkVocabulary(jsonString: string, targetFolderIds?:
 
     await batch.commit();
 
-    clearAllVocabsMemoryCache();
     revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
     return { success: true, count };
   } catch (error) {
@@ -162,7 +162,6 @@ export async function assignVocabularyToFolder(vocabularyId: string, folderId: s
       updatedAt: new Date().toISOString()
     });
 
-    clearAllVocabsMemoryCache();
     revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
     return { success: true };
   } catch (error) {
@@ -336,7 +335,6 @@ export async function deleteVocabulary(id: string) {
     }
 
     await adminDb.collection("vocabularies").doc(id).delete();
-    clearAllVocabsMemoryCache();
     revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
     return { success: true };
   } catch (error) {
@@ -376,7 +374,10 @@ export async function updateVocabulary(id: string, input: Partial<CreateVocabInp
       updatedAt: new Date().toISOString(),
     };
     
-    if (input.word !== undefined) updateData.word = input.word.trim();
+    if (input.word !== undefined) {
+      updateData.word = input.word.trim();
+      updateData.kanjiCharacters = extractKanji(updateData.word);
+    }
     if (input.meaning !== undefined) updateData.meaning = input.meaning.trim();
     if (input.reading !== undefined) updateData.reading = input.reading?.trim() || null;
     if (input.sinoVietnamese !== undefined) updateData.sinoVietnamese = input.sinoVietnamese?.trim() || null;
@@ -385,7 +386,6 @@ export async function updateVocabulary(id: string, input: Partial<CreateVocabInp
     if (input.folderIds !== undefined) updateData.folderIds = input.folderIds;
 
     await adminDb.collection("vocabularies").doc(id).update(updateData);
-    clearAllVocabsMemoryCache();
     revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
     return { success: true };
   } catch (error) {
@@ -398,8 +398,7 @@ export async function getVocabulariesByKanji(character: string) {
   if (!character) return [];
   try {
     const char = character.trim();
-    const allVocabs = await getCachedAllVocabsForKanji();
-    const matches = allVocabs.filter((v) => v.word && v.word.includes(char));
+    const matches = await getCachedVocabsByKanji(char);
 
     // Sort by createdAt desc
     matches.sort((a, b) => {

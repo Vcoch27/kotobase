@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCachedAllVocabsForKanji } from "@/lib/cache";
+import { getCachedVocabsByKanji } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
 
 /**
  * GET /api/kanji/vocabularies?kanji=津
  * Tìm tất cả các từ vựng trong CSDL chứa Hán tự này.
- * Sử dụng Data Cache phía server; Firestore chỉ được quét khi cache cần làm mới.
+ * Dùng chỉ mục kanjiCharacters và Data Cache; chỉ đọc các từ thực sự khớp.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -17,10 +17,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, count: 0, data: [] });
     }
 
-    const allVocabs = await getCachedAllVocabsForKanji();
-    const matches = allVocabs.filter(
-      (v) => v.word && v.word.includes(kanji)
-    );
+    const matches = await getCachedVocabsByKanji(kanji);
 
     // Sắp xếp từ vựng mới nhất lên đầu
     matches.sort((a, b) => {

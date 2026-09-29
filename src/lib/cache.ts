@@ -301,106 +301,47 @@ export interface CachedVocabSummary {
   folderVocabularies?: { folderId: string; folder: { id: string; name: string } }[];
 }
 
-let memoryAllVocabsCache: {
-  vocabs: CachedVocabSummary[];
-  expiresAt: number;
-} | null = null;
-let pendingAllVocabs: Promise<CachedVocabSummary[]> | null = null;
-let retryAllVocabsAt = 0;
-let allVocabsError: Error | null = null;
+// Query only vocabulary documents containing the requested Kanji. Firestore's
+// automatic array-contains index avoids scanning the entire collection.
+export const getCachedVocabsByKanji = async (character: string): Promise<CachedVocabSummary[]> => {
+  const kanji = character.trim();
+  if (!kanji) return [];
 
-export const clearAllVocabsMemoryCache = () => {
-  memoryAllVocabsCache = null;
-  retryAllVocabsAt = 0;
-};
+  return unstable_cache(
+    async () => {
+      const [snapshot, folders] = await Promise.all([
+        adminDb.collection("vocabularies")
+          .where("kanjiCharacters", "array-contains", kanji)
+          .get(),
+        getCachedFoldersRaw(),
+      ]);
+      const folderMap = new Map(folders.map((folder) => [folder.id, { id: folder.id, name: folder.name }]));
 
-const fetchRawAllVocabsWithFolders = async (): Promise<CachedVocabSummary[]> => {
-  const [vocabsSnap, foldersSnap] = await Promise.all([
-    adminDb.collection("vocabularies").get(),
-    adminDb.collection("folders").get(),
-  ]);
-
-  const folderMap = new Map<string, { id: string; name: string }>();
-  foldersSnap.docs.forEach((doc) => {
-    folderMap.set(doc.id, {
-      id: doc.id,
-      name: String(doc.data().name || "Thư mục"),
-    });
-  });
-
-  const list: CachedVocabSummary[] = [];
-  vocabsSnap.docs.forEach((doc) => {
-    const d = doc.data();
-    const word = String(d.word || "").trim();
-    if (!word) return;
-
-    const folderIds: string[] = Array.isArray(d.folderIds) ? d.folderIds : [];
-    const folderVocabularies = folderIds.map((fId) => ({
-      folderId: fId,
-      folder: folderMap.get(fId) || { id: fId, name: "Thư mục" },
-    }));
-
-    list.push({
-      id: doc.id,
-      word,
-      meaning: String(d.meaning || "").trim(),
-      reading: d.reading ? String(d.reading).trim() : null,
-      sinoVietnamese: d.sinoVietnamese ? String(d.sinoVietnamese).trim() : null,
-      example: d.example ? String(d.example).trim() : null,
-      note: d.note ? String(d.note).trim() : null,
-      folderIds,
-      createdAt: typeof d.createdAt === "string" ? d.createdAt : (d.createdAt?.toDate?.().toISOString() || new Date(0).toISOString()),
-      folderVocabularies,
-    });
-  });
-
-  return list;
-};
-
-const getPersistentAllVocabsForKanji = unstable_cache(
-  fetchRawAllVocabsWithFolders,
-  ['all-vocabs-for-kanji-v2'],
-  { tags: ['vocabularies', 'folders'], revalidate: KANJI_DATA_TTL_SECONDS }
-);
-
-export const getCachedAllVocabsForKanji = async (): Promise<CachedVocabSummary[]> => {
-  const now = Date.now();
-  if (memoryAllVocabsCache && now < memoryAllVocabsCache.expiresAt) {
-    return memoryAllVocabsCache.vocabs;
-  }
-  if (pendingAllVocabs) return pendingAllVocabs;
-  if (now < retryAllVocabsAt) {
-    if (memoryAllVocabsCache) return memoryAllVocabsCache.vocabs;
-    throw allVocabsError || new Error('Kanji vocabulary is temporarily unavailable');
-  }
-
-  pendingAllVocabs = (async () => {
-    try {
-      const vocabs = await getPersistentAllVocabsForKanji();
-      memoryAllVocabsCache = { vocabs, expiresAt: Date.now() + HOT_CACHE_TTL_MS };
-      allVocabsError = null;
-      return vocabs;
-    } catch (error) {
-      if (String(error).includes('incrementalCache missing')) {
-        try {
-          const vocabs = await fetchRawAllVocabsWithFolders();
-          memoryAllVocabsCache = { vocabs, expiresAt: Date.now() + KANJI_DATA_TTL_SECONDS * 1000 };
-          allVocabsError = null;
-          return vocabs;
-        } catch (fallbackError) {
-          error = fallbackError;
-        }
-      }
-      console.error('Lỗi khi nạp bộ nhớ cache từ vựng:', error);
-      allVocabsError = error instanceof Error ? error : new Error(String(error));
-      retryAllVocabsAt = Date.now() + RETRY_DELAY_MS;
-      if (memoryAllVocabsCache) return memoryAllVocabsCache.vocabs;
-      throw allVocabsError;
-    } finally {
-      pendingAllVocabs = null;
-    }
-  })();
-  return pendingAllVocabs;
+      return snapshot.docs.map((doc): CachedVocabSummary => {
+        const data = doc.data();
+        const folderIds: string[] = Array.isArray(data.folderIds) ? data.folderIds : [];
+        return {
+          id: doc.id,
+          word: String(data.word || "").trim(),
+          meaning: String(data.meaning || "").trim(),
+          reading: data.reading ? String(data.reading).trim() : null,
+          sinoVietnamese: data.sinoVietnamese ? String(data.sinoVietnamese).trim() : null,
+          example: data.example ? String(data.example).trim() : null,
+          note: data.note ? String(data.note).trim() : null,
+          folderIds,
+          createdAt: typeof data.createdAt === "string"
+            ? data.createdAt
+            : (data.createdAt?.toDate?.().toISOString() || new Date(0).toISOString()),
+          folderVocabularies: folderIds.map((folderId) => ({
+            folderId,
+            folder: folderMap.get(folderId) || { id: folderId, name: "Thư mục" },
+          })),
+        };
+      }).filter((vocab) => vocab.word.includes(kanji));
+    },
+    [`vocabularies-by-kanji-index-v1-${kanji}`],
+    { tags: ["vocabularies", "folders"], revalidate: KANJI_DATA_TTL_SECONDS }
+  )();
 };
 
 
