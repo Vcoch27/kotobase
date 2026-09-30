@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { HelpCircle, CheckCircle2, XCircle, SkipForward, Info, RotateCcw, Shuffle, Maximize, Minimize, Volume2, ArrowRight, Settings2, Clock } from "lucide-react";
+import { HelpCircle, CheckCircle2, XCircle, SkipForward, Info, RotateCcw, Shuffle, Maximize, Minimize, Volume2, ArrowRight, Settings2, Clock, Timer, Eye, EyeOff } from "lucide-react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
 import { StudyCardArtwork } from "./StudyCardArtwork";
 import { StudyScopeSelector } from "./StudyScopeSelector";
@@ -141,6 +141,58 @@ export function TypingQuizView({
   const [skippedList, setSkippedList] = useState<QuizItem[]>([]);
   const [correctList, setCorrectList] = useState<QuizItem[]>([]);
   
+  // ===== TIMER STATES =====
+  const [timerMs, setTimerMs] = useState(0);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [timerStarted, setTimerStarted] = useState(false);
+  const [showTimer, setShowTimer] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('kotobase_quiz_show_timer');
+      return saved !== null ? saved === 'true' : true;
+    }
+    return true;
+  });
+  const [finalTime, setFinalTime] = useState<number | null>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Format timer: mm:ss
+  const formatTime = (ms: number): string => {
+    const totalSec = Math.floor(ms / 1000);
+    const m = Math.floor(totalSec / 60).toString().padStart(2, '0');
+    const s = (totalSec % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
+  // Timer ticker
+  useEffect(() => {
+    if (!timerRunning) return;
+    timerIntervalRef.current = setInterval(() => {
+      setTimerMs(prev => prev + 1000);
+    }, 1000);
+    return () => {
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    };
+  }, [timerRunning]);
+
+  // Dừng timer khi hoàn thành TẤT CẢ (không còn từ nào bị skip)
+  useEffect(() => {
+    if (isFinished && skippedList.length === 0 && timerRunning) {
+      setTimerRunning(false);
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+      setFinalTime(timerMs);
+    }
+  }, [isFinished, skippedList.length]);
+
+  const toggleShowTimer = () => {
+    const next = !showTimer;
+    setShowTimer(next);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('kotobase_quiz_show_timer', String(next));
+    }
+  };
+
+  // ===== END TIMER STATES =====
+
   // Ref cho ô input để tự động focus
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -287,6 +339,12 @@ export function TypingQuizView({
     setIsFinished(false);
     setSkippedList([]);
     setCorrectList([]);
+    // Reset timer
+    setTimerMs(0);
+    setTimerRunning(false);
+    setTimerStarted(false);
+    setFinalTime(null);
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     
     // Tự động focus sau một chút nếu đang active
     if (isActive) {
@@ -318,6 +376,12 @@ export function TypingQuizView({
     setIsFinished(false);
     setSkippedList([]);
     setCorrectList([]);
+    // Reset timer
+    setTimerMs(0);
+    setTimerRunning(false);
+    setTimerStarted(false);
+    setFinalTime(null);
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
 
     setTimeout(() => {
       inputRef.current?.focus();
@@ -667,6 +731,23 @@ export function TypingQuizView({
                 </div>
 
                 <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
+                {/* Nút toggle hiển thị đồng hồ bấm giờ */}
+                <button
+                  type="button"
+                  onClick={toggleShowTimer}
+                  title={showTimer ? "Ẩn đồng hồ bấm giờ" : "Hiện đồng hồ bấm giờ"}
+                  className={`p-1.5 rounded-lg transition-all flex items-center gap-1 ${
+                    showTimer
+                      ? "text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-500/20 border border-purple-300 dark:border-purple-500/40 shadow-sm"
+                      : "text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <Timer className="w-3.5 h-3.5" />
+                  {showTimer && timerStarted && (
+                    <span className="text-[10px] font-bold font-mono">{formatTime(timerMs)}</span>
+                  )}
+                </button>
+                <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
                 <button 
                   onClick={() => setIsFullscreen(!isFullscreen)} 
                   className={`p-1.5 rounded-lg transition-all ${
@@ -704,7 +785,15 @@ export function TypingQuizView({
           <div className="flex-1">
             <div className="flex items-center justify-between text-xs font-bold mb-1">
               <span className="text-slate-400">Tiến độ kiểm tra</span>
-              <span className="text-purple-600">{currentIndex + 1} / {quizList.length}</span>
+              <div className="flex items-center gap-2">
+                {showTimer && timerStarted && (
+                  <span className="flex items-center gap-1 text-purple-600 font-mono">
+                    <Timer className="w-3 h-3" />
+                    {formatTime(timerMs)}
+                  </span>
+                )}
+                <span className="text-purple-600">{currentIndex + 1} / {quizList.length}</span>
+              </div>
             </div>
             <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
               <div className="h-full bg-purple-600" style={{ width: `${progressPercentage}%` }}></div>
@@ -727,9 +816,24 @@ export function TypingQuizView({
             <h2 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white mb-2">
               Kết quả kiểm tra
             </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
               Bạn đã hoàn thành lượt kiểm tra với {quizList.length} từ vựng.
             </p>
+            {timerStarted && finalTime !== null && (
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-purple-300 font-bold text-lg font-mono mb-6">
+                <Timer className="w-5 h-5" />
+                {formatTime(finalTime)}
+              </div>
+            )}
+            {timerStarted && finalTime === null && skippedList.length > 0 && (
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-700 dark:text-amber-300 font-bold text-sm mb-6">
+                <Timer className="w-4 h-4 animate-pulse" />
+                Đang tính giờ: {formatTime(timerMs)} — hoàn thành từ bỏ qua để dừng
+              </div>
+            )}
+            {!(timerStarted && finalTime !== null) && !(timerStarted && finalTime === null && skippedList.length > 0) && (
+              <div className="mb-6"></div>
+            )}
 
           {/* Thống kê tỉ lệ */}
           <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto mb-8">
@@ -1045,6 +1149,11 @@ export function TypingQuizView({
                   const val = e.target.value.replace(/[`‘｀]/g, '');
                   setUserInput(val);
                   if (feedback === "wrong") setFeedback("none");
+                  // Bắt đầu timer khi gõ ký tự đầu tiên
+                  if (val.length >= 1 && !timerStarted) {
+                    setTimerStarted(true);
+                    setTimerRunning(true);
+                  }
                 }}
                 onKeyDown={handleKeyDown}
                 placeholder="Nhập câu trả lời vào đây..."
