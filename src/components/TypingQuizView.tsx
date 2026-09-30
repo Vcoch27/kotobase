@@ -311,7 +311,7 @@ export function TypingQuizView({
     }
   }, [isActive, isFinished]);
 
-  const startNewQuiz = (customVocabs?: VocabularyData[], forceShuffle?: boolean) => {
+  const startNewQuiz = (customVocabs?: VocabularyData[], forceShuffle?: boolean, keepTimer?: boolean) => {
     if (nextTimeoutRef.current) {
       clearTimeout(nextTimeoutRef.current);
       nextTimeoutRef.current = null;
@@ -339,12 +339,18 @@ export function TypingQuizView({
     setIsFinished(false);
     setSkippedList([]);
     setCorrectList([]);
-    // Reset timer
-    setTimerMs(0);
-    setTimerRunning(false);
-    setTimerStarted(false);
-    setFinalTime(null);
-    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    // Reset timer (trừ khi đang ôn lại từ bỏ qua, giữ nguyên timer)
+    if (!keepTimer) {
+      setTimerMs(0);
+      setTimerRunning(false);
+      setTimerStarted(false);
+      setFinalTime(null);
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    } else {
+      // Tiếp tục chạy timer (vẫn còn từ chưa hoàn thành)
+      setFinalTime(null);
+      setTimerRunning(true);
+    }
     
     // Tự động focus sau một chút nếu đang active
     if (isActive) {
@@ -859,7 +865,7 @@ export function TypingQuizView({
           <div className="flex flex-wrap items-center justify-center gap-4">
             {skippedCount > 0 && (
               <button 
-                onClick={() => startNewQuiz(skippedList)}
+                onClick={() => startNewQuiz(skippedList, undefined, true)}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-amber-500/20 active:scale-95 text-sm"
               >
                 <RotateCcw className="w-4 h-4" /> Chỉ ôn lại {skippedCount} từ đã bỏ qua
