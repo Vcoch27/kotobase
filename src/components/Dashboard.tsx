@@ -861,7 +861,12 @@ export function Dashboard({ currentUser }: DashboardProps) {
               {isGoogleUser && (
                 <button
                   onClick={() => {
-                    setNewFolderParentId(selectedFolderId !== "all" ? selectedFolderId : "");
+                    // Chỉ pre-fill parentId nếu thư mục đang chọn thuộc về user hiện tại (hoặc là admin)
+                    const isAdmin = currentUser?.email === "hoangtungmy123@gmail.com";
+                    const selectedFolder = folders.find(f => f.id === selectedFolderId);
+                    const canUseAsParent = selectedFolderId !== "all" && selectedFolder &&
+                      (isAdmin || selectedFolder.ownerId === currentUser?.uid);
+                    setNewFolderParentId(canUseAsParent ? selectedFolderId : "");
                     setShowFolderModal(true);
                   }}
                   title="Tạo thư mục mới"
@@ -1518,9 +1523,14 @@ export function Dashboard({ currentUser }: DashboardProps) {
               <div className="flex items-center gap-2">
                 {isGoogleUser && (
                   <button
-                    onClick={() => {
+                  onClick={() => {
                       setShowMobileFolderDrawer(false);
-                      setNewFolderParentId(selectedFolderId !== "all" ? selectedFolderId : "");
+                      // Chỉ pre-fill parentId nếu thư mục đang chọn thuộc về user hiện tại (hoặc là admin)
+                      const isAdmin = currentUser?.email === "hoangtungmy123@gmail.com";
+                      const selectedFolder = folders.find(f => f.id === selectedFolderId);
+                      const canUseAsParent = selectedFolderId !== "all" && selectedFolder &&
+                        (isAdmin || selectedFolder.ownerId === currentUser?.uid);
+                      setNewFolderParentId(canUseAsParent ? selectedFolderId : "");
                       setShowFolderModal(true);
                     }}
                     className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg border border-indigo-200 dark:border-indigo-500/20"
