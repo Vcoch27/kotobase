@@ -138,6 +138,31 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const [selectedVocabIds, setSelectedVocabIds] = useState<string[]>([]);
   const [sortOrder, setSortOrder] = useState<"created_asc" | "created_desc" | "alphabetical">("created_asc");
 
+  const handleVocabularyUpdated = (updatedVocab: any) => {
+    // 1. Cập nhật trực tiếp vào state vocabularies của Dashboard
+    setVocabularies(prev => prev.map(v => v.id === updatedVocab.id ? { ...v, ...updatedVocab } : v));
+    
+    // 2. Cập nhật trong cache RAM
+    Object.keys(vocabCache.current).forEach(key => {
+      if (Array.isArray(vocabCache.current[key])) {
+        vocabCache.current[key] = vocabCache.current[key].map(v => v.id === updatedVocab.id ? { ...v, ...updatedVocab } : v);
+      }
+    });
+
+    // 3. Cập nhật offline cache
+    try {
+      getOfflineVocabularies(selectedFolderIds).then(offlineList => {
+        if (offlineList && offlineList.length > 0) {
+          const updatedOffline = offlineList.map(v => v.id === updatedVocab.id ? { ...v, ...updatedVocab } : v);
+          saveVocabulariesOffline(updatedOffline).catch(() => {});
+        }
+      }).catch(() => {});
+    } catch (e) {}
+
+    // 4. Revalidate dữ liệu ngầm mà không làm giật màn hình
+    fetchData(true);
+  };
+
   const handleCreateSubFolder = (parentId: string) => {
     setNewFolderParentId(parentId);
     setShowFolderModal(true);
@@ -1383,7 +1408,11 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     vocabularies={filteredVocabularies}
                     selectedVocabIds={selectedVocabIds}
                     isActive={viewMode === "flashcard"}
-                      onFullscreenChange={setIsStudyFullscreen}
+                    onFullscreenChange={setIsStudyFullscreen}
+                    currentUser={currentUser}
+                    folders={folders}
+                    selectedFolderId={selectedFolderId}
+                    onVocabularyUpdated={handleVocabularyUpdated}
                   />
                 </div>
               </>

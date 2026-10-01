@@ -22,7 +22,7 @@ interface VocabularyEditModalProps {
   vocabulary: any;
   folders: any[];
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (updatedData?: any) => void;
 }
 
 export function VocabularyEditModal({
@@ -72,7 +72,7 @@ export function VocabularyEditModal({
 
     if (res.success) {
       toast.success('Lưu từ vựng thành công!');
-      onSuccess();
+      onSuccess({ ...vocabulary, ...formData });
       onClose();
     } else {
       toast.error(res.error || 'Có lỗi xảy ra khi lưu.');
@@ -94,14 +94,31 @@ export function VocabularyEditModal({
               </p>
               {vocabulary.folderVocabularies && vocabulary.folderVocabularies.length > 0 ? (
                 <div className="flex flex-wrap gap-1">
-                  {vocabulary.folderVocabularies.map((f: any) => (
-                    <span
-                      key={f.folderId}
-                      className="text-[10px] font-bold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full"
-                    >
-                      📁 {getFolderFullPath(f.folder, folders)}
-                    </span>
-                  ))}
+                  {vocabulary.folderVocabularies.map((f: any) => {
+                    const targetFolder = f.folder || folders.find((item: any) => item.id === f.folderId) || { name: 'Thư mục' };
+                    return (
+                      <span
+                        key={f.folderId}
+                        className="text-[10px] font-bold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full"
+                      >
+                        📁 {getFolderFullPath(targetFolder, folders)}
+                      </span>
+                    );
+                  })}
+                </div>
+              ) : vocabulary.folderIds && vocabulary.folderIds.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {vocabulary.folderIds.map((fid: string) => {
+                    const targetFolder = folders.find((item: any) => item.id === fid);
+                    return (
+                      <span
+                        key={fid}
+                        className="text-[10px] font-bold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full"
+                      >
+                        📁 {targetFolder ? getFolderFullPath(targetFolder, folders) : 'Thư mục'}
+                      </span>
+                    );
+                  })}
                 </div>
               ) : (
                 <span className="text-[10px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full w-fit">

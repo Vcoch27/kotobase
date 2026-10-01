@@ -5,7 +5,8 @@ import { ClickableKanjiString } from "./ClickableKanjiString";
 import { 
   RotateCcw, Shuffle, ArrowLeft, ArrowRight, X, Check, 
   Rotate3D, GraduationCap, LayoutList, RefreshCcw, BrainCircuit, Undo2, Eye, EyeOff, Volume2, Headphones, Maximize, Minimize,
-  Sparkles, Play, Pause, SlidersHorizontal, Timer
+  Sparkles, Play, Pause, SlidersHorizontal, Timer,
+  Pencil
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { playAudio } from "@/lib/tts-utils";
@@ -18,6 +19,8 @@ import { useCustomBg } from "@/hooks/useCustomBg";
 import { StudyScopeSelector } from "./StudyScopeSelector";
 import { extractKanji } from "@/lib/kanji-parser";
 import { HighlightMnemonic } from "./HighlightMnemonic";
+import { VocabularyEditModal } from "./VocabularyEditModal";
+import { canUserManageFolder } from "@/lib/folder-utils";
 // Fetch mẹo nhớ Hán tự qua API Route (tránh dùng Server Action vì Next.js serialize response đặc biệt không phải JSON thuần)
 async function fetchKanjiNotesMap(): Promise<Record<string, { character: string; hanviet?: string; meaning?: string; mnemonic?: string }>> {
   try {
@@ -45,6 +48,10 @@ interface FlashcardViewProps {
   selectedVocabIds?: string[];
   isActive?: boolean;
   onFullscreenChange?: (isFullscreen: boolean) => void;
+  currentUser?: { uid: string; email: string; name: string; picture?: string } | null;
+  folders?: any[];
+  selectedFolderId?: string;
+  onVocabularyUpdated?: (updatedVocab: any) => void;
 }
 
 type StudyMode = "normal" | "progress" | "anki" | "listening";
@@ -64,6 +71,10 @@ export function FlashcardView({
   selectedVocabIds = [],
   isActive = true,
   onFullscreenChange,
+  currentUser,
+  folders = [],
+  selectedFolderId,
+  onVocabularyUpdated,
 }: FlashcardViewProps) {
   const customBg = useCustomBg();
   const getScopedFromSelection = useCallback((all: VocabularyData[], selIds: string[]) => {
@@ -85,6 +96,54 @@ export function FlashcardView({
   const [isFinished, setIsFinished] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showSino, setShowSino] = useState(true);
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  // Kiểm tra quyền chỉnh sửa từ vựng: Admin, hoặc Chủ sở hữu, hoặc Đồng tác giả của thư mục
+  const canEditCurrentVocab = useMemo(() => {
+    if (!currentUser?.email) return false;
+    // Admin có toàn quyền trên mọi thư mục
+    if (currentUser.email === "hoangtungmy123@gmail.com") return true;
+
+    const currentVocab = deck[currentIndex];
+    if (!currentVocab) return false;
+
+    // Nếu đang ở trong một thư mục cụ thể và user có quyền trên thư mục đó
+    if (selectedFolderId && selectedFolderId !== 'all') {
+      const curFolder = folders.find(f => f.id === selectedFolderId);
+      if (curFolder && canUserManageFolder(curFolder, folders, currentUser.uid, currentUser.email)) {
+        return true;
+      }
+    }
+
+    // Kiểm tra các thư mục gắn với từ vựng này
+    const vocabFolderIds: string[] = [];
+    if (Array.isArray((currentVocab as any).folderIds)) {
+      vocabFolderIds.push(...(currentVocab as any).folderIds);
+    }
+    if (Array.isArray((currentVocab as any).folderVocabularies)) {
+      (currentVocab as any).folderVocabularies.forEach((fv: any) => {
+        if (fv.folderId) vocabFolderIds.push(fv.folderId);
+      });
+    }
+
+    if (vocabFolderIds.length > 0) {
+      return vocabFolderIds.some(fid => {
+        const f = folders.find(item => item.id === fid);
+        return f && canUserManageFolder(f, folders, currentUser.uid, currentUser.email);
+      });
+    }
+
+    return false;
+  }, [currentUser, deck, currentIndex, selectedFolderId, folders]);
+
+  // Cập nhật từ vựng tại chỗ (không reload/F5, giữ nguyên tiến trình đang học)
+  const handleLocalVocabUpdated = (updatedVocab: any) => {
+    setDeck(prevDeck => prevDeck.map(item => item.id === updatedVocab.id ? { ...item, ...updatedVocab } : item));
+    setScopedVocabs(prev => prev.map(item => item.id === updatedVocab.id ? { ...item, ...updatedVocab } : item));
+    if (onVocabularyUpdated) {
+      onVocabularyUpdated(updatedVocab);
+    }
+  };
   const [showMnemonic, setShowMnemonic] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -907,6 +966,14 @@ export function FlashcardView({
           }
           break;
         }
+        case "e":
+        case "E": {
+          if (canEditCurrentVocab && deck[currentIndex]) {
+            e.preventDefault();
+            setShowEditModal(true);
+          }
+          break;
+        }
       }
     };
 
@@ -1489,6 +1556,18 @@ export function FlashcardView({
             <button onClick={restartAll} className="p-2 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-all" title="Bắt đầu lại">
               <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
+
+            {/* Nút Chỉnh sửa từ vựng - chỉ hiển thị khi có quyền */}
+            {canEditCurrentVocab && currentVocab && (
+              <button 
+                type="button"
+                onClick={() => setShowEditModal(true)} 
+                className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-all" 
+                title="Chỉnh sửa từ vựng này (Phím E)"
+              >
+                <Pencil className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500 dark:text-indigo-400" />
+              </button>
+            )}
             <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
             <button 
               onClick={() => setIsFullscreen(!isFullscreen)} 
@@ -1674,6 +1753,21 @@ export function FlashcardView({
               <span className="absolute top-3 left-3 sm:top-6 sm:left-6 text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
                 <Rotate3D className="w-3 h-3 sm:w-4 sm:h-4" /> Bấm để lật
               </span>
+
+              {/* Nút Chỉnh sửa từ vựng ở góc thẻ */}
+              {canEditCurrentVocab && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowEditModal(true);
+                  }}
+                  className="absolute top-3 right-3 sm:top-6 sm:right-6 z-30 p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white/80 dark:hover:bg-slate-800/80 rounded-xl transition-all shadow-xs backdrop-blur-xs border border-transparent hover:border-slate-200 dark:hover:border-slate-700 active:scale-95 cursor-pointer"
+                  title="Chỉnh sửa từ vựng này (Phím E)"
+                >
+                  <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </button>
+              )}
               <div className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-wide" onClick={(e) => e.stopPropagation()}>
                 <ClickableKanjiString text={currentVocab.word} />
               </div>
@@ -1752,6 +1846,21 @@ export function FlashcardView({
             }}
           >
             <StudyCardArtwork side="back" customFrontUrl={customBg.cardFront?.dataUrl} customBackUrl={customBg.cardBack?.dataUrl} cardWash={customBg.washSettings?.cardWash} />
+
+            {/* Nút Chỉnh sửa từ vựng ở góc thẻ (Mặt sau) */}
+            {canEditCurrentVocab && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowEditModal(true);
+                }}
+                className="absolute top-3 right-3 sm:top-6 sm:right-6 z-30 p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white/80 dark:hover:bg-slate-800/80 rounded-xl transition-all shadow-xs backdrop-blur-xs border border-transparent hover:border-slate-200 dark:hover:border-slate-700 active:scale-95 cursor-pointer"
+                title="Chỉnh sửa từ vựng này (Phím E)"
+              >
+                <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </button>
+            )}
             {/* Thanh tiến trình đếm ngược chuyển thẻ tự động */}
             {isAutoPlay && mode === "normal" && (
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-emerald-100/70 dark:bg-emerald-950/40 overflow-hidden rounded-t-3xl pointer-events-none z-20">
