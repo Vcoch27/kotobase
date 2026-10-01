@@ -22,7 +22,9 @@ import {
   User, Lock, Folder, X, FolderTree as FolderTreeIcon, ArrowDownNarrowWide, ArrowUpNarrowWide,
   Sparkles, BookOpen, Smartphone, WifiOff, Plus, Clock, Headphones, Image as ImageIcon,
   ShieldCheck,
-  Users
+  Users,
+  PanelLeftClose,
+  PanelLeftOpen
 } from "lucide-react";
 import { isAdminEmail } from "@/lib/admin-shared";
 import { useWebVolume } from "@/lib/tts-utils";
@@ -56,6 +58,42 @@ interface DashboardProps {
 
 export function Dashboard({ currentUser }: DashboardProps) {
   const [viewMode, setViewMode] = useState<"overview" | "focus" | "flashcard" | "quiz">("overview");
+  
+  // Trạng thái thu gọn / mở rộng cây thư mục (Persist localStorage)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem("kotobase_sidebar_collapsed") === "true";
+      } catch (e) {}
+    }
+    return false;
+  });
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem("kotobase_sidebar_collapsed", String(next));
+      } catch (e) {}
+      return next;
+    });
+  };
+
+  // Phím tắt Ctrl+B hoặc Cmd+B để toggle cây thư mục
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) {
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        toggleSidebar();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
   const [isStudyFullscreen, setIsStudyFullscreen] = useState(false);
 
   // Thoát trạng thái toàn màn hình khi chuyển đổi viewMode
@@ -843,16 +881,20 @@ export function Dashboard({ currentUser }: DashboardProps) {
 
       {/* Main Layout (2 Columns) */}
       <main className={cn(
-        "study-layout flex-1 w-full mx-auto px-4 lg:px-6 pt-6 pb-36 md:pb-10 flex flex-col md:flex-row gap-6 relative z-10",
-        isStudyFullscreen && "!p-0 !pt-0 !pb-0 !m-0 !max-w-none !gap-0"
+        "study-layout flex-1 w-full mx-auto px-4 lg:px-6 pt-6 pb-36 md:pb-10 flex flex-col md:flex-row gap-6 relative z-10 transition-all duration-300 ease-in-out",
+        isStudyFullscreen && "!p-0 !pt-0 !pb-0 !m-0 !max-w-none !gap-0",
+        isSidebarCollapsed && "md:gap-0 justify-center"
       )}>
         
         {/* LEFT SIDEBAR: Folder Tree */}
-        <div className={cn(
-          "w-full md:w-64 lg:w-72 shrink-0 space-y-4 md:sticky md:top-20 md:self-start",
-          isStudyFullscreen && "hidden"
+        <aside className={cn(
+          "shrink-0 transition-all duration-300 ease-in-out md:sticky md:top-20 md:self-start",
+          isStudyFullscreen && "hidden",
+          isSidebarCollapsed 
+            ? "w-0 opacity-0 -translate-x-6 pointer-events-none overflow-hidden m-0 p-0 border-0 hidden md:block" 
+            : "w-full md:w-64 lg:w-72 opacity-100 translate-x-0 space-y-4"
         )}>
-          <div className="study-sidebar rounded-2xl p-4 shadow-elevation-md transition-colors duration-300 md:h-[calc(100vh-6rem)] md:max-h-[calc(100vh-6rem)] flex flex-col overflow-hidden">
+          <div className="study-sidebar w-full md:w-64 lg:w-72 rounded-2xl p-4 shadow-elevation-md transition-colors duration-300 md:h-[calc(100vh-6rem)] md:max-h-[calc(100vh-6rem)] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <h2 
                 className="text-sm font-bold text-[oklch(var(--color-text-primary))] flex items-center justify-between w-full md:w-auto cursor-pointer md:cursor-default"
@@ -863,23 +905,36 @@ export function Dashboard({ currentUser }: DashboardProps) {
                   {isMobileFolderOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                 </span>
               </h2>
-              {/* Nút tạo thư mục - chỉ hiển thị khi đã đăng nhập Google */}
-              {isGoogleUser && (
+              
+              <div className="flex items-center gap-1 shrink-0">
+                {/* Nút tạo thư mục - chỉ hiển thị khi đã đăng nhập Google */}
+                {isGoogleUser && (
+                  <button
+                    onClick={() => {
+                      // Pre-fill parentId nếu thư mục đang chọn thuộc về user, là đồng tác giả, hoặc là admin
+                      const selectedFolder = folders.find(f => f.id === selectedFolderId);
+                      const canUseAsParent = selectedFolderId !== "all" && selectedFolder &&
+                        canUserManageFolder(selectedFolder, folders, currentUser?.uid, currentUser?.email);
+                      setNewFolderParentId(canUseAsParent ? selectedFolderId : "");
+                      setShowFolderModal(true);
+                    }}
+                    title="Tạo thư mục mới"
+                    className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-500/20 transition-colors shrink-0"
+                  >
+                    <FolderPlus className="w-4 h-4" />
+                  </button>
+                )}
+
+                {/* Nút Ẩn / Thu gọn cây thư mục (Desktop) */}
                 <button
-                  onClick={() => {
-                    // Pre-fill parentId nếu thư mục đang chọn thuộc về user, là đồng tác giả, hoặc là admin
-                    const selectedFolder = folders.find(f => f.id === selectedFolderId);
-                    const canUseAsParent = selectedFolderId !== "all" && selectedFolder &&
-                      canUserManageFolder(selectedFolder, folders, currentUser?.uid, currentUser?.email);
-                    setNewFolderParentId(canUseAsParent ? selectedFolderId : "");
-                    setShowFolderModal(true);
-                  }}
-                  title="Tạo thư mục mới"
-                  className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-500/20 transition-colors shrink-0"
+                  type="button"
+                  onClick={toggleSidebar}
+                  title="Thu gọn cây thư mục (Ctrl + B)"
+                  className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
                 >
-                  <FolderPlus className="w-4 h-4" />
+                  <PanelLeftClose className="w-4 h-4" />
                 </button>
-              )}
+              </div>
             </div>
             
             <div className={`${isMobileFolderOpen ? 'flex' : 'hidden'} md:flex flex-1 min-h-0 flex-col overflow-hidden`}>
@@ -943,12 +998,13 @@ export function Dashboard({ currentUser }: DashboardProps) {
               )}
             </div>
           </div>
-        </div>
+        </aside>
 
         {/* RIGHT MAIN CONTENT */}
         <div id="study-main-content" className={cn(
-          "flex-1 flex flex-col gap-6 min-w-0 scroll-mt-20",
-          isStudyFullscreen && "!gap-0"
+          "flex-1 flex flex-col gap-6 min-w-0 scroll-mt-20 transition-all duration-300 ease-in-out",
+          isStudyFullscreen && "!gap-0",
+          isSidebarCollapsed && "w-full max-w-4xl lg:max-w-5xl xl:max-w-6xl mx-auto"
         )}>
           
           {/* Thanh Toolbar Ngang Hợp Nhất: + Thêm nội dung, Đang chọn Thư mục, Offline & Sắp xếp */}
@@ -958,6 +1014,18 @@ export function Dashboard({ currentUser }: DashboardProps) {
           )}>
             {/* Vùng bên trái: Nút + Thêm nội dung & Đang chọn Thư mục */}
             <div className="flex items-center gap-2 flex-wrap min-w-0">
+              {/* Nút mở lại cây thư mục khi đang ẩn (Desktop) */}
+              {isSidebarCollapsed && (
+                <button
+                  type="button"
+                  onClick={toggleSidebar}
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 text-xs font-bold transition-all border border-indigo-200 dark:border-indigo-800/80 shadow-2xs shrink-0 active:scale-95"
+                  title="Hiện danh sách thư mục (Ctrl + B)"
+                >
+                  <PanelLeftOpen className="w-3.5 h-3.5" />
+                  <span>Hiện Thư mục</span>
+                </button>
+              )}
               {isGoogleUser && (
                 <div className="relative z-30" ref={addMenuRef}>
                   <button
@@ -1331,6 +1399,18 @@ export function Dashboard({ currentUser }: DashboardProps) {
             )}
           </div>
         </div>
+        {/* Nút mở lại Sidebar dạng Floating mép trái khi đang ẩn (Desktop) */}
+        {isSidebarCollapsed && !isStudyFullscreen && (
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            className="hidden md:flex fixed left-0 top-24 z-40 items-center gap-1.5 pl-2.5 pr-3 py-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-l-0 border-slate-200/90 dark:border-slate-700/80 rounded-r-2xl shadow-lg hover:shadow-xl text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:pl-3.5 transition-all duration-200 group text-xs font-bold animate-fadeIn cursor-pointer"
+            title="Mở danh sách thư mục (Ctrl + B)"
+          >
+            <PanelLeftOpen className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform shrink-0" />
+            <span className="text-[11px] whitespace-nowrap">Thư mục</span>
+          </button>
+        )}
       </main>
 
       <footer className={cn(
