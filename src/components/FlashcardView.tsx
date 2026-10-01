@@ -1754,20 +1754,7 @@ export function FlashcardView({
                 <Rotate3D className="w-3 h-3 sm:w-4 sm:h-4" /> Bấm để lật
               </span>
 
-              {/* Nút Chỉnh sửa từ vựng ở góc thẻ */}
-              {canEditCurrentVocab && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowEditModal(true);
-                  }}
-                  className="absolute top-3 right-3 sm:top-6 sm:right-6 z-30 p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white/80 dark:hover:bg-slate-800/80 rounded-xl transition-all shadow-xs backdrop-blur-xs border border-transparent hover:border-slate-200 dark:hover:border-slate-700 active:scale-95 cursor-pointer"
-                  title="Chỉnh sửa từ vựng này (Phím E)"
-                >
-                  <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </button>
-              )}
+
               <div className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-wide" onClick={(e) => e.stopPropagation()}>
                 <ClickableKanjiString text={currentVocab.word} />
               </div>
@@ -1847,20 +1834,7 @@ export function FlashcardView({
           >
             <StudyCardArtwork side="back" customFrontUrl={customBg.cardFront?.dataUrl} customBackUrl={customBg.cardBack?.dataUrl} cardWash={customBg.washSettings?.cardWash} />
 
-            {/* Nút Chỉnh sửa từ vựng ở góc thẻ (Mặt sau) */}
-            {canEditCurrentVocab && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowEditModal(true);
-                }}
-                className="absolute top-3 right-3 sm:top-6 sm:right-6 z-30 p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white/80 dark:hover:bg-slate-800/80 rounded-xl transition-all shadow-xs backdrop-blur-xs border border-transparent hover:border-slate-200 dark:hover:border-slate-700 active:scale-95 cursor-pointer"
-                title="Chỉnh sửa từ vựng này (Phím E)"
-              >
-                <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
-            )}
+
             {/* Thanh tiến trình đếm ngược chuyển thẻ tự động */}
             {isAutoPlay && mode === "normal" && (
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-emerald-100/70 dark:bg-emerald-950/40 overflow-hidden rounded-t-3xl pointer-events-none z-20">
@@ -2043,6 +2017,21 @@ export function FlashcardView({
       </div>
         </>
       ) : null}
+      {/* Modal Chỉnh sửa từ vựng ngay trong chế độ Flashcard */}
+      {showEditModal && currentVocab && (
+        <VocabularyEditModal
+          vocabulary={currentVocab}
+          folders={folders}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={(updatedData) => {
+            setShowEditModal(false);
+            if (updatedData) {
+              handleLocalVocabUpdated(updatedData);
+            }
+          }}
+        />
+      )}
+
       <style>{`
         @keyframes autoPlayCountdown {
           0% { width: 0%; }
