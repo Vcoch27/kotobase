@@ -21,21 +21,42 @@ export interface CreateVocabInput {
   folderIds?: string[];
 }
 
-// Helper: kiểm tra user có quyền ghi vào folder không
 async function checkFolderPermission(folderId: string, currentUid: string, currentUserEmail?: string): Promise<{ allowed: boolean; error?: string }> {
   if (!folderId) return { allowed: true }; // Không thuộc folder nào = không kiểm tra
   
   const isAdmin = currentUserEmail === "hoangtungmy123@gmail.com";
   
-  const folderDoc = await adminDb.collection("folders").doc(folderId).get();
-  if (!folderDoc.exists) return { allowed: false, error: "Thư mục không tồn tại." };
+  const allFolders = await getCachedFoldersRaw();
+  const folderMap = new Map(allFolders.map(f => [f.id, f]));
+
+  let currentId: string | null = folderId;
+  const visited = new Set<string>();
   
-  const data = folderDoc.data();
-  // Folder cũ không có ownerId => chỉ Admin mới được sửa
-  if (!isAdmin && !data?.ownerId) return { allowed: false, error: "Thư mục này thuộc quyền quản trị của Admin (hoangtungmy123@gmail.com), bạn không có quyền chỉnh sửa." };
-  if (!isAdmin && data?.ownerId !== currentUid) return { allowed: false, error: "Bạn không có quyền chỉnh sửa thư mục này." };
-  
-  return { allowed: true };
+  let isAllowed = isAdmin;
+  let errorMsg = "Bạn không có quyền chỉnh sửa thư mục này.";
+
+  while (currentId && !isAllowed) {
+    if (visited.has(currentId)) break;
+    visited.add(currentId);
+    
+    const folder = folderMap.get(currentId);
+    if (!folder) break;
+    
+    // Check if owner or coauthor
+    if (folder.ownerId === currentUid || (folder as any).coAuthorEmails?.includes(currentUserEmail || '')) {
+      isAllowed = true;
+      break;
+    }
+
+    if (!isAdmin && !folder.ownerId && currentId === folderId) {
+       errorMsg = "Thư mục này thuộc quyền quản trị của Admin (hoangtungmy123@gmail.com), bạn không có quyền chỉnh sửa.";
+    }
+    
+    currentId = folder.parentId;
+  }
+
+  if (isAllowed) return { allowed: true };
+  return { allowed: false, error: errorMsg };
 }
 
 export async function createVocabulary(input: CreateVocabInput) {

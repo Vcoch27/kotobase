@@ -15,6 +15,7 @@ export const getCachedFoldersRaw = unstable_cache(
       ownerEmail: doc.data().ownerEmail || null,
       ownerName: doc.data().ownerName || null,
       isPublic: doc.data().isPublic !== false,
+      coAuthorEmails: doc.data().coAuthorEmails || [],
     }));
   },
   ['folders-raw'],

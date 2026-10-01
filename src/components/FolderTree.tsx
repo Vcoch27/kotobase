@@ -4,7 +4,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { assignVocabularyToFolder } from '@/app/actions/vocabulary';
-import { deleteFolderAndVocabs, renameFolder, updateFolderVisibility } from '@/app/actions/folder';
+import { deleteFolderAndVocabs, renameFolder, updateFolderVisibility, addCoAuthor, removeCoAuthor, getFolderCoAuthors } from '@/app/actions/folder';
 import {
   Folder,
   ChevronRight,
@@ -33,6 +33,7 @@ interface FolderItem {
   ownerEmail?: string | null;
   ownerName?: string | null;
   isPublic?: boolean;
+  coAuthorEmails?: string[];
   _count?: { folderVocabularies: number };
 }
 
@@ -74,6 +75,10 @@ export function FolderTree({
   const [activeMenuFolderId, setActiveMenuFolderId] = useState<string | null>(null);
   const [localFolders, setLocalFolders] = useState<FolderItem[]>([]);
   const [downloadedFolderIds, setDownloadedFolderIds] = useState<Set<string>>(new Set());
+  const [managingCoAuthorFolderId, setManagingCoAuthorFolderId] = useState<string | null>(null);
+  const [coAuthorsList, setCoAuthorsList] = useState<string[]>([]);
+  const [coAuthorLoading, setCoAuthorLoading] = useState(false);
+  const [newCoAuthorEmail, setNewCoAuthorEmail] = useState('');
 
   const activeSelectedIds = useMemo(() => {
     if (selectedFolderIds && selectedFolderIds.length > 0) {
@@ -238,6 +243,69 @@ export function FolderTree({
     setDragOverFolderId(null);
   };
 
+  const getCanEdit = (folder: FolderItem): boolean => {
+    if (currentUserEmail === 'hoangtungmy123@gmail.com') return true;
+    const visited = new Set<string>();
+    let curr: FolderItem | undefined = folder;
+    while (curr) {
+      if (visited.has(curr.id)) break;
+      visited.add(curr.id);
+      if (curr.ownerId === currentUserId) return true;
+      if ((curr.coAuthorEmails || []).includes(currentUserEmail || '')) return true;
+      curr = localFolders.find(f => f.id === curr?.parentId);
+    }
+    return false;
+  };
+
+  const getCanDelete = (folder: FolderItem): boolean => {
+    if (currentUserEmail === 'hoangtungmy123@gmail.com') return true;
+    return !!folder.ownerId && folder.ownerId === currentUserId;
+  };
+
+  const openCoAuthorManager = async (folderId: string) => {
+    setActiveMenuFolderId(null);
+    setManagingCoAuthorFolderId(folderId);
+    setCoAuthorLoading(true);
+    setNewCoAuthorEmail('');
+    const res = await getFolderCoAuthors(folderId);
+    if (res.success) {
+      setCoAuthorsList(res.coAuthorEmails || []);
+    } else {
+      toast.error(res.error || 'Lỗi khi tải danh sách');
+    }
+    setCoAuthorLoading(false);
+  };
+
+  const handleAddCoAuthor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!managingCoAuthorFolderId || !newCoAuthorEmail) return;
+    setCoAuthorLoading(true);
+    const res = await addCoAuthor(managingCoAuthorFolderId, newCoAuthorEmail);
+    if (res.success) {
+      toast.success('Đã thêm đồng tác giả');
+      setCoAuthorsList(prev => [...prev, newCoAuthorEmail]);
+      setNewCoAuthorEmail('');
+      onRefresh();
+    } else {
+      toast.error(res.error || 'Lỗi khi thêm');
+    }
+    setCoAuthorLoading(false);
+  };
+
+  const handleRemoveCoAuthor = async (email: string) => {
+    if (!managingCoAuthorFolderId) return;
+    setCoAuthorLoading(true);
+    const res = await removeCoAuthor(managingCoAuthorFolderId, email);
+    if (res.success) {
+      toast.success('Đã xóa đồng tác giả');
+      setCoAuthorsList(prev => prev.filter(e => e !== email));
+      onRefresh();
+    } else {
+      toast.error(res.error || 'Lỗi khi xóa');
+    }
+    setCoAuthorLoading(false);
+  };
+
   const handleDrop = async (e: React.DragEvent, targetFolderId: string) => {
     e.preventDefault();
     setDragOverFolderId(null);
@@ -399,7 +467,8 @@ export function FolderTree({
       // Thư mục vô danh (!node.ownerId) được tự động xem là thuộc quyền quản trị của Admin
       const isOwner = (currentUserId && node.ownerId && node.ownerId === currentUserId) || (isAdmin && !node.ownerId);
       const hasOwner = !!node.ownerId;
-      const canEdit = isOwner || isAdmin; // Chủ hoặc Admin mới có thể sửa/xóa
+      const canEdit = getCanEdit(node);
+      const canDelete = getCanDelete(node);
       const isMenuOpen = activeMenuFolderId === node.id;
 
       return (
@@ -573,45 +642,63 @@ export function FolderTree({
                       <span>Đổi tên</span>
                     </button>
                     
-                    {/* Nút Bật / Tắt Hiển thị (Công khai / Riêng tư) */}
-                    <button
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        setActiveMenuFolderId(null);
-                        const newIsPublic = node.isPublic === false ? true : false;
-                        setLocalFolders((prev) => prev.map((f) => f.id === node.id ? { ...f, isPublic: newIsPublic } : f));
-                        const res = await updateFolderVisibility(node.id, newIsPublic);
-                        if (res.success) {
-                          toast.success(newIsPublic ? `Đã mở công khai "${node.name}"` : `Đã chuyển "${node.name}" sang Riêng tư (Ẩn với người khác)`);
-                          onRefresh();
-                        } else {
-                          toast.error(res.error || "Không thể cập nhật trạng thái hiển thị!");
-                          setLocalFolders(folders);
-                        }
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors text-left border-t border-slate-100 dark:border-slate-800"
-                    >
-                      {node.isPublic === false ? (
-                        <>
-                          <Eye className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Hiện công khai</span>
-                        </>
-                      ) : (
-                        <>
-                          <EyeOff className="w-3.5 h-3.5 text-amber-500" />
-                          <span>Ẩn (Riêng tư)</span>
-                        </>
-                      )}
-                    </button>
+                    {/* Nút Quản lý đồng tác giả */}
+                    {canDelete && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openCoAuthorManager(node.id);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors text-left border-t border-slate-100 dark:border-slate-800"
+                      >
+                        <Users className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>Đồng tác giả</span>
+                      </button>
+                    )}
 
-                    <button
-                      onClick={(e) => handleDeleteFolder(node.id, node.name, e)}
-                      disabled={deletingFolderId === node.id}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 font-medium transition-colors text-left border-t border-slate-100 dark:border-slate-800"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                      <span>Xóa thư mục</span>
-                    </button>
+                    {/* Nút Bật / Tắt Hiển thị (Công khai / Riêng tư) */}
+                    {canDelete && (
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          setActiveMenuFolderId(null);
+                          const newIsPublic = node.isPublic === false ? true : false;
+                          setLocalFolders((prev) => prev.map((f) => f.id === node.id ? { ...f, isPublic: newIsPublic } : f));
+                          const res = await updateFolderVisibility(node.id, newIsPublic);
+                          if (res.success) {
+                            toast.success(newIsPublic ? `Đã mở công khai "${node.name}"` : `Đã chuyển "${node.name}" sang Riêng tư (Ẩn với người khác)`);
+                            onRefresh();
+                          } else {
+                            toast.error(res.error || "Không thể cập nhật trạng thái hiển thị!");
+                            setLocalFolders(folders);
+                          }
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors text-left border-t border-slate-100 dark:border-slate-800"
+                      >
+                        {node.isPublic === false ? (
+                          <>
+                            <Eye className="w-3.5 h-3.5 text-emerald-500" />
+                            <span>Hiện công khai</span>
+                          </>
+                        ) : (
+                          <>
+                            <EyeOff className="w-3.5 h-3.5 text-amber-500" />
+                            <span>Ẩn (Riêng tư)</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+
+                    {canDelete && (
+                      <button
+                        onClick={(e) => handleDeleteFolder(node.id, node.name, e)}
+                        disabled={deletingFolderId === node.id}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 font-medium transition-colors text-left border-t border-slate-100 dark:border-slate-800"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                        <span>Xóa thư mục</span>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -748,6 +835,87 @@ export function FolderTree({
             </span>
           </button>
         </div>
+      )}
+
+      {/* Co-Author Manager Modal */}
+      {managingCoAuthorFolderId && typeof document !== 'undefined' && createPortal(
+        <>
+          <div
+            className="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/60 backdrop-blur-sm z-[9999] animate-fadeIn"
+            onClick={() => setManagingCoAuthorFolderId(null)}
+          ></div>
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-[9999] animate-zoomIn overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 dark:text-slate-200">
+                    Quản lý Đồng tác giả
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Thêm email để cấp quyền chỉnh sửa thư mục này
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 overflow-y-auto flex-1 min-h-0">
+              {coAuthorLoading && coAuthorsList.length === 0 ? (
+                <div className="text-center text-sm text-slate-500 py-4">Đang tải...</div>
+              ) : (
+                <ul className="space-y-2">
+                  {coAuthorsList.map(email => (
+                    <li key={email} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{email}</span>
+                      <button
+                        onClick={() => handleRemoveCoAuthor(email)}
+                        disabled={coAuthorLoading}
+                        className="p-1.5 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-500/20 rounded-md transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </li>
+                  ))}
+                  {coAuthorsList.length === 0 && (
+                    <div className="text-center text-sm text-slate-500 py-4 italic">Chưa có đồng tác giả nào.</div>
+                  )}
+                </ul>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+              <form onSubmit={handleAddCoAuthor} className="flex gap-2">
+                <input
+                  type="email"
+                  required
+                  placeholder="Nhập email người dùng..."
+                  value={newCoAuthorEmail}
+                  onChange={e => setNewCoAuthorEmail(e.target.value)}
+                  className="flex-1 px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  type="submit"
+                  disabled={coAuthorLoading || !newCoAuthorEmail}
+                  className="px-4 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl disabled:opacity-50 transition-colors"
+                >
+                  Thêm
+                </button>
+              </form>
+              <div className="mt-3 text-right">
+                <button
+                  type="button"
+                  onClick={() => setManagingCoAuthorFolderId(null)}
+                  className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors"
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        </>,
+        document.body
       )}
 
       {/* Custom Prompt Modal (Thay thế window.prompt) */}

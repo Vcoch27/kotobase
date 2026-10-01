@@ -4,6 +4,48 @@ import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/session";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { getCachedFoldersRaw, getCachedFolderVocabCount } from "@/lib/cache";
+import { FieldValue } from "firebase-admin/firestore";
+
+type Permission = 'admin' | 'owner' | 'coauthor' | 'none';
+
+async function getEffectivePermission(
+  folderId: string,
+  userUid: string,
+  userEmail: string,
+  allFolders: Array<{ id: string; parentId: string | null; ownerId?: string | null; coAuthorEmails?: string[] }>
+): Promise<Permission> {
+  const ADMIN_EMAIL = 'hoangtungmy123@gmail.com';
+  if (userEmail === ADMIN_EMAIL) return 'admin';
+
+  const folderMap = new Map(allFolders.map(f => [f.id, f]));
+  
+  let currentId: string | null = folderId;
+  const visited = new Set<string>();
+  
+  while (currentId) {
+    if (visited.has(currentId)) break;
+    visited.add(currentId);
+    
+    const folder = folderMap.get(currentId);
+    if (!folder) break;
+    
+    if (currentId === folderId && folder.ownerId === userUid) {
+      return 'owner';
+    }
+    
+    if (folder.ownerId === userUid) {
+      return 'coauthor';
+    }
+    
+    if ((folder.coAuthorEmails || []).includes(userEmail)) {
+      return 'coauthor';
+    }
+    
+    currentId = folder.parentId;
+  }
+  
+  return 'none';
+}
 
 export async function getFolders(includeCounts = true) {
   try {
@@ -87,13 +129,13 @@ export async function createFolder(name: string, parentId?: string, isPublic: bo
 
   const isAdmin = currentUser.email === "hoangtungmy123@gmail.com";
 
-  // Nếu tạo thư mục con bên trong thư mục cha: Chỉ Admin hoặc chủ sở hữu thư mục cha mới có quyền
+  // Nếu tạo thư mục con bên trong thư mục cha: Kiểm tra quyền (admin, owner, coauthor)
   if (parentId) {
     const parentDoc = await adminDb.collection("folders").doc(parentId).get();
     if (parentDoc.exists) {
-      const parentData = parentDoc.data();
-      const isParentOwner = !!parentData?.ownerId && parentData.ownerId === currentUser.uid;
-      if (!isAdmin && !isParentOwner) {
+      const allFolders = await getCachedFoldersRaw();
+      const perm = await getEffectivePermission(parentId, currentUser.uid, currentUser.email || "", allFolders as any);
+      if (perm === 'none') {
         return { success: false, error: "Bạn không có quyền tạo thư mục con trong thư mục này." };
       }
     }
@@ -177,12 +219,12 @@ export async function renameFolder(id: string, newName: string) {
   const folderDoc = await adminDb.collection("folders").doc(id).get();
   if (!folderDoc.exists) return { success: false, error: "Thư mục không tồn tại." };
   
-  const folderData = folderDoc.data();
-  const isOwner = !!folderData?.ownerId && folderData.ownerId === currentUser.uid;
-
   // Thư mục vô danh (!ownerId) hoặc thư mục của người khác: CHỈ Admin (hoangtungmy123@gmail.com) mới có quyền đổi tên
-  if (!isAdmin && !isOwner) {
-    return { success: false, error: "Bạn không có quyền đổi tên thư mục này. Thư mục này chỉ Admin hoặc người tạo mới có quyền chỉnh sửa." };
+  // Trừ khi bạn là co-author
+  const allFolders = await getCachedFoldersRaw();
+  const perm = await getEffectivePermission(id, currentUser.uid, currentUser.email || "", allFolders as any);
+  if (perm === 'none') {
+    return { success: false, error: "Bạn không có quyền đổi tên thư mục này. Thư mục này chỉ Admin, người tạo hoặc đồng tác giả mới có quyền chỉnh sửa." };
   }
 
   try {
@@ -335,5 +377,82 @@ export async function claimLegacyFolders() {
   } catch (error: any) {
     console.error("Lỗi khi chuyển quyền sở hữu thư mục cũ:", error);
     return { success: false, error: "Không thể cập nhật quyền sở hữu thư mục." };
+  }
+}
+
+export async function addCoAuthor(folderId: string, email: string) {
+  if (!email.trim()) return { success: false, error: "Email không hợp lệ." };
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: "Chưa đăng nhập." };
+
+  const folderDoc = await adminDb.collection("folders").doc(folderId).get();
+  if (!folderDoc.exists) return { success: false, error: "Thư mục không tồn tại." };
+  
+  const data = folderDoc.data();
+  const isAdmin = currentUser.email === "hoangtungmy123@gmail.com";
+  const isOwner = !!data?.ownerId && data.ownerId === currentUser.uid;
+
+  if (!isAdmin && !isOwner) {
+    return { success: false, error: "Chỉ chủ sở hữu hoặc admin mới được thêm đồng tác giả." };
+  }
+
+  try {
+    await adminDb.collection("folders").doc(folderId).update({
+      coAuthorEmails: FieldValue.arrayUnion(email.trim()),
+      updatedAt: new Date().toISOString()
+    });
+    revalidatePath("/");
+    revalidateTag("folders");
+    return { success: true };
+  } catch (error) {
+    console.error("Lỗi khi thêm đồng tác giả:", error);
+    return { success: false, error: "Không thể thêm đồng tác giả." };
+  }
+}
+
+export async function removeCoAuthor(folderId: string, email: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: "Chưa đăng nhập." };
+
+  const folderDoc = await adminDb.collection("folders").doc(folderId).get();
+  if (!folderDoc.exists) return { success: false, error: "Thư mục không tồn tại." };
+  
+  const data = folderDoc.data();
+  const isAdmin = currentUser.email === "hoangtungmy123@gmail.com";
+  const isOwner = !!data?.ownerId && data.ownerId === currentUser.uid;
+
+  if (!isAdmin && !isOwner) {
+    return { success: false, error: "Chỉ chủ sở hữu hoặc admin mới được xóa đồng tác giả." };
+  }
+
+  try {
+    await adminDb.collection("folders").doc(folderId).update({
+      coAuthorEmails: FieldValue.arrayRemove(email.trim()),
+      updatedAt: new Date().toISOString()
+    });
+    revalidatePath("/");
+    revalidateTag("folders");
+    return { success: true };
+  } catch (error) {
+    console.error("Lỗi khi xóa đồng tác giả:", error);
+    return { success: false, error: "Không thể xóa đồng tác giả." };
+  }
+}
+
+export async function getFolderCoAuthors(folderId: string) {
+  try {
+    const folderDoc = await adminDb.collection("folders").doc(folderId).get();
+    if (!folderDoc.exists) return { success: false, error: "Thư mục không tồn tại." };
+    
+    const data = folderDoc.data();
+    return { 
+      success: true, 
+      coAuthorEmails: data?.coAuthorEmails || [], 
+      ownerEmail: data?.ownerEmail || "", 
+      ownerName: data?.ownerName || "" 
+    };
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách đồng tác giả:", error);
+    return { success: false, error: "Không thể lấy danh sách đồng tác giả." };
   }
 }
