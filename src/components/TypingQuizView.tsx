@@ -8,6 +8,7 @@ import { StudyScopeSelector } from "./StudyScopeSelector";
 import { useCustomBg } from "@/hooks/useCustomBg";
 import { audioFX } from "@/lib/audio-fx";
 import { playAudio } from "@/lib/tts-utils";
+import toast from "react-hot-toast";
 
 interface VocabularyData {
   id: string;
@@ -68,7 +69,31 @@ export function TypingQuizView({
   const [quizList, setQuizList] = useState<QuizItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userInput, setUserInput] = useState("");
-  const [feedback, setFeedback] = useState<"none" | "correct" | "wrong">("none");
+  const [feedback, setFeedback] = useState<"none" | "correct" | "wrong" | "skipped">("none");
+  const skipTimestampRef = useRef<number>(0);
+
+  // Cấu hình: có hiển thị đáp án sau khi bấm Tab / Bỏ qua hay không
+  const [showAnswerOnSkip, setShowAnswerOnSkip] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('kotobase_quiz_show_answer_on_skip');
+      return saved !== null ? saved === 'true' : false;
+    }
+    return false;
+  });
+
+  const toggleShowAnswerOnSkip = () => {
+    const next = !showAnswerOnSkip;
+    setShowAnswerOnSkip(next);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('kotobase_quiz_show_answer_on_skip', String(next));
+      toast.success(
+        next 
+          ? "Đã bật: Hiện đáp án khi bấm Tab / Bỏ qua" 
+          : "Đã tắt: Bỏ qua và chuyển câu ngay khi bấm Tab",
+        { id: "kotobase_skip_toggle" }
+      );
+    }
+  };
   const [showHint, setShowHint] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
   const [quizMode, setQuizMode] = useState<"mix" | "type1" | "type2">("mix");
@@ -241,7 +266,7 @@ export function TypingQuizView({
       ) {
         if ((e.target as HTMLElement)?.tagName === "INPUT") return;
         e.preventDefault();
-        if (feedback !== "correct") {
+        if (feedback !== "correct" && feedback !== "skipped") {
           setShowHint(prev => !prev);
         }
         inputRef.current?.focus();
@@ -395,7 +420,7 @@ export function TypingQuizView({
   };
 
   const handleCheck = () => {
-    if (!userInput.trim() || feedback === "correct") return;
+    if (!userInput.trim() || feedback === "correct" || feedback === "skipped") return;
 
     const currentItem = quizList[currentIndex];
     const userStr = cleanString(userInput);
@@ -463,7 +488,7 @@ export function TypingQuizView({
     ) {
       e.preventDefault();
       e.stopPropagation();
-      if (feedback !== "correct") {
+      if (feedback !== "correct" && feedback !== "skipped") {
         setShowHint(prev => !prev);
       }
       // Huỷ bỏ IME composition ngay lập tức để không hiện popup gợi ý của bộ gõ (như tiếng Nhật/Việt)
@@ -486,10 +511,10 @@ export function TypingQuizView({
         // Nếu đang sai, bấm Enter để xóa đi gõ lại nhanh
         setUserInput("");
         setFeedback("none");
-      } else if (feedback === "correct") {
-        // Chỉ cho phép bấm Enter để sang ngay câu tiếp theo sau tối thiểu 300ms
-        // nhằm tránh tình trạng dính phím / IME Enter bấm 2 lần nhảy cóc làm mất hiệu ứng viền xanh
-        if (Date.now() - correctTimestampRef.current > 300) {
+      } else if (feedback === "correct" || feedback === "skipped") {
+        // Cho phép bấm Enter để sang ngay câu tiếp theo sau tối thiểu 300ms
+        const timestamp = feedback === "correct" ? correctTimestampRef.current : skipTimestampRef.current;
+        if (Date.now() - timestamp > 300) {
           if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
           if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
           moveToNext();
@@ -499,9 +524,14 @@ export function TypingQuizView({
       }
     } else if (e.key === "Tab") {
       e.preventDefault();
-      if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
-      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-      handleSkip();
+      if (feedback === "correct" || feedback === "skipped") {
+        // Đang hiển thị đáp án, bấm Tab cũng chuyển ngay sang câu tiếp theo
+        if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
+        if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+        moveToNext();
+      } else {
+        handleSkip();
+      }
     }
   };
 
@@ -516,11 +546,53 @@ export function TypingQuizView({
     }
     const currentItem = quizList[currentIndex];
     if (currentItem) {
-      // Lưu vào danh sách bỏ qua nếu chưa có
+      // Luôn ghi nhận vào danh sách bỏ qua (coi như chưa thuộc)
       setSkippedList(prev => prev.some(item => item.id === currentItem.id) ? prev : [...prev, currentItem]);
     }
-    setFeedback("none");
-    moveToNext();
+
+    // Khởi động timer nếu chưa chạy
+    if (!timerStarted) {
+      setTimerStarted(true);
+      setTimerRunning(true);
+    }
+
+    if (showAnswerOnSkip && currentItem) {
+      // Flow hiện đáp án: hiển thị thông tin từ vựng đầy đủ như khi gõ đúng
+      setFeedback("skipped");
+      skipTimestampRef.current = Date.now();
+
+      // Tự động điền đáp án chuẩn vào ô nhập liệu
+      const expectedText = currentItem.quizType === 1 
+        ? (currentItem.reading || currentItem.word) 
+        : currentItem.word;
+      setUserInput(expectedText);
+
+      // Tự động phát âm từ vựng để hỗ trợ người học nghe và ghi nhớ
+      playAudio(currentItem.reading || currentItem.word);
+
+      // Đếm ngược tự động chuyển câu theo quizDelay
+      setCountdown(quizDelay);
+      let remaining = quizDelay;
+      countdownIntervalRef.current = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+          if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+          countdownIntervalRef.current = null;
+        } else {
+          setCountdown(remaining);
+        }
+      }, 1000);
+
+      nextTimeoutRef.current = setTimeout(() => {
+        if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+        moveToNext();
+      }, quizDelay * 1000);
+    } else {
+      // Flow mặc định: bỏ qua và chuyển sang câu tiếp theo ngay lập tức
+      setFeedback("none");
+      moveToNext();
+    }
   };
 
   if (vocabularies.length === 0) {
@@ -578,6 +650,18 @@ export function TypingQuizView({
                   className="p-1.5 text-slate-500 hover:text-purple-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleShowAnswerOnSkip}
+                  title={showAnswerOnSkip ? "Đáp án Tab: Đang BẬT" : "Đáp án Tab: Đang TẮT"}
+                  className={`p-1.5 rounded-lg text-xs transition-all ${
+                    showAnswerOnSkip
+                      ? "text-amber-600 bg-amber-100 dark:bg-amber-500/20"
+                      : "text-slate-400 hover:text-amber-600 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  {showAnswerOnSkip ? <Eye className="w-3.5 h-3.5 text-amber-500" /> : <EyeOff className="w-3.5 h-3.5" />}
                 </button>
                 <button 
                   type="button"
@@ -731,10 +815,56 @@ export function TypingQuizView({
                         <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">
                           Thời gian dừng lại để xem cách đọc, Hán Việt & ví dụ trước khi tự động chuyển câu.
                         </p>
+
+                        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                          <div>
+                            <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                              <Eye className="w-3.5 h-3.5 text-amber-500" />
+                              Hiện đáp án khi Tab
+                            </span>
+                            <p className="text-[9px] text-slate-400 leading-tight mt-0.5">
+                              Dừng lại xem từ vựng thay vì chuyển câu ngay
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={toggleShowAnswerOnSkip}
+                            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                              showAnswerOnSkip ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-700'
+                            }`}
+                          >
+                            <span
+                              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                                showAnswerOnSkip ? 'translate-x-4' : 'translate-x-0'
+                              }`}
+                            />
+                          </button>
+                        </div>
                       </div>
                     </>
                   )}
                 </div>
+
+                {/* Nút bật/tắt hiển thị đáp án khi Tab */}
+                <button
+                  type="button"
+                  onClick={toggleShowAnswerOnSkip}
+                  title={
+                    showAnswerOnSkip
+                      ? "Hiện đáp án khi bấm Tab: ĐANG BẬT — Xem lại từ vựng trước khi qua câu (Bấm để tắt)"
+                      : "Hiện đáp án khi bấm Tab: ĐANG TẮT — Bỏ qua và chuyển câu ngay (Bấm để bật)"
+                  }
+                  className={`p-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                    showAnswerOnSkip
+                      ? "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-500/40 shadow-sm"
+                      : "text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  {showAnswerOnSkip ? <Eye className="w-3.5 h-3.5 text-amber-500" /> : <EyeOff className="w-3.5 h-3.5" />}
+                  <span className="text-[10px] font-bold">
+                    {showAnswerOnSkip ? "Đáp án Tab: Bật" : "Đáp án Tab: Tắt"}
+                  </span>
+                </button>
 
                 <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
                 {/* Nút toggle hiển thị đồng hồ bấm giờ */}
@@ -942,23 +1072,49 @@ export function TypingQuizView({
       <div className={`study-card bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 md:p-12 shadow-2xl relative overflow-hidden transition-all duration-300 ${
         feedback === "correct"
           ? "border-2 border-emerald-500 dark:border-emerald-400 ring-4 ring-emerald-500/20 dark:ring-emerald-500/30 shadow-emerald-500/15"
+          : feedback === "skipped"
+          ? "border-2 border-amber-500 dark:border-amber-400 ring-4 ring-amber-500/20 dark:ring-amber-500/30 shadow-amber-500/15"
           : feedback === "wrong"
           ? "border-2 border-rose-500 dark:border-rose-400 ring-4 ring-rose-500/20 shadow-rose-500/15"
           : "border border-slate-200 dark:border-slate-800"
       }`}>
         
         <StudyCardArtwork 
-          side={feedback === "correct" ? "back" : "front"} 
+          side={feedback === "correct" || feedback === "skipped" ? "back" : "front"} 
           customFrontUrl={customBg.cardFront?.dataUrl}
           customBackUrl={customBg.cardBack?.dataUrl}
           cardWash={customBg.washSettings?.cardWash}
         />
-        {/* Nhãn Dạng câu hỏi */}
-        <div className="absolute top-0 left-0 right-0 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 px-4 sm:px-6 py-2 sm:py-2.5 flex items-center justify-center gap-2">
-          <Info className="w-4 h-4 text-slate-400 shrink-0" />
-          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-            {currentItem.quizType === 1 ? "Dạng 1: Nhìn chữ, nhập cách đọc" : "Dạng 2: Nhìn nghĩa, dịch sang tiếng Nhật"}
-          </span>
+        {/* Nhãn Dạng câu hỏi / Trạng thái đáp án */}
+        <div className={`absolute top-0 left-0 right-0 border-b px-4 sm:px-6 py-2 sm:py-2.5 flex items-center justify-center gap-2 transition-colors ${
+          feedback === "skipped"
+            ? "bg-amber-50/80 dark:bg-amber-950/40 border-amber-200/60 dark:border-amber-800/60"
+            : feedback === "correct"
+            ? "bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/60"
+            : "bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800"
+        }`}>
+          {feedback === "skipped" ? (
+            <>
+              <SkipForward className="w-4 h-4 text-amber-500 shrink-0" />
+              <span className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider">
+                Đã bỏ qua — Thông tin từ vựng
+              </span>
+            </>
+          ) : feedback === "correct" ? (
+            <>
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+                Chính xác — Thông tin từ vựng
+              </span>
+            </>
+          ) : (
+            <>
+              <Info className="w-4 h-4 text-slate-400 shrink-0" />
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                {currentItem.quizType === 1 ? "Dạng 1: Nhìn chữ, nhập cách đọc" : "Dạng 2: Nhìn nghĩa, dịch sang tiếng Nhật"}
+              </span>
+            </>
+          )}
         </div>
 
         <div className="mt-8 sm:mt-10 text-center flex flex-col items-center min-h-[120px] sm:min-h-[160px] justify-center">
@@ -967,7 +1123,7 @@ export function TypingQuizView({
               {/* DẠNG 1: HIỂN THỊ TỪ VỰNG */}
               <div className="text-4xl md:text-5xl font-black text-slate-800 dark:text-white tracking-wide mb-3 sm:mb-4 drop-shadow-sm flex items-center justify-center gap-3">
                 <ClickableKanjiString text={currentItem.word} />
-                {feedback === "correct" && (
+                {(feedback === "correct" || feedback === "skipped") && (
                   <button
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
@@ -987,8 +1143,8 @@ export function TypingQuizView({
                 )}
               </div>
               
-              {/* Khi gõ đúng: Hiển thị đầy đủ Cách đọc, Âm Hán Việt, Nghĩa tiếng Việt và Ví dụ để người dùng củng cố trí nhớ */}
-              {feedback === "correct" ? (
+              {/* Khi gõ đúng hoặc bỏ qua (có bật hiện đáp án): Hiển thị đầy đủ Cách đọc, Âm Hán Việt, Nghĩa tiếng Việt và Ví dụ */}
+              {feedback === "correct" || feedback === "skipped" ? (
                 <div className="space-y-3 animate-fadeIn w-full max-w-lg mx-auto mt-1">
                   <div className="flex items-center justify-center gap-2 flex-wrap">
                     {currentItem.reading && (
@@ -1001,8 +1157,15 @@ export function TypingQuizView({
                         {currentItem.sinoVietnamese}
                       </span>
                     )}
+                    {feedback === "skipped" && (
+                      <span className="px-2.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 text-xs font-bold border border-amber-200 dark:border-amber-800/60">
+                        Đã bỏ qua
+                      </span>
+                    )}
                   </div>
-                  <div className="text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                  <div className={`text-xl md:text-2xl font-black ${
+                    feedback === "correct" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
+                  }`}>
                     {currentItem.meaning}
                   </div>
                   {currentItem.example && (
@@ -1044,7 +1207,7 @@ export function TypingQuizView({
           ) : (
             <>
               {/* DẠNG 2: HIỂN THỊ NGHĨA */}
-              {feedback === "correct" ? (
+              {feedback === "correct" || feedback === "skipped" ? (
                 <div className="space-y-3 animate-fadeIn w-full max-w-lg mx-auto">
                   <div className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white tracking-wide flex items-center justify-center gap-3">
                     <ClickableKanjiString text={currentItem.word} />
@@ -1076,8 +1239,15 @@ export function TypingQuizView({
                         {currentItem.sinoVietnamese}
                       </span>
                     )}
+                    {feedback === "skipped" && (
+                      <span className="px-2.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 text-xs font-bold border border-amber-200 dark:border-amber-800/60">
+                        Đã bỏ qua
+                      </span>
+                    )}
                   </div>
-                  <div className="text-lg md:text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                  <div className={`text-lg md:text-xl font-bold ${
+                    feedback === "correct" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
+                  }`}>
                     {currentItem.meaning}
                   </div>
                   {currentItem.example && (
@@ -1151,7 +1321,7 @@ export function TypingQuizView({
                   }
                 }}
                 onChange={(e) => {
-                  if (feedback === "correct") return;
+                  if (feedback === "correct" || feedback === "skipped") return;
                   const val = e.target.value.replace(/[`‘｀]/g, '');
                   setUserInput(val);
                   if (feedback === "wrong") setFeedback("none");
@@ -1166,6 +1336,8 @@ export function TypingQuizView({
                 className={`w-full py-3.5 sm:py-5 px-4 sm:px-6 text-base sm:text-xl font-medium rounded-xl sm:rounded-2xl border-2 outline-none transition-all shadow-lg text-center ${
                   feedback === "correct" 
                     ? "bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-500 dark:border-emerald-400 text-emerald-800 dark:text-emerald-200 ring-4 ring-emerald-500/30 dark:ring-emerald-500/40 shadow-md shadow-emerald-500/20"
+                    : feedback === "skipped"
+                    ? "bg-amber-50/90 dark:bg-amber-950/40 border-amber-500 dark:border-amber-400 text-amber-800 dark:text-amber-200 ring-4 ring-amber-500/30 dark:ring-amber-500/40 shadow-md shadow-amber-500/20"
                     : feedback === "wrong"
                     ? "bg-rose-50 dark:bg-rose-950/40 border-rose-500 dark:border-rose-400 text-rose-800 dark:text-rose-200 ring-4 ring-rose-500/30 dark:ring-rose-500/40 animate-shake"
                     : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:border-indigo-500 dark:focus:border-indigo-500 text-slate-800 dark:text-slate-100 focus:ring-4 focus:ring-indigo-500/20"
@@ -1177,6 +1349,11 @@ export function TypingQuizView({
                   <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8" />
                 </div>
               )}
+              {feedback === "skipped" && (
+                <div className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 text-amber-500 animate-bounce pointer-events-none">
+                  <SkipForward className="w-6 h-6 sm:w-8 sm:h-8" />
+                </div>
+              )}
               {feedback === "wrong" && (
                 <div className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 text-rose-500 pointer-events-none">
                   <XCircle className="w-6 h-6 sm:w-8 sm:h-8" />
@@ -1186,22 +1363,24 @@ export function TypingQuizView({
 
             {/* CHỈ HIỂN THỊ TRÊN MOBILE PHONE (sm:hidden). Trên máy tính hoàn toàn KHÔNG CÓ! */}
             <div className="flex sm:hidden items-stretch gap-1.5 shrink-0">
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  handleSkip();
-                }}
-                onClick={handleSkip}
-                className="px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-1 active:scale-95 transition-all shadow-sm select-none"
-                title="Bỏ qua từ này"
-              >
-                <SkipForward className="w-4 h-4 text-amber-500 shrink-0" />
-                <span>Bỏ qua</span>
-              </button>
+              {feedback !== "correct" && feedback !== "skipped" && (
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                    handleSkip();
+                  }}
+                  onClick={handleSkip}
+                  className="px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-1 active:scale-95 transition-all shadow-sm select-none"
+                  title="Bỏ qua từ này"
+                >
+                  <SkipForward className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>Bỏ qua</span>
+                </button>
+              )}
 
-              {feedback === "correct" ? (
+              {feedback === "correct" || feedback === "skipped" ? (
                 <button
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
@@ -1216,7 +1395,11 @@ export function TypingQuizView({
                     if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
                     moveToNext();
                   }}
-                  className="px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 active:scale-95 transition-all shadow-md shadow-emerald-500/30 select-none"
+                  className={`px-3.5 rounded-xl text-white font-bold text-xs flex items-center gap-1 active:scale-95 transition-all shadow-md select-none ${
+                    feedback === "correct"
+                      ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/30"
+                      : "bg-amber-600 hover:bg-amber-500 shadow-amber-500/30"
+                  }`}
                   title="Sang câu tiếp theo"
                 >
                   <span>Tiếp ({countdown}s)</span>
@@ -1258,18 +1441,29 @@ export function TypingQuizView({
           </div>
         )}
 
+        {feedback === "skipped" && (
+          <div className="text-center text-amber-600 dark:text-amber-400 font-semibold text-sm animate-fadeIn flex items-center justify-center gap-1.5">
+            <SkipForward className="w-4 h-4 shrink-0" />
+            <span>
+              Đã bỏ qua! Tự động chuyển câu sau <b className="font-mono text-amber-700 dark:text-amber-300">{countdown}s</b> (hoặc bấm Enter/Tab để chuyển ngay)...
+            </span>
+          </div>
+        )}
+
         {/* HÀNG NÚT BẤM DÀNH CHO MÁY TÍNH / IPAD (sm:flex). Trên mobile phone sẽ ẩn để không bị thừa nút bên dưới! */}
         <div className="hidden sm:flex justify-center gap-4 mt-6">
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={handleSkip}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm"
-          >
-            <SkipForward className="w-4 h-4" /> Bỏ qua (Tab)
-          </button>
+          {feedback !== "correct" && feedback !== "skipped" && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handleSkip}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm"
+            >
+              <SkipForward className="w-4 h-4" /> Bỏ qua (Tab)
+            </button>
+          )}
           
-          {feedback === "correct" ? (
+          {feedback === "correct" || feedback === "skipped" ? (
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
@@ -1278,7 +1472,11 @@ export function TypingQuizView({
                 if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
                 moveToNext();
               }}
-              className="flex items-center gap-2 px-8 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all shadow-md shadow-emerald-500/30 text-sm active:scale-95"
+              className={`flex items-center gap-2 px-8 py-2.5 rounded-xl text-white font-bold transition-all shadow-md text-sm active:scale-95 ${
+                feedback === "correct" 
+                  ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/30" 
+                  : "bg-amber-600 hover:bg-amber-500 shadow-amber-500/30"
+              }`}
             >
               <span>Tiếp tục (Enter)</span>
               <span className="font-mono text-xs px-1.5 py-0.5 rounded-full bg-white/20 border border-white/30">
