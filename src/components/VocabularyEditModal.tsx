@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Save, FileEdit, BookOpen, Volume2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { updateVocabulary } from '@/app/actions/vocabulary';
@@ -31,6 +32,17 @@ export function VocabularyEditModal({
   onClose,
   onSuccess,
 }: VocabularyEditModalProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
   const [formData, setFormData] = useState({
     word: vocabulary.word || '',
     meaning: vocabulary.meaning || '',
@@ -79,9 +91,19 @@ export function VocabularyEditModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
-      <div className="w-full max-w-lg max-h-[90vh] sm:max-h-[94vh] rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden transition-colors duration-300">
+  if (!mounted || typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] bg-slate-950/60 backdrop-blur-sm animate-fadeIn"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className="w-full max-w-lg max-h-[90vh] sm:max-h-[94vh] rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden transition-colors duration-300"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
           <div>
@@ -236,6 +258,7 @@ export function VocabularyEditModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
