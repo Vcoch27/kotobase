@@ -21,14 +21,15 @@ import {
   Moon, Sun, Library, LogOut, ChevronDown, ChevronRight, ChevronUp, Volume2, Volume1, VolumeX, Loader2,
   User, Lock, Folder, X, FolderTree as FolderTreeIcon, ArrowDownNarrowWide, ArrowUpNarrowWide,
   Sparkles, BookOpen, Smartphone, WifiOff, Plus, Clock, Headphones, Image as ImageIcon,
-  ShieldCheck
+  ShieldCheck,
+  Users
 } from "lucide-react";
 import { isAdminEmail } from "@/lib/admin-shared";
 import { useWebVolume } from "@/lib/tts-utils";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { OfflineSyncButton } from "./OfflineSyncButton";
 import { getOfflineVocabularies, getOfflineFolders, saveVocabulariesOffline, saveFoldersOffline } from "@/lib/offline-storage";
-import { getFolderFullPath } from "@/lib/folder-utils";
+import { getFolderFullPath, canUserManageFolder, isUserFolderCoAuthor } from "@/lib/folder-utils";
 import { useTheme } from "next-themes";
 import { useDebounce } from "@/hooks/useDebounce";
 import { AppLogo } from "./AppLogo";
@@ -98,6 +99,11 @@ export function Dashboard({ currentUser }: DashboardProps) {
 
   const [selectedVocabIds, setSelectedVocabIds] = useState<string[]>([]);
   const [sortOrder, setSortOrder] = useState<"created_asc" | "created_desc" | "alphabetical">("created_asc");
+
+  const handleCreateSubFolder = (parentId: string) => {
+    setNewFolderParentId(parentId);
+    setShowFolderModal(true);
+  };
 
   const handleSelectFolder = (id: string) => {
     const newIds = id ? [id] : ["all"];
@@ -861,11 +867,10 @@ export function Dashboard({ currentUser }: DashboardProps) {
               {isGoogleUser && (
                 <button
                   onClick={() => {
-                    // Chỉ pre-fill parentId nếu thư mục đang chọn thuộc về user hiện tại (hoặc là admin)
-                    const isAdmin = currentUser?.email === "hoangtungmy123@gmail.com";
+                    // Pre-fill parentId nếu thư mục đang chọn thuộc về user, là đồng tác giả, hoặc là admin
                     const selectedFolder = folders.find(f => f.id === selectedFolderId);
                     const canUseAsParent = selectedFolderId !== "all" && selectedFolder &&
-                      (isAdmin || selectedFolder.ownerId === currentUser?.uid);
+                      canUserManageFolder(selectedFolder, folders, currentUser?.uid, currentUser?.email);
                     setNewFolderParentId(canUseAsParent ? selectedFolderId : "");
                     setShowFolderModal(true);
                   }}
@@ -886,6 +891,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 onSelectFolders={handleSelectFolders}
                 onConfirmMultiSelect={handleConfirmMultiSelect}
                 onRefresh={refreshFoldersOnly}
+                onCreateSubFolder={handleCreateSubFolder}
                 currentUserId={currentUser?.uid || null}
                 currentUserEmail={currentUser?.email || null}
               />
@@ -1050,12 +1056,27 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 )}
               </div>
 
-              {selectedFolderId !== 'all' && selectedFolderIds.length === 1 && folders.find(f => f.id === selectedFolderId)?.ownerEmail && (
-                <div className="hidden lg:flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20 rounded-full max-w-[180px] truncate">
-                  <User className="w-3 h-3 shrink-0" />
-                  <span className="truncate">{folders.find(f => f.id === selectedFolderId)?.ownerEmail}</span>
-                </div>
-              )}
+              {selectedFolderId !== 'all' && selectedFolderIds.length === 1 && (() => {
+                const curFolder = folders.find(f => f.id === selectedFolderId);
+                if (!curFolder) return null;
+                const isCoAuth = isUserFolderCoAuthor(curFolder, folders, currentUser?.uid, currentUser?.email);
+                return (
+                  <div className="hidden lg:flex items-center gap-1.5">
+                    {curFolder.ownerEmail && (
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20 rounded-full max-w-[180px] truncate">
+                        <User className="w-3 h-3 shrink-0" />
+                        <span className="truncate">{curFolder.ownerEmail}</span>
+                      </div>
+                    )}
+                    {isCoAuth && (
+                      <span className="px-2 py-0.5 text-[10px] font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/80 rounded-full flex items-center gap-1 shadow-xs">
+                        <Users className="w-2.5 h-2.5 text-purple-600 dark:text-purple-400" />
+                        <span>Đồng tác giả</span>
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Vùng bên phải: Nút Tải Offline & Bộ chọn sắp xếp */}
@@ -1354,10 +1375,17 @@ export function Dashboard({ currentUser }: DashboardProps) {
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 text-sm text-slate-800 dark:text-slate-100 outline-none"
                 >
                   <option value="">-- Không có (Root) --</option>
-                  {/* Chỉ hiển thị folder của mình, Admin mới được chọn tất cả các thư mục */}
-                  {folders.filter(f => currentUser?.email === "hoangtungmy123@gmail.com" ? true : (f.ownerId && f.ownerId === currentUser?.uid)).map((f) => (
-                    <option key={f.id} value={f.id}>{getFolderFullPath(f, folders)}</option>
-                  ))}
+                  {/* Hiển thị thư mục của mình hoặc thư mục mình là đồng tác giả (Admin thấy tất cả) */}
+                  {folders
+                    .filter(f => canUserManageFolder(f, folders, currentUser?.uid, currentUser?.email))
+                    .map((f) => {
+                      const isCoAuth = isUserFolderCoAuthor(f, folders, currentUser?.uid, currentUser?.email);
+                      return (
+                        <option key={f.id} value={f.id}>
+                          {getFolderFullPath(f, folders)} {isCoAuth ? "(Đồng tác giả)" : ""}
+                        </option>
+                      );
+                    })}
                 </select>
               </div>
 
@@ -1525,11 +1553,10 @@ export function Dashboard({ currentUser }: DashboardProps) {
                   <button
                   onClick={() => {
                       setShowMobileFolderDrawer(false);
-                      // Chỉ pre-fill parentId nếu thư mục đang chọn thuộc về user hiện tại (hoặc là admin)
-                      const isAdmin = currentUser?.email === "hoangtungmy123@gmail.com";
+                      // Pre-fill parentId nếu thư mục đang chọn thuộc về user, là đồng tác giả, hoặc là admin
                       const selectedFolder = folders.find(f => f.id === selectedFolderId);
                       const canUseAsParent = selectedFolderId !== "all" && selectedFolder &&
-                        (isAdmin || selectedFolder.ownerId === currentUser?.uid);
+                        canUserManageFolder(selectedFolder, folders, currentUser?.uid, currentUser?.email);
                       setNewFolderParentId(canUseAsParent ? selectedFolderId : "");
                       setShowFolderModal(true);
                     }}

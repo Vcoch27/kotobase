@@ -22,6 +22,7 @@ import {
   Square,
   Layers,
   Sparkles,
+  FolderPlus,
 } from 'lucide-react';
 import { getDownloadedDecks } from '@/lib/offline-storage';
 
@@ -45,6 +46,7 @@ interface FolderTreeProps {
   onSelectFolders?: (ids: string[]) => void;
   onConfirmMultiSelect?: () => void;
   onRefresh: () => void;
+  onCreateSubFolder?: (parentId: string) => void;
   currentUserId?: string | null;
   currentUserEmail?: string | null;
 }
@@ -57,6 +59,7 @@ export function FolderTree({
   onSelectFolders,
   onConfirmMultiSelect,
   onRefresh,
+  onCreateSubFolder,
   currentUserId,
   currentUserEmail,
 }: FolderTreeProps) {
@@ -469,6 +472,7 @@ export function FolderTree({
       const hasOwner = !!node.ownerId;
       const canEdit = getCanEdit(node);
       const canDelete = getCanDelete(node);
+      const isCoAuthor = !isOwner && !isAdmin && canEdit;
       const isMenuOpen = activeMenuFolderId === node.id;
 
       return (
@@ -530,14 +534,16 @@ export function FolderTree({
 
             {/* Icon thư mục */}
             <Folder
-              className={`w-4 h-4 shrink-0 ${
+              className={`w-4 h-4 shrink-0 transition-colors ${
                 isSelected
                   ? 'text-indigo-600 dark:text-indigo-400 fill-indigo-100 dark:fill-indigo-500/20'
                   : isDragOver
                     ? 'text-amber-500 fill-amber-100'
                     : isOwner || isAdmin
                       ? 'text-indigo-500 dark:text-indigo-400'
-                      : 'text-slate-400 dark:text-slate-500'
+                      : isCoAuthor
+                        ? 'text-purple-600 dark:text-purple-400 fill-purple-100 dark:fill-purple-500/20'
+                        : 'text-slate-400 dark:text-slate-500'
               }`}
             />
 
@@ -562,6 +568,14 @@ export function FolderTree({
                   title={!node.ownerId ? `Thư mục quản trị của Admin (${currentUserEmail})` : `Thư mục của bạn (${node.ownerEmail || ''})`}
                 >
                   me
+                </span>
+              ) : isCoAuthor ? (
+                <span
+                  className="text-[9px] font-bold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/70 border border-purple-200 dark:border-purple-800/80 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 shadow-xs"
+                  title={`Bạn là Đồng tác giả (Chủ sở hữu: ${node.ownerName || node.ownerEmail || 'Người khác'})`}
+                >
+                  <Users className="w-2.5 h-2.5 text-purple-600 dark:text-purple-400" />
+                  <span>Đồng tác giả</span>
                 </span>
               ) : hasOwner ? (
                 <span
@@ -630,13 +644,34 @@ export function FolderTree({
                 {/* Dropdown Menu Popup */}
                 {isMenuOpen && (
                   <div 
-                    className="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 py-1 overflow-hidden animate-fadeIn text-xs"
+                    className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 py-1 overflow-hidden animate-fadeIn text-xs"
                     onClick={(e) => e.stopPropagation()}
                   >
+                    {isCoAuthor && (
+                      <div className="px-3 py-1.5 text-[10px] font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/50 border-b border-purple-100 dark:border-purple-900/60 flex items-center gap-1.5">
+                        <Users className="w-3 h-3 text-purple-600 dark:text-purple-400 shrink-0" />
+                        <span>Bạn là Đồng tác giả</span>
+                      </div>
+                    )}
+                    
+                    {onCreateSubFolder && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveMenuFolderId(null);
+                          onCreateSubFolder(node.id);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors text-left"
+                      >
+                        <FolderPlus className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>Thêm thư mục con</span>
+                      </button>
+                    )}
+
                     <button
                       onClick={(e) => handleRenameFolder(node.id, node.name, e)}
                       disabled={renamingFolderId === node.id}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors text-left"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors text-left border-t border-slate-100 dark:border-slate-800"
                     >
                       <Pencil className="w-3.5 h-3.5 text-indigo-500" />
                       <span>Đổi tên</span>
