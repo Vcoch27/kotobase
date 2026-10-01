@@ -158,9 +158,8 @@ export function Dashboard({ currentUser }: DashboardProps) {
         }
       }).catch(() => {});
     } catch (e) {}
-
-    // 4. Revalidate dữ liệu ngầm mà không làm giật màn hình
-    fetchData(true);
+    // Đã cập nhật xong trực tiếp tại chỗ (in-place) ở state, RAM cache và IndexedDB;
+    // Không gọi fetchData() ngầm để tránh query lại toàn bộ DB gây giật lag và reset tiến trình học.
   };
 
   const handleCreateSubFolder = (parentId: string) => {

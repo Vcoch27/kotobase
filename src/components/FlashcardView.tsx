@@ -272,13 +272,16 @@ export function FlashcardView({
     return () => window.removeEventListener("keydown", handleEsc);
   }, [isActive, showAutoPlaySettings]);
 
-  const vocabIdsStr = vocabularies.map(v => v.id).join(',');
   const selectedVocabIdsStr = selectedVocabIds.join(',');
 
   useEffect(() => {
-    setScopedVocabs(getScopedFromSelection(vocabularies, selectedVocabIds));
+    // Chỉ cập nhật scopedVocabs khi có danh sách ID chọn từ Bảng (selectedVocabIds)
+    // Các trường hợp khác (Tất cả, Chia đợt chunk, Dải STT, Random) được quản lý ổn định bởi StudyScopeSelector
+    if (selectedVocabIds.length > 0) {
+      setScopedVocabs(getScopedFromSelection(vocabularies, selectedVocabIds));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vocabIdsStr, selectedVocabIdsStr]);
+  }, [selectedVocabIdsStr]);
 
   // Listening mode states
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);

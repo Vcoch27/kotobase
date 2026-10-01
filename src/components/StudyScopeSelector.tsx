@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   SlidersHorizontal,
   Check,
@@ -156,10 +156,30 @@ export function StudyScopeSelector({
   const vocabIdsStr = allVocabularies.map(v => v.id).join(',');
   const selectedVocabIdsStr = selectedVocabIds.join(',');
 
+  const isFirstMountRef = useRef(true);
+
   // Tự động áp dụng scope khi danh sách allVocabularies thay đổi
   useEffect(() => {
+    if (isFirstMountRef.current) {
+      isFirstMountRef.current = false;
+      if (selectedVocabIds.length > 0) {
+        applyScope('selected');
+      } else {
+        applyScope('all');
+      }
+      return;
+    }
+
+    // Giữ nguyên chế độ phân đoạn (chunk / range / random / selected) của người dùng,
+    // tuyệt đối không tự ý reset về 'all' làm mất phạm vi đợt từ đang học!
     if (selectedVocabIds.length > 0) {
       applyScope('selected');
+    } else if (scopeType === 'chunk') {
+      applyScope('chunk', selectedChunkIndex);
+    } else if (scopeType === 'range') {
+      applyScope('range');
+    } else if (scopeType === 'random') {
+      applyScope('random', selectedChunkIndex, randomCount);
     } else {
       applyScope('all');
     }

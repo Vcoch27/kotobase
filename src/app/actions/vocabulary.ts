@@ -407,7 +407,7 @@ export async function updateVocabulary(id: string, input: Partial<CreateVocabInp
     if (input.folderIds !== undefined) updateData.folderIds = input.folderIds;
 
     await adminDb.collection("vocabularies").doc(id).update(updateData);
-    revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
+    revalidateTag("vocabularies");
     return { success: true };
   } catch (error) {
     console.error("Lỗi khi cập nhật từ vựng:", error);
