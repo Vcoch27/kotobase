@@ -533,19 +533,24 @@ export function FolderTree({
             )}
 
             {/* Icon thư mục */}
-            <Folder
-              className={`w-4 h-4 shrink-0 transition-colors ${
-                isSelected
-                  ? 'text-indigo-600 dark:text-indigo-400 fill-indigo-100 dark:fill-indigo-500/20'
-                  : isDragOver
-                    ? 'text-amber-500 fill-amber-100'
-                    : isOwner || isAdmin
-                      ? 'text-indigo-500 dark:text-indigo-400'
-                      : isCoAuthor
-                        ? 'text-purple-600 dark:text-purple-400 fill-purple-100 dark:fill-purple-500/20'
-                        : 'text-slate-400 dark:text-slate-500'
-              }`}
-            />
+            <span
+              title={isCoAuthor ? `Thư mục bạn làm Đồng tác giả (Chủ: ${node.ownerName || node.ownerEmail || 'Người khác'})` : undefined}
+              className="shrink-0 flex items-center"
+            >
+              <Folder
+                className={`w-4 h-4 transition-colors ${
+                  isSelected
+                    ? 'text-indigo-600 dark:text-indigo-400 fill-indigo-100 dark:fill-indigo-500/20'
+                    : isDragOver
+                      ? 'text-amber-500 fill-amber-100'
+                      : isOwner || isAdmin
+                        ? 'text-indigo-500 dark:text-indigo-400'
+                        : isCoAuthor
+                          ? 'text-purple-600 dark:text-purple-400 fill-purple-100 dark:fill-purple-500/20'
+                          : 'text-slate-400 dark:text-slate-500'
+                }`}
+              />
+            </span>
 
             {/* Tên thư mục (Tối đa diện tích hiển thị) */}
             <span className="text-xs sm:text-sm font-medium truncate flex-1 min-w-0 leading-tight flex items-center gap-1.5">
@@ -571,11 +576,10 @@ export function FolderTree({
                 </span>
               ) : isCoAuthor ? (
                 <span
-                  className="text-[9px] font-bold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/70 border border-purple-200 dark:border-purple-800/80 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 shadow-xs"
+                  className="text-[9px] flex items-center bg-purple-100 dark:bg-purple-950/60 p-0.5 rounded text-purple-600 dark:text-purple-400 border border-purple-200/80 dark:border-purple-800/80 cursor-help shrink-0"
                   title={`Bạn là Đồng tác giả (Chủ sở hữu: ${node.ownerName || node.ownerEmail || 'Người khác'})`}
                 >
-                  <Users className="w-2.5 h-2.5 text-purple-600 dark:text-purple-400" />
-                  <span>Đồng tác giả</span>
+                  <Users className="w-2.5 h-2.5" />
                 </span>
               ) : hasOwner ? (
                 <span
