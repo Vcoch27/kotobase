@@ -1771,16 +1771,23 @@ export function FlashcardView({
               {availableMnemonics.length > 0 && (
                 showMnemonic ? (
                   <div 
-                    onClick={(e) => e.stopPropagation()} 
-                    className="mt-4 sm:mt-5 w-full max-w-xl mx-auto bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200/90 dark:border-amber-500/25 rounded-2xl p-4 sm:p-5 text-left shadow-sm animate-fadeIn transition-all select-text"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Nếu người dùng đang bôi đen chọn chữ để sao chép, không ẩn
+                      const selection = window.getSelection();
+                      if (selection && selection.toString().trim().length > 0) return;
+                      toggleMnemonic();
+                    }} 
+                    title="Bấm vào để ẩn mẹo nhớ (hoặc phím M)"
+                    className="mt-4 sm:mt-5 w-full max-w-xl mx-auto bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200/90 dark:border-amber-500/25 hover:border-amber-300 dark:hover:border-amber-500/40 rounded-2xl p-4 sm:p-5 text-left shadow-sm hover:shadow-md animate-fadeIn transition-all select-text cursor-pointer group"
                   >
                     <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-amber-200/70 dark:border-amber-500/20">
                       <span className="text-xs sm:text-sm font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5 uppercase tracking-wider">
                         <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
                         Mẹo nhớ Hán tự ({availableMnemonics.length})
                       </span>
-                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-                        Phím [M] để ẩn
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                        Bấm để ẩn [M]
                       </span>
                     </div>
 
