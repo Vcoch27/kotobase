@@ -905,7 +905,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
 
       {/* Main Layout (2 Columns) */}
       <main className={cn(
-        "study-layout flex-1 w-full mx-auto px-4 lg:px-6 pt-6 pb-36 md:pb-10 flex flex-col md:flex-row gap-6 relative z-10 transition-all duration-300 ease-in-out",
+        "study-layout flex-1 w-full mx-auto px-4 lg:px-6 pt-2 sm:pt-4 md:pt-6 pb-20 sm:pb-24 md:pb-10 flex flex-col md:flex-row gap-6 relative z-10 transition-all duration-300 ease-in-out",
         isStudyFullscreen && "!p-0 !pt-0 !pb-0 !m-0 !max-w-none !gap-0",
         isSidebarCollapsed && "md:gap-0 justify-center"
       )}>
@@ -1442,7 +1442,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
       </main>
 
       <footer className={cn(
-        "relative z-10 w-full border-t border-slate-200/70 bg-white/70 px-4 py-4 text-[11px] text-slate-500 dark:border-slate-800/70 dark:bg-slate-950/70 dark:text-slate-400",
+        "relative z-10 w-full border-t border-slate-200/70 bg-white/70 px-4 py-4 text-[11px] text-slate-500 dark:border-slate-800/70 dark:bg-slate-950/70 dark:text-slate-400 hidden md:block",
         isStudyFullscreen && "hidden"
       )}>
         <div className="mx-auto flex max-w-screen-2xl flex-wrap items-center justify-center gap-x-4 gap-y-2 text-center sm:justify-between">

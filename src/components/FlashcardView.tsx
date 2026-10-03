@@ -1730,7 +1730,7 @@ export function FlashcardView({
           ) : (
             /* Normal / Progress / Anki Front: Hiển thị từ vựng */
             <div 
-              className={`absolute inset-0 w-full h-full backface-hidden study-card bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-6 sm:p-8 text-center ${
+              className={`absolute inset-0 w-full h-full backface-hidden study-card bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center overflow-y-auto ${
                 isFlipped ? "pointer-events-none select-none" : "pointer-events-auto"
               }`}
               style={{ 
@@ -1779,9 +1779,9 @@ export function FlashcardView({
                       toggleMnemonic();
                     }} 
                     title="Bấm vào để ẩn mẹo nhớ (hoặc phím M)"
-                    className="mt-4 sm:mt-5 w-full max-w-xl mx-auto bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200/90 dark:border-amber-500/25 hover:border-amber-300 dark:hover:border-amber-500/40 rounded-2xl p-4 sm:p-5 text-left shadow-sm hover:shadow-md animate-fadeIn transition-all select-text cursor-pointer group"
+                    className="mt-2 sm:mt-5 w-full max-w-xl mx-auto bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200/90 dark:border-amber-500/25 hover:border-amber-300 dark:hover:border-amber-500/40 rounded-2xl p-3 sm:p-5 text-left shadow-sm hover:shadow-md animate-fadeIn transition-all select-text cursor-pointer group"
                   >
-                    <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-amber-200/70 dark:border-amber-500/20">
+                    <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3 pb-1.5 sm:pb-2 border-b border-amber-200/70 dark:border-amber-500/20">
                       <span className="text-xs sm:text-sm font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5 uppercase tracking-wider">
                         <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
                         Mẹo nhớ Hán tự ({availableMnemonics.length})
@@ -1791,20 +1791,20 @@ export function FlashcardView({
                       </span>
                     </div>
 
-                    <div className="space-y-3 max-h-[220px] sm:max-h-[280px] overflow-y-auto pr-1 [scrollbar-width:thin]">
+                    <div className="space-y-2 sm:space-y-3 max-h-[180px] sm:max-h-[280px] overflow-y-auto pr-1 [scrollbar-width:thin]">
                       {availableMnemonics.map(({ char, hanviet, mnemonic }) => (
-                        <div key={char} className="flex items-start gap-3 text-sm sm:text-base leading-relaxed">
-                          <div className="shrink-0 flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-amber-200 dark:border-slate-700 px-2.5 py-1 rounded-xl shadow-xs">
-                            <span className="font-black text-amber-600 dark:text-amber-400 text-xl sm:text-2xl font-japanese">
+                        <div key={char} className="flex items-start gap-2.5 sm:gap-3 text-sm sm:text-base leading-relaxed">
+                          <div className="shrink-0 flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-amber-200 dark:border-slate-700 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl shadow-xs">
+                            <span className="font-black text-amber-600 dark:text-amber-400 text-lg sm:text-2xl font-japanese">
                               {char}
                             </span>
                             {hanviet && (
-                              <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
+                              <span className="text-[10px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
                                 {hanviet}
                               </span>
                             )}
                           </div>
-                          <div className="flex-1 text-slate-800 dark:text-slate-100 pt-0.5 text-base sm:text-lg font-medium leading-relaxed">
+                          <div className="flex-1 text-slate-800 dark:text-slate-100 pt-0.5 text-sm sm:text-lg font-medium leading-relaxed">
                             <HighlightMnemonic text={mnemonic} />
                           </div>
                         </div>
@@ -1818,7 +1818,7 @@ export function FlashcardView({
                       e.stopPropagation();
                       toggleMnemonic();
                     }}
-                    className="mt-3 sm:mt-4 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-semibold text-amber-700 dark:text-amber-300 bg-amber-50/90 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 border border-amber-200/80 dark:border-amber-500/30 transition-all active:scale-95 shadow-xs"
+                    className="mt-2 sm:mt-4 inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs sm:text-sm font-semibold text-amber-700 dark:text-amber-300 bg-amber-50/90 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 border border-amber-200/80 dark:border-amber-500/30 transition-all active:scale-95 shadow-xs"
                     title="Bấm để xem câu chuyện mẹo nhớ Hán tự (Phím M)"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-500" />
@@ -1832,7 +1832,7 @@ export function FlashcardView({
 
           {/* Back */}
           <div 
-            className={`absolute inset-0 w-full h-full backface-hidden study-card bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center ${
+            className={`absolute inset-0 w-full h-full backface-hidden study-card bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center overflow-y-auto ${
               !isFlipped ? "pointer-events-none select-none" : "pointer-events-auto"
             }`}
             style={{ 

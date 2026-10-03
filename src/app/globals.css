@@ -145,20 +145,16 @@
   }
 
   .study-layout {
-    padding-top: 16px;
-    gap: 16px;
+    padding-top: 8px;
+    gap: 12px;
   }
 
   .study-flashcard {
-    min-height: 520px;
+    aspect-ratio: auto;
+    min-height: 290px;
+    height: clamp(290px, 42dvh, 380px);
   }
 
-}
-
-@media (max-width: 380px) {
-  .study-flashcard {
-    min-height: 580px;
-  }
 }
 
 /* ══════════════════════════════════════════════════════════════
