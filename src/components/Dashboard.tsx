@@ -1038,18 +1038,6 @@ export function Dashboard({ currentUser }: DashboardProps) {
           )}>
             {/* Vùng bên trái: Nút + Thêm nội dung & Đang chọn Thư mục */}
             <div className="flex items-center gap-2 flex-wrap min-w-0">
-              {/* Nút mở lại cây thư mục khi đang ẩn (Desktop) */}
-              {isSidebarCollapsed && (
-                <button
-                  type="button"
-                  onClick={toggleSidebar}
-                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 text-xs font-bold transition-all border border-indigo-200 dark:border-indigo-800/80 shadow-2xs shrink-0 active:scale-95"
-                  title="Hiện danh sách thư mục (Ctrl + B)"
-                >
-                  <PanelLeftOpen className="w-3.5 h-3.5" />
-                  <span>Hiện Thư mục</span>
-                </button>
-              )}
               {isGoogleUser && (
                 <div className="relative z-30" ref={addMenuRef}>
                   <button
