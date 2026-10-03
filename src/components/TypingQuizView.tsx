@@ -254,8 +254,15 @@ export function TypingQuizView({
       if (e.key === "Escape") {
         const isModalOpen = !!document.querySelector('[data-kanji-modal="true"], .z-\\[9999\\], [role="dialog"]');
         if (isModalOpen) return;
-        setIsFullscreen(false);
+        if (isFullscreen) {
+          setIsFullscreen(false);
+          return;
+        } else {
+          // Thoát focus ô input để tiện dùng các phím tắt ngoài
+          inputRef.current?.blur();
+        }
       }
+
       // Phím tắt ` (cạnh số 1) để bật/tắt gợi ý Âm Hán Việt (khi không focus vào ô input)
       if (
         (e.key === "`" || e.code === "Backquote") &&
@@ -264,12 +271,27 @@ export function TypingQuizView({
         !e.ctrlKey &&
         !e.metaKey
       ) {
-        if ((e.target as HTMLElement)?.tagName === "INPUT") return;
+        if ((e.target as HTMLElement)?.tagName === "INPUT" || (e.target as HTMLElement)?.tagName === "TEXTAREA") return;
         e.preventDefault();
         if (feedback !== "correct" && feedback !== "skipped") {
           setShowHint(prev => !prev);
         }
         inputRef.current?.focus();
+        return;
+      }
+
+      // Phím tắt F: chuyển đổi Toàn màn hình khi không focus ô input (hoặc ở màn hình kết thúc)
+      if (
+        (e.key === "f" || e.key === "F") &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !e.metaKey
+      ) {
+        if ((e.target as HTMLElement)?.tagName === "INPUT" || (e.target as HTMLElement)?.tagName === "TEXTAREA") return;
+        const isModalOpen = !!document.querySelector('[data-kanji-modal="true"], .z-\\[9999\\], [role="dialog"]');
+        if (isModalOpen) return;
+        e.preventDefault();
+        setIsFullscreen(prev => !prev);
       }
     };
     window.addEventListener("keydown", handleGlobalKeyDown);
@@ -502,6 +524,27 @@ export function TypingQuizView({
       return;
     }
 
+    // Phím tắt F chuyển đổi Toàn màn hình từ trong ô input:
+    // Hỗ trợ: Shift + F, hoặc F khi đang hiển thị kết quả đúng/bỏ qua, hoặc f khi ô input đang rỗng và không dùng IME
+    if (
+      (e.key === "f" || e.key === "F") &&
+      !e.altKey &&
+      !e.ctrlKey &&
+      !e.metaKey
+    ) {
+      const isComposing = e.nativeEvent.isComposing || (e.nativeEvent as KeyboardEvent).keyCode === 229;
+      const isAnswerShowing = feedback === "correct" || feedback === "skipped";
+      const isShiftF = e.shiftKey || e.key === "F";
+      const isEmptyDirectKey = userInput.trim() === "" && !isComposing && (e.nativeEvent as KeyboardEvent).keyCode !== 229;
+
+      if (!isComposing && (isShiftF || isAnswerShowing || isEmptyDirectKey)) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsFullscreen(prev => !prev);
+        return;
+      }
+    }
+
     // Nếu đang trong quá trình gõ IME tiếng Nhật (chưa bấm Enter hoàn tất từ), không bắt sự kiện
     if (e.nativeEvent.isComposing) return;
 
@@ -666,7 +709,7 @@ export function TypingQuizView({
                 <button 
                   type="button"
                   onClick={() => setIsFullscreen(!isFullscreen)} 
-                  title={isFullscreen ? "Thu nhỏ" : "Toàn màn hình"}
+                  title={isFullscreen ? "Thu nhỏ (Esc hoặc F)" : "Toàn màn hình [F]"}
                   className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                 >
                   <Maximize className="w-3.5 h-3.5" />
@@ -891,7 +934,7 @@ export function TypingQuizView({
                       ? "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20 border border-blue-300 dark:border-blue-500/40 shadow-sm"
                       : "text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                   }`}
-                  title={isFullscreen ? "Thu nhỏ (Esc)" : "Toàn màn hình"}
+                  title={isFullscreen ? "Thu nhỏ (Esc hoặc F)" : "Toàn màn hình [F]"}
                 >
                   {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
                 </button>
@@ -935,7 +978,11 @@ export function TypingQuizView({
               <div className="h-full bg-purple-600" style={{ width: `${progressPercentage}%` }}></div>
             </div>
           </div>
-          <button onClick={() => setIsFullscreen(false)} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500">
+          <button 
+            onClick={() => setIsFullscreen(false)} 
+            className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+            title="Thu nhỏ (Esc hoặc F)"
+          >
             <Minimize className="w-4 h-4" />
           </button>
         </div>

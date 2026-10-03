@@ -259,18 +259,39 @@ export function FlashcardView({
 
   useEffect(() => {
     if (!isActive) return;
-    const handleEsc = (e: KeyboardEvent) => {
+    const handleFullscreenKey = (e: KeyboardEvent) => {
+      // Bỏ qua nếu đang gõ trong ô nhập liệu (tìm kiếm, modal sửa từ vựng...)
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
       if (e.key === "Escape") {
         if (showAutoPlaySettings) { setShowAutoPlaySettings(false); return; }
+        if (showEditModal) { setShowEditModal(false); return; }
         // Nếu có popup/modal nào đang hiển thị (ví dụ KanjiModal z-[9999]), ưu tiên đóng modal trước, không thoát fullscreen
         const isModalOpen = !!document.querySelector('[data-kanji-modal="true"], .z-\\[9999\\], [role="dialog"]');
         if (isModalOpen) return;
         setIsFullscreen(false);
+        return;
+      }
+
+      // Phím F / f để chuyển đổi chế độ toàn màn hình focus
+      if (
+        (e.key === "f" || e.key === "F") &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !e.metaKey
+      ) {
+        if (showAutoPlaySettings || showEditModal) return;
+        const isModalOpen = !!document.querySelector('[data-kanji-modal="true"], .z-\\[9999\\], [role="dialog"]');
+        if (isModalOpen) return;
+        e.preventDefault();
+        setIsFullscreen(prev => !prev);
       }
     };
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [isActive, showAutoPlaySettings]);
+    window.addEventListener("keydown", handleFullscreenKey);
+    return () => window.removeEventListener("keydown", handleFullscreenKey);
+  }, [isActive, showAutoPlaySettings, showEditModal]);
 
   const selectedVocabIdsStr = selectedVocabIds.join(',');
 
@@ -1579,7 +1600,7 @@ export function FlashcardView({
                   ? "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20 border border-blue-300 dark:border-blue-500/40"
                   : "text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10"
               }`} 
-              title={isFullscreen ? "Thu nhỏ (Esc)" : "Toàn màn hình"}
+              title={isFullscreen ? "Thu nhỏ (Esc hoặc F)" : "Toàn màn hình [F]"}
             >
               {isFullscreen ? <Minimize className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
