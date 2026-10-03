@@ -79,14 +79,14 @@ export function Dashboard({ currentUser }: DashboardProps) {
     });
   };
 
-  // Phím tắt Ctrl+B hoặc Cmd+B để toggle cây thư mục
+  // Phím tắt Ctrl+\ hoặc Cmd+\ để toggle cây thư mục (Ctrl+B đã bị trùng với Chrome bookmark bar)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) {
         return;
       }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
+      if ((e.ctrlKey || e.metaKey) && e.key === "\\") {
         e.preventDefault();
         toggleSidebar();
       }
@@ -953,7 +953,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 <button
                   type="button"
                   onClick={toggleSidebar}
-                  title="Thu gọn cây thư mục (Ctrl + B)"
+                  title="Thu gọn cây thư mục (Ctrl + \)"
                   className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
                 >
                   <PanelLeftClose className="w-4 h-4" />
@@ -1424,7 +1424,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
             type="button"
             onClick={toggleSidebar}
             className="hidden md:flex fixed left-0 top-24 z-40 items-center gap-1.5 pl-2.5 pr-3 py-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-l-0 border-slate-200/90 dark:border-slate-700/80 rounded-r-2xl shadow-lg hover:shadow-xl text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:pl-3.5 transition-all duration-200 group text-xs font-bold animate-fadeIn cursor-pointer"
-            title="Mở danh sách thư mục (Ctrl + B)"
+            title="Mở danh sách thư mục (Ctrl + \)"
           >
             <PanelLeftOpen className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform shrink-0" />
             <span className="text-[11px] whitespace-nowrap">Thư mục</span>
