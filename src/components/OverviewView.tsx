@@ -1058,7 +1058,7 @@ export function OverviewView({
 
       {/* 3. FLOATING ACTION BAR (Hiện khi có từ được chọn) - Tối ưu responsive trên Mobile */}
       {selectedIds.length > 0 && (
-        <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:bottom-6 inset-x-3 sm:inset-x-0 mx-auto w-auto sm:w-max max-w-lg z-[55] flex items-center justify-between sm:justify-center gap-1.5 sm:gap-2 bg-slate-900/95 dark:bg-slate-950/95 text-white p-1.5 sm:p-2 px-2 sm:px-3.5 rounded-2xl shadow-2xl border border-slate-700/80 backdrop-blur-md animate-slideUp">
+        <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:bottom-6 inset-x-2 sm:inset-x-0 mx-auto w-auto sm:w-max max-w-[calc(100vw-1rem)] sm:max-w-2xl z-[55] flex items-center justify-start sm:justify-center gap-1 sm:gap-2 bg-slate-900/95 dark:bg-slate-950/95 text-white p-1.5 sm:p-2 px-2 sm:px-3.5 rounded-2xl shadow-2xl border border-slate-700/80 backdrop-blur-md animate-slideUp overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {/* Badge đếm số từ & nút huỷ chọn */}
           <div className="flex items-center gap-1 sm:gap-1.5 pr-1.5 sm:pr-2.5 border-r border-slate-700/80 shrink-0">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
@@ -1082,7 +1082,7 @@ export function OverviewView({
             <button
               type="button"
               onClick={() => setShowBulkFolderModal(true)}
-              className="flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[11px] sm:text-xs font-bold shadow-md shadow-blue-600/30 transition-all active:scale-95 whitespace-nowrap"
+              className="flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[11px] sm:text-xs font-bold shadow-md shadow-blue-600/30 transition-all active:scale-95 whitespace-nowrap shrink-0"
               title="Chuyển hoặc sao chép các từ vựng đã chọn vào thư mục khác"
             >
               <FolderInput className="w-3.5 h-3.5 shrink-0" />
@@ -1093,7 +1093,7 @@ export function OverviewView({
             <button
               type="button"
               onClick={() => setShowBulkDeleteModal(true)}
-              className="flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-[11px] sm:text-xs font-bold shadow-md shadow-rose-600/30 transition-all active:scale-95 whitespace-nowrap"
+              className="flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-[11px] sm:text-xs font-bold shadow-md shadow-rose-600/30 transition-all active:scale-95 whitespace-nowrap shrink-0"
               title="Xóa hàng loạt các từ vựng đã chọn"
             >
               <Trash2 className="w-3.5 h-3.5 shrink-0" />
@@ -1101,14 +1101,14 @@ export function OverviewView({
             </button>
           </div>
 
-          <div className="w-px h-5 bg-slate-700/80 mx-0.5 shrink-0 hidden xs:block sm:block" />
+          <div className="w-px h-5 bg-slate-700/80 mx-0.5 shrink-0" />
 
           {/* Các nút chuyển nhanh chế độ học: Flashcard, Quiz, Focus */}
-          <div className="flex items-center gap-1 sm:gap-1.5 flex-1 sm:flex-initial justify-end min-w-0">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 justify-end min-w-0">
             <button
               type="button"
               onClick={() => onNavigateToStudyMode?.('flashcard', selectedIds)}
-              className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold shadow-md shadow-emerald-600/30 transition-all active:scale-95 flex-1 sm:flex-initial whitespace-nowrap"
+              className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold shadow-md shadow-emerald-600/30 transition-all active:scale-95 shrink-0 whitespace-nowrap"
               title="Học Flashcard"
             >
               <Layers className="w-3.5 h-3.5 shrink-0" />
@@ -1119,7 +1119,7 @@ export function OverviewView({
             <button
               type="button"
               onClick={() => onNavigateToStudyMode?.('quiz', selectedIds)}
-              className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-[11px] sm:text-xs font-bold shadow-md shadow-purple-600/30 transition-all active:scale-95 flex-1 sm:flex-initial whitespace-nowrap"
+              className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-[11px] sm:text-xs font-bold shadow-md shadow-purple-600/30 transition-all active:scale-95 shrink-0 whitespace-nowrap"
               title="Làm Quiz"
             >
               <BrainCircuit className="w-3.5 h-3.5 shrink-0" />
@@ -1130,7 +1130,7 @@ export function OverviewView({
             <button
               type="button"
               onClick={() => onNavigateToStudyMode?.('focus', selectedIds)}
-              className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] sm:text-xs font-bold shadow-md shadow-indigo-600/30 transition-all active:scale-95 flex-1 sm:flex-initial whitespace-nowrap"
+              className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] sm:text-xs font-bold shadow-md shadow-indigo-600/30 transition-all active:scale-95 shrink-0 whitespace-nowrap"
               title="Ôn Focus"
             >
               <Eye className="w-3.5 h-3.5 shrink-0" />

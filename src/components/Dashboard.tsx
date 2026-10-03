@@ -1308,7 +1308,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
             );
           })()}
 
-          <div className={cn("pb-24 md:pb-10", isStudyFullscreen && "!p-0 !pb-0")}>
+          <div className={cn(selectedVocabIds.length > 0 ? "pb-36 md:pb-10" : "pb-24 md:pb-10", isStudyFullscreen && "!p-0 !pb-0")}>
             {quotaExceeded ? (
               <div className="p-8 my-8 text-center bg-rose-50 dark:bg-rose-900/10 rounded-2xl border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400">
                 <BrainCircuit className="w-12 h-12 mx-auto mb-4 text-rose-500 opacity-80" />
@@ -1613,14 +1613,21 @@ export function Dashboard({ currentUser }: DashboardProps) {
 
       {/* 🚀 MOBILE ONLY: Nút nổi Floating Button chuyển nhanh Thư mục */}
       {viewMode === "overview" && (
-        <div className={`fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] right-4 z-[45] md:hidden animate-fadeIn transition-all duration-200 ${selectedVocabIds.length > 0 ? "opacity-0 pointer-events-none translate-y-3" : "opacity-100 translate-y-0"}`}>
+        <div 
+          className={cn(
+            "fixed right-3 sm:right-4 z-[50] md:hidden transition-all duration-300 ease-in-out",
+            selectedVocabIds.length > 0 
+              ? "bottom-[calc(8.25rem+env(safe-area-inset-bottom,0px))]" 
+              : "bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))]"
+          )}
+        >
           <button
             onClick={() => setShowMobileFolderDrawer(true)}
-            className="flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 text-white shadow-xl shadow-amber-500/30 border border-amber-400/30 active:scale-95 transition-all"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 text-white shadow-xl shadow-amber-500/30 border border-amber-400/30 active:scale-95 transition-all text-xs font-bold"
             title="Chuyển nhanh thư mục"
           >
             <Folder className="w-4 h-4 text-white shrink-0" />
-            <span className="text-xs font-black max-w-[120px] truncate">
+            <span className="max-w-[120px] truncate">
               {selectedFolderId === 'all' 
                 ? 'Tất cả từ vựng' 
                 : (folders.find(f => f.id === selectedFolderId)?.name || 'Thư mục')}
