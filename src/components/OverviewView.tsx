@@ -1056,87 +1056,119 @@ export function OverviewView({
         })}
       </div>
 
-      {/* 3. FLOATING ACTION BAR (Hiện khi có từ được chọn) - Tối ưu responsive trên Mobile */}
+      {/* 3. FLOATING ACTION BAR (Hiện khi có từ được chọn) - Tinh gọn dạng Icon + Tooltip Hover */}
       {selectedIds.length > 0 && (
-        <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:bottom-6 inset-x-2 sm:inset-x-0 mx-auto w-auto sm:w-max max-w-[calc(100vw-1rem)] sm:max-w-2xl z-[55] flex items-center justify-start sm:justify-center gap-1 sm:gap-2 bg-slate-900/95 dark:bg-slate-950/95 text-white p-1.5 sm:p-2 px-2 sm:px-3.5 rounded-2xl shadow-2xl border border-slate-700/80 backdrop-blur-md animate-slideUp overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:bottom-6 left-1/2 -translate-x-1/2 w-max max-w-[calc(100vw-1.5rem)] z-[55] flex items-center justify-center gap-1.5 sm:gap-2 bg-slate-900/95 dark:bg-slate-950/95 text-white p-1.5 sm:p-2 px-2.5 sm:px-3 rounded-2xl shadow-2xl border border-slate-700/80 backdrop-blur-md animate-slideUp">
           {/* Badge đếm số từ & nút huỷ chọn */}
-          <div className="flex items-center gap-1 sm:gap-1.5 pr-1.5 sm:pr-2.5 border-r border-slate-700/80 shrink-0">
+          <div className="flex items-center gap-1.5 pr-2 border-r border-slate-700/80 shrink-0">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
             <span className="text-xs font-bold whitespace-nowrap text-slate-200">
               <span className="hidden sm:inline">Đã chọn </span>
               <strong className="text-emerald-400 font-extrabold">{selectedIds.length}</strong>
               <span className="text-[11px] text-slate-400 sm:hidden"> từ</span>
             </span>
-            <button
-              type="button"
-              onClick={handleClearSelection}
-              className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors ml-0.5"
-              title="Bỏ chọn tất cả"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
+            <div className="relative group">
+              <button
+                type="button"
+                onClick={handleClearSelection}
+                className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors ml-0.5 flex items-center justify-center"
+                title="Bỏ chọn tất cả"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+              <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-slate-950 text-white text-[10px] font-bold rounded-md shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-150 whitespace-nowrap z-30 border border-slate-700/80">
+                Bỏ chọn
+                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-slate-950" />
+              </div>
+            </div>
           </div>
 
           {/* Nhóm Thao tác Hàng loạt: Chuyển/Copy & Xóa */}
           <div className="flex items-center gap-1 shrink-0">
-            <button
-              type="button"
-              onClick={() => setShowBulkFolderModal(true)}
-              className="flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[11px] sm:text-xs font-bold shadow-md shadow-blue-600/30 transition-all active:scale-95 whitespace-nowrap shrink-0"
-              title="Chuyển hoặc sao chép các từ vựng đã chọn vào thư mục khác"
-            >
-              <FolderInput className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden sm:inline">Chuyển / Copy</span>
-              <span className="sm:hidden">Chuyển</span>
-            </button>
+            {/* Chuyển / Copy */}
+            <div className="relative group">
+              <button
+                type="button"
+                onClick={() => setShowBulkFolderModal(true)}
+                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/30 transition-all active:scale-90 hover:scale-105 shrink-0"
+                title="Chuyển hoặc sao chép vào thư mục khác"
+              >
+                <FolderInput className="w-4 h-4" />
+              </button>
+              <div className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-950 text-white text-[11px] font-bold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-150 whitespace-nowrap z-30 border border-slate-700/80 scale-95 group-hover:scale-100">
+                Chuyển / Copy
+                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-slate-950" />
+              </div>
+            </div>
 
-            <button
-              type="button"
-              onClick={() => setShowBulkDeleteModal(true)}
-              className="flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-[11px] sm:text-xs font-bold shadow-md shadow-rose-600/30 transition-all active:scale-95 whitespace-nowrap shrink-0"
-              title="Xóa hàng loạt các từ vựng đã chọn"
-            >
-              <Trash2 className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden sm:inline">Xóa</span>
-            </button>
+            {/* Xóa hàng loạt */}
+            <div className="relative group">
+              <button
+                type="button"
+                onClick={() => setShowBulkDeleteModal(true)}
+                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-600/30 transition-all active:scale-90 hover:scale-105 shrink-0"
+                title="Xóa hàng loạt các từ vựng đã chọn"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+              <div className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-950 text-white text-[11px] font-bold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-150 whitespace-nowrap z-30 border border-slate-700/80 scale-95 group-hover:scale-100">
+                Xóa ({selectedIds.length})
+                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-slate-950" />
+              </div>
+            </div>
           </div>
 
           <div className="w-px h-5 bg-slate-700/80 mx-0.5 shrink-0" />
 
           {/* Các nút chuyển nhanh chế độ học: Flashcard, Quiz, Focus */}
-          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 justify-end min-w-0">
-            <button
-              type="button"
-              onClick={() => onNavigateToStudyMode?.('flashcard', selectedIds)}
-              className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold shadow-md shadow-emerald-600/30 transition-all active:scale-95 shrink-0 whitespace-nowrap"
-              title="Học Flashcard"
-            >
-              <Layers className="w-3.5 h-3.5 shrink-0" />
-              <span className="sm:hidden">Flashcard</span>
-              <span className="hidden sm:inline">Flashcard ({selectedIds.length})</span>
-            </button>
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            {/* Flashcard */}
+            <div className="relative group">
+              <button
+                type="button"
+                onClick={() => onNavigateToStudyMode?.('flashcard', selectedIds)}
+                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/30 transition-all active:scale-90 hover:scale-105 shrink-0"
+                title={`Học Flashcard (${selectedIds.length} từ)`}
+              >
+                <Layers className="w-4 h-4" />
+              </button>
+              <div className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-950 text-white text-[11px] font-bold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-150 whitespace-nowrap z-30 border border-slate-700/80 scale-95 group-hover:scale-100">
+                Flashcard ({selectedIds.length})
+                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-slate-950" />
+              </div>
+            </div>
 
-            <button
-              type="button"
-              onClick={() => onNavigateToStudyMode?.('quiz', selectedIds)}
-              className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-[11px] sm:text-xs font-bold shadow-md shadow-purple-600/30 transition-all active:scale-95 shrink-0 whitespace-nowrap"
-              title="Làm Quiz"
-            >
-              <BrainCircuit className="w-3.5 h-3.5 shrink-0" />
-              <span className="sm:hidden">Quiz</span>
-              <span className="hidden sm:inline">Quiz ({selectedIds.length})</span>
-            </button>
+            {/* Quiz */}
+            <div className="relative group">
+              <button
+                type="button"
+                onClick={() => onNavigateToStudyMode?.('quiz', selectedIds)}
+                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-purple-600 hover:bg-purple-500 text-white shadow-md shadow-purple-600/30 transition-all active:scale-90 hover:scale-105 shrink-0"
+                title={`Làm Quiz (${selectedIds.length} từ)`}
+              >
+                <BrainCircuit className="w-4 h-4" />
+              </button>
+              <div className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-950 text-white text-[11px] font-bold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-150 whitespace-nowrap z-30 border border-slate-700/80 scale-95 group-hover:scale-100">
+                Quiz ({selectedIds.length})
+                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-slate-950" />
+              </div>
+            </div>
 
-            <button
-              type="button"
-              onClick={() => onNavigateToStudyMode?.('focus', selectedIds)}
-              className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] sm:text-xs font-bold shadow-md shadow-indigo-600/30 transition-all active:scale-95 shrink-0 whitespace-nowrap"
-              title="Ôn Focus"
-            >
-              <Eye className="w-3.5 h-3.5 shrink-0" />
-              <span className="sm:hidden">Focus</span>
-              <span className="hidden sm:inline">Focus ({selectedIds.length})</span>
-            </button>
+            {/* Focus */}
+            <div className="relative group">
+              <button
+                type="button"
+                onClick={() => onNavigateToStudyMode?.('focus', selectedIds)}
+                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 transition-all active:scale-90 hover:scale-105 shrink-0"
+                title={`Ôn Focus (${selectedIds.length} từ)`}
+              >
+                <Eye className="w-4 h-4" />
+              </button>
+              <div className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-950 text-white text-[11px] font-bold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-150 whitespace-nowrap z-30 border border-slate-700/80 scale-95 group-hover:scale-100">
+                Ôn Focus ({selectedIds.length})
+                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-slate-950" />
+              </div>
+            </div>
           </div>
         </div>
       )}
