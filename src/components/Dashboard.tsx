@@ -1338,6 +1338,8 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     vocabularies={filteredVocabularies} 
                     folders={folders} 
                     onRefresh={() => fetchData(true)} 
+                    onFoldersUpdated={refreshFoldersOnly}
+                    currentUser={currentUser}
                     selectedVocabIds={selectedVocabIds}
                     onSelectionChange={setSelectedVocabIds}
                     onNavigateToStudyMode={(mode, ids) => {

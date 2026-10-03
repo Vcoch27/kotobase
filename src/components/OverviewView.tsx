@@ -21,10 +21,14 @@ import {
   Shuffle,
   Check,
   X,
+  FolderInput,
+  Copy,
 } from 'lucide-react';
-import { deleteVocabulary } from '@/app/actions/vocabulary';
+import { deleteVocabulary, deleteBulkVocabulary } from '@/app/actions/vocabulary';
 import toast from 'react-hot-toast';
 import { VocabularyEditModal } from './VocabularyEditModal';
+import { BulkDeleteConfirmModal } from './BulkDeleteConfirmModal';
+import { BulkFolderModal } from './BulkFolderModal';
 import { getFolderFullPath } from '@/lib/folder-utils';
 
 interface FolderVocabItem {
@@ -47,9 +51,11 @@ interface OverviewViewProps {
   vocabularies: VocabularyData[];
   folders: any[];
   onRefresh?: () => void;
+  onFoldersUpdated?: () => void;
   selectedVocabIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
   onNavigateToStudyMode?: (mode: 'focus' | 'flashcard' | 'quiz', selectedIds?: string[]) => void;
+  currentUser?: { uid: string; email: string; name?: string; picture?: string } | null;
   isActive?: boolean;
   folderKey?: string;
   searchQuery?: string;
@@ -60,9 +66,11 @@ export function OverviewView({
   vocabularies,
   folders,
   onRefresh,
+  onFoldersUpdated,
   selectedVocabIds,
   onSelectionChange,
   onNavigateToStudyMode,
+  currentUser,
   isActive = true,
   folderKey,
   searchQuery,
@@ -71,6 +79,11 @@ export function OverviewView({
   const [editingVocab, setEditingVocab] = useState<VocabularyData | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 40;
+
+  // State cho Thao tác Hàng loạt (Bulk actions)
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [showBulkFolderModal, setShowBulkFolderModal] = useState(false);
+  const [isDeletingBulk, setIsDeletingBulk] = useState(false);
 
   const prevFolderKeyRef = useRef<string | undefined>(folderKey);
   const prevSearchQueryRef = useRef<string | undefined>(searchQuery);
@@ -310,6 +323,43 @@ export function OverviewView({
     setFilterOnlySelected(false);
   };
 
+  // Danh sách các đối tượng từ vựng đang được chọn
+  const selectedVocabObjects = useMemo(() => {
+    const set = new Set(selectedIds);
+    return localVocabs.filter((v) => set.has(v.id));
+  }, [localVocabs, selectedIds]);
+
+  // Xóa hàng loạt từ vựng đã chọn
+  const handleConfirmBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    setIsDeletingBulk(true);
+    try {
+      const idsToDelete = [...selectedIds];
+      const res = await deleteBulkVocabulary(idsToDelete);
+      if (res.success) {
+        toast.success(`Đã xóa thành công ${res.count || idsToDelete.length} từ vựng!`);
+        const deletedSet = new Set(idsToDelete);
+        setLocalVocabs((prev) => prev.filter((v) => !deletedSet.has(v.id)));
+        handleSelectionChange([]);
+        setShowBulkDeleteModal(false);
+        if (onRefresh) onRefresh();
+      } else {
+        toast.error(res.error || 'Lỗi khi xóa hàng loạt từ vựng!');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể thực hiện xóa hàng loạt.');
+    } finally {
+      setIsDeletingBulk(false);
+    }
+  };
+
+  // Callback sau khi chuyển / sao chép hàng loạt thành công
+  const handleBulkFolderSuccess = () => {
+    handleSelectionChange([]);
+    if (onRefresh) onRefresh();
+    if (onFoldersUpdated) onFoldersUpdated();
+  };
+
   const handleDelete = async (e: React.MouseEvent, id: string, word: string) => {
     e.stopPropagation();
     if (confirm(`Bạn có chắc chắn muốn xóa từ "${word}" không?`)) {
@@ -415,15 +465,37 @@ export function OverviewView({
             )}
           </div>
 
-          {/* Bên phải: Nút Bỏ chọn (nếu có chọn) */}
+          {/* Bên phải: Các nút Thao tác Hàng loạt (Chuyển / Copy, Xóa, Bỏ chọn) */}
           {selectedIds.length > 0 && (
-            <button
-              type="button"
-              onClick={handleClearSelection}
-              className="text-xs font-semibold text-rose-500 hover:text-rose-600 dark:text-rose-400 hover:underline transition-colors ml-auto"
-            >
-              Bỏ chọn tất cả
-            </button>
+            <div className="flex items-center gap-1.5 ml-auto flex-wrap">
+              <button
+                type="button"
+                onClick={() => setShowBulkFolderModal(true)}
+                className="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 shadow-xs transition-all flex items-center gap-1"
+                title="Chuyển hoặc sao chép các từ đã chọn vào thư mục khác"
+              >
+                <FolderInput className="w-3.5 h-3.5" />
+                <span>Chuyển / Copy</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowBulkDeleteModal(true)}
+                className="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 hover:bg-rose-100 dark:hover:bg-rose-500/20 shadow-xs transition-all flex items-center gap-1"
+                title="Xóa hàng loạt các từ vựng đã chọn"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Xóa ({selectedIds.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleClearSelection}
+                className="text-xs font-semibold text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 hover:underline transition-colors ml-1"
+              >
+                Bỏ chọn
+              </button>
+            </div>
           )}
         </div>
 
@@ -1005,6 +1077,32 @@ export function OverviewView({
             </button>
           </div>
 
+          {/* Nhóm Thao tác Hàng loạt: Chuyển/Copy & Xóa */}
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowBulkFolderModal(true)}
+              className="flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[11px] sm:text-xs font-bold shadow-md shadow-blue-600/30 transition-all active:scale-95 whitespace-nowrap"
+              title="Chuyển hoặc sao chép các từ vựng đã chọn vào thư mục khác"
+            >
+              <FolderInput className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Chuyển / Copy</span>
+              <span className="sm:hidden">Chuyển</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowBulkDeleteModal(true)}
+              className="flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-[11px] sm:text-xs font-bold shadow-md shadow-rose-600/30 transition-all active:scale-95 whitespace-nowrap"
+              title="Xóa hàng loạt các từ vựng đã chọn"
+            >
+              <Trash2 className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Xóa</span>
+            </button>
+          </div>
+
+          <div className="w-px h-5 bg-slate-700/80 mx-0.5 shrink-0 hidden xs:block sm:block" />
+
           {/* Các nút chuyển nhanh chế độ học: Flashcard, Quiz, Focus */}
           <div className="flex items-center gap-1 sm:gap-1.5 flex-1 sm:flex-initial justify-end min-w-0">
             <button
@@ -1099,6 +1197,26 @@ export function OverviewView({
           }}
         />
       )}
+
+      {/* Modal xác nhận xóa hàng loạt */}
+      <BulkDeleteConfirmModal
+        isOpen={showBulkDeleteModal}
+        onClose={() => setShowBulkDeleteModal(false)}
+        selectedVocabs={selectedVocabObjects}
+        onConfirm={handleConfirmBulkDelete}
+        loading={isDeletingBulk}
+      />
+
+      {/* Modal di chuyển / sao chép hàng loạt sang thư mục khác */}
+      <BulkFolderModal
+        isOpen={showBulkFolderModal}
+        onClose={() => setShowBulkFolderModal(false)}
+        selectedVocabs={selectedVocabObjects}
+        folders={folders}
+        currentUser={currentUser}
+        onSuccess={handleBulkFolderSuccess}
+        onFoldersUpdated={onFoldersUpdated}
+      />
     </div>
   );
 }

@@ -364,6 +364,195 @@ export async function deleteVocabulary(id: string) {
   }
 }
 
+export async function deleteBulkVocabulary(ids: string[]) {
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return { success: false, error: "Không có từ vựng nào được chọn để xóa." };
+  }
+
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return { success: false, error: "Bạn cần đăng nhập bằng Google để xóa từ vựng." };
+  }
+
+  const isAdmin = currentUser.email === "hoangtungmy123@gmail.com";
+
+  try {
+    const allFolders = await getCachedFoldersRaw();
+    const folderMap = new Map(allFolders.map(f => [f.id, f]));
+
+    const hasFolderPerm = (folderId: string): boolean => {
+      if (!folderId || isAdmin) return true;
+      let curr: any = folderMap.get(folderId);
+      const visited = new Set<string>();
+      while (curr) {
+        if (visited.has(curr.id)) break;
+        visited.add(curr.id);
+        if (curr.ownerId === currentUser.uid) return true;
+        if (Array.isArray(curr.coAuthorEmails) && curr.coAuthorEmails.includes(currentUser.email || '')) return true;
+        curr = curr.parentId ? folderMap.get(curr.parentId) : null;
+      }
+      return false;
+    };
+
+    const CHUNK_SIZE = 450;
+    let totalDeleted = 0;
+
+    for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+      const chunk = ids.slice(i, i + CHUNK_SIZE);
+      const batch = adminDb.batch();
+
+      const docs = await Promise.all(
+        chunk.map(id => adminDb.collection("vocabularies").doc(id).get())
+      );
+
+      for (const doc of docs) {
+        if (doc.exists) {
+          const data = doc.data();
+          const fids: string[] = data?.folderIds || [];
+
+          let canDelete = isAdmin;
+          if (!canDelete) {
+            if (fids.length > 0) {
+              canDelete = fids.some(fid => hasFolderPerm(fid));
+            } else {
+              canDelete = data?.createdBy === currentUser.uid;
+            }
+          }
+
+          if (canDelete) {
+            batch.delete(doc.ref);
+            totalDeleted++;
+          }
+        }
+      }
+
+      await batch.commit();
+    }
+
+    revalidatePath("/");
+    revalidateTag("folders");
+    revalidateTag("vocabularies");
+    return { success: true, count: totalDeleted };
+  } catch (error: any) {
+    console.error("Lỗi khi xóa hàng loạt từ vựng:", error);
+    return { success: false, error: error.message || "Không thể xóa hàng loạt từ vựng." };
+  }
+}
+
+export async function moveBulkVocabulary(vocabularyIds: string[], targetFolderId: string) {
+  if (!Array.isArray(vocabularyIds) || vocabularyIds.length === 0) {
+    return { success: false, error: "Không có từ vựng nào được chọn để di chuyển." };
+  }
+  if (!targetFolderId) {
+    return { success: false, error: "Thư mục đích không hợp lệ." };
+  }
+
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return { success: false, error: "Bạn cần đăng nhập bằng Google để di chuyển từ vựng." };
+  }
+
+  const targetPerm = await checkFolderPermission(targetFolderId, currentUser.uid, currentUser.email);
+  if (!targetPerm.allowed) {
+    return { success: false, error: targetPerm.error || "Bạn không có quyền thêm từ vựng vào thư mục này." };
+  }
+
+  try {
+    const CHUNK_SIZE = 450;
+    let totalMoved = 0;
+
+    for (let i = 0; i < vocabularyIds.length; i += CHUNK_SIZE) {
+      const chunk = vocabularyIds.slice(i, i + CHUNK_SIZE);
+      const batch = adminDb.batch();
+
+      for (const id of chunk) {
+        const docRef = adminDb.collection("vocabularies").doc(id);
+        batch.update(docRef, {
+          folderIds: [targetFolderId],
+          updatedAt: new Date().toISOString()
+        });
+        totalMoved++;
+      }
+
+      await batch.commit();
+    }
+
+    revalidatePath("/");
+    revalidateTag("folders");
+    revalidateTag("vocabularies");
+    return { success: true, count: totalMoved };
+  } catch (error: any) {
+    console.error("Lỗi khi di chuyển từ vựng hàng loạt:", error);
+    return { success: false, error: error.message || "Không thể di chuyển từ vựng." };
+  }
+}
+
+export async function copyBulkVocabulary(vocabularyIds: string[], targetFolderId: string) {
+  if (!Array.isArray(vocabularyIds) || vocabularyIds.length === 0) {
+    return { success: false, error: "Không có từ vựng nào được chọn để sao chép." };
+  }
+  if (!targetFolderId) {
+    return { success: false, error: "Thư mục đích không hợp lệ." };
+  }
+
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return { success: false, error: "Bạn cần đăng nhập bằng Google để sao chép từ vựng." };
+  }
+
+  const targetPerm = await checkFolderPermission(targetFolderId, currentUser.uid, currentUser.email);
+  if (!targetPerm.allowed) {
+    return { success: false, error: targetPerm.error || "Bạn không có quyền thêm từ vựng vào thư mục này." };
+  }
+
+  try {
+    const CHUNK_SIZE = 450;
+    let totalCopied = 0;
+
+    for (let i = 0; i < vocabularyIds.length; i += CHUNK_SIZE) {
+      const chunk = vocabularyIds.slice(i, i + CHUNK_SIZE);
+      const batch = adminDb.batch();
+
+      const docs = await Promise.all(
+        chunk.map(id => adminDb.collection("vocabularies").doc(id).get())
+      );
+
+      for (const doc of docs) {
+        if (doc.exists) {
+          const data = doc.data();
+          if (data && data.word) {
+            const newDocRef = adminDb.collection("vocabularies").doc();
+            batch.set(newDocRef, {
+              word: data.word,
+              kanjiCharacters: data.kanjiCharacters || extractKanji(data.word),
+              meaning: data.meaning || "",
+              reading: data.reading || null,
+              sinoVietnamese: data.sinoVietnamese || null,
+              example: data.example || null,
+              note: data.note || null,
+              folderIds: [targetFolderId],
+              createdBy: currentUser.uid,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            });
+            totalCopied++;
+          }
+        }
+      }
+
+      await batch.commit();
+    }
+
+    revalidatePath("/");
+    revalidateTag("folders");
+    revalidateTag("vocabularies");
+    return { success: true, count: totalCopied };
+  } catch (error: any) {
+    console.error("Lỗi khi sao chép từ vựng hàng loạt:", error);
+    return { success: false, error: error.message || "Không thể sao chép từ vựng." };
+  }
+}
+
 export async function updateVocabulary(id: string, input: Partial<CreateVocabInput>) {
   // Kiểm tra đăng nhập Google
   const currentUser = await getCurrentUser();
