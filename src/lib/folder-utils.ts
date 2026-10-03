@@ -1,12 +1,17 @@
-export function getFolderFullPath(folder: any, allFolders: any[]): string {
-  if (!folder.parentId) return folder.name;
+export function getFolderFullPath(folder: any, allFolders: any[], visited = new Set<string>()): string {
+  if (!folder) return '';
+  if (visited.has(folder.id)) return folder.name || '';
+  visited.add(folder.id);
+
+  if (!folder.parentId) return folder.name || '';
   
-  const parent = allFolders.find(f => f.id === folder.parentId);
+  const folders = Array.isArray(allFolders) ? allFolders : [];
+  const parent = folders.find(f => f && f.id === folder.parentId);
   if (parent) {
-    return `${getFolderFullPath(parent, allFolders)} / ${folder.name}`;
+    return `${getFolderFullPath(parent, folders, visited)} / ${folder.name || ''}`;
   }
   
-  return folder.name;
+  return folder.name || '';
 }
 
 /**
@@ -19,11 +24,16 @@ export function canUserManageFolder(
   userUid?: string | null,
   userEmail?: string | null
 ): boolean {
+  if (!folder) return false;
   if (!userEmail) return false;
   if (userEmail === "hoangtungmy123@gmail.com") return true;
 
   const folderMap = new Map<string, any>();
-  allFolders.forEach(f => folderMap.set(f.id, f));
+  if (Array.isArray(allFolders)) {
+    allFolders.forEach(f => {
+      if (f && f.id) folderMap.set(f.id, f);
+    });
+  }
 
   let curr: any = folder;
   const visited = new Set<string>();
@@ -57,6 +67,7 @@ export function isUserFolderCoAuthor(
   userUid?: string | null,
   userEmail?: string | null
 ): boolean {
+  if (!folder) return false;
   if (!userEmail || userEmail === "hoangtungmy123@gmail.com") return false;
   // Nếu là chủ của chính thư mục này thì không gọi là co-author
   if (userUid && folder.ownerId && folder.ownerId === userUid) return false;

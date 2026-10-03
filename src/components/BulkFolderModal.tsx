@@ -64,17 +64,16 @@ export function BulkFolderModal({
 
   // Cập nhật localFolders nếu initialFolders từ props thay đổi
   React.useEffect(() => {
-    setLocalFolders(initialFolders);
+    setLocalFolders(initialFolders || []);
   }, [initialFolders]);
 
-  if (!isOpen) return null;
-
-  const count = selectedVocabs.length;
+  const count = selectedVocabs ? selectedVocabs.length : 0;
 
   // Lọc các thư mục mà người dùng có quyền quản trị/đồng tác giả/chủ sở hữu
   const manageableFolders = useMemo(() => {
-    return localFolders.filter((f) =>
-      canUserManageFolder(f, localFolders, currentUser?.uid, currentUser?.email)
+    const list = localFolders || [];
+    return list.filter((f) =>
+      canUserManageFolder(f, list, currentUser?.uid, currentUser?.email)
     );
   }, [localFolders, currentUser]);
 
@@ -84,7 +83,7 @@ export function BulkFolderModal({
     if (!q) return manageableFolders;
 
     return manageableFolders.filter((f) => {
-      const fullPath = getFolderFullPath(f, localFolders).toLowerCase();
+      const fullPath = getFolderFullPath(f, localFolders || []).toLowerCase();
       return fullPath.includes(q);
     });
   }, [manageableFolders, searchQuery, localFolders]);
@@ -161,7 +160,9 @@ export function BulkFolderModal({
     }
   };
 
-  const selectedTargetFolder = localFolders.find((f) => f.id === selectedTargetFolderId);
+  if (!isOpen) return null;
+
+  const selectedTargetFolder = (localFolders || []).find((f) => f && f.id === selectedTargetFolderId);
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">

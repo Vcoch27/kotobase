@@ -1199,24 +1199,28 @@ export function OverviewView({
       )}
 
       {/* Modal xác nhận xóa hàng loạt */}
-      <BulkDeleteConfirmModal
-        isOpen={showBulkDeleteModal}
-        onClose={() => setShowBulkDeleteModal(false)}
-        selectedVocabs={selectedVocabObjects}
-        onConfirm={handleConfirmBulkDelete}
-        loading={isDeletingBulk}
-      />
+      {showBulkDeleteModal && (
+        <BulkDeleteConfirmModal
+          isOpen={showBulkDeleteModal}
+          onClose={() => setShowBulkDeleteModal(false)}
+          selectedVocabs={selectedVocabObjects}
+          onConfirm={handleConfirmBulkDelete}
+          loading={isDeletingBulk}
+        />
+      )}
 
       {/* Modal di chuyển / sao chép hàng loạt sang thư mục khác */}
-      <BulkFolderModal
-        isOpen={showBulkFolderModal}
-        onClose={() => setShowBulkFolderModal(false)}
-        selectedVocabs={selectedVocabObjects}
-        folders={folders}
-        currentUser={currentUser}
-        onSuccess={handleBulkFolderSuccess}
-        onFoldersUpdated={onFoldersUpdated}
-      />
+      {showBulkFolderModal && (
+        <BulkFolderModal
+          isOpen={showBulkFolderModal}
+          onClose={() => setShowBulkFolderModal(false)}
+          selectedVocabs={selectedVocabObjects}
+          folders={folders}
+          currentUser={currentUser}
+          onSuccess={handleBulkFolderSuccess}
+          onFoldersUpdated={onFoldersUpdated}
+        />
+      )}
     </div>
   );
 }
