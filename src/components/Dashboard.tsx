@@ -1342,6 +1342,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     folderKey={(selectedFolderIds || []).slice().sort().join(",") || "all"}
                     searchQuery={debouncedSearchQuery}
                     sortOrder={sortOrder}
+                    isSidebarCollapsed={isSidebarCollapsed}
                   />
                 </div>
                 <div className={viewMode === "focus" ? "block" : "hidden"}>

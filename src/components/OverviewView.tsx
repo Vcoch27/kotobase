@@ -23,7 +23,10 @@ import {
   X,
   FolderInput,
   Copy,
+  GripVertical,
+  RotateCcw,
 } from 'lucide-react';
+import { cn } from '@/lib/cn';
 import { deleteVocabulary, deleteBulkVocabulary } from '@/app/actions/vocabulary';
 import toast from 'react-hot-toast';
 import { VocabularyEditModal } from './VocabularyEditModal';
@@ -60,6 +63,7 @@ interface OverviewViewProps {
   folderKey?: string;
   searchQuery?: string;
   sortOrder?: string;
+  isSidebarCollapsed?: boolean;
 }
 
 export function OverviewView({
@@ -75,6 +79,7 @@ export function OverviewView({
   folderKey,
   searchQuery,
   sortOrder,
+  isSidebarCollapsed = false,
 }: OverviewViewProps) {
   const [editingVocab, setEditingVocab] = useState<VocabularyData | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,6 +89,75 @@ export function OverviewView({
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [showBulkFolderModal, setShowBulkFolderModal] = useState(false);
   const [isDeletingBulk, setIsDeletingBulk] = useState(false);
+
+  // Vị trí linh hoạt cho Floating Action Bar (kéo thả tự do)
+  const [customPos, setCustomPos] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const barRef = useRef<HTMLDivElement>(null);
+  const dragStartRef = useRef<{ startX: number; startY: number; initialX: number; initialY: number } | null>(null);
+
+  // Giữ thanh công cụ nằm trong màn hình khi thay đổi kích thước cửa sổ
+  useEffect(() => {
+    const handleResize = () => {
+      if (customPos && barRef.current) {
+        const barWidth = barRef.current.offsetWidth || 260;
+        const barHeight = barRef.current.offsetHeight || 48;
+        const maxX = Math.max(10, window.innerWidth - barWidth - 10);
+        const maxY = Math.max(10, window.innerHeight - barHeight - 10);
+        if (customPos.x > maxX || customPos.y > maxY) {
+          setCustomPos({
+            x: Math.min(customPos.x, maxX),
+            y: Math.min(customPos.y, maxY),
+          });
+        }
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [customPos]);
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // Không drag nếu người dùng click vào button
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    if (!barRef.current) return;
+    const rect = barRef.current.getBoundingClientRect();
+    dragStartRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialX: rect.left,
+      initialY: rect.top,
+    };
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragStartRef.current) return;
+    const dx = e.clientX - dragStartRef.current.startX;
+    const dy = e.clientY - dragStartRef.current.startY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      if (!isDragging) setIsDragging(true);
+      const bar = barRef.current;
+      const barWidth = bar?.offsetWidth || 260;
+      const barHeight = bar?.offsetHeight || 48;
+      const newX = Math.max(10, Math.min(window.innerWidth - barWidth - 10, dragStartRef.current.initialX + dx));
+      const newY = Math.max(10, Math.min(window.innerHeight - barHeight - 10, dragStartRef.current.initialY + dy));
+      setCustomPos({ x: newX, y: newY });
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragStartRef.current) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {}
+      dragStartRef.current = null;
+      setTimeout(() => setIsDragging(false), 50);
+    }
+  };
 
   const prevFolderKeyRef = useRef<string | undefined>(folderKey);
   const prevSearchQueryRef = useRef<string | undefined>(searchQuery);
@@ -1056,9 +1130,70 @@ export function OverviewView({
         })}
       </div>
 
-      {/* 3. FLOATING ACTION BAR (Hiện khi có từ được chọn) - Tinh gọn dạng Icon + Tooltip Hover */}
+      {/* 3. FLOATING ACTION BAR (Hiện khi có từ được chọn) - Vị trí linh hoạt + Kéo thả tự do */}
       {selectedIds.length > 0 && (
-        <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:bottom-6 left-1/2 -translate-x-1/2 w-max max-w-[calc(100vw-1.5rem)] z-[55] flex items-center justify-center gap-1.5 sm:gap-2 bg-slate-900/95 dark:bg-slate-950/95 text-white p-1.5 sm:p-2 px-2.5 sm:px-3 rounded-2xl shadow-2xl border border-slate-700/80 backdrop-blur-md animate-slideUp">
+        <div
+          ref={barRef}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          style={customPos ? {
+            left: `${customPos.x}px`,
+            top: `${customPos.y}px`,
+            transform: 'none',
+            bottom: 'auto',
+          } : undefined}
+          className={cn(
+            "fixed z-[55] flex items-center justify-center gap-1.5 sm:gap-2 bg-slate-900/95 dark:bg-slate-950/95 text-white p-1.5 sm:p-2 px-2 sm:px-2.5 rounded-2xl shadow-2xl border border-slate-700/80 backdrop-blur-md select-none touch-none",
+            !customPos && [
+              "bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:bottom-6 left-1/2 -translate-x-1/2 animate-slideUp",
+              isSidebarCollapsed 
+                ? "md:left-1/2" 
+                : "md:left-[calc(50%+8rem)] lg:left-[calc(50%+9rem)]"
+            ],
+            isDragging ? "cursor-grabbing opacity-90 scale-[1.02]" : "cursor-grab"
+          )}
+        >
+          {/* Tay cầm kéo thả linh hoạt (Grip Handle) & Nút reset vị trí */}
+          <div 
+            className="flex items-center gap-0.5 pr-1 border-r border-slate-700/80 shrink-0"
+            title="Kéo để di chuyển vị trí thanh công cụ (Nhấp đúp để đặt lại về giữa)"
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              setCustomPos(null);
+            }}
+          >
+            <div className="relative group/grip p-0.5 text-slate-400 hover:text-slate-200 transition-colors">
+              <GripVertical className="w-4 h-4" />
+              <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-slate-950 text-white text-[10px] font-bold rounded-md shadow-xl opacity-0 group-hover/grip:opacity-100 transition-all duration-150 whitespace-nowrap z-30 border border-slate-700/80">
+                Kéo vị trí (Nhấp đúp reset)
+                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-slate-950" />
+              </div>
+            </div>
+
+            {/* Nút đặt lại vị trí về giữa khi đã kéo */}
+            {customPos && (
+              <div className="relative group/reset">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCustomPos(null);
+                  }}
+                  className="p-1 text-amber-400 hover:text-amber-300 rounded-lg hover:bg-slate-800 transition-colors flex items-center justify-center"
+                  title="Đặt lại vị trí về giữa mặc định"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+                <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-slate-950 text-white text-[10px] font-bold rounded-md shadow-xl opacity-0 group-hover/reset:opacity-100 transition-all duration-150 whitespace-nowrap z-30 border border-slate-700/80">
+                  Đặt lại về giữa
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-slate-950" />
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Badge đếm số từ & nút huỷ chọn */}
           <div className="flex items-center gap-1.5 pr-2 border-r border-slate-700/80 shrink-0">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
