@@ -1,7 +1,13 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Eye, RotateCcw, Shuffle, Volume2 } from "lucide-react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { Check, RotateCcw, Shuffle, Volume2 } from "lucide-react";
 import { StudyScopeSelector, VocabularyData } from "./StudyScopeSelector";
 import { playAudio } from "@/lib/tts-utils";
 import {
@@ -80,18 +86,25 @@ function RecallBoard({
   isActive: boolean;
 }) {
   const [session, setSession] = useState<RecallSession | null>(null);
-  const [revealed, setRevealed] = useState<string[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [undo, setUndo] = useState<{
     session: RecallSession;
-    revealed: string[];
+    activeId: string | null;
   } | null>(null);
   const [settings, setSettings] = useState<RecallSettings>(
     defaultRecallSettings,
   );
+  const [keyboard, setKeyboard] = useState(true);
   const [storageFailed, setStorageFailed] = useState(false);
   const [notice, setNotice] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const boardRef = useRef<HTMLElement>(null);
+  const promptRefs = useRef(new Map<string, HTMLButtonElement>());
+  // Block a second rating before React commits the first keyboard/mouse event.
+  const ratingLock = useRef(false);
+  useEffect(() => {
+    ratingLock.current = false;
+  }, [session]);
   useEffect(() => {
     if (!isActive || session) return;
     let restored: RecallSession | null = null;
@@ -99,6 +112,9 @@ function RecallBoard({
       restored = restoreRecallSession(
         sessionStorage.getItem(storageKey),
         words.map((v) => v.id),
+      );
+      setKeyboard(
+        sessionStorage.getItem("kotobase:recall:keyboard") !== "false",
       );
     } catch {
       setStorageFailed(true);
@@ -116,15 +132,115 @@ function RecallBoard({
     }
   }, [session, storageKey]);
 
+  const focusPrompt = (id: string | null) =>
+    requestAnimationFrame(() => {
+      const target = id ? promptRefs.current.get(id) : boardRef.current;
+      target?.focus({ preventScroll: true });
+      target?.scrollIntoView({ block: "nearest" });
+    });
+  const reveal = (id: string) => {
+    setActiveId(id);
+    focusPrompt(id);
+  };
+  const rate = (id: string, remembered: boolean) => {
+    if (
+      !session ||
+      activeId !== id ||
+      session.rated.includes(id) ||
+      ratingLock.current
+    )
+      return;
+    ratingLock.current = true;
+    setUndo({ session, activeId });
+    const next = rateRecall(session, id, remembered);
+    setSession(next);
+    const nextId =
+      next.batch.find((candidate) => !next.rated.includes(candidate)) || null;
+    // Focus the next prompt while keeping its answer concealed for retrieval.
+    setActiveId(null);
+    focusPrompt(keyboard ? nextId : null);
+    const entry = next.entries.find((e) => e.id === id)!;
+    setNotice(
+      entry.streak >= session.settings.target
+        ? "Đã đạt trong phiên."
+        : remembered
+          ? `Đã nhớ · lặp sau ${session.settings.gap} lượt.`
+          : "Chưa nhớ · ôn lại từ lượt kế tiếp.",
+    );
+  };
+  const advance = () => {
+    if (
+      !session ||
+      session.batch.some((id) => !session.rated.includes(id)) ||
+      session.entries.every((e) => e.streak >= session.settings.target)
+    )
+      return;
+    setSession(nextRecallRound(session));
+    setActiveId(null);
+    setUndo(null);
+    setNotice("Đã chuyển lượt. Chọn một từ để bắt đầu.");
+    requestAnimationFrame(() => {
+      boardRef.current?.focus({ preventScroll: true });
+      boardRef.current?.scrollIntoView({ block: "start" });
+    });
+  };
+  useEffect(() => {
+    if (!isActive || !keyboard || !session || showSettings) return;
+    const handleKey = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (
+        event.defaultPrevented ||
+        event.repeat ||
+        event.isComposing ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        event.shiftKey
+      )
+        return;
+      if (
+        !(target instanceof HTMLElement) ||
+        !boardRef.current?.contains(target)
+      )
+        return;
+      if (
+        target.closest(
+          'input, textarea, select, [contenteditable="true"], [role="dialog"]',
+        )
+      )
+        return;
+      if (
+        (event.key === "ArrowLeft" || event.key === "ArrowRight") &&
+        activeId &&
+        !session.rated.includes(activeId)
+      ) {
+        event.preventDefault();
+        rate(activeId, event.key === "ArrowRight");
+      } else if (
+        event.key === "Enter" &&
+        (target === boardRef.current ||
+          target.closest('button[aria-keyshortcuts="Enter"]')) &&
+        session.batch.length > 0 &&
+        session.batch.every((id) => session.rated.includes(id)) &&
+        session.entries.some((e) => e.streak < session.settings.target)
+      ) {
+        event.preventDefault();
+        advance();
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  });
+
   if (!words.length)
     return (
-      <p className="p-10 text-center text-slate-500">
+      <p className="p-8 text-center text-slate-500">
         Không có từ vựng trong phạm vi đã chọn.
       </p>
     );
   if (!session)
     return (
-      <p className="p-10 text-center text-slate-500">
+      <p className="p-8 text-center text-slate-500">
         Đang chuẩn bị phiên ôn tập…
       </p>
     );
@@ -135,25 +251,11 @@ function RecallBoard({
     (e) => e.attempts > 0 && e.streak < session.settings.target,
   );
   const done = mastered.length === words.length;
-  const roundDone = session.rated.length === session.batch.length;
+  const roundDone = session.batch.every((id) => session.rated.includes(id));
   const reverse =
     session.settings.direction === "reverse" ||
     (session.settings.direction === "alternate" && session.round % 2 === 0);
   const byId = new Map(words.map((w) => [w.id, w]));
-  const rate = (id: string, remembered: boolean) => {
-    if (!revealed.includes(id) || session.rated.includes(id)) return;
-    setUndo({ session, revealed });
-    const next = rateRecall(session, id, remembered);
-    setSession(next);
-    const entry = next.entries.find((e) => e.id === id)!;
-    setNotice(
-      entry.streak >= session.settings.target
-        ? "Từ đã đạt mục tiêu trong phiên."
-        : remembered
-          ? `Đã ghi nhận. Lặp lại sau ${session.settings.gap} lượt.`
-          : "Đã đưa vào nhóm cần ôn lại ở lượt kế tiếp.",
-    );
-  };
   const restart = () => {
     if (
       session.entries.some((e) => e.attempts) &&
@@ -166,7 +268,7 @@ function RecallBoard({
         settings,
       ),
     );
-    setRevealed([]);
+    setActiveId(null);
     setUndo(null);
     setNotice("Đã bắt đầu phiên mới.");
     setShowSettings(false);
@@ -176,55 +278,93 @@ function RecallBoard({
       ref={boardRef}
       tabIndex={-1}
       aria-label="Ôn tập theo lượt"
-      className="space-y-4 text-slate-700 dark:text-slate-200"
+      className="space-y-3 text-slate-700 dark:text-slate-200 focus:outline-none"
     >
-      <div className="rounded-2xl border border-indigo-200 dark:border-indigo-900 bg-white/95 dark:bg-slate-900 p-4 sm:p-5 space-y-4">
-        <div className="flex flex-wrap justify-between gap-3">
-          <div>
-            <h2 className="font-bold text-lg">Nhớ trước, mở sau</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Tự đoán {reverse ? "từ tiếng Nhật" : "nghĩa của từ"}, mở đáp án
-              rồi tự đánh giá. Nhớ {session.settings.target} lần liên tiếp để
-              đạt trong phiên.
-            </p>
-          </div>
-          <button
-            className={control}
-            aria-expanded={showSettings}
-            onClick={() => setShowSettings(!showSettings)}
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900 px-4 py-3 space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div
+            className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"
+            aria-live="polite"
           >
-            Thiết lập
-          </button>
+            <h2 className="font-bold text-indigo-600 dark:text-indigo-300">
+              Lượt {session.round} · {reverse ? "Việt → Nhật" : "Nhật → Việt"}
+            </h2>
+            <span>
+              Đã đạt{" "}
+              <strong>
+                {mastered.length}/{words.length}
+              </strong>
+            </span>
+            <span className="text-slate-500 dark:text-slate-400">
+              Ôn lại {waiting.length} · Còn{" "}
+              {session.batch.length - session.rated.length} từ trong lượt
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              className={`${control} inline-flex items-center gap-1.5`}
+              disabled={!undo}
+              onClick={() => {
+                if (!undo) return;
+                setSession(undo.session);
+                setActiveId(undo.activeId);
+                focusPrompt(undo.activeId);
+                setUndo(null);
+                setNotice("Đã hoàn tác.");
+              }}
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Hoàn tác
+            </button>
+            <button
+              className={control}
+              aria-expanded={showSettings}
+              onClick={() => setShowSettings(!showSettings)}
+            >
+              Thiết lập
+            </button>
+          </div>
         </div>
         <div
-          className="flex flex-wrap gap-x-5 gap-y-2 text-sm"
-          aria-live="polite"
-        >
-          <span className="font-bold text-indigo-600 dark:text-indigo-300">
-            Lượt {session.round} · {reverse ? "Việt → Nhật" : "Nhật → Việt"}
-          </span>
-          <span>
-            Đã đạt{" "}
-            <strong>
-              {mastered.length}/{words.length}
-            </strong>
-          </span>
-          <span>
-            Cần ôn lại <strong>{waiting.length}</strong>
-          </span>
-          <span>
-            Chưa học{" "}
-            <strong>{session.entries.filter((e) => !e.attempts).length}</strong>
-          </span>
-        </div>
-        <progress
+          role="progressbar"
           aria-label="Số từ đạt mục tiêu trong phiên"
-          value={mastered.length}
-          max={words.length}
-          className="w-full h-2 accent-indigo-600"
-        />
+          aria-valuenow={mastered.length}
+          aria-valuemin={0}
+          aria-valuemax={words.length}
+          className="h-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
+        >
+          <div
+            className="h-full rounded-full bg-indigo-500"
+            style={{ width: `${(mastered.length / words.length) * 100}%` }}
+          />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+          <span>
+            Bấm từ hoặc Enter để mở đáp án · Nhớ {session.settings.target} lần
+            liên tiếp để đạt
+          </span>
+          <label className="inline-flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={keyboard}
+              onChange={(e) => {
+                setKeyboard(e.target.checked);
+                try {
+                  sessionStorage.setItem(
+                    "kotobase:recall:keyboard",
+                    String(e.target.checked),
+                  );
+                } catch {
+                  setStorageFailed(true);
+                }
+              }}
+              className="accent-indigo-600"
+            />
+            Bàn phím: ← chưa nhớ · → nhớ · Enter sang lượt
+          </label>
+        </div>
         {showSettings && (
-          <div className="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-3">
+          <div className="border-t border-slate-200 dark:border-slate-700 pt-3 space-y-3">
             <div className="grid sm:grid-cols-3 gap-3">
               <label className="text-sm space-y-1">
                 <span className="block">Số lần nhớ liên tiếp</span>
@@ -277,9 +417,9 @@ function RecallBoard({
               </label>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Từ chưa nhớ quay lại từ lượt kế tiếp, chuỗi nhớ về 0. Nếu hết từ
-              khác, chuyển thẳng đến lượt có từ cần ôn. Thiết lập áp dụng khi
-              bắt đầu phiên mới.
+              Chưa nhớ: chuỗi về 0, ôn lại từ lượt kế tiếp. Thiết lập lặp áp
+              dụng cho phiên mới. Bật bàn phím: sau đánh giá, chọn từ tiếp theo;
+              nhấn Enter để mở đáp án.
             </p>
             <button className={control} onClick={restart}>
               Áp dụng & bắt đầu phiên mới
@@ -287,203 +427,151 @@ function RecallBoard({
           </div>
         )}
       </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm">
-          {done
-            ? "Hoàn thành phiên ôn tập"
-            : `Bảng hiện tại · ${session.rated.length}/${session.batch.length} từ đã đánh giá`}
-        </p>
-        <button
-          className={`${control} inline-flex gap-2 items-center`}
-          disabled={!undo}
-          onClick={() => {
-            if (undo) {
-              setSession(undo.session);
-              setRevealed(undo.revealed);
-              setUndo(null);
-              setNotice("Đã hoàn tác đánh giá gần nhất.");
-            }
-          }}
-        >
-          <RotateCcw className="w-4 h-4" />
-          Hoàn tác
-        </button>
-      </div>
       {done ? (
-        <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 p-8 text-center space-y-3">
-          <Check className="w-8 h-8 mx-auto text-emerald-600" />
+        <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 p-6 text-center space-y-3">
+          <Check className="w-7 h-7 mx-auto text-emerald-600" />
           <h3 className="font-bold text-xl">Đã nhớ lại đủ {words.length} từ</h3>
           <p className="text-sm">
-            Mỗi từ đã đạt {session.settings.target} lần nhớ liên tiếp trong
-            phiên. Hãy ôn lại vào ngày khác để kiểm tra trí nhớ lâu dài.
+            Mỗi từ đạt {session.settings.target} lần nhớ liên tiếp. Hãy ôn lại
+            vào ngày khác để kiểm tra trí nhớ lâu dài.
           </p>
           <button className={control} onClick={restart}>
             Ôn lại phiên mới
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {session.batch.map((id, index) => {
-            const word = byId.get(id)!;
-            const entry = session.entries.find((e) => e.id === id)!;
-            const rated = session.rated.includes(id);
-            const open = revealed.includes(id);
-            return (
-              <article
-                key={id}
-                aria-label={`Ô ôn tập ${index + 1}`}
-                className="h-80 min-w-0 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 sm:p-5 flex flex-col gap-3"
-              >
-                <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                  <span>
-                    Ô {index + 1} ·{" "}
-                    {entry.attempts ? `Đã gặp ${entry.attempts} lần` : "Từ mới"}
-                  </span>
-                  <span>
-                    Nhớ {entry.streak}/{session.settings.target}
-                  </span>
-                </div>
-                {rated ? (
-                  <div
-                    className="flex-1 flex flex-col items-center justify-center text-center gap-3"
-                    role="status"
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 items-start gap-3">
+            {session.batch
+              .filter((id) => !session.rated.includes(id))
+              .map((id) => {
+                const word = byId.get(id)!;
+                const entry = session.entries.find((e) => e.id === id)!;
+                const open = activeId === id;
+                return (
+                  <article
+                    key={id}
+                    aria-label={`Ôn tập ${word.word}`}
+                    className={`min-w-0 self-start rounded-2xl border bg-white dark:bg-slate-900 ${open ? "md:col-span-2 border-indigo-300 dark:border-indigo-500" : "border-slate-200 dark:border-slate-700"}`}
                   >
-                    <Check className="w-6 h-6 text-indigo-500" />
-                    <p className="font-semibold">
-                      {entry.streak >= session.settings.target
-                        ? "Đã đạt trong phiên"
-                        : entry.streak
-                          ? "Đã nhớ · sẽ kiểm tra lại"
-                          : "Chưa nhớ · đã xếp ôn lại"}
-                    </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {entry.streak >= session.settings.target
-                        ? "Từ này được cất khỏi các lượt tiếp theo."
-                        : `Có thể xuất hiện lại từ lượt ${entry.due}.`}
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <button
-                      className="text-left min-h-16 max-h-24 overflow-auto break-words text-xl sm:text-2xl font-bold text-slate-900 dark:text-white rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
-                      onClick={() =>
-                        setRevealed((prev) =>
-                          prev.includes(id) ? prev : [...prev, id],
-                        )
-                      }
-                      aria-expanded={open}
-                    >
-                      {reverse ? word.meaning : word.word}
-                    </button>
-                    <div className="flex-1 min-h-0 overflow-auto break-words">
-                      {open ? (
-                        <div className="space-y-2">
-                          <p className="font-bold text-emerald-700 dark:text-emerald-400">
+                    <div className="flex items-start gap-3 px-4 py-3">
+                      <button
+                        ref={(element) => {
+                          if (element) promptRefs.current.set(id, element);
+                          else promptRefs.current.delete(id);
+                        }}
+                        className="flex-1 min-w-0 text-left break-words rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
+                        aria-expanded={open}
+                        aria-controls={`recall-answer-${id}`}
+                        onClick={() => reveal(id)}
+                      >
+                        <span className="block text-xl sm:text-2xl leading-relaxed font-bold text-slate-900 dark:text-white">
+                          {reverse ? word.meaning : word.word}
+                        </span>
+                        {!open && (
+                          <span className="text-xs text-slate-400 dark:text-slate-500">
+                            Bấm để mở đáp án
+                          </span>
+                        )}
+                      </button>
+                      <span className="shrink-0 pt-1 text-xs text-slate-400 dark:text-slate-500">
+                        {entry.streak}/{session.settings.target}
+                      </span>
+                    </div>
+                    {open && (
+                      <div
+                        id={`recall-answer-${id}`}
+                        className="border-t border-slate-100 dark:border-slate-800 px-4 py-3 space-y-3 break-words"
+                      >
+                        <div className="flex items-start gap-2">
+                          <p className="flex-1 min-w-0 font-semibold text-emerald-700 dark:text-emerald-400">
                             {reverse ? word.word : word.meaning}
                           </p>
+                          <button
+                            aria-label={`Nghe phát âm ${word.word}`}
+                            title="Nghe phát âm"
+                            className="shrink-0 rounded-lg p-2 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
+                            onClick={() => playAudio(word.reading || word.word)}
+                          >
+                            <Volume2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        {(word.reading || word.sinoVietnamese) && (
                           <p className="text-sm text-slate-600 dark:text-slate-300">
                             {[word.reading, word.sinoVietnamese]
                               .filter(Boolean)
                               .join(" · ")}
                           </p>
-                          {word.example && (
-                            <p className="text-sm text-slate-500 dark:text-slate-400">
-                              {word.example}
-                            </p>
-                          )}
+                        )}
+                        {word.example && (
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap text-slate-500 dark:text-slate-400">
+                            {word.example}
+                          </p>
+                        )}
+                        <div className="grid grid-cols-2 gap-2">
                           <button
-                            className="inline-flex items-center gap-2 text-sm min-h-9 text-indigo-600 dark:text-indigo-300"
-                            onClick={() => playAudio(word.reading || word.word)}
+                            className={`${control} text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/20`}
+                            aria-keyshortcuts={
+                              keyboard ? "ArrowLeft" : undefined
+                            }
+                            onClick={() => rate(id, false)}
                           >
-                            <Volume2 className="w-4 h-4" />
-                            Nghe phát âm
+                            {keyboard && <span aria-hidden="true">← </span>}Chưa
+                            nhớ
+                          </button>
+                          <button
+                            className={`${control} text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/20`}
+                            aria-keyshortcuts={
+                              keyboard ? "ArrowRight" : undefined
+                            }
+                            onClick={() => rate(id, true)}
+                          >
+                            {keyboard && <span aria-hidden="true">→ </span>}Nhớ
                           </button>
                         </div>
-                      ) : (
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          Dừng một nhịp để tự nhớ trước khi mở đáp án.
-                        </p>
-                      )}
-                    </div>
-                    {open ? (
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          className={`${control} text-amber-700 dark:text-amber-300`}
-                          onClick={() => rate(id, false)}
-                        >
-                          Chưa nhớ
-                        </button>
-                        <button
-                          className={`${control} text-emerald-700 dark:text-emerald-300`}
-                          onClick={() => rate(id, true)}
-                        >
-                          Nhớ
-                        </button>
                       </div>
-                    ) : (
-                      <button
-                        className={`${control} flex items-center justify-center gap-2 text-indigo-600 dark:text-indigo-300`}
-                        onClick={() => setRevealed((prev) => [...prev, id])}
-                      >
-                        <Eye className="w-4 h-4" />
-                        Mở đáp án
-                      </button>
                     )}
-                  </>
-                )}
-              </article>
-            );
-          })}
-        </div>
+                  </article>
+                );
+              })}
+          </div>
+          {roundDone && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-indigo-200 dark:border-indigo-900 bg-indigo-50 dark:bg-indigo-950/30 p-4">
+              <p className="text-sm font-semibold">
+                Đã đánh giá hết {session.batch.length} từ trong lượt.
+              </p>
+              <button
+                className={`${control} inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-300`}
+                aria-keyshortcuts={keyboard ? "Enter" : undefined}
+                onClick={advance}
+              >
+                <Shuffle className="w-4 h-4" />
+                Sang lượt tiếp{" "}
+                {keyboard && <kbd className="text-xs opacity-70">Enter</kbd>}
+              </button>
+            </div>
+          )}
+        </>
       )}
-      {!done && (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Các ô giữ nguyên vị trí. Chỉ trộn từ khi bạn chuyển lượt.
-          </p>
-          <button
-            disabled={!roundDone}
-            className={`${control} inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-300`}
-            onClick={() => {
-              setSession(nextRecallRound(session));
-              requestAnimationFrame(() => {
-                boardRef.current?.focus({ preventScroll: true });
-                boardRef.current?.scrollIntoView({ block: "start" });
-              });
-              setRevealed([]);
-              setUndo(null);
-              setNotice("Đã chuyển lượt và trộn các từ đến lượt ôn.");
-            }}
-          >
-            <Shuffle className="w-4 h-4" />
-            Trộn & sang lượt tiếp
-          </button>
-        </div>
-      )}
-      <p
-        role="status"
-        className="text-sm min-h-5 text-indigo-600 dark:text-indigo-300"
-      >
+      <p role="status" aria-live="polite" className="sr-only">
         {notice}
       </p>
-      <details className="rounded-2xl border border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-900">
-        <summary className="cursor-pointer text-sm font-semibold">
-          Theo dõi từ trong phiên · {waiting.length} cần ôn lại ·{" "}
-          {mastered.length} đã đạt
+      <details className="text-xs text-slate-500 dark:text-slate-400">
+        <summary className="cursor-pointer py-2">
+          Tiến độ phiên · {waiting.length} cần ôn lại · {mastered.length} đã đạt
         </summary>
-        <div className="mt-3 max-h-64 overflow-auto space-y-2">
+        <div className="mt-1 space-y-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3">
           {session.entries
             .filter((e) => e.attempts)
             .map((e) => (
               <div
                 key={e.id}
-                className="flex flex-wrap justify-between gap-2 text-sm border-b border-slate-100 dark:border-slate-800 py-2"
+                className="flex flex-wrap justify-between gap-2 border-b border-slate-100 dark:border-slate-800 py-1"
               >
                 <span className="break-words min-w-0">
                   {byId.get(e.id)?.word}
                 </span>
-                <span className="text-slate-500 dark:text-slate-400">
+                <span>
                   {e.streak >= session.settings.target
                     ? "Đã đạt"
                     : `Lặp từ lượt ${e.due}`}{" "}
@@ -491,16 +579,14 @@ function RecallBoard({
                 </span>
               </div>
             ))}
-          {!session.entries.some((e) => e.attempts) && (
-            <p className="text-sm text-slate-500">Chưa có đánh giá.</p>
-          )}
+          {!session.entries.some((e) => e.attempts) && <p>Chưa có đánh giá.</p>}
+          <p>
+            {storageFailed
+              ? "Không thể lưu phiên trong trình duyệt này."
+              : "Phiên lưu trong tab này. Tải lại rồi chọn cùng phạm vi để tiếp tục."}
+          </p>
         </div>
       </details>
-      <p className="text-xs text-slate-500 dark:text-slate-400">
-        {storageFailed
-          ? "Trình duyệt không cho lưu phiên. Tiến độ hiện chỉ được giữ khi trang còn mở."
-          : "Tiến độ lưu trong tab này. Sau khi tải lại, chọn lại cùng phạm vi để tiếp tục. Đây là luyện nhớ trong phiên, chưa phải lịch ôn dài hạn."}
-      </p>
     </section>
   );
 }
