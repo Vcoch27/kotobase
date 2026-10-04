@@ -1347,6 +1347,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 </div>
                 <div className={viewMode === "focus" ? "block" : "hidden"}>
                   <FocusRecallView 
+                    userKey={currentUser?.uid || currentUser?.email || 'guest'}
                     vocabularies={filteredVocabularies} 
                     onRefresh={fetchData}
                     selectedVocabIds={selectedVocabIds}
