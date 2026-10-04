@@ -37,3 +37,10 @@ Kết quả phiên đầu (trước tối ưu diện tích): 6/6 kiểm thử lo
 - Nút sang lượt chỉ hiện khi hết lượt; Enter hoạt động lúc focus ở bảng hoặc nút sang lượt. Không bắt Enter trên các nút khác, không bắt phím trong input/select, khi thiết lập mở, khi mode không hoạt động, với tổ hợp modifier, IME hoặc key repeat.
 - Thẻ chưa mở cao khoảng 82px thay cho 320px. Đáp án dài tự giãn; các thẻ chưa mở không bị kéo cao theo. Thẻ đang mở chiếm cả hàng trên desktop để giảm khoảng trắng bên cạnh.
 - Kiểm tra trực tiếp bằng dữ liệu giả: trái/phải, tự chọn từ tiếp với đáp án còn che, Enter mở đáp án/sang lượt sau khi hết lượt, hoàn tác, tắt phím tắt, ô tìm kiếm và mode không hoạt động. Ở mobile 390px/tối: không tràn ngang, không có vùng cuộn trong thẻ với ví dụ dài. Trang fixture đã xóa trước commit.
+
+## Chọn từ hoàn toàn bằng bàn phím
+- Tách từ được chọn và từ đang mở đáp án. Khi vào Ôn tập, tải lại hoặc sang lượt mới, tự chọn/focus từ đầu tiên chưa đánh giá; đáp án còn che.
+- ↑ / ↓ chọn từ trước/sau trong các từ chưa đánh giá, quay vòng ở hai đầu. Đổi chọn đóng đáp án cũ; Enter mở đáp án của từ đang chọn. ← / → chỉ đánh giá khi đáp án đã mở.
+- Sau đánh giá chọn từ chưa đánh giá tiếp theo. Enter hết lượt chuyển lượt rồi chọn ngay từ đầu tiên của lượt mới; có thể Enter tiếp để mở.
+- Thay viền focus bao quanh chữ bằng nền nhạt và viền nhẹ trên thẻ được chọn; bỏ caret/selection của văn bản trong nút từ. Vẫn giữ dấu chọn rõ khi Tab/Shift+Tab vào từ.
+- Kiểm tra trình duyệt: khởi tạo focus đầu tiên, ↑ ↓ và quay vòng, mở/đánh giá, Enter sang lượt và mở tiếp không cần chuột; phím ↑ ↓ trong input không đổi chọn. TypeScript và các kiểm thử hàng đợi đạt.

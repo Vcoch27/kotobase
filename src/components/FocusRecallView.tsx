@@ -87,6 +87,7 @@ function RecallBoard({
 }) {
   const [session, setSession] = useState<RecallSession | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [undo, setUndo] = useState<{
     session: RecallSession;
     activeId: string | null;
@@ -139,6 +140,7 @@ function RecallBoard({
       target?.scrollIntoView({ block: "nearest" });
     });
   const reveal = (id: string) => {
+    setSelectedId(id);
     setActiveId(id);
     focusPrompt(id);
   };
@@ -158,6 +160,7 @@ function RecallBoard({
       next.batch.find((candidate) => !next.rated.includes(candidate)) || null;
     // Focus the next prompt while keeping its answer concealed for retrieval.
     setActiveId(null);
+    setSelectedId(nextId);
     focusPrompt(keyboard ? nextId : null);
     const entry = next.entries.find((e) => e.id === id)!;
     setNotice(
@@ -175,15 +178,25 @@ function RecallBoard({
       session.entries.every((e) => e.streak >= session.settings.target)
     )
       return;
-    setSession(nextRecallRound(session));
+    const next = nextRecallRound(session);
+    setSession(next);
+    setSelectedId(next.batch[0] || null);
     setActiveId(null);
     setUndo(null);
-    setNotice("Đã chuyển lượt. Chọn một từ để bắt đầu.");
-    requestAnimationFrame(() => {
-      boardRef.current?.focus({ preventScroll: true });
-      boardRef.current?.scrollIntoView({ block: "start" });
-    });
+    setNotice("Đã chuyển lượt. Nhấn Enter để mở từ đầu tiên, ↑ ↓ để chọn từ.");
+    focusPrompt(keyboard ? next.batch[0] || null : null);
   };
+  // Entering the mode or a new round starts at a concealed prompt, without a mouse.
+  useEffect(() => {
+    if (!isActive || !keyboard || !session) return;
+    const first =
+      session.batch.find((id) => !session.rated.includes(id)) || null;
+    setSelectedId(first);
+    setActiveId(null);
+    focusPrompt(first);
+    // Ratings keep their own next-word focus; only mode/round changes initialize it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive, keyboard, session?.round]);
   useEffect(() => {
     if (!isActive || !keyboard || !session || showSettings) return;
     const handleKey = (event: KeyboardEvent) => {
@@ -209,7 +222,25 @@ function RecallBoard({
         )
       )
         return;
-      if (
+      if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+        const remaining = session.batch.filter(
+          (id) => !session.rated.includes(id),
+        );
+        if (!remaining.length) return;
+        event.preventDefault();
+        const index = remaining.indexOf(selectedId || "");
+        const nextIndex =
+          index < 0
+            ? 0
+            : (index +
+                (event.key === "ArrowDown" ? 1 : -1) +
+                remaining.length) %
+              remaining.length;
+        const nextId = remaining[nextIndex];
+        setActiveId(null);
+        setSelectedId(nextId);
+        focusPrompt(nextId);
+      } else if (
         (event.key === "ArrowLeft" || event.key === "ArrowRight") &&
         activeId &&
         !session.rated.includes(activeId)
@@ -226,6 +257,15 @@ function RecallBoard({
       ) {
         event.preventDefault();
         advance();
+      } else if (
+        event.key === "Enter" &&
+        selectedId &&
+        (target === boardRef.current ||
+          target.closest("[data-recall-prompt]")) &&
+        !session.rated.includes(selectedId)
+      ) {
+        event.preventDefault();
+        reveal(selectedId);
       }
     };
     window.addEventListener("keydown", handleKey);
@@ -262,13 +302,14 @@ function RecallBoard({
       !window.confirm("Bắt đầu phiên mới và xóa tiến độ phiên hiện tại?")
     )
       return;
-    setSession(
-      createRecallSession(
-        words.map((w) => w.id),
-        settings,
-      ),
+    const next = createRecallSession(
+      words.map((w) => w.id),
+      settings,
     );
+    setSession(next);
     setActiveId(null);
+    setSelectedId(next.batch[0] || null);
+    focusPrompt(keyboard ? next.batch[0] || null : null);
     setUndo(null);
     setNotice("Đã bắt đầu phiên mới.");
     setShowSettings(false);
@@ -308,6 +349,7 @@ function RecallBoard({
                 if (!undo) return;
                 setSession(undo.session);
                 setActiveId(undo.activeId);
+                setSelectedId(undo.activeId);
                 focusPrompt(undo.activeId);
                 setUndo(null);
                 setNotice("Đã hoàn tác.");
@@ -360,7 +402,7 @@ function RecallBoard({
               }}
               className="accent-indigo-600"
             />
-            Bàn phím: ← chưa nhớ · → nhớ · Enter sang lượt
+            Bàn phím: ↑ ↓ chọn từ · Enter mở / sang lượt · ← chưa nhớ · → nhớ
           </label>
         </div>
         {showSettings && (
@@ -448,11 +490,12 @@ function RecallBoard({
                 const word = byId.get(id)!;
                 const entry = session.entries.find((e) => e.id === id)!;
                 const open = activeId === id;
+                const selected = keyboard && selectedId === id;
                 return (
                   <article
                     key={id}
                     aria-label={`Ôn tập ${word.word}`}
-                    className={`min-w-0 self-start rounded-2xl border bg-white dark:bg-slate-900 ${open ? "md:col-span-2 border-indigo-300 dark:border-indigo-500" : "border-slate-200 dark:border-slate-700"}`}
+                    className={`min-w-0 self-start rounded-2xl border ${open ? "md:col-span-2" : ""} ${selected ? "border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/20" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"}`}
                   >
                     <div className="flex items-start gap-3 px-4 py-3">
                       <button
@@ -460,7 +503,12 @@ function RecallBoard({
                           if (element) promptRefs.current.set(id, element);
                           else promptRefs.current.delete(id);
                         }}
-                        className="flex-1 min-w-0 text-left break-words rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
+                        data-recall-prompt={id}
+                        onFocus={() => {
+                          setSelectedId(id);
+                          if (activeId !== id) setActiveId(null);
+                        }}
+                        className="flex-1 min-w-0 text-left break-words rounded-lg outline-none focus:outline-none select-none cursor-pointer caret-transparent"
                         aria-expanded={open}
                         aria-controls={`recall-answer-${id}`}
                         onClick={() => reveal(id)}
@@ -470,7 +518,9 @@ function RecallBoard({
                         </span>
                         {!open && (
                           <span className="text-xs text-slate-400 dark:text-slate-500">
-                            Bấm để mở đáp án
+                            {selected
+                              ? "Đang chọn · Enter để mở"
+                              : "Bấm để mở đáp án"}
                           </span>
                         )}
                       </button>
