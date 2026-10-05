@@ -33,6 +33,8 @@ import { VocabularyEditModal } from './VocabularyEditModal';
 import { BulkDeleteConfirmModal } from './BulkDeleteConfirmModal';
 import { BulkFolderModal } from './BulkFolderModal';
 import { getFolderFullPath } from '@/lib/folder-utils';
+import { KanjiSubsection } from './KanjiSubsection';
+
 
 interface FolderVocabItem {
   folderId: string;
@@ -1130,7 +1132,14 @@ export function OverviewView({
         })}
       </div>
 
+      {/* KANJI SUBSECTION - Hiển thị tất cả hán tự trong thư mục, phân loại có/chưa có mẹo */}
+      <KanjiSubsection
+        vocabularies={localVocabs}
+        folderKey={folderKey}
+      />
+
       {/* 3. FLOATING ACTION BAR (Hiện khi có từ được chọn) - Vị trí linh hoạt + Kéo thả tự do */}
+
       {selectedIds.length > 0 && (
         <div
           ref={barRef}
