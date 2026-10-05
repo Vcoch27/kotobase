@@ -69,10 +69,25 @@ export function NotificationBell({
           setReadIds(localRead);
         }
 
-        // 2. Lấy thông báo hệ thống (từ Next.js cache, an toàn)
-        const list = await getSystemNotifications();
+        // 2. Lấy thông báo hệ thống (Fetch qua /api/notifications, fallback Server Action)
+        let list: SystemNotificationItem[] = [];
+        try {
+          const res = await fetch("/api/notifications", { cache: "no-store" });
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) list = data;
+          }
+        } catch (fetchErr) {
+          console.warn("Fetch /api/notifications lỗi, fallback server action:", fetchErr);
+        }
+
+        if (!list || list.length === 0) {
+          list = await getSystemNotifications();
+        }
+
         if (isCancelled) return;
         setNotifications(Array.isArray(list) ? list : []);
+
 
         // 3. Nếu có user đăng nhập -> đồng bộ danh sách đã đọc từ Firestore
         if (currentUser?.uid) {

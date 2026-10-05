@@ -11,17 +11,52 @@ export type NotificationType = "feature" | "improvement" | "fix" | "announcement
 
 export interface SystemNotificationItem extends CachedSystemNotification {}
 
+let memoryNotificationsCache: { data: SystemNotificationItem[]; expiresAt: number } | null = null;
+
 /**
- * Lấy danh sách thông báo hệ thống (qua Next.js Data Cache, 0 read trực tiếp từ Firestore nếu còn cache)
+ * Lấy danh sách thông báo hệ thống (In-memory cache 1 phút, an toàn tuyệt đối trên Serverless)
  */
 export async function getSystemNotifications(): Promise<SystemNotificationItem[]> {
+  const now = Date.now();
+  if (memoryNotificationsCache && now < memoryNotificationsCache.expiresAt) {
+    return memoryNotificationsCache.data;
+  }
   try {
-    return await getCachedSystemNotifications();
+    const snap = await adminDb
+      .collection("system_notifications")
+      .orderBy("createdAt", "desc")
+      .limit(20)
+      .get();
+
+    const data: SystemNotificationItem[] = snap.docs
+      .map((doc) => {
+        const d = doc.data();
+        return {
+          id: doc.id,
+          title: d.title || "",
+          summary: d.summary || "",
+          content: d.content || "",
+          type: (d.type || "feature") as NotificationType,
+          tag: d.tag || undefined,
+          link: d.link || undefined,
+          createdAt:
+            typeof d.createdAt === "string"
+              ? d.createdAt
+              : d.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
+          isActive: d.isActive !== false,
+          version: d.version || undefined,
+        };
+      })
+      .filter((n) => n.isActive);
+
+    memoryNotificationsCache = { data, expiresAt: now + 60 * 1000 };
+    return data;
   } catch (error) {
     console.error("Lỗi khi lấy thông báo hệ thống:", error);
     return [];
   }
 }
+
 
 /**
  * Lấy danh sách ID thông báo mà người dùng đã đọc từ Firestore users/{uid}
