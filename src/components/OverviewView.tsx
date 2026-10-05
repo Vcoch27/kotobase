@@ -86,6 +86,9 @@ export function OverviewView({
   const [editingVocab, setEditingVocab] = useState<VocabularyData | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 40;
+  // Tab: 'vocab' = danh sách từ vựng, 'kanji' = hán tự trong thư mục
+  const [overviewTab, setOverviewTab] = useState<'vocab' | 'kanji'>('vocab');
+
 
   // State cho Thao tác Hàng loạt (Bulk actions)
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
@@ -479,6 +482,47 @@ export function OverviewView({
 
   return (
     <div className="relative space-y-4">
+      {/* TAB BAR: Từ vựng / Hán tự */}
+      <div className="flex items-center gap-1 bg-[oklch(var(--color-surface)/0.9)] shadow-elevation-sm px-2 py-1.5 rounded-2xl backdrop-blur-md w-fit">
+        <button
+          type="button"
+          onClick={() => setOverviewTab('vocab')}
+          className={cn(
+            'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
+            overviewTab === 'vocab'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+          )}
+        >
+          <BookOpen className="w-3.5 h-3.5" />
+          Từ vựng
+        </button>
+        <button
+          type="button"
+          onClick={() => setOverviewTab('kanji')}
+          className={cn(
+            'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
+            overviewTab === 'kanji'
+              ? 'bg-amber-500 text-white shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+          )}
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          Hán tự
+        </button>
+      </div>
+
+      {/* TAB: KANJI */}
+      {overviewTab === 'kanji' && (
+        <KanjiSubsection
+          vocabularies={localVocabs}
+          folderKey={folderKey}
+        />
+      )}
+
+      {/* TAB: TỪ VỰNG (ẩn khi đang xem tab Hán tự) */}
+      {overviewTab === 'vocab' && (
+      <div className="space-y-4">
       {/* TOOLBAR CHỌN TỪ VỰNG TINH GỌN */}
       <div className="bg-[oklch(var(--color-surface)/0.9)] shadow-elevation-sm p-2.5 sm:p-3 px-3.5 sm:px-4 rounded-2xl backdrop-blur-md transition-all space-y-2.5">
         {/* Dòng chính: Badge trạng thái + Nhóm nút chọn nhanh */}
@@ -1133,12 +1177,12 @@ export function OverviewView({
       </div>
 
       {/* KANJI SUBSECTION - Hiển thị tất cả hán tự trong thư mục, phân loại có/chưa có mẹo */}
-      <KanjiSubsection
-        vocabularies={localVocabs}
-        folderKey={folderKey}
-      />
+
+      </div>
+      )} {/* end overviewTab === 'vocab' */}
 
       {/* 3. FLOATING ACTION BAR (Hiện khi có từ được chọn) - Vị trí linh hoạt + Kéo thả tự do */}
+
 
       {selectedIds.length > 0 && (
         <div
