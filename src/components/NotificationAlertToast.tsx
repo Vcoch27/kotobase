@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Sparkles, X, ChevronRight, Bell } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Sparkles, X, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { SystemNotificationItem } from "@/app/actions/notification";
 
@@ -18,8 +19,13 @@ export function NotificationAlertToast({
   isRead,
   onOpenDrawer,
 }: NotificationAlertToastProps) {
+  const [mounted, setMounted] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!latestNotification || isRead) {
@@ -29,9 +35,11 @@ export function NotificationAlertToast({
 
     // Kiểm tra xem đã bị dismiss trong phiên làm việc hiện tại chưa
     try {
-      const dismissedId = sessionStorage.getItem(SESSION_DISMISS_KEY);
-      if (dismissedId === latestNotification.id) {
-        return;
+      if (typeof window !== "undefined") {
+        const dismissedId = sessionStorage.getItem(SESSION_DISMISS_KEY);
+        if (dismissedId === latestNotification.id) {
+          return;
+        }
       }
     } catch {}
 
@@ -67,14 +75,14 @@ export function NotificationAlertToast({
     onOpenDrawer();
   };
 
-  if (!latestNotification || isRead || isDismissed || !isVisible) {
+  if (!mounted || !latestNotification || isRead || isDismissed || !isVisible) {
     return null;
   }
 
-  return (
+  return createPortal(
     <div
       className={cn(
-        "fixed z-[100] max-w-sm sm:max-w-md w-[calc(100vw-2rem)]",
+        "fixed z-[9990] max-w-sm sm:max-w-md w-[calc(100vw-2rem)]",
         "bottom-20 md:bottom-6 right-4 sm:right-6",
         "animate-slideUp transition-all duration-300"
       )}
@@ -84,7 +92,7 @@ export function NotificationAlertToast({
         className={cn(
           "relative overflow-hidden cursor-pointer",
           "p-3.5 sm:p-4 rounded-2xl",
-          "bg-white/95 dark:bg-slate-900/95 backdrop-blur-md",
+          "bg-white dark:bg-slate-900",
           "border border-indigo-200/90 dark:border-indigo-500/30",
           "shadow-2xl shadow-indigo-500/10 hover:shadow-indigo-500/20",
           "hover:border-indigo-400 dark:hover:border-indigo-400 transition-all duration-200",
@@ -97,7 +105,7 @@ export function NotificationAlertToast({
         <div className="flex items-start gap-3">
           {/* Icon nổi bật với hiệu ứng pulse */}
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-            <Sparkles className="w-4 h-4 animate-spin-slow" />
+            <Sparkles className="w-4 h-4" />
           </div>
 
           <div className="flex-1 min-w-0 pr-6">
@@ -138,6 +146,7 @@ export function NotificationAlertToast({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

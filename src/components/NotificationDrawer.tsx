@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   X,
   Bell,
@@ -76,7 +77,6 @@ function formatDate(dateStr: string) {
   }
 }
 
-
 export function NotificationDrawer({
   isOpen,
   onClose,
@@ -87,9 +87,14 @@ export function NotificationDrawer({
   isLoggedIn,
   onLoginRequest,
 }: NotificationDrawerProps) {
+  const [mounted, setMounted] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<SystemNotificationItem | null>(null);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
 
   const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
 
@@ -100,24 +105,24 @@ export function NotificationDrawer({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[120] flex justify-end">
-      {/* Backdrop */}
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex justify-end">
+      {/* Backdrop che mờ toàn màn hình */}
       <div
-        className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs transition-opacity animate-fadeIn"
+        className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity animate-fadeIn"
         onClick={onClose}
       />
 
-      {/* Drawer Container */}
+      {/* Drawer Container toàn chiều cao */}
       <aside
         className={cn(
-          "relative w-full max-w-md sm:max-w-lg h-full bg-white dark:bg-slate-900",
+          "relative w-full max-w-md sm:max-w-lg h-screen bg-white dark:bg-slate-900",
           "border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col z-10",
           "animate-slideInRight duration-200 ease-out"
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 px-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/80 backdrop-blur-sm">
+        <div className="flex items-center justify-between p-4 px-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-500/20">
               <Bell className="w-4 h-4" />
@@ -162,7 +167,7 @@ export function NotificationDrawer({
 
         {/* Chưa đăng nhập -> Banner nhắc nhở */}
         {!isLoggedIn && (
-          <div className="m-3 p-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-500/30 flex items-center justify-between gap-3 text-xs">
+          <div className="m-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-500/30 flex items-center justify-between gap-3 text-xs shrink-0">
             <div className="text-amber-800 dark:text-amber-300">
               <span className="font-bold">Đăng nhập để nhận thông báo:</span>
               <p className="text-[11px] text-amber-700/80 dark:text-amber-400 mt-0.5">
@@ -182,10 +187,10 @@ export function NotificationDrawer({
           </div>
         )}
 
-        {/* Danh sách thông báo */}
-        <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80 p-3 space-y-2">
+        {/* Danh sách thông báo (Cuộn được, nền sáng/tối rõ ràng) */}
+        <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80 p-3 sm:p-4 space-y-2.5 bg-slate-50/50 dark:bg-slate-950/40">
           {notifications.length === 0 ? (
-            <div className="py-16 text-center text-slate-400 dark:text-slate-500">
+            <div className="py-20 text-center text-slate-400 dark:text-slate-500">
               <Bell className="w-10 h-10 mx-auto mb-2 opacity-30" />
               <p className="text-xs font-semibold">Chưa có thông báo nào</p>
               <p className="text-[11px] mt-1">Các bản cập nhật mới sẽ xuất hiện tại đây.</p>
@@ -202,10 +207,10 @@ export function NotificationDrawer({
                   key={item.id}
                   onClick={() => handleSelect(item)}
                   className={cn(
-                    "p-3.5 rounded-xl border transition-all cursor-pointer group text-left relative",
+                    "p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer group text-left relative",
                     isRead
-                      ? "bg-white dark:bg-slate-900 border-slate-200/70 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
-                      : "bg-indigo-50/40 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-500/30 hover:border-indigo-300 shadow-xs"
+                      ? "bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
+                      : "bg-indigo-50/60 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-500/40 hover:border-indigo-300 shadow-xs"
                   )}
                 >
                   {/* Chấm tròn chưa đọc */}
@@ -250,7 +255,7 @@ export function NotificationDrawer({
 
                   {/* Chi tiết khi mở rộng */}
                   {isExpanded && (
-                    <div className="mt-3 pt-3 border-t border-slate-200/80 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 space-y-2 animate-fadeIn whitespace-pre-line leading-relaxed bg-slate-50/50 dark:bg-slate-800/40 p-2.5 rounded-lg">
+                    <div className="mt-3 pt-3 border-t border-slate-200/80 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 space-y-2 animate-fadeIn whitespace-pre-line leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-200/50 dark:border-slate-700/50">
                       {item.content}
 
                       {item.link && (
@@ -268,10 +273,10 @@ export function NotificationDrawer({
                   )}
 
                   {/* Footer hint */}
-                  <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500">
+                  <div className="mt-2.5 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500">
                     <span>{isExpanded ? "Thu gọn" : "Bấm để xem chi tiết"}</span>
                     {isRead ? (
-                      <span className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400">
+                      <span className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400 font-semibold">
                         <CheckCircle2 className="w-3 h-3" /> Đã đọc
                       </span>
                     ) : (
@@ -287,10 +292,11 @@ export function NotificationDrawer({
         </div>
 
         {/* Footer */}
-        <div className="p-3 border-t border-slate-200 dark:border-slate-800 text-center text-[11px] text-slate-400 dark:text-slate-500 bg-slate-50/50 dark:bg-slate-900/50">
+        <div className="p-3.5 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900 shrink-0">
           KotoBase • Nền tảng học tiếng Nhật thông minh
         </div>
       </aside>
-    </div>
+    </div>,
+    document.body
   );
 }
