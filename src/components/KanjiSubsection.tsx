@@ -153,32 +153,42 @@ export function KanjiSubsection({ vocabularies, folderKey }: KanjiSubsectionProp
 
   return (
     <div className="mt-4 space-y-3 select-none">
-      {/* ── HEADER ── */}
-      <div className="flex items-center gap-2 px-1">
-        <span className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200/80 dark:border-amber-500/20">
-          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-        </span>
-        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-          Hán tự trong thư mục
-        </span>
-        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-          {uniqueKanji.length} hán tự
-        </span>
-        {loading && (
-          <span className="text-[11px] text-slate-400 dark:text-slate-500 animate-pulse ml-1">
-            Đang tải…
+      {/* ── HEADER & SEARCH ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200/80 dark:border-amber-500/20">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
           </span>
-        )}
+          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+            Hán tự trong thư mục
+          </span>
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+            {uniqueKanji.length} hán tự
+          </span>
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200/80 dark:border-amber-500/30">
+            {withNotes.length} có mẹo
+          </span>
+          {withoutNotes.length > 0 && (
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+              {withoutNotes.length} chưa có
+            </span>
+          )}
+          {loading && (
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 animate-pulse ml-1">
+              Đang tải…
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* ── LIST 1: CÓ MẸO NHỚ ── */}
+      {/* ── LIST 1: CÓ MẸO NHỚ (2 CỘT RESPONSIVE) ── */}
       {withNotes.length > 0 && (
         <div className="rounded-2xl bg-[oklch(var(--color-surface))] shadow-elevation-sm border border-amber-100 dark:border-amber-500/10 overflow-hidden transition-colors duration-300">
           {/* Sub-header */}
           <button
             type="button"
             onClick={() => setShowWithNotes((v) => !v)}
-            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-amber-50/60 dark:hover:bg-amber-500/5 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-amber-50/60 dark:hover:bg-amber-500/5 transition-colors border-b border-amber-100/60 dark:border-amber-500/10"
           >
             <div className="flex items-center gap-2">
               <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
@@ -194,7 +204,7 @@ export function KanjiSubsection({ vocabularies, folderKey }: KanjiSubsectionProp
           </button>
 
           {showWithNotes && (
-            <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+            <div className="p-2.5 sm:p-3.5 grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3 bg-slate-50/40 dark:bg-slate-900/20">
               {withNotes.map((char) => {
                 const note = notesMap[char];
                 return (
@@ -202,28 +212,41 @@ export function KanjiSubsection({ vocabularies, folderKey }: KanjiSubsectionProp
                     key={char}
                     type="button"
                     onClick={() => openModal(char)}
-                    className="w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-amber-50/40 dark:hover:bg-amber-500/5 transition-colors group"
+                    className="w-full text-left flex items-start gap-3 p-3 sm:p-3.5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-500/50 hover:bg-amber-50/50 dark:hover:bg-amber-500/10 hover:shadow-md transition-all duration-200 group relative"
                     title={`Bấm để xem chi tiết Hán tự ${char}`}
                   >
-                    {/* Kanji to */}
-                    <span className="text-2xl font-bold text-amber-600 dark:text-amber-400 leading-none shrink-0 pt-0.5 group-hover:scale-110 transition-transform">
+                    {/* Kanji nổi bật */}
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold text-2xl sm:text-3xl shrink-0 group-hover:scale-105 group-hover:bg-amber-100/80 dark:group-hover:bg-amber-500/25 transition-transform border border-amber-200/60 dark:border-amber-500/20 shadow-xs">
                       {char}
-                    </span>
+                    </div>
+
                     {/* Thông tin */}
-                    <div className="flex-1 min-w-0 space-y-0.5">
-                      {note?.hanviet && (
-                        <div className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider truncate">
-                          {note.hanviet}
-                        </div>
-                      )}
-                      {note?.mnemonic && (
-                        <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-2">
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {note?.hanviet && (
+                          <span className="text-[11px] sm:text-xs font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">
+                            {note.hanviet}
+                          </span>
+                        )}
+                        {note?.meaning && (
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 italic truncate max-w-[130px] sm:max-w-[180px]">
+                            • {note.meaning}
+                          </span>
+                        )}
+                      </div>
+                      {note?.mnemonic ? (
+                        <div className="text-xs sm:text-[13px] text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-3">
                           <HighlightMnemonic text={note.mnemonic} />
+                        </div>
+                      ) : (
+                        <div className="text-[11px] text-slate-400 dark:text-slate-500 italic">
+                          Chưa có nội dung mẹo
                         </div>
                       )}
                     </div>
-                    {/* Arrow hint */}
-                    <span className="text-[10px] text-slate-300 dark:text-slate-600 group-hover:text-amber-400 transition-colors shrink-0 self-center">
+
+                    {/* Mũi tên dẫn hướng */}
+                    <span className="text-slate-300 dark:text-slate-600 group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors shrink-0 text-xs self-center">
                       ›
                     </span>
                   </button>
@@ -241,7 +264,7 @@ export function KanjiSubsection({ vocabularies, folderKey }: KanjiSubsectionProp
           <button
             type="button"
             onClick={() => setShowWithoutNotes((v) => !v)}
-            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors border-b border-slate-100/60 dark:border-slate-800/40"
           >
             <div className="flex items-center gap-2">
               <BookOpen className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -257,25 +280,34 @@ export function KanjiSubsection({ vocabularies, folderKey }: KanjiSubsectionProp
           </button>
 
           {showWithoutNotes && (
-            <div className="px-4 pb-4 pt-1">
+            <div className="p-3 sm:p-4">
               <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-3">
-                Bấm vào hán tự để thêm mẹo nhớ
+                Bấm vào hán tự để xem và thêm mẹo nhớ
               </p>
-              <div className="flex flex-wrap gap-2">
-                {withoutNotes.map((char) => (
-                  <button
-                    key={char}
-                    type="button"
-                    onClick={() => openModal(char)}
-                    title={`Thêm mẹo nhớ cho ${char}`}
-                    className="group relative flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-500/10 hover:border-amber-300 dark:hover:border-amber-500/40 border border-slate-200 dark:border-slate-700 transition-all active:scale-95"
-                  >
-                    <span className="text-lg font-bold text-slate-600 dark:text-slate-300 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
-                      {char}
-                    </span>
-                    <PlusCircle className="w-3 h-3 text-slate-300 dark:text-slate-600 group-hover:text-amber-500 transition-colors" />
-                  </button>
-                ))}
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                {withoutNotes.map((char) => {
+                  const note = notesMap[char];
+                  return (
+                    <button
+                      key={char}
+                      type="button"
+                      onClick={() => openModal(char)}
+                      title={`Thêm mẹo nhớ cho ${char}${note?.hanviet ? ` (${note.hanviet})` : ''}`}
+                      className="group flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-500/50 hover:bg-amber-50/50 dark:hover:bg-amber-500/10 hover:shadow-sm transition-all active:scale-95"
+                    >
+                      <span className="text-xl font-bold text-slate-700 dark:text-slate-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                        {char}
+                      </span>
+                      {note?.hanviet ? (
+                        <span className="text-[10px] text-indigo-500 dark:text-indigo-400 font-semibold uppercase truncate max-w-full">
+                          {note.hanviet.split(',')[0]}
+                        </span>
+                      ) : (
+                        <PlusCircle className="w-3 h-3 text-slate-300 dark:text-slate-600 group-hover:text-amber-500 transition-colors mt-0.5" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
