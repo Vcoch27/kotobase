@@ -345,5 +345,53 @@ export const getCachedVocabsByKanji = async (character: string): Promise<CachedV
   )();
 };
 
+// ==========================================
+// SYSTEM NOTIFICATIONS CACHE (Tối ưu lượt đọc thông báo hệ thống)
+// ==========================================
+export interface CachedSystemNotification {
+  id: string;
+  title: string;
+  summary: string;
+  content: string;
+  type: "feature" | "improvement" | "fix" | "announcement";
+  tag?: string;
+  link?: string;
+  createdAt: string;
+  isActive: boolean;
+  version?: string;
+}
 
+export const getCachedSystemNotifications = unstable_cache(
+  async (): Promise<CachedSystemNotification[]> => {
+    try {
+      const snap = await adminDb.collection("system_notifications")
+        .where("isActive", "==", true)
+        .orderBy("createdAt", "desc")
+        .limit(20)
+        .get();
 
+      return snap.docs.map((doc) => {
+        const d = doc.data();
+        return {
+          id: doc.id,
+          title: d.title || "",
+          summary: d.summary || "",
+          content: d.content || "",
+          type: d.type || "feature",
+          tag: d.tag || undefined,
+          link: d.link || undefined,
+          createdAt: typeof d.createdAt === "string" 
+            ? d.createdAt 
+            : (d.createdAt?.toDate?.().toISOString() || new Date().toISOString()),
+          isActive: d.isActive !== false,
+          version: d.version || undefined,
+        };
+      });
+    } catch (err) {
+      console.error("Lỗi khi đọc system_notifications từ Firestore:", err);
+      return [];
+    }
+  },
+  ['system-notifications-list-v1'],
+  { tags: ['system_notifications'], revalidate: 3600 }
+);

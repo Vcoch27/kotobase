@@ -1,0 +1,200 @@
+"use client";
+
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { Bell } from "lucide-react";
+import { cn } from "@/lib/cn";
+import {
+  getSystemNotifications,
+  getUserReadNotificationIds,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  seedInitialNotificationIfEmpty,
+  type SystemNotificationItem,
+} from "@/app/actions/notification";
+import { NotificationDrawer } from "./NotificationDrawer";
+import { NotificationAlertToast } from "./NotificationAlertToast";
+
+const LOCAL_STORAGE_READ_KEY = "kotobase_read_notification_ids";
+
+interface NotificationBellProps {
+  currentUser?: { uid: string; email: string; name?: string; picture?: string } | null;
+  onLoginRequest?: () => void;
+  className?: string;
+}
+
+export function NotificationBell({
+  currentUser,
+  onLoginRequest,
+  className,
+}: NotificationBellProps) {
+  const [notifications, setNotifications] = useState<SystemNotificationItem[]>([]);
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+
+  // Đọc danh sách ID đã đọc từ localStorage (Layer 1 - 0ms delay)
+  const getLocalReadIds = useCallback((): Set<string> => {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_READ_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return new Set(parsed);
+      }
+    } catch {}
+    return new Set();
+  }, []);
+
+  // Lưu danh sách ID đã đọc vào localStorage
+  const saveLocalReadIds = useCallback((newSet: Set<string>) => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_READ_KEY, JSON.stringify(Array.from(newSet)));
+    } catch {}
+  }, []);
+
+  // Khởi tạo: Lấy thông báo và danh sách đã đọc
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function init() {
+      // 1. Đọc ngay từ localStorage để có UI tức thì
+      const localRead = getLocalReadIds();
+      setReadIds(localRead);
+
+      // 2. Tự động seed thông báo đầu nếu hệ thống rỗng
+      await seedInitialNotificationIfEmpty();
+
+      // 3. Lấy thông báo hệ thống (từ Next.js cache, 0-1 read)
+      const list = await getSystemNotifications();
+      if (isCancelled) return;
+      setNotifications(list);
+
+      // 4. Nếu có user đăng nhập -> đồng bộ danh sách đã đọc từ Firestore users/{uid}
+      if (currentUser?.uid) {
+        const userReadList = await getUserReadNotificationIds(currentUser.uid);
+        if (!isCancelled && userReadList.length > 0) {
+          const merged = new Set([...Array.from(localRead), ...userReadList]);
+          setReadIds(merged);
+          saveLocalReadIds(merged);
+        }
+      }
+
+      setHasLoaded(true);
+    }
+
+    init();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [currentUser?.uid, getLocalReadIds, saveLocalReadIds]);
+
+  // Đánh dấu 1 thông báo đã đọc
+  const handleMarkAsRead = useCallback(
+    async (id: string) => {
+      setReadIds((prev) => {
+        const next = new Set(prev);
+        next.add(id);
+        saveLocalReadIds(next);
+        return next;
+      });
+
+      // Ghi bất đồng bộ lên Firestore nếu đã đăng nhập
+      if (currentUser?.uid) {
+        await markNotificationAsRead(id, currentUser.uid);
+      }
+    },
+    [currentUser?.uid, saveLocalReadIds]
+  );
+
+  // Đánh dấu tất cả thông báo đã đọc
+  const handleMarkAllAsRead = useCallback(async () => {
+    const allIds = notifications.map((n) => n.id);
+    const newSet = new Set(allIds);
+    setReadIds(newSet);
+    saveLocalReadIds(newSet);
+
+    // Ghi bất đồng bộ lên Firestore nếu đã đăng nhập
+    if (currentUser?.uid) {
+      await markAllNotificationsAsRead(allIds, currentUser.uid);
+    }
+  }, [notifications, currentUser?.uid, saveLocalReadIds]);
+
+  // Đếm số thông báo chưa đọc
+  const unreadCount = useMemo(() => {
+    return notifications.filter((n) => !readIds.has(n.id)).length;
+  }, [notifications, readIds]);
+
+  // Thông báo mới nhất
+  const latestNotification = useMemo(() => {
+    return notifications.length > 0 ? notifications[0] : null;
+  }, [notifications]);
+
+  const isLatestRead = useMemo(() => {
+    return latestNotification ? readIds.has(latestNotification.id) : true;
+  }, [latestNotification, readIds]);
+
+  return (
+    <>
+      {/* Icon Chuông trên thanh công cụ */}
+      <button
+        type="button"
+        onClick={() => setIsDrawerOpen(true)}
+        className={cn(
+          "relative p-2 rounded-xl transition-all duration-200",
+          "text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400",
+          "hover:bg-slate-100 dark:hover:bg-slate-900",
+          unreadCount > 0 && "text-indigo-600 dark:text-indigo-400",
+          className
+        )}
+        title={
+          unreadCount > 0
+            ? `Có ${unreadCount} thông báo cập nhật mới`
+            : "Thông báo & Nhật ký cập nhật"
+        }
+      >
+        <Bell
+          className={cn(
+            "w-4 h-4 md:w-5 md:h-5 transition-transform",
+            unreadCount > 0 && "animate-wiggle"
+          )}
+        />
+
+        {/* Badge số lượng thông báo chưa đọc */}
+        {unreadCount > 0 && (
+          <span
+            className={cn(
+              "absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1",
+              "flex items-center justify-center",
+              "text-[10px] font-extrabold text-white rounded-full",
+              "bg-rose-500 shadow-md shadow-rose-500/30 ring-2 ring-white dark:ring-slate-950",
+              "animate-scaleIn"
+            )}
+          >
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {/* Drawer xem chi tiết danh sách thông báo */}
+      <NotificationDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        notifications={notifications}
+        readIds={readIds}
+        onMarkAsRead={handleMarkAsRead}
+        onMarkAllAsRead={handleMarkAllAsRead}
+        isLoggedIn={!!currentUser?.uid}
+        onLoginRequest={onLoginRequest}
+      />
+
+      {/* Alert toast trượt ở góc nếu có thông báo mới chưa đọc */}
+      {hasLoaded && (
+        <NotificationAlertToast
+          latestNotification={latestNotification}
+          isRead={isLatestRead}
+          onOpenDrawer={() => setIsDrawerOpen(true)}
+        />
+      )}
+    </>
+  );
+}

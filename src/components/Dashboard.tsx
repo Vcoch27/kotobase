@@ -44,6 +44,7 @@ import { loginWithGoogle } from "@/app/actions/auth";
 import { FocusRecallView } from "./FocusRecallView";
 import { FlashcardView } from "./FlashcardView";
 import { TypingQuizView } from "./TypingQuizView";
+import { NotificationBell } from "./NotificationBell";
 
 interface UserInfo {
   uid: string;
@@ -675,6 +676,12 @@ export function Dashboard({ currentUser }: DashboardProps) {
               <Smartphone className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Tải App</span>
             </Link>
+
+            {/* Chuông Thông báo Cập nhật */}
+            <NotificationBell
+              currentUser={currentUser}
+              onLoginRequest={handleGoogleLogin}
+            />
 
             <button 
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

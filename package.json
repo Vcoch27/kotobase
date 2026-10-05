@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "backup": "node scripts/run-backup.js",
+    "notify": "node scripts/create-notification.js",
     "prisma:generate": "prisma generate",
     "prisma:db-push": "prisma db push"
   },
