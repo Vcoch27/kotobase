@@ -33,6 +33,15 @@ export function NotificationAlertToast({
       return;
     }
 
+    // Chỉ tự động trượt Alert nếu thông báo được tạo trong vòng 14 ngày gần nhất
+    const createdAtTime = latestNotification.createdAt ? new Date(latestNotification.createdAt).getTime() : 0;
+    const isRecent = createdAtTime > 0 && (Date.now() - createdAtTime) < 14 * 24 * 60 * 60 * 1000;
+    if (!isRecent) {
+      setIsVisible(false);
+      return;
+    }
+
+
     // Kiểm tra xem đã bị dismiss trong phiên làm việc hiện tại chưa
     try {
       if (typeof window !== "undefined") {

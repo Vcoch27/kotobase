@@ -89,15 +89,53 @@ export function NotificationBell({
         setNotifications(Array.isArray(list) ? list : []);
 
 
-        // 3. Nếu có user đăng nhập -> đồng bộ danh sách đã đọc từ Firestore
+        // 3. RÀNG BUỘC NGƯỜI DÙNG MỚI:
+        // Nếu là khách mới hoặc user mới tạo tài khoản, không bị dồn 20 thông báo cũ từ quá khứ!
+        // Chỉ giữ lại tối đa 1 thông báo mới nhất (nếu phát hành trong 14 ngày gần nhất),
+        // tất cả các thông báo cũ hơn tự động được coi là đã đọc.
+        const FIRST_VISIT_KEY = "kotobase_notifications_first_visit";
+        const isFirstVisit = typeof window !== "undefined" && !localStorage.getItem(FIRST_VISIT_KEY);
+        const currentReadSet = new Set(localRead);
+
+        if (isFirstVisit && list.length > 0) {
+          try {
+            localStorage.setItem(FIRST_VISIT_KEY, String(Date.now()));
+          } catch {}
+          // Tự động đánh dấu đã đọc các thông báo cũ (từ index 1 trở đi)
+          const olderIds = list.slice(1).map((n) => n.id);
+
+          // Nếu ngay cả thông báo mới nhất cũng đã cũ hơn 14 ngày -> coi như đã đọc luôn
+          const latest = list[0];
+          const latestTime = latest?.createdAt ? new Date(latest.createdAt).getTime() : 0;
+          const isLatestOld = latestTime > 0 && (Date.now() - latestTime) > 14 * 24 * 60 * 60 * 1000;
+          if (isLatestOld && latest) {
+            olderIds.push(latest.id);
+          }
+
+          olderIds.forEach((id) => currentReadSet.add(id));
+          saveLocalReadIds(currentReadSet);
+        }
+
+        // 4. Nếu có user đăng nhập -> đồng bộ danh sách đã đọc từ Firestore
         if (currentUser?.uid) {
           const userReadList = await getUserReadNotificationIds(currentUser.uid);
-          if (!isCancelled && Array.isArray(userReadList) && userReadList.length > 0) {
-            const merged = new Set([...Array.from(localRead), ...userReadList]);
-            setReadIds(merged);
-            saveLocalReadIds(merged);
+          if (!isCancelled) {
+            if (Array.isArray(userReadList) && userReadList.length > 0) {
+              userReadList.forEach((id) => currentReadSet.add(id));
+            } else if (list.length > 1) {
+              // User mới đăng ký lần đầu: tự động đánh dấu các thông báo cũ vào Firestore
+              const olderIds = list.slice(1).map((n) => n.id);
+              olderIds.forEach((id) => currentReadSet.add(id));
+              markAllNotificationsAsRead(olderIds, currentUser.uid).catch(() => {});
+            }
+            saveLocalReadIds(currentReadSet);
           }
         }
+
+        if (!isCancelled) {
+          setReadIds(currentReadSet);
+        }
+
       } catch (err) {
         console.warn("Không thể tải thông báo hệ thống:", err);
       } finally {

@@ -94,16 +94,38 @@ export function NotificationDrawer({
     setMounted(true);
   }, []);
 
+  // Reset trạng thái mở rộng khi Drawer đóng lại
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedNotification(null);
+    }
+  }, [isOpen]);
+
+  // Phím tắt ESC để đóng Drawer nhanh chóng
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !mounted) return null;
 
   const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
 
-  const handleSelect = (n: SystemNotificationItem) => {
-    setSelectedNotification(n);
+  // Toggle mở rộng / thu gọn thông báo
+  const handleToggle = (n: SystemNotificationItem, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setSelectedNotification((prev) => (prev?.id === n.id ? null : n));
     if (!readIds.has(n.id)) {
       onMarkAsRead(n.id);
     }
   };
+
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex justify-end">
@@ -205,7 +227,7 @@ export function NotificationDrawer({
               return (
                 <div
                   key={item.id}
-                  onClick={() => handleSelect(item)}
+                  onClick={(e) => handleToggle(item, e)}
                   className={cn(
                     "p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer group text-left relative",
                     isRead
@@ -255,7 +277,10 @@ export function NotificationDrawer({
 
                   {/* Chi tiết khi mở rộng */}
                   {isExpanded && (
-                    <div className="mt-3 pt-3 border-t border-slate-200/80 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 space-y-2 animate-fadeIn whitespace-pre-line leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-200/50 dark:border-slate-700/50">
+                    <div
+                      className="mt-3 pt-3 border-t border-slate-200/80 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 space-y-2 animate-fadeIn whitespace-pre-line leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-200/50 dark:border-slate-700/50"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {item.content}
 
                       {item.link && (
@@ -274,7 +299,13 @@ export function NotificationDrawer({
 
                   {/* Footer hint */}
                   <div className="mt-2.5 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500">
-                    <span>{isExpanded ? "Thu gọn" : "Bấm để xem chi tiết"}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => handleToggle(item, e)}
+                      className="font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1 cursor-pointer py-1"
+                    >
+                      {isExpanded ? "▲ Thu gọn" : "▼ Xem chi tiết"}
+                    </button>
                     {isRead ? (
                       <span className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400 font-semibold">
                         <CheckCircle2 className="w-3 h-3" /> Đã đọc
@@ -286,6 +317,7 @@ export function NotificationDrawer({
                     )}
                   </div>
                 </div>
+
               );
             })
           )}
