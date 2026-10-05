@@ -364,29 +364,32 @@ export interface CachedSystemNotification {
 export const getCachedSystemNotifications = unstable_cache(
   async (): Promise<CachedSystemNotification[]> => {
     try {
+      // Chỉ dùng orderBy createdAt để dùng Single-Field Index mặc định của Firestore,
+      // tuyệt đối không dùng where + orderBy cùng lúc trên collection mới để tránh lỗi index!
       const snap = await adminDb.collection("system_notifications")
-        .where("isActive", "==", true)
         .orderBy("createdAt", "desc")
         .limit(20)
         .get();
 
-      return snap.docs.map((doc) => {
-        const d = doc.data();
-        return {
-          id: doc.id,
-          title: d.title || "",
-          summary: d.summary || "",
-          content: d.content || "",
-          type: d.type || "feature",
-          tag: d.tag || undefined,
-          link: d.link || undefined,
-          createdAt: typeof d.createdAt === "string" 
-            ? d.createdAt 
-            : (d.createdAt?.toDate?.().toISOString() || new Date().toISOString()),
-          isActive: d.isActive !== false,
-          version: d.version || undefined,
-        };
-      });
+      return snap.docs
+        .map((doc) => {
+          const d = doc.data();
+          return {
+            id: doc.id,
+            title: d.title || "",
+            summary: d.summary || "",
+            content: d.content || "",
+            type: d.type || "feature",
+            tag: d.tag || undefined,
+            link: d.link || undefined,
+            createdAt: typeof d.createdAt === "string" 
+              ? d.createdAt 
+              : (d.createdAt?.toDate?.().toISOString() || new Date().toISOString()),
+            isActive: d.isActive !== false,
+            version: d.version || undefined,
+          };
+        })
+        .filter((item) => item.isActive);
     } catch (err) {
       console.error("Lỗi khi đọc system_notifications từ Firestore:", err);
       return [];
@@ -395,3 +398,4 @@ export const getCachedSystemNotifications = unstable_cache(
   ['system-notifications-list-v1'],
   { tags: ['system_notifications'], revalidate: 3600 }
 );
+

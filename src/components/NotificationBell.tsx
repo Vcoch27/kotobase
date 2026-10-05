@@ -8,7 +8,6 @@ import {
   getUserReadNotificationIds,
   markNotificationAsRead,
   markAllNotificationsAsRead,
-  seedInitialNotificationIfEmpty,
   type SystemNotificationItem,
 } from "@/app/actions/notification";
 import { NotificationDrawer } from "./NotificationDrawer";
@@ -27,13 +26,15 @@ export function NotificationBell({
   onLoginRequest,
   className,
 }: NotificationBellProps) {
+  const [mounted, setMounted] = useState(false);
   const [notifications, setNotifications] = useState<SystemNotificationItem[]>([]);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
 
-  // Đọc danh sách ID đã đọc từ localStorage (Layer 1 - 0ms delay)
+  // Đọc danh sách ID đã đọc từ localStorage
   const getLocalReadIds = useCallback((): Set<string> => {
+    if (typeof window === "undefined") return new Set();
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_READ_KEY);
       if (stored) {
@@ -46,9 +47,14 @@ export function NotificationBell({
 
   // Lưu danh sách ID đã đọc vào localStorage
   const saveLocalReadIds = useCallback((newSet: Set<string>) => {
+    if (typeof window === "undefined") return;
     try {
       localStorage.setItem(LOCAL_STORAGE_READ_KEY, JSON.stringify(Array.from(newSet)));
     } catch {}
+  }, []);
+
+  useEffect(() => {
+    setMounted(true);
   }, []);
 
   // Khởi tạo: Lấy thông báo và danh sách đã đọc
@@ -56,29 +62,34 @@ export function NotificationBell({
     let isCancelled = false;
 
     async function init() {
-      // 1. Đọc ngay từ localStorage để có UI tức thì
-      const localRead = getLocalReadIds();
-      setReadIds(localRead);
+      try {
+        // 1. Đọc ngay từ localStorage
+        const localRead = getLocalReadIds();
+        if (!isCancelled) {
+          setReadIds(localRead);
+        }
 
-      // 2. Tự động seed thông báo đầu nếu hệ thống rỗng
-      await seedInitialNotificationIfEmpty();
+        // 2. Lấy thông báo hệ thống (từ Next.js cache, an toàn)
+        const list = await getSystemNotifications();
+        if (isCancelled) return;
+        setNotifications(Array.isArray(list) ? list : []);
 
-      // 3. Lấy thông báo hệ thống (từ Next.js cache, 0-1 read)
-      const list = await getSystemNotifications();
-      if (isCancelled) return;
-      setNotifications(list);
-
-      // 4. Nếu có user đăng nhập -> đồng bộ danh sách đã đọc từ Firestore users/{uid}
-      if (currentUser?.uid) {
-        const userReadList = await getUserReadNotificationIds(currentUser.uid);
-        if (!isCancelled && userReadList.length > 0) {
-          const merged = new Set([...Array.from(localRead), ...userReadList]);
-          setReadIds(merged);
-          saveLocalReadIds(merged);
+        // 3. Nếu có user đăng nhập -> đồng bộ danh sách đã đọc từ Firestore
+        if (currentUser?.uid) {
+          const userReadList = await getUserReadNotificationIds(currentUser.uid);
+          if (!isCancelled && Array.isArray(userReadList) && userReadList.length > 0) {
+            const merged = new Set([...Array.from(localRead), ...userReadList]);
+            setReadIds(merged);
+            saveLocalReadIds(merged);
+          }
+        }
+      } catch (err) {
+        console.warn("Không thể tải thông báo hệ thống:", err);
+      } finally {
+        if (!isCancelled) {
+          setHasLoaded(true);
         }
       }
-
-      setHasLoaded(true);
     }
 
     init();
@@ -100,7 +111,11 @@ export function NotificationBell({
 
       // Ghi bất đồng bộ lên Firestore nếu đã đăng nhập
       if (currentUser?.uid) {
-        await markNotificationAsRead(id, currentUser.uid);
+        try {
+          await markNotificationAsRead(id, currentUser.uid);
+        } catch (e) {
+          console.warn("Lỗi đồng bộ đọc thông báo:", e);
+        }
       }
     },
     [currentUser?.uid, saveLocalReadIds]
@@ -115,14 +130,19 @@ export function NotificationBell({
 
     // Ghi bất đồng bộ lên Firestore nếu đã đăng nhập
     if (currentUser?.uid) {
-      await markAllNotificationsAsRead(allIds, currentUser.uid);
+      try {
+        await markAllNotificationsAsRead(allIds, currentUser.uid);
+      } catch (e) {
+        console.warn("Lỗi đồng bộ đọc tất cả thông báo:", e);
+      }
     }
   }, [notifications, currentUser?.uid, saveLocalReadIds]);
 
-  // Đếm số thông báo chưa đọc
+  // Đếm số thông báo chưa đọc (chỉ tính khi đã mount)
   const unreadCount = useMemo(() => {
+    if (!mounted) return 0;
     return notifications.filter((n) => !readIds.has(n.id)).length;
-  }, [notifications, readIds]);
+  }, [notifications, readIds, mounted]);
 
   // Thông báo mới nhất
   const latestNotification = useMemo(() => {
@@ -130,7 +150,8 @@ export function NotificationBell({
   }, [notifications]);
 
   const isLatestRead = useMemo(() => {
-    return latestNotification ? readIds.has(latestNotification.id) : true;
+    if (!latestNotification) return true;
+    return readIds.has(latestNotification.id);
   }, [latestNotification, readIds]);
 
   return (
@@ -149,18 +170,18 @@ export function NotificationBell({
         title={
           unreadCount > 0
             ? `Có ${unreadCount} thông báo cập nhật mới`
-            : "Thông báo & Nhật ký cập nhật"
+            : "Thông báo & Cập nhật"
         }
       >
         <Bell
           className={cn(
             "w-4 h-4 md:w-5 md:h-5 transition-transform",
-            unreadCount > 0 && "animate-wiggle"
+            mounted && unreadCount > 0 && "animate-wiggle"
           )}
         />
 
         {/* Badge số lượng thông báo chưa đọc */}
-        {unreadCount > 0 && (
+        {mounted && unreadCount > 0 && (
           <span
             className={cn(
               "absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1",
@@ -188,7 +209,7 @@ export function NotificationBell({
       />
 
       {/* Alert toast trượt ở góc nếu có thông báo mới chưa đọc */}
-      {hasLoaded && (
+      {mounted && hasLoaded && (
         <NotificationAlertToast
           latestNotification={latestNotification}
           isRead={isLatestRead}

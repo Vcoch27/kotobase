@@ -66,15 +66,16 @@ const TYPE_CONFIG: Record<
 function formatDate(dateStr: string) {
   try {
     const d = new Date(dateStr);
-    return d.toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+    if (isNaN(d.getTime())) return dateStr;
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
   } catch {
     return dateStr;
   }
 }
+
 
 export function NotificationDrawer({
   isOpen,
