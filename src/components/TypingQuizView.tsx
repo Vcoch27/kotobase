@@ -121,7 +121,37 @@ export function TypingQuizView({
   }, [onFullscreenChange]);
   const [showMobileSettings, setShowMobileSettings] = useState(false);
   const [showDelaySettings, setShowDelaySettings] = useState(false);
-  
+  const [showWrongLimitSettings, setShowWrongLimitSettings] = useState(false);
+
+  // Giới hạn số lần gõ sai trước khi tự động tính là sai (0: Không giới hạn, 1, 2, 3, 5...)
+  const [maxWrongAttempts, setMaxWrongAttempts] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('kotobase_quiz_max_wrong_attempts');
+      if (saved !== null) {
+        const n = parseInt(saved, 10);
+        if (!isNaN(n) && n >= 0 && n <= 10) return n;
+      }
+    }
+    return 3;
+  });
+
+  // Đếm số lần đã gõ sai của câu hiện tại
+  const [wrongAttempts, setWrongAttempts] = useState<number>(0);
+
+  const handleUpdateMaxWrong = (val: number) => {
+    const clamped = Math.max(0, Math.min(val, 10));
+    setMaxWrongAttempts(clamped);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('kotobase_quiz_max_wrong_attempts', String(clamped));
+      toast.success(
+        clamped > 0 
+          ? `Đã đặt giới hạn: Sai tối đa ${clamped} lần` 
+          : "Đã đặt: Không giới hạn số lần gõ sai",
+        { id: "kotobase_wrong_limit_toast" }
+      );
+    }
+  };
+
   // Thời gian hiển thị đáp án đúng trước khi chuyển câu (mặc định 5s)
   const [quizDelay, setQuizDelay] = useState<number>(() => {
     if (typeof window !== 'undefined') {
@@ -236,6 +266,7 @@ export function TypingQuizView({
         setUserInput("");
         setFeedback("none");
         setShowHint(false);
+        setWrongAttempts(0);
         // Focus ngay lập tức để giữ bàn phím ảo không bị đóng trên mobile
         inputRef.current?.focus();
         requestAnimationFrame(() => {
@@ -384,6 +415,7 @@ export function TypingQuizView({
     setUserInput("");
     setFeedback("none");
     setShowHint(false);
+    setWrongAttempts(0);
     setIsFinished(false);
     setSkippedList([]);
     setCorrectList([]);
@@ -427,6 +459,7 @@ export function TypingQuizView({
     setUserInput("");
     setFeedback("none");
     setShowHint(false);
+    setWrongAttempts(0);
     setIsFinished(false);
     setSkippedList([]);
     setCorrectList([]);
@@ -495,8 +528,65 @@ export function TypingQuizView({
         moveToNext();
       }, quizDelay * 1000);
     } else {
-      audioFX.playWrong();
-      setFeedback("wrong");
+      const nextWrong = wrongAttempts + 1;
+      setWrongAttempts(nextWrong);
+
+      if (maxWrongAttempts > 0 && nextWrong >= maxWrongAttempts) {
+        // Đã đạt giới hạn số lần gõ sai -> Tự động tính là Sai và chuyển sang đáp án
+        if (nextTimeoutRef.current) clearTimeout(nextTimeoutRef.current);
+        if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+
+        setSkippedList(prev => prev.some(item => item.id === currentItem.id) ? prev : [...prev, currentItem]);
+
+        if (!timerStarted) {
+          setTimerStarted(true);
+          setTimerRunning(true);
+        }
+
+        audioFX.playWrong();
+        setFeedback("skipped");
+        skipTimestampRef.current = Date.now();
+
+        // Tự động điền đáp án chuẩn vào ô nhập liệu
+        const expectedText = currentItem.quizType === 1 
+          ? (currentItem.reading || currentItem.word) 
+          : currentItem.word;
+        setUserInput(expectedText);
+
+        // Phát âm từ vựng
+        playAudio(currentItem.reading || currentItem.word);
+
+        toast.error(`Đã gõ sai ${maxWrongAttempts}/${maxWrongAttempts} lần! Chuyển sang hiển thị đáp án.`, {
+          id: "quiz_max_wrong_exceeded",
+        });
+
+        // Đếm ngược tự động chuyển câu theo quizDelay
+        setCountdown(quizDelay);
+        let remaining = quizDelay;
+        countdownIntervalRef.current = setInterval(() => {
+          remaining -= 1;
+          if (remaining <= 0) {
+            if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+            countdownIntervalRef.current = null;
+          } else {
+            setCountdown(remaining);
+          }
+        }, 1000);
+
+        nextTimeoutRef.current = setTimeout(() => {
+          if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+          countdownIntervalRef.current = null;
+          moveToNext();
+        }, quizDelay * 1000);
+      } else {
+        audioFX.playWrong();
+        setFeedback("wrong");
+        if (maxWrongAttempts > 0) {
+          toast.error(`Chưa chính xác! (Lần ${nextWrong}/${maxWrongAttempts})`, {
+            id: "quiz_wrong_attempt",
+          });
+        }
+      }
     }
   };
 
@@ -707,6 +797,25 @@ export function TypingQuizView({
                 >
                   {showAnswerOnSkip ? <Eye className="w-3.5 h-3.5 text-amber-500" /> : <EyeOff className="w-3.5 h-3.5" />}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cycle = [0, 1, 2, 3, 5];
+                    const nextIdx = (cycle.indexOf(maxWrongAttempts) + 1) % cycle.length;
+                    handleUpdateMaxWrong(cycle[nextIdx]);
+                  }}
+                  title={`Giới hạn sai: ${maxWrongAttempts > 0 ? `${maxWrongAttempts} lần` : "Vô hạn"} (Bấm để đổi)`}
+                  className={`p-1.5 rounded-lg text-xs transition-all flex items-center gap-0.5 ${
+                    maxWrongAttempts > 0
+                      ? "text-rose-600 bg-rose-100 dark:bg-rose-500/20"
+                      : "text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <XCircle className="w-3.5 h-3.5 text-rose-500" />
+                  <span className="text-[10px] font-bold font-mono">
+                    {maxWrongAttempts > 0 ? `${maxWrongAttempts}` : "∞"}
+                  </span>
+                </button>
                 <button 
                   type="button"
                   onClick={() => setIsFullscreen(!isFullscreen)} 
@@ -909,6 +1018,76 @@ export function TypingQuizView({
                     {showAnswerOnSkip ? "Đáp án Tab: Bật" : "Đáp án Tab: Tắt"}
                   </span>
                 </button>
+
+                {/* Nút cài đặt số lần gõ sai tối đa */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowWrongLimitSettings(!showWrongLimitSettings)}
+                    title={`Giới hạn lần gõ sai: ${maxWrongAttempts > 0 ? `${maxWrongAttempts} lần` : "Không giới hạn"} (Bấm để đổi)`}
+                    className={`p-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                      maxWrongAttempts > 0
+                        ? "text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-500/20 border border-rose-300 dark:border-rose-500/40 shadow-sm"
+                        : "text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    }`}
+                  >
+                    <XCircle className="w-3.5 h-3.5 text-rose-500" />
+                    <span className="text-[10px] font-bold">
+                      {maxWrongAttempts > 0 ? `Sai: ${maxWrongAttempts} lần` : "Sai: ∞"}
+                    </span>
+                  </button>
+
+                  {/* Popover cài đặt giới hạn sai nhanh */}
+                  {showWrongLimitSettings && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-40" 
+                        onClick={() => setShowWrongLimitSettings(false)}
+                      />
+                      <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl z-50 animate-fadeIn space-y-2.5 text-xs text-left">
+                        <div className="flex items-center justify-between font-bold text-slate-800 dark:text-slate-200">
+                          <span className="flex items-center gap-1.5">
+                            <XCircle className="w-3.5 h-3.5 text-rose-500" />
+                            Giới hạn lần gõ sai
+                          </span>
+                          <span className="font-mono text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-lg border border-rose-200/60 dark:border-rose-800/60">
+                            {maxWrongAttempts > 0 ? `${maxWrongAttempts} lần` : "Vô hạn"}
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-5 gap-1 pt-1">
+                          {[
+                            { val: 0, label: "∞" },
+                            { val: 1, label: "1" },
+                            { val: 2, label: "2" },
+                            { val: 3, label: "3" },
+                            { val: 5, label: "5" },
+                          ].map(({ val, label }) => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => {
+                                handleUpdateMaxWrong(val);
+                                setShowWrongLimitSettings(false);
+                              }}
+                              className={`py-1 rounded-md text-[11px] font-bold border transition-all ${
+                                maxWrongAttempts === val
+                                  ? "bg-rose-600 text-white border-rose-600 shadow-sm"
+                                  : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-rose-400"
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                        
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">
+                          Tự động tính là <b>Sai</b>, hiển thị đáp án đúng và chuyển câu khi số lần bấm Enter sai đạt mức này.
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
 
                 <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
                 {/* Nút toggle hiển thị đồng hồ bấm giờ */}
@@ -1206,8 +1385,12 @@ export function TypingQuizView({
                       </span>
                     )}
                     {feedback === "skipped" && (
-                      <span className="px-2.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 text-xs font-bold border border-amber-200 dark:border-amber-800/60">
-                        Đã bỏ qua
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                        wrongAttempts >= maxWrongAttempts && maxWrongAttempts > 0
+                          ? "bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/60"
+                          : "bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60"
+                      }`}>
+                        {wrongAttempts >= maxWrongAttempts && maxWrongAttempts > 0 ? `Sai ${maxWrongAttempts} lần` : "Đã bỏ qua"}
                       </span>
                     )}
                   </div>
@@ -1288,8 +1471,12 @@ export function TypingQuizView({
                       </span>
                     )}
                     {feedback === "skipped" && (
-                      <span className="px-2.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 text-xs font-bold border border-amber-200 dark:border-amber-800/60">
-                        Đã bỏ qua
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                        wrongAttempts >= maxWrongAttempts && maxWrongAttempts > 0
+                          ? "bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/60"
+                          : "bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60"
+                      }`}>
+                        {wrongAttempts >= maxWrongAttempts && maxWrongAttempts > 0 ? `Sai ${maxWrongAttempts} lần` : "Đã bỏ qua"}
                       </span>
                     )}
                   </div>
@@ -1477,7 +1664,13 @@ export function TypingQuizView({
 
         {feedback === "wrong" && (
           <div className="text-center text-rose-500 dark:text-rose-400 font-medium text-sm animate-fadeIn">
-            Chưa chính xác! Vui lòng thử lại. (Hoặc bấm Enter để xóa nhanh)
+            {maxWrongAttempts > 0 ? (
+              <span>
+                Chưa chính xác! (Đã sai <b className="font-bold text-rose-600 dark:text-rose-300">{wrongAttempts}/{maxWrongAttempts}</b> lần - Còn {Math.max(0, maxWrongAttempts - wrongAttempts)} lần thử, hoặc bấm Enter để xóa nhanh)
+              </span>
+            ) : (
+              "Chưa chính xác! Vui lòng thử lại. (Hoặc bấm Enter để xóa nhanh)"
+            )}
           </div>
         )}
 
@@ -1494,7 +1687,11 @@ export function TypingQuizView({
           <div className="text-center text-amber-600 dark:text-amber-400 font-semibold text-sm animate-fadeIn flex items-center justify-center gap-1.5">
             <SkipForward className="w-4 h-4 shrink-0" />
             <span>
-              Đã bỏ qua! Tự động chuyển câu sau <b className="font-mono text-amber-700 dark:text-amber-300">{countdown}s</b> (hoặc bấm Enter/Tab để chuyển ngay)...
+              {wrongAttempts >= maxWrongAttempts && maxWrongAttempts > 0 ? (
+                <>Đã sai tối đa {maxWrongAttempts} lần! Tự động chuyển câu sau <b className="font-mono text-amber-700 dark:text-amber-300">{countdown}s</b> (hoặc bấm Enter để chuyển ngay)...</>
+              ) : (
+                <>Đã bỏ qua! Tự động chuyển câu sau <b className="font-mono text-amber-700 dark:text-amber-300">{countdown}s</b> (hoặc bấm Enter/Tab để chuyển ngay)...</>
+              )}
             </span>
           </div>
         )}
