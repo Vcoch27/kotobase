@@ -749,7 +749,7 @@ export function TypingQuizView({
     <div className={isFullscreen ? "fixed inset-0 z-[100] bg-slate-50 dark:bg-slate-950 p-4 md:p-8 overflow-y-auto w-full h-full flex flex-col items-center justify-center" : ""}>
       <div className={`mx-auto w-full space-y-4 max-w-4xl ${isFullscreen ? "my-auto" : ""}`}>
       {/* Thanh điều khiển duy nhất ngay trên card câu hỏi (Phạm vi học + Dạng câu hỏi + Tiến độ) */}
-      <div className={isFullscreen ? "hidden" : "block"}>
+      <div className={`relative z-20 ${isFullscreen ? "hidden" : "block"}`}>
         {/* Mobile compact header: Thanh tiến độ siêu mỏng và tiện ích nhanh trên màn hình nhỏ */}
         {!isFinished && (
           <div className="sm:hidden bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-1.5 mb-2">
@@ -848,7 +848,7 @@ export function TypingQuizView({
           </div>
         )}
 
-        <div className={showMobileSettings ? "block" : "hidden sm:block"}>
+        <div className={`relative z-20 ${showMobileSettings ? "block" : "hidden sm:block"}`}>
         <StudyScopeSelector
           allVocabularies={vocabularies}
           selectedVocabIds={selectedVocabIds}
@@ -909,7 +909,7 @@ export function TypingQuizView({
                 </button>
 
                 {/* Nút cài đặt thời gian chờ chuyển câu */}
-                <div className="relative">
+                <div className="relative z-30">
                   <button 
                     onClick={() => setShowDelaySettings(!showDelaySettings)}
                     title={`Thời gian hiện đáp án: ${quizDelay}s (Bấm để đổi)`}
@@ -1020,7 +1020,7 @@ export function TypingQuizView({
                 </button>
 
                 {/* Nút cài đặt số lần gõ sai tối đa */}
-                <div className="relative">
+                <div className="relative z-30">
                   <button
                     type="button"
                     onClick={() => setShowWrongLimitSettings(!showWrongLimitSettings)}
@@ -1296,7 +1296,7 @@ export function TypingQuizView({
         <>
 
       {/* Card Câu hỏi */}
-      <div className={`study-card bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 md:p-12 shadow-2xl relative overflow-hidden transition-all duration-300 ${
+      <div className={`study-card bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 md:p-12 shadow-2xl relative z-10 overflow-hidden transition-all duration-300 ${
         feedback === "correct"
           ? "border-2 border-emerald-500 dark:border-emerald-400 ring-4 ring-emerald-500/20 dark:ring-emerald-500/30 shadow-emerald-500/15"
           : feedback === "skipped"

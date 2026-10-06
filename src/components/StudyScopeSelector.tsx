@@ -208,7 +208,7 @@ export function StudyScopeSelector({
 
   return (
     <div
-      className={`rounded-2xl border ${themeClasses} p-2.5 sm:p-3 transition-all mb-4 shadow-sm backdrop-blur-sm space-y-2`}
+      className={`relative z-20 rounded-2xl border ${themeClasses} p-2.5 sm:p-3 transition-all mb-4 shadow-sm backdrop-blur-sm space-y-2`}
     >
       {/* Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -354,7 +354,7 @@ export function StudyScopeSelector({
 
         {/* Extra Controls (Dạng câu hỏi, Actions) */}
         {extraControls && (
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap relative z-20">
             {extraControls}
           </div>
         )}
