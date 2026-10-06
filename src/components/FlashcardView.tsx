@@ -19,6 +19,7 @@ import { useCustomBg } from "@/hooks/useCustomBg";
 import { StudyScopeSelector } from "./StudyScopeSelector";
 import { extractKanji } from "@/lib/kanji-parser";
 import { HighlightMnemonic } from "./HighlightMnemonic";
+import { MeaningText } from "./MeaningText";
 import { VocabularyEditModal } from "./VocabularyEditModal";
 import { canUserManageFolder } from "@/lib/folder-utils";
 // Fetch mẹo nhớ Hán tự qua API Route (tránh dùng Server Action vì Next.js serialize response đặc biệt không phải JSON thuần)
@@ -1919,8 +1920,8 @@ export function FlashcardView({
                 )}
                 
                 {/* Nghĩa */}
-                <div className="text-xl sm:text-2xl md:text-4xl font-black text-emerald-600 dark:text-emerald-400 mb-3 sm:mb-5 leading-tight">
-                  {currentVocab.meaning}
+                <div className="text-xl sm:text-2xl md:text-4xl font-black text-emerald-600 dark:text-emerald-400 mb-3 sm:mb-5 leading-tight flex flex-col items-center">
+                  <MeaningText text={currentVocab.meaning} size="lg" />
                 </div>
               </>
             ) : (
@@ -1932,11 +1933,12 @@ export function FlashcardView({
                   </div>
                 )}
                 
-                <div className="text-2xl sm:text-3xl md:text-5xl font-black text-slate-900 dark:text-white mb-3 sm:mb-6 leading-tight">
-                  {currentVocab.meaning}
+                <div className="text-2xl sm:text-3xl md:text-5xl font-black text-slate-900 dark:text-white mb-3 sm:mb-6 leading-tight flex flex-col items-center">
+                  <MeaningText text={currentVocab.meaning} size="lg" />
                 </div>
               </>
             )}
+
 
             {/* Ví dụ minh họa */}
             {currentVocab.example && (

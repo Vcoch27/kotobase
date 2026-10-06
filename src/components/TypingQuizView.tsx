@@ -8,6 +8,7 @@ import { StudyScopeSelector } from "./StudyScopeSelector";
 import { useCustomBg } from "@/hooks/useCustomBg";
 import { audioFX } from "@/lib/audio-fx";
 import { playAudio } from "@/lib/tts-utils";
+import { MeaningText, QuizMeaningPrompt } from "./MeaningText";
 import toast from "react-hot-toast";
 
 interface VocabularyData {
@@ -1099,7 +1100,7 @@ export function TypingQuizView({
                         )}
                       </td>
                       <td className="py-3.5 px-4 align-top font-bold text-emerald-600 dark:text-emerald-400">
-                        {item.meaning}
+                        <MeaningText text={item.meaning} size="sm" />
                       </td>
                       <td className="py-3.5 px-4 align-top text-xs italic text-slate-600 dark:text-slate-400 max-w-xs">
                         {item.example || "---"}
@@ -1213,7 +1214,7 @@ export function TypingQuizView({
                   <div className={`text-xl md:text-2xl font-black ${
                     feedback === "correct" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
                   }`}>
-                    {currentItem.meaning}
+                    <MeaningText text={currentItem.meaning} size="lg" />
                   </div>
                   {currentItem.example && (
                     <div className="text-xs italic text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 text-left">
@@ -1295,7 +1296,7 @@ export function TypingQuizView({
                   <div className={`text-lg md:text-xl font-bold ${
                     feedback === "correct" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
                   }`}>
-                    {currentItem.meaning}
+                    <MeaningText text={currentItem.meaning} size="md" />
                   </div>
                   {currentItem.example && (
                     <div className="text-xs italic text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 text-left">
@@ -1306,9 +1307,10 @@ export function TypingQuizView({
                 </div>
               ) : (
                 <>
-                  <div className="text-2xl md:text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-2 max-w-xl mx-auto leading-tight">
-                    {currentItem.meaning}
-                  </div>
+                  <QuizMeaningPrompt
+                    text={currentItem.meaning}
+                    meaningClassName="text-2xl md:text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-2 max-w-xl mx-auto leading-tight"
+                  />
                   <div className="text-sm text-slate-500 dark:text-slate-400 italic mb-2">
                     (Gõ Hiragana hoặc Kanji tương ứng)
                   </div>

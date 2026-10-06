@@ -10,6 +10,7 @@ import React, {
 import { Check, RotateCcw, Shuffle, Volume2 } from "lucide-react";
 import { StudyScopeSelector, VocabularyData } from "./StudyScopeSelector";
 import { playAudio } from "@/lib/tts-utils";
+import { MeaningText } from "./MeaningText";
 import {
   createRecallSession,
   defaultRecallSettings,
@@ -514,7 +515,7 @@ function RecallBoard({
                         onClick={() => reveal(id)}
                       >
                         <span className="block text-xl sm:text-2xl leading-relaxed font-bold text-slate-900 dark:text-white">
-                          {reverse ? word.meaning : word.word}
+                          {reverse ? <MeaningText text={word.meaning} hideTip={true} /> : word.word}
                         </span>
                         {!open && (
                           <span className="text-xs text-slate-400 dark:text-slate-500">
@@ -534,9 +535,10 @@ function RecallBoard({
                         className="border-t border-slate-100 dark:border-slate-800 px-4 py-3 space-y-3 break-words"
                       >
                         <div className="flex items-start gap-2">
-                          <p className="flex-1 min-w-0 font-semibold text-emerald-700 dark:text-emerald-400">
-                            {reverse ? word.word : word.meaning}
-                          </p>
+                          <div className="flex-1 min-w-0 font-semibold text-emerald-700 dark:text-emerald-400">
+                            {reverse ? word.word : <MeaningText text={word.meaning} size="md" />}
+                          </div>
+
                           <button
                             aria-label={`Nghe phát âm ${word.word}`}
                             title="Nghe phát âm"

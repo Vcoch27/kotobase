@@ -34,6 +34,7 @@ import { BulkDeleteConfirmModal } from './BulkDeleteConfirmModal';
 import { BulkFolderModal } from './BulkFolderModal';
 import { getFolderFullPath } from '@/lib/folder-utils';
 import { KanjiSubsection } from './KanjiSubsection';
+import { MeaningText } from './MeaningText';
 
 
 interface FolderVocabItem {
@@ -985,8 +986,9 @@ export function OverviewView({
 
                     {/* Meaning */}
                     <td className="py-4 px-5 align-top font-semibold text-emerald-600 dark:text-emerald-400">
-                      {item.meaning}
+                      <MeaningText text={item.meaning} size="sm" />
                     </td>
+
 
                     {/* Example */}
                     <td className="py-4 px-5 align-top text-xs space-y-2 max-w-xs">
@@ -1134,8 +1136,9 @@ export function OverviewView({
 
                 {/* Nghĩa */}
                 <div className="text-base font-bold text-emerald-600 dark:text-emerald-400 leading-snug">
-                  {item.meaning}
+                  <MeaningText text={item.meaning} size="md" />
                 </div>
+
 
                 {/* Ví dụ (nếu có) */}
                 {item.example && (
