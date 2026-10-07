@@ -49,6 +49,7 @@ export function ChoukaiStudio() {
   const [attempts, setAttempts] = useState(0);
   const [completed, setCompleted] = useState<Record<string, number[]>>({});
   const audio = useRef<HTMLAudioElement>(null);
+  const cuesViewport = useRef<HTMLDivElement>(null);
   const activeRow = useRef<HTMLButtonElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const lesson = lessons.find(item => item.id === lessonId) || lessons[0];
@@ -71,8 +72,18 @@ export function ChoukaiStudio() {
   }, []);
 
   useEffect(() => {
-    if (mode === "listen" && playing) activeRow.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [activeIndex, mode, playing]);
+    if (mode !== "listen") return;
+    const frame = requestAnimationFrame(() => {
+      const viewport = cuesViewport.current;
+      const row = activeRow.current;
+      if (!viewport || !row) return;
+      const previous = row.previousElementSibling as HTMLElement | null;
+      const secondRowTop = (previous?.getBoundingClientRect().height || 0) + 2;
+      const offset = row.getBoundingClientRect().top - viewport.getBoundingClientRect().top - secondRowTop;
+      if (Math.abs(offset) > 3) viewport.scrollTop += offset;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeIndex, lessonId, mode, playing, furigana, translation]);
 
   const play = useCallback(async () => {
     if (!audio.current) return;
@@ -213,7 +224,7 @@ export function ChoukaiStudio() {
 
           {mode === "listen" ? <section className="choukai-script" aria-label="Script đồng bộ"><div className="choukai-section-head"><div><span className="choukai-kicker">SCRIPT ĐỒNG BỘ</span><h2>Đoạn hội thoại</h2></div><div className="choukai-toggles"><button type="button" aria-pressed={furigana} onClick={() => setFurigana(!furigana)} className={furigana ? "is-on" : ""}>振 Furigana</button><button type="button" aria-pressed={translation} onClick={() => setTranslation(!translation)} className={translation ? "is-on" : ""}>Việt Song ngữ</button><button type="button" aria-pressed={repeat} onClick={() => { setRepeatIndex(nearestIndex); setRepeat(!repeat); }} className={repeat ? "is-on" : ""} title="Lặp câu hiện tại"><Repeat2 size={15} /> Lặp câu</button></div></div>
             {lesson.note && <p className="choukai-note">{lesson.note}</p>}
-            <div className="choukai-cues">{lesson.cues.map((item, index) => <button key={index} ref={index === activeIndex ? activeRow : undefined} type="button" className={`choukai-cue ${index === activeIndex ? "is-current" : ""}`} onClick={() => { setRepeatIndex(index); seek(item.start); void play(); }}><span className="choukai-cue-time">{clock(item.start)}{index === activeIndex && playing ? <span className="choukai-sound-dot" /> : null}</span><span className="choukai-cue-content"><small>{item.speaker}</small><span className="choukai-ja" lang="ja"><Japanese text={item.ja} furigana={furigana} /></span>{translation && <span className="choukai-vi">{item.vi}</span>}</span></button>)}</div>
+            <div ref={cuesViewport} className="choukai-cues">{lesson.cues.map((item, index) => <button key={index} ref={index === activeIndex ? activeRow : undefined} type="button" className={`choukai-cue ${index === activeIndex ? "is-current" : ""}`} onClick={() => { setRepeatIndex(index); seek(item.start); void play(); }}><span className="choukai-cue-time">{clock(item.start)}{index === activeIndex && playing ? <span className="choukai-sound-dot" /> : null}</span><span className="choukai-cue-content"><small>{item.speaker}</small><span className="choukai-ja" lang="ja"><Japanese text={item.ja} furigana={furigana} /></span>{translation && <span className="choukai-vi">{item.vi}</span>}</span></button>)}</div>
           </section> : <section className="choukai-dictation" aria-label="Luyện gõ từng câu"><div className="choukai-section-head"><div><span className="choukai-kicker">LUYỆN NGHE CHỦ ĐỘNG</span><h2>Nghe và gõ lại</h2></div><span className="choukai-dictation-count">{dictationIndex + 1} / {lesson.cues.length}</span></div>
             <div className="choukai-dictation-progress"><span style={{ width: `${done.length / lesson.cues.length * 100}%` }} /></div><p className="choukai-dictation-hint">Audio tự dừng sau khi câu kết thúc. Gõ tiếng Nhật bạn nghe được rồi nhấn Enter để kiểm tra; câu đúng sẽ tự chuyển sau 2 giây. Dấu câu và khoảng trắng không tính vào điểm.</p>
             <div className="choukai-prompt"><div className="choukai-prompt-top"><span><span className="choukai-prompt-number">{String(dictationIndex + 1).padStart(2, "0")}</span> {cue.speaker} · {clock(cue.start)}–{clock(cueEnd)}</span>{done.includes(dictationIndex) && <span className="choukai-done"><Check size={14} /> Đã đúng</span>}</div><div className="choukai-prompt-main"><button type="button" className="choukai-replay" onClick={() => { seek(cue.start); void play(); }} aria-label="Nghe lại câu"><Volume2 size={21} /> Nghe câu này</button><span>Nghe bao nhiêu lần tùy bạn</span></div></div>
