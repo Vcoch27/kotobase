@@ -97,6 +97,11 @@ export function ChoukaiStudio() {
     setPosition(el.currentTime);
   }, []);
 
+  const replayCue = useCallback(() => {
+    seek(cue.start);
+    void play();
+  }, [cue.start, play, seek]);
+
   const selectCue = useCallback((index: number, startPlayback = true) => {
     const next = Math.max(0, Math.min(index, lesson.cues.length - 1));
     audio.current?.pause();
@@ -162,6 +167,11 @@ export function ChoukaiStudio() {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (mode === "dictation" && event.altKey && !event.ctrlKey && !event.metaKey && event.code === "KeyR") {
+        event.preventDefault();
+        if (!event.repeat && !event.isComposing) replayCue();
+        return;
+      }
       if (event.altKey || event.ctrlKey || event.metaKey) return;
       const target = event.target as HTMLElement;
       if (target.closest("input, textarea, select, button, a, [contenteditable=true]")) return;
@@ -177,7 +187,7 @@ export function ChoukaiStudio() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [cue.start, cueEnd, mode, play, position, seek]);
+  }, [cue.start, cueEnd, mode, play, position, replayCue, seek]);
 
   function onTimeUpdate() {
     const el = audio.current;
@@ -217,7 +227,7 @@ export function ChoukaiStudio() {
             <div className="choukai-progress"><input type="range" min="0" max={duration || 1} step="0.05" value={Math.min(position, duration || 1)} onChange={event => seek(Number(event.target.value))} aria-label="Vị trí audio" /><div><span>{clock(position)}</span><span>{clock(duration)}</span></div></div>
             <div className="choukai-controls"><button type="button" title="Tua lùi 5 giây (←)" aria-label="Tua lùi 5 giây" onClick={() => seek(position - 5)}><SkipBack size={20} /></button><button type="button" className="choukai-play" aria-label={playing ? "Tạm dừng" : "Phát audio"} onClick={() => { if (playing) audio.current?.pause(); else { if (mode === "dictation" && position >= cueEnd - 0.1) seek(cue.start); void play(); } }}>{playing ? <Pause fill="currentColor" size={22} /> : <Play fill="currentColor" size={22} />}</button><button type="button" title="Tua tới 5 giây (→)" aria-label="Tua tới 5 giây" onClick={() => seek(position + 5)}><SkipForward size={20} /></button><span className="choukai-control-spacer" /><label className="choukai-speed">Tốc độ <select value={speed} onChange={event => { const value = Number(event.target.value); setSpeed(value); if (audio.current) audio.current.playbackRate = value; }} aria-label="Tốc độ phát">{[0.75, 0.9, 1, 1.25, 1.5, 2].map(value => <option key={value} value={value}>{value}×</option>)}</select></label></div>
             {audioError && <p role="alert" className="choukai-error">Không tải được audio. Hãy thử tải lại trang hoặc mở <a href={lesson.audio} target="_blank" rel="noreferrer">file nghe</a>.</p>}
-            <div className="choukai-shortcuts"><Keyboard size={15} /> <kbd>Space</kbd> phát / dừng <kbd>←</kbd><kbd>→</kbd> tua 5 giây</div>
+            <div className="choukai-shortcuts"><Keyboard size={15} /> <kbd>Space</kbd> phát / dừng <kbd>←</kbd><kbd>→</kbd> tua 5 giây {mode === "dictation" && <><kbd>Alt + R</kbd> nghe lại câu</>}</div>
           </section>
 
           <div className="choukai-mode-tabs" role="tablist" aria-label="Chế độ học"><button type="button" role="tab" aria-selected={mode === "listen"} className={mode === "listen" ? "is-active" : ""} onClick={() => changeMode("listen")}><Headphones size={18} /> Nghe & theo dõi</button><button type="button" role="tab" aria-selected={mode === "dictation"} className={mode === "dictation" ? "is-active" : ""} onClick={() => changeMode("dictation")}><Keyboard size={18} /> Nghe & gõ lại</button></div>
@@ -227,7 +237,7 @@ export function ChoukaiStudio() {
             <div ref={cuesViewport} className="choukai-cues">{lesson.cues.map((item, index) => <button key={index} ref={index === activeIndex ? activeRow : undefined} type="button" className={`choukai-cue ${index === activeIndex ? "is-current" : ""}`} onClick={() => { setRepeatIndex(index); seek(item.start); void play(); }}><span className="choukai-cue-time">{clock(item.start)}{index === activeIndex && playing ? <span className="choukai-sound-dot" /> : null}</span><span className="choukai-cue-content"><small>{item.speaker}</small><span className="choukai-ja" lang="ja"><Japanese text={item.ja} furigana={furigana} /></span>{translation && <span className="choukai-vi">{item.vi}</span>}</span></button>)}</div>
           </section> : <section className="choukai-dictation" aria-label="Luyện gõ từng câu"><div className="choukai-section-head"><div><span className="choukai-kicker">LUYỆN NGHE CHỦ ĐỘNG</span><h2>Nghe và gõ lại</h2></div><span className="choukai-dictation-count">{dictationIndex + 1} / {lesson.cues.length}</span></div>
             <div className="choukai-dictation-progress"><span style={{ width: `${done.length / lesson.cues.length * 100}%` }} /></div><p className="choukai-dictation-hint">Audio tự dừng sau khi câu kết thúc. Gõ tiếng Nhật bạn nghe được rồi nhấn Enter để kiểm tra; câu đúng sẽ tự chuyển sau 2 giây. Dấu câu và khoảng trắng không tính vào điểm.</p>
-            <div className="choukai-prompt"><div className="choukai-prompt-top"><span><span className="choukai-prompt-number">{String(dictationIndex + 1).padStart(2, "0")}</span> {cue.speaker} · {clock(cue.start)}–{clock(cueEnd)}</span>{done.includes(dictationIndex) && <span className="choukai-done"><Check size={14} /> Đã đúng</span>}</div><div className="choukai-prompt-main"><button type="button" className="choukai-replay" onClick={() => { seek(cue.start); void play(); }} aria-label="Nghe lại câu"><Volume2 size={21} /> Nghe câu này</button><span>Nghe bao nhiêu lần tùy bạn</span></div></div>
+            <div className="choukai-prompt"><div className="choukai-prompt-top"><span><span className="choukai-prompt-number">{String(dictationIndex + 1).padStart(2, "0")}</span> {cue.speaker} · {clock(cue.start)}–{clock(cueEnd)}</span>{done.includes(dictationIndex) && <span className="choukai-done"><Check size={14} /> Đã đúng</span>}</div><div className="choukai-prompt-main"><button type="button" className="choukai-replay" onClick={replayCue} aria-label="Nghe lại câu"><Volume2 size={21} /> Nghe câu này</button><span>Alt + R để nghe lại khi đang gõ</span></div></div>
             <label className="choukai-input-label" htmlFor="choukai-answer">Bạn nghe được gì?</label><textarea id="choukai-answer" ref={input} lang="ja" value={typed} onChange={event => { setTyped(event.target.value); if (result) setResult(null); }} onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); if (result) { if (result.correct && dictationIndex < lesson.cues.length - 1) selectCue(dictationIndex + 1); else if (!result.correct) retry(); } else submit(); } }} placeholder="Gõ câu tiếng Nhật ở đây…" spellCheck={false} rows={3} />
             <div className="choukai-answer-actions"><button type="button" className="choukai-secondary" onClick={retry}><RotateCcw size={16} /> Nghe lại và sửa</button><button type="button" className="choukai-primary" disabled={!typed.trim() || !!result} onClick={submit}>Kiểm tra <span>Enter</span><ArrowRight size={17} /></button></div>
             {result && <div className="choukai-result" role="status"><div className="choukai-result-heading"><strong>{result.correct ? "Chính xác!" : result.score >= 75 ? "Rất gần rồi" : "Hãy nghe lại và thử tiếp"}</strong><span className={result.correct ? "is-perfect" : ""}>{result.score}%</span></div><p>Lần thử {attempts} · So sánh theo từng ký tự; màu cam là phần cần sửa, dấu câu không tính.</p><div className="choukai-comparison"><div><small>BẠN ĐÃ GÕ</small><DiffLine parts={result.inputParts} /></div><div><small>ĐÁP ÁN</small><DiffLine parts={result.answerParts} /></div></div><p className="choukai-result-vi">Nghĩa: {cue.vi}</p><div className="choukai-result-bottom"><span>{result.correct ? dictationIndex === lesson.cues.length - 1 ? "Bạn đã hoàn thành bài nghe này." : "Đúng rồi! Đang chuyển sang câu tiếp theo…" : "Bạn có thể nghe lại, sửa và kiểm tra thêm lần nữa."}</span><button type="button" onClick={() => selectCue(dictationIndex + 1)} disabled={dictationIndex === lesson.cues.length - 1}>Câu tiếp theo <ArrowRight size={16} /></button></div></div>}
