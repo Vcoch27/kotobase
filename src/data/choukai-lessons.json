@@ -1,0 +1,942 @@
+[
+  {
+    "id": "tncs-1",
+    "group": "TNCS",
+    "title": "Bài 1 · Tự giới thiệu",
+    "filename": "hanasu_mai.mp3",
+    "audio": "/choukai/tncs-1.mp3",
+    "source": "https://docs.google.com/document/d/10GcEC-JwWzEZdGYon8EojXLCaAIfAQwINcK3bEvNnuk/edit",
+    "note": "",
+    "cues": [
+      {
+        "start": 0,
+        "speaker": "Người điều phối",
+        "ja": "それではまいさん自己紹介(じこしょうかい)をお願(ねが)いします",
+        "vi": "Vậy bây giờ, mời chị Mai tự giới thiệu."
+      },
+      {
+        "start": 3,
+        "speaker": "Mai",
+        "ja": "はじめましてまいと申(もう)します",
+        "vi": "Rất hân hạnh được gặp mọi người, tôi là Mai."
+      },
+      {
+        "start": 6,
+        "speaker": "Mai",
+        "ja": "えっと日本語(にほんご)おしゃべりサークルに参加(さんか)するのは今日(きょう)が初(はじ)めてです",
+        "vi": "Hôm nay là lần đầu tiên tôi tham gia câu lạc bộ trò chuyện tiếng Nhật."
+      },
+      {
+        "start": 13,
+        "speaker": "Mai",
+        "ja": "日本語(にほんご)の勉強(べんきょう)を始(はじ)めたのはうーん3年前(ねんまえ)です",
+        "vi": "Tôi bắt đầu học tiếng Nhật cách đây ba năm."
+      },
+      {
+        "start": 19,
+        "speaker": "Mai",
+        "ja": "きっかけは日本(にほん)のアニメを見(み)たことです",
+        "vi": "Cơ duyên là vì tôi xem anime Nhật Bản."
+      },
+      {
+        "start": 25,
+        "speaker": "Mai",
+        "ja": "えー仕事(しごと)の後(あと)で日本語(にほんご)を勉強(べんきょう)するのは大変(たいへん)です",
+        "vi": "Học tiếng Nhật sau giờ làm khá vất vả."
+      },
+      {
+        "start": 29,
+        "speaker": "Mai",
+        "ja": "でも先生(せんせい)や友達(ともだち)のおかげで楽(たの)しく勉強(べんきょう)を続(つづ)けています",
+        "vi": "Nhưng nhờ thầy cô và bạn bè, tôi vẫn tiếp tục học rất vui vẻ."
+      },
+      {
+        "start": 36,
+        "speaker": "Mai",
+        "ja": "えーと今(いま)は日系企業(にっけいきぎょう)で輸出関係(ゆしゅつかんけい)の仕事(しごと)をしています",
+        "vi": "Hiện tôi làm công việc liên quan đến xuất khẩu ở một công ty Nhật."
+      },
+      {
+        "start": 42,
+        "speaker": "Mai",
+        "ja": "仕事(しごと)では日本語(にほんご)はあまり使(つか)いませんが",
+        "vi": "Trong công việc tôi không dùng tiếng Nhật nhiều,"
+      },
+      {
+        "start": 47,
+        "speaker": "Mai",
+        "ja": "日本人(にほんじん)のスタッフといろいろなことが話(はな)せるようになりたいと思(おも)っています",
+        "vi": "nhưng tôi muốn có thể trò chuyện nhiều chuyện với các đồng nghiệp người Nhật."
+      },
+      {
+        "start": 52,
+        "speaker": "Mai",
+        "ja": "えーこのサークルに参加(さんか)したのは",
+        "vi": "Tôi tham gia câu lạc bộ này"
+      },
+      {
+        "start": 56,
+        "speaker": "Mai",
+        "ja": "日本人(にほんじん)の友達(ともだち)をたくさん作(つく)りたいと思(おも)ったからです",
+        "vi": "vì muốn kết bạn với nhiều người Nhật."
+      },
+      {
+        "start": 60,
+        "speaker": "Mai",
+        "ja": "あ、趣味(しゅみ)は食(た)べ歩(ある)きです",
+        "vi": "À, sở thích của tôi là đi khám phá các quán ăn."
+      },
+      {
+        "start": 64,
+        "speaker": "Mai",
+        "ja": "料理(りょうり)は食(た)べるのも作(つく)るのも大好(だいす)きです",
+        "vi": "Tôi rất thích cả ăn lẫn nấu ăn."
+      },
+      {
+        "start": 67,
+        "speaker": "Mai",
+        "ja": "おしゃべりも大好(だいす)きなのでどんどん話(はな)しかけてください",
+        "vi": "Tôi cũng rất thích trò chuyện, nên mọi người cứ bắt chuyện với tôi nhé."
+      },
+      {
+        "start": 71,
+        "speaker": "Mai",
+        "ja": "どうぞよろしくお願(ねが)いします",
+        "vi": "Rất mong được mọi người giúp đỡ."
+      }
+    ]
+  },
+  {
+    "id": "tncs-2",
+    "group": "TNCS",
+    "title": "Bài 2 · Món Lagman",
+    "filename": "hanasu_lagman.mp3",
+    "audio": "/choukai/tncs-2.mp3",
+    "source": "https://docs.google.com/document/d/1wiTPBX6DWlcNxISINfLDLjh7B7eFLS0cpFWrDofKfc4/edit",
+    "note": "",
+    "cues": [
+      {
+        "start": 6,
+        "speaker": "Người giới thiệu",
+        "ja": "森(もり)さん、今夜(こんや)はキルギス料理(りょうり)のレストランにご案内(あんない)します",
+        "vi": "Anh Mori, tối nay tôi sẽ đưa anh đến một nhà hàng món Kyrgyzstan."
+      },
+      {
+        "start": 11,
+        "speaker": "Mori",
+        "ja": "へえ、キルギス料理(りょうり)っていうとどんなものがあるんですか?",
+        "vi": "Ồ, nhắc đến ẩm thực Kyrgyzstan thì có những món gì?"
+      },
+      {
+        "start": 16,
+        "speaker": "Người giới thiệu",
+        "ja": "そうですね、いろいろありますが",
+        "vi": "Có nhiều món lắm,"
+      },
+      {
+        "start": 19,
+        "speaker": "Người giới thiệu",
+        "ja": "日本(にほん)の方(かた)の口(くち)に合(あ)うのはラグマンだと思(おも)います",
+        "vi": "nhưng tôi nghĩ món hợp khẩu vị người Nhật là lagman."
+      },
+      {
+        "start": 22,
+        "speaker": "Mori",
+        "ja": "へえ、ラグマン?",
+        "vi": "Ồ, lagman à?"
+      },
+      {
+        "start": 24,
+        "speaker": "Người giới thiệu",
+        "ja": "ええ、ラグマンは小麦粉(こむぎこ)から作(つく)られた麺(めん)で",
+        "vi": "Vâng. Lagman là một loại mì làm từ bột mì,"
+      },
+      {
+        "start": 28,
+        "speaker": "Người giới thiệu",
+        "ja": "えっと、白(しろ)くて日本(にほん)のうどんに似(に)ています",
+        "vi": "màu trắng và giống mì udon của Nhật."
+      },
+      {
+        "start": 32,
+        "speaker": "Người giới thiệu",
+        "ja": "この麺(めん)を茹(ゆ)でてその上(うえ)に炒(いた)めた肉(にく)と野菜(やさい)を乗(の)せるんです",
+        "vi": "Người ta luộc mì rồi đặt thịt và rau xào lên trên."
+      },
+      {
+        "start": 38,
+        "speaker": "Người giới thiệu",
+        "ja": "肉(にく)からスープが出(で)るのでとても美味(おい)しいんですよ",
+        "vi": "Thịt tiết ra nước dùng nên món này rất ngon."
+      },
+      {
+        "start": 42,
+        "speaker": "Người giới thiệu",
+        "ja": "パセリをかけて食(た)べたりもします",
+        "vi": "Đôi khi người ta còn rắc rau mùi tây lên để ăn."
+      },
+      {
+        "start": 45,
+        "speaker": "Mori",
+        "ja": "うーん",
+        "vi": "Ừm."
+      },
+      {
+        "start": 46,
+        "speaker": "Người giới thiệu",
+        "ja": "実(じつ)はラグマンは中央(ちゅうおう)アジアの他(ほか)の国(くに)にもあって",
+        "vi": "Thực ra lagman cũng có ở các nước Trung Á khác,"
+      },
+      {
+        "start": 51,
+        "speaker": "Người giới thiệu",
+        "ja": "国(くに)によっていろいろなバラエティがあるんです",
+        "vi": "và có nhiều biến thể tùy từng nước."
+      },
+      {
+        "start": 54,
+        "speaker": "Mori",
+        "ja": "そうなんですか",
+        "vi": "Vậy à?"
+      },
+      {
+        "start": 56,
+        "speaker": "Người giới thiệu",
+        "ja": "日本(にほん)の方(かた)に一番(いちばん)好(す)きなキルギス料理(りょうり)を聞(き)くと",
+        "vi": "Khi hỏi người Nhật thích món Kyrgyzstan nào nhất,"
+      },
+      {
+        "start": 60,
+        "speaker": "Người giới thiệu",
+        "ja": "大抵(たいてい)ラグマンだとおっしゃいます",
+        "vi": "đa số đều trả lời là lagman."
+      },
+      {
+        "start": 62,
+        "speaker": "Người giới thiệu",
+        "ja": "ぜひ召し上(めしあ)がってみてください",
+        "vi": "Anh nhất định hãy thử nhé."
+      },
+      {
+        "start": 65,
+        "speaker": "Mori",
+        "ja": "それは楽(たの)しみですね",
+        "vi": "Tôi mong chờ quá."
+      }
+    ]
+  },
+  {
+    "id": "tncs-3",
+    "group": "TNCS",
+    "title": "Bài 3 · Lady Gaga",
+    "filename": "hanasu_gaga.mp3",
+    "audio": "/choukai/tncs-3.mp3",
+    "source": "https://docs.google.com/document/d/1p-foVcqu8lKvhgqe2ZiZ8K9bPev8D7-uVJ-Vu0G_EYU/edit",
+    "note": "",
+    "cues": [
+      {
+        "start": 0,
+        "speaker": "Nishikawa",
+        "ja": "ジャネットさん何(なに)を聴(き)いてるんですか",
+        "vi": "Chị Janet đang nghe gì vậy?"
+      },
+      {
+        "start": 3,
+        "speaker": "Janet",
+        "ja": "レディーガガですいいですよ",
+        "vi": "Lady Gaga đấy. Hay lắm."
+      },
+      {
+        "start": 5,
+        "speaker": "Nishikawa",
+        "ja": "へえガガってどんなところがいいんですか",
+        "vi": "Ồ, Gaga có điểm gì hay vậy?"
+      },
+      {
+        "start": 9,
+        "speaker": "Janet",
+        "ja": "そうですねガガって変(か)わったファッションで有名(ゆうめい)ですけど",
+        "vi": "Để xem nào, Gaga nổi tiếng với thời trang khác lạ, nhưng..."
+      },
+      {
+        "start": 13,
+        "speaker": "Janet",
+        "ja": "彼女(かのじょ)の音楽(おんがく)はすごくレベルが高(たか)いんですよ",
+        "vi": "âm nhạc của cô ấy có trình độ rất cao."
+      },
+      {
+        "start": 17,
+        "speaker": "Nishikawa",
+        "ja": "へえそうなんですか",
+        "vi": "Ồ, vậy sao?"
+      },
+      {
+        "start": 18,
+        "speaker": "Janet",
+        "ja": "歌(うた)もピアノも上手(うま)いんですが彼女(かのじょ)のすごいところは",
+        "vi": "Cô ấy hát và chơi piano đều giỏi, nhưng điều đáng nể nhất là..."
+      },
+      {
+        "start": 23,
+        "speaker": "Janet",
+        "ja": "えっと自分(じぶん)の歌(うた)を全部(ぜんぶ)自分(じぶん)で作(つく)っているところですね",
+        "vi": "cô ấy tự sáng tác tất cả các bài hát của mình."
+      },
+      {
+        "start": 28,
+        "speaker": "Nishikawa",
+        "ja": "へえ",
+        "vi": "Ồ!"
+      },
+      {
+        "start": 29,
+        "speaker": "Janet",
+        "ja": "メロディーやリズムが個性的(こせいてき)だし",
+        "vi": "Giai điệu và tiết tấu rất độc đáo,"
+      },
+      {
+        "start": 32,
+        "speaker": "Janet",
+        "ja": "うーん一度(いちど)聞(き)いたら忘(わす)れられない魅力(みりょく)がありますよ",
+        "vi": "một khi nghe rồi thì có sức cuốn hút khó quên."
+      },
+      {
+        "start": 37,
+        "speaker": "Nishikawa",
+        "ja": "うーん",
+        "vi": "Ừm."
+      },
+      {
+        "start": 38,
+        "speaker": "Janet",
+        "ja": "それにミュージックビデオもまるで映画(えいが)を見(み)ているようでドキドキするんです",
+        "vi": "Hơn nữa, video ca nhạc của cô ấy hồi hộp như đang xem phim."
+      },
+      {
+        "start": 45,
+        "speaker": "Nishikawa",
+        "ja": "そうなんですか",
+        "vi": "Vậy sao?"
+      },
+      {
+        "start": 46,
+        "speaker": "Janet",
+        "ja": "それだけじゃなくてガガは社会的(しゃかいてき)な活動(かつどう)もしていて素晴(すば)らしい人(ひと)だと思(おも)います",
+        "vi": "Chưa hết, Gaga còn tham gia các hoạt động xã hội; tôi nghĩ cô ấy là một người tuyệt vời."
+      },
+      {
+        "start": 54,
+        "speaker": "Janet",
+        "ja": "西川(にしかわ)さんもぜひ聞(き)いてみてください",
+        "vi": "Anh Nishikawa cũng hãy thử nghe nhé."
+      },
+      {
+        "start": 58,
+        "speaker": "Nishikawa",
+        "ja": "そうなんですかじゃあ今度(こんど)ネットで見(み)てみます",
+        "vi": "Vậy à? Lần tới tôi sẽ xem trên mạng."
+      }
+    ]
+  },
+  {
+    "id": "tncs-4",
+    "group": "TNCS",
+    "title": "Bài 4 · Du lịch Nhật Bản",
+    "filename": "hanasu_ryoko.mp3",
+    "audio": "/choukai/tncs-4.mp3",
+    "source": "https://docs.google.com/document/d/1OIumfSwCM9-I8YQ9RjRbz4mo8Hx9_R6uCm917jKKOCU/edit",
+    "note": "",
+    "cues": [
+      {
+        "start": 0,
+        "speaker": "Người hỏi",
+        "ja": "アイニさん旅行(りょこう)のパンフレットですか",
+        "vi": "Chị Aini, đó là tờ giới thiệu du lịch à?"
+      },
+      {
+        "start": 3,
+        "speaker": "Aini",
+        "ja": "ええ日本(にほん)に行(い)きたいと思(おも)って",
+        "vi": "Vâng, vì tôi đang muốn đi Nhật."
+      },
+      {
+        "start": 6,
+        "speaker": "Người hỏi",
+        "ja": "そうですか日本(にほん)のどこへ行(い)きたいんですか",
+        "vi": "Vậy à? Chị muốn đến đâu ở Nhật?"
+      },
+      {
+        "start": 11,
+        "speaker": "Aini",
+        "ja": "東京(とうきょう)です一番(いちばん)行(い)きたいのはお台場(だいば)の大江戸(おおえど)温泉(おんせん)です",
+        "vi": "Tokyo. Nơi tôi muốn đến nhất là Ōedo Onsen ở Odaiba."
+      },
+      {
+        "start": 16,
+        "speaker": "Người hỏi",
+        "ja": "なんで",
+        "vi": "Tại sao?"
+      },
+      {
+        "start": 17,
+        "speaker": "Aini",
+        "ja": "友達(ともだち)に聞(き)いたんですけど温泉(おんせん)のテーマパークみたいなところで好(す)きな浴衣(ゆかた)が借(か)りられるそうなんです",
+        "vi": "Tôi nghe bạn nói đó giống một công viên chủ đề về suối nước nóng, có thể thuê bộ yukata mình thích."
+      },
+      {
+        "start": 25,
+        "speaker": "Aini",
+        "ja": "中(なか)が江戸(えど)の古(ふる)い町(まち)みたいになっていてすごく面白(おもしろ)いって言(い)ってました",
+        "vi": "Bên trong được dựng như khu phố Edo xưa; bạn tôi bảo rất thú vị."
+      },
+      {
+        "start": 32,
+        "speaker": "Aini",
+        "ja": "お風呂(ふろ)に入(はい)って浴衣(ゆかた)を着(き)てご飯(はん)も食(た)べて一日中(いちにちじゅう)いたいです",
+        "vi": "Tôi muốn tắm, mặc yukata, ăn uống và ở đó cả ngày."
+      },
+      {
+        "start": 38,
+        "speaker": "Người hỏi",
+        "ja": "そうなんですか",
+        "vi": "Vậy à?"
+      },
+      {
+        "start": 40,
+        "speaker": "Aini",
+        "ja": "それからその次(つぎ)に行(い)きたいのはアニメイトとかのアニメショップですね",
+        "vi": "Sau đó, tôi muốn đến các cửa hàng anime như Animate."
+      },
+      {
+        "start": 46,
+        "speaker": "Người hỏi",
+        "ja": "へえ",
+        "vi": "Ồ."
+      },
+      {
+        "start": 48,
+        "speaker": "Aini",
+        "ja": "私(わたし)は日本(にほん)のアニメが大好(だいす)きなのでどんなところか一度(いちど)行(い)ってみたいんです",
+        "vi": "Tôi rất thích anime Nhật nên muốn thử đến xem nơi đó như thế nào."
+      },
+      {
+        "start": 53,
+        "speaker": "Aini",
+        "ja": "アニメのDVDは何(なん)でもあるそうですし",
+        "vi": "Nghe nói ở đó có đủ mọi đĩa DVD anime,"
+      },
+      {
+        "start": 58,
+        "speaker": "Aini",
+        "ja": "キャラクターグッズも面白(おもしろ)そうですよね",
+        "vi": "và các món đồ nhân vật chắc cũng thú vị nhỉ."
+      },
+      {
+        "start": 61,
+        "speaker": "Người hỏi",
+        "ja": "そうなんですか",
+        "vi": "Vậy à?"
+      },
+      {
+        "start": 63,
+        "speaker": "Aini",
+        "ja": "あとスカイツリーにも行(い)かなくちゃ",
+        "vi": "Tôi còn phải đến tháp Skytree nữa."
+      },
+      {
+        "start": 66,
+        "speaker": "Aini",
+        "ja": "展望台(てんぼうだい)からの眺(なが)めがすごくて",
+        "vi": "Nghe nói cảnh nhìn từ đài quan sát rất tuyệt,"
+      },
+      {
+        "start": 69,
+        "speaker": "Aini",
+        "ja": "夜(よる)のライトアップも綺麗(きれい)だそうですね",
+        "vi": "và đèn chiếu sáng vào ban đêm cũng đẹp."
+      },
+      {
+        "start": 71,
+        "speaker": "Người hỏi",
+        "ja": "へー、アイニさんはよく知(し)ってますね",
+        "vi": "Ồ, chị Aini biết nhiều thật đấy."
+      }
+    ]
+  },
+  {
+    "id": "tncn-9",
+    "group": "TNCN",
+    "title": "Unit 9 · Bàn giao kiểm thử",
+    "filename": "u9",
+    "audio": "/choukai/tncn-9.mp3",
+    "source": "https://docs.google.com/document/d/1qznB7ELJGDKX5iYxiwMzint4MUU184rsF17xordAejw/edit",
+    "note": "Lưu ý: Tên file ghi Unit 9, nhưng lời mở đầu trong âm thanh là Unit 7.",
+    "cues": [
+      {
+        "start": 0,
+        "speaker": "Nhân viên",
+        "ja": "大沢さんすみません",
+        "vi": "Anh Ōsawa, xin lỗi làm phiền anh."
+      },
+      {
+        "start": 11,
+        "speaker": "Ōsawa",
+        "ja": "はい",
+        "vi": "Vâng?"
+      },
+      {
+        "start": 12,
+        "speaker": "Nhân viên",
+        "ja": "売上データ処理のモジュールなんですが 単体テストのチェックすべて終わりました",
+        "vi": "Về mô đun xử lý dữ liệu doanh thu, tôi đã hoàn thành toàn bộ hạng mục kiểm tra của phần kiểm thử đơn vị."
+      },
+      {
+        "start": 19,
+        "speaker": "Ōsawa",
+        "ja": "ああそうですか お疲れ様でした 予定通りでしたね",
+        "vi": "À, vậy à. Anh vất vả rồi. Đúng tiến độ nhỉ."
+      },
+      {
+        "start": 25,
+        "speaker": "Nhân viên",
+        "ja": "ええなんとか",
+        "vi": "Vâng, cũng cố gắng kịp."
+      },
+      {
+        "start": 26,
+        "speaker": "Ōsawa",
+        "ja": "じゃあ、結合テスト担当の新山さんに連絡しますから",
+        "vi": "Vậy tôi sẽ liên lạc với anh Niiyama, người phụ trách kiểm thử tích hợp,"
+      },
+      {
+        "start": 31,
+        "speaker": "Ōsawa",
+        "ja": "ソースコードはClearCaseにコミットしておいてください",
+        "vi": "nên anh hãy commit mã nguồn lên ClearCase."
+      },
+      {
+        "start": 34,
+        "speaker": "Nhân viên",
+        "ja": "え、ClearCaseって何ですか?",
+        "vi": "Ơ, ClearCase là gì ạ?"
+      },
+      {
+        "start": 39,
+        "speaker": "Ōsawa",
+        "ja": "うちで使っているバージョン管理システムです",
+        "vi": "Đó là hệ thống quản lý phiên bản chúng tôi đang dùng."
+      },
+      {
+        "start": 41,
+        "speaker": "Nhân viên",
+        "ja": "あ、CVSとかサブバージョンみたいなシステムですね",
+        "vi": "À, kiểu như CVS hay Subversion phải không ạ?"
+      },
+      {
+        "start": 46,
+        "speaker": "Ōsawa",
+        "ja": "そうです。使い方は新山さんに聞いてください",
+        "vi": "Đúng vậy. Cách sử dụng thì anh hỏi anh Niiyama nhé."
+      },
+      {
+        "start": 50,
+        "speaker": "Nhân viên",
+        "ja": "はい、わかりました。次はどのモジュールを作りますか?",
+        "vi": "Vâng, tôi hiểu rồi. Tiếp theo tôi sẽ làm mô đun nào?"
+      },
+      {
+        "start": 55,
+        "speaker": "Ōsawa",
+        "ja": "まず、分析統計処理モジュールを先に作っておいてください",
+        "vi": "Trước tiên hãy làm mô đun xử lý phân tích thống kê."
+      },
+      {
+        "start": 59,
+        "speaker": "Ōsawa",
+        "ja": "このモジュールに売上帳票出力処理モジュールが依存していますので",
+        "vi": "Vì mô đun xử lý xuất báo cáo doanh thu phụ thuộc vào mô đun này."
+      },
+      {
+        "start": 66,
+        "speaker": "Nhân viên",
+        "ja": "わかりました。ではその順番で作ります",
+        "vi": "Tôi hiểu rồi. Tôi sẽ làm theo thứ tự đó."
+      },
+      {
+        "start": 70,
+        "speaker": "Ōsawa",
+        "ja": "よろしく",
+        "vi": "Nhờ anh nhé."
+      }
+    ]
+  },
+  {
+    "id": "tncn-10",
+    "group": "TNCN",
+    "title": "Unit 10 · Báo cáo tiến độ",
+    "filename": "u10",
+    "audio": "/choukai/tncn-10.mp3",
+    "source": "https://docs.google.com/document/d/1djci0HpGrCer8LjFEvRpir1hMim-K0dqZGOU_ZSXeXY/edit",
+    "note": "Lưu ý: Tên file ghi Unit 10, nhưng lời mở đầu trong âm thanh là Unit 8.",
+    "cues": [
+      {
+        "start": 0,
+        "speaker": "Lời giới thiệu",
+        "ja": "ユニット8 モデル会話",
+        "vi": "Bài hội thoại mẫu Unit 8."
+      },
+      {
+        "start": 4,
+        "speaker": "Quản lý",
+        "ja": "リーさん、進捗状況はどうですか?",
+        "vi": "Anh Lee, tiến độ thế nào rồi?"
+      },
+      {
+        "start": 13,
+        "speaker": "Lee",
+        "ja": "えーっと、担当モジュール4つのうち半分は終わっています",
+        "vi": "Trong bốn mô đun tôi phụ trách, tôi đã hoàn thành một nửa."
+      },
+      {
+        "start": 17,
+        "speaker": "Quản lý",
+        "ja": "そうでしたね。3つ目のモジュールはどうですか?",
+        "vi": "Đúng rồi. Mô đun thứ ba thì sao?"
+      },
+      {
+        "start": 22,
+        "speaker": "Lee",
+        "ja": "全体のコーディングは終わったんですが、単体テストはまだまだです",
+        "vi": "Việc lập trình tổng thể đã xong, nhưng kiểm thử đơn vị vẫn còn nhiều việc."
+      },
+      {
+        "start": 26,
+        "speaker": "Quản lý",
+        "ja": "試験項目はどのぐらい終わりましたか?",
+        "vi": "Khoảng bao nhiêu hạng mục kiểm thử đã hoàn thành?"
+      },
+      {
+        "start": 30,
+        "speaker": "Lee",
+        "ja": "だいたい3割ぐらいです",
+        "vi": "Khoảng 30%."
+      },
+      {
+        "start": 32,
+        "speaker": "Quản lý",
+        "ja": "じゃあ実装段階は予定通りに終われそうですね",
+        "vi": "Vậy có vẻ giai đoạn triển khai sẽ kết thúc đúng kế hoạch."
+      },
+      {
+        "start": 36,
+        "speaker": "Lee",
+        "ja": "そうですね今のところ大きなバグも出ていないので何とか間に合うと思います",
+        "vi": "Vâng, đến giờ cũng chưa có lỗi lớn nên tôi nghĩ sẽ kịp."
+      },
+      {
+        "start": 43,
+        "speaker": "Quản lý",
+        "ja": "いいですねその調子で頑張ってください",
+        "vi": "Tốt lắm, cứ tiếp tục cố gắng nhé."
+      },
+      {
+        "start": 46,
+        "speaker": "Quản lý",
+        "ja": "何か困っていることはありますか",
+        "vi": "Có điều gì đang gây khó khăn không?"
+      },
+      {
+        "start": 49,
+        "speaker": "Lee",
+        "ja": "実はエクリプスに新しいプラグインを入れたら時々落ちるようになってしまいました",
+        "vi": "Thực ra sau khi cài một plugin mới vào Eclipse, phần mềm thỉnh thoảng bị sập."
+      },
+      {
+        "start": 56,
+        "speaker": "Lee",
+        "ja": "こういう状況が続くようでしたら外してみます",
+        "vi": "Nếu tình trạng này tiếp diễn, tôi sẽ thử gỡ plugin đó."
+      },
+      {
+        "start": 60,
+        "speaker": "Quản lý",
+        "ja": "そうですか。もしスケジュールに影響しそうだと思ったら、遅れが出る前に教えてくださいね",
+        "vi": "Vậy à. Nếu thấy việc này có thể ảnh hưởng lịch trình, hãy báo cho tôi trước khi bị chậm tiến độ nhé."
+      },
+      {
+        "start": 69,
+        "speaker": "Lee",
+        "ja": "わかりました",
+        "vi": "Vâng, tôi hiểu rồi."
+      }
+    ]
+  },
+  {
+    "id": "tncn-11",
+    "group": "TNCN",
+    "title": "Unit 11 · Xin hỗ trợ",
+    "filename": "u11",
+    "audio": "/choukai/tncn-11.mp3",
+    "source": "https://docs.google.com/document/d/1iWoF7HtngtfO9nKtGMJotVDPzcigkgf_46ko4EgJ6vU/edit",
+    "note": "Lưu ý: Tên file ghi Unit 11, nhưng lời mở đầu trong âm thanh là Unit 9.",
+    "cues": [
+      {
+        "start": 0,
+        "speaker": "Lời giới thiệu",
+        "ja": "ユニット9 モデル会話",
+        "vi": "Bài hội thoại mẫu Unit 9."
+      },
+      {
+        "start": 4,
+        "speaker": "Lee",
+        "ja": "あのー、ちょっとよろしいでしょうか?",
+        "vi": "Ừm, tôi có thể trao đổi một chút được không ạ?"
+      },
+      {
+        "start": 12,
+        "speaker": "Quản lý",
+        "ja": "はい、何でしょうか?",
+        "vi": "Vâng, chuyện gì vậy?"
+      },
+      {
+        "start": 14,
+        "speaker": "Lee",
+        "ja": "実は申し訳ありませんが、今のままでは予定に遅れそうなんです。",
+        "vi": "Thật ngại, nhưng nếu cứ như hiện tại thì tôi sẽ trễ kế hoạch."
+      },
+      {
+        "start": 20,
+        "speaker": "Quản lý",
+        "ja": "原因は何ですか?",
+        "vi": "Nguyên nhân là gì?"
+      },
+      {
+        "start": 22,
+        "speaker": "Lee",
+        "ja": "依存先のモジュールがまだ上がってこないんです。",
+        "vi": "Mô đun mà phần việc này phụ thuộc vào vẫn chưa được bàn giao."
+      },
+      {
+        "start": 25,
+        "speaker": "Quản lý",
+        "ja": "ああ、それは困りましたね。では増員しましょう。どんな人員が必要ですか?",
+        "vi": "À, vậy thì khó rồi. Chúng ta sẽ tăng người. Anh cần người hỗ trợ việc gì?"
+      },
+      {
+        "start": 31,
+        "speaker": "Lee",
+        "ja": "スタブとテストデータだけでも作ってくれる人がいたら助かります",
+        "vi": "Nếu có người làm giúp dù chỉ phần stub và dữ liệu kiểm thử thì tốt quá."
+      },
+      {
+        "start": 36,
+        "speaker": "Lee",
+        "ja": "コーディングは私一人でやるしかありませんので",
+        "vi": "Còn lập trình thì tôi chỉ có thể tự làm."
+      },
+      {
+        "start": 40,
+        "speaker": "Quản lý",
+        "ja": "スタブとテストデータですね",
+        "vi": "Stub và dữ liệu kiểm thử nhỉ."
+      },
+      {
+        "start": 42,
+        "speaker": "Quản lý",
+        "ja": "わかりました",
+        "vi": "Tôi hiểu rồi."
+      },
+      {
+        "start": 43,
+        "speaker": "Quản lý",
+        "ja": "この2つがあれば予定通りに終わりそうですか",
+        "vi": "Nếu có hai thứ đó thì anh có thể hoàn thành đúng kế hoạch không?"
+      },
+      {
+        "start": 47,
+        "speaker": "Lee",
+        "ja": "はい、なんとか終わると思います",
+        "vi": "Vâng, tôi nghĩ sẽ xoay xở hoàn thành được."
+      },
+      {
+        "start": 49,
+        "speaker": "Quản lý",
+        "ja": "ではスタブは簡単な仕様だったら私が作りましょう",
+        "vi": "Vậy nếu stub có đặc tả đơn giản thì tôi sẽ làm."
+      },
+      {
+        "start": 53,
+        "speaker": "Quản lý",
+        "ja": "気分転換にいいしね",
+        "vi": "Làm việc đó cũng giúp tôi đổi không khí."
+      },
+      {
+        "start": 56,
+        "speaker": "Quản lý",
+        "ja": "テストデータは誰かに頼んでみます",
+        "vi": "Tôi sẽ nhờ ai đó làm dữ liệu kiểm thử."
+      },
+      {
+        "start": 58,
+        "speaker": "Lee",
+        "ja": "すみません、すごく助かります",
+        "vi": "Cảm ơn anh, giúp tôi nhiều lắm."
+      },
+      {
+        "start": 60,
+        "speaker": "Quản lý",
+        "ja": "まあ、この遅れはリーさんのせいじゃないから心配しないで",
+        "vi": "Sự chậm trễ này không phải lỗi của anh Lee, nên đừng lo."
+      },
+      {
+        "start": 65,
+        "speaker": "Quản lý",
+        "ja": "じゃあ、スタブとテストデータのことは昼食後に連絡しますので",
+        "vi": "Sau bữa trưa tôi sẽ liên lạc về việc stub và dữ liệu kiểm thử."
+      },
+      {
+        "start": 70,
+        "speaker": "Lee",
+        "ja": "ありがとうございます。よろしくお願いします",
+        "vi": "Cảm ơn anh. Mong anh giúp đỡ."
+      }
+    ]
+  },
+  {
+    "id": "tncn-12",
+    "group": "TNCN",
+    "title": "Unit 12 · Hoàn thành kiểm thử",
+    "filename": "u12",
+    "audio": "/choukai/tncn-12.mp3",
+    "source": "https://docs.google.com/document/d/1jCd-m7PY96jpiSTPF5b-ATSXU1ve1PFKlARJYa7Q0d4/edit",
+    "note": "Lưu ý: Tên file ghi Unit 12, nhưng lời mở đầu trong âm thanh là Unit 10.",
+    "cues": [
+      {
+        "start": 0,
+        "speaker": "Lời giới thiệu",
+        "ja": "ユニット10 モデル会話",
+        "vi": "Bài hội thoại mẫu Unit 10."
+      },
+      {
+        "start": 4,
+        "speaker": "Lee",
+        "ja": "大沢さんすみません",
+        "vi": "Anh Ōsawa, xin lỗi làm phiền anh."
+      },
+      {
+        "start": 11,
+        "speaker": "Ōsawa",
+        "ja": "はい",
+        "vi": "Vâng?"
+      },
+      {
+        "start": 12,
+        "speaker": "Lee",
+        "ja": "私が担当していた4つのモジュールですがすべて単体テストが終わりました",
+        "vi": "Cả bốn mô đun tôi phụ trách đã hoàn thành kiểm thử đơn vị."
+      },
+      {
+        "start": 18,
+        "speaker": "Ōsawa",
+        "ja": "お疲れ様でした早かったですね",
+        "vi": "Anh vất vả rồi. Nhanh nhỉ."
+      },
+      {
+        "start": 22,
+        "speaker": "Ōsawa",
+        "ja": "えーとリーさんの担当はどこでしたっけ",
+        "vi": "À, anh Lee phụ trách phần nào ấy nhỉ?"
+      },
+      {
+        "start": 26,
+        "speaker": "Lee",
+        "ja": "店舗情報管理です",
+        "vi": "Quản lý thông tin cửa hàng ạ."
+      },
+      {
+        "start": 28,
+        "speaker": "Ōsawa",
+        "ja": "そうでしたね",
+        "vi": "À, đúng rồi."
+      },
+      {
+        "start": 30,
+        "speaker": "Ōsawa",
+        "ja": "ではテスト結果報告書とバグ表の提出をお願いします",
+        "vi": "Vậy hãy nộp báo cáo kết quả kiểm thử và bảng lỗi."
+      },
+      {
+        "start": 35,
+        "speaker": "Lee",
+        "ja": "はいこれです",
+        "vi": "Vâng, đây ạ."
+      },
+      {
+        "start": 37,
+        "speaker": "Ōsawa",
+        "ja": "それからラジュさんがちょっと遅れているので彼の担当を手伝ってください",
+        "vi": "Ngoài ra, anh Raju đang hơi chậm nên hãy hỗ trợ phần anh ấy phụ trách."
+      },
+      {
+        "start": 42,
+        "speaker": "Lee",
+        "ja": "わかりましたラジュさんの担当はどこですか",
+        "vi": "Tôi hiểu rồi. Anh Raju phụ trách phần nào?"
+      },
+      {
+        "start": 46,
+        "speaker": "Ōsawa",
+        "ja": "仕入れ管理機能です",
+        "vi": "Chức năng quản lý nhập hàng."
+      },
+      {
+        "start": 48,
+        "speaker": "Ōsawa",
+        "ja": "仕入れマスター処理はラジュさんが終わらせますから",
+        "vi": "Anh Raju sẽ hoàn tất phần xử lý dữ liệu danh mục nhập hàng,"
+      },
+      {
+        "start": 52,
+        "speaker": "Ōsawa",
+        "ja": "発注データ処理の方をお願いします",
+        "vi": "nên anh hãy làm phần xử lý dữ liệu đặt hàng."
+      },
+      {
+        "start": 55,
+        "speaker": "Lee",
+        "ja": "仕入れ管理機能の発注データ処理のモジュールですね",
+        "vi": "Mô đun xử lý dữ liệu đặt hàng trong chức năng quản lý nhập hàng nhỉ."
+      },
+      {
+        "start": 59,
+        "speaker": "Lee",
+        "ja": "詳細設計書をいただけますか",
+        "vi": "Cho tôi xin bản thiết kế chi tiết được không ạ?"
+      },
+      {
+        "start": 62,
+        "speaker": "Ōsawa",
+        "ja": "ちょっと手元にないので",
+        "vi": "Tôi không có sẵn ở đây,"
+      },
+      {
+        "start": 64,
+        "speaker": "Ōsawa",
+        "ja": "ラジュさんが持っているのを自分でコピーしてください",
+        "vi": "nên anh hãy tự sao chép bản anh Raju đang giữ."
+      },
+      {
+        "start": 67,
+        "speaker": "Lee",
+        "ja": "わかりました",
+        "vi": "Vâng, tôi hiểu rồi."
+      },
+      {
+        "start": 68,
+        "speaker": "Ōsawa",
+        "ja": "じゃあよろしく",
+        "vi": "Vậy nhờ anh nhé."
+      }
+    ]
+  }
+]

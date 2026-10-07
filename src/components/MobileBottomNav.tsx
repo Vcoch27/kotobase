@@ -79,6 +79,14 @@ export function MobileBottomNav() {
       activeBg: "bg-accent-muted"
     },
     {
+      href: "/choukai",
+      label: "Chōkai",
+      icon: Headphones,
+      isActive: pathname.startsWith("/choukai"),
+      color: "text-emerald-600",
+      activeBg: "bg-emerald-500/10"
+    },
+    {
       href: "/grammar",
       label: "Ngữ pháp",
       icon: GraduationCap,
