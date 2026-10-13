@@ -220,7 +220,7 @@ export function OverviewView({
   const [rangeEndStr, setRangeEndStr] = useState(String(Math.min(30, localVocabs.length || 30)));
   const [randomCountStr, setRandomCountStr] = useState('30');
   const [activeScope, setActiveScope] = useState<'all' | 'first30' | 'random' | 'range' | null>('all');
-  const [prioritizeSelected, setPrioritizeSelected] = useState(true);
+  const [prioritizeSelected, setPrioritizeSelected] = useState(false);
   const [filterOnlySelected, setFilterOnlySelected] = useState(false);
 
   // Map cố định ID -> STT gốc (1-based) theo đúng thứ tự sắp xếp hiện tại (thứ tự thêm hoặc mới nhất)
@@ -350,7 +350,6 @@ export function OverviewView({
     handleSelectionChange(targetIds);
     setShowRangeInput(false);
     setActiveScope(n === localVocabs.length ? 'all' : 'first30');
-    setPrioritizeSelected(true);
     setCurrentPage(1);
   };
 
@@ -365,8 +364,6 @@ export function OverviewView({
       setShowRangeInput(false);
     }
     setActiveScope('random');
-    setPrioritizeSelected(true);
-    setCurrentPage(1);
   };
 
   // Kích hoạt trộn ngẫu nhiên từ chuỗi randomCountStr
@@ -392,8 +389,8 @@ export function OverviewView({
     const targetIds = localVocabs.slice(s - 1, e).map((v) => v.id);
     handleSelectionChange(targetIds);
     setActiveScope('range');
-    setPrioritizeSelected(true);
-    setCurrentPage(1);
+    const targetPage = Math.max(1, Math.ceil(s / ITEMS_PER_PAGE));
+    setCurrentPage(targetPage);
   };
 
   // Xóa toàn bộ lựa chọn
@@ -1386,24 +1383,76 @@ export function OverviewView({
                 (đang lọc từ đã chọn)
               </span>
             )}
+            {selectedIds.length > 0 && (
+              <span className="ml-2 font-bold text-indigo-600 dark:text-indigo-400">
+                • Đã chọn {selectedIds.length} từ
+              </span>
+            )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 flex-wrap justify-center">
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition-colors"
+              title="Trang trước"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-4 h-4" />
             </button>
-            <div className="text-sm font-bold text-slate-700 dark:text-slate-200 px-2">
-              {currentPage} / {totalPages}
-            </div>
+            {totalPages <= 7 ? (
+              Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setCurrentPage(p)}
+                  className={cn(
+                    "min-w-[32px] h-8 px-2 rounded-lg text-xs font-bold transition-all",
+                    currentPage === p
+                      ? "bg-indigo-600 text-white shadow-xs"
+                      : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                  )}
+                >
+                  {p}
+                </button>
+              ))
+            ) : (
+              <>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                  .reduce<(number | 'ellipsis')[]>((acc, p, idx, arr) => {
+                    if (idx > 0 && p - (arr[idx - 1] as number) > 1) {
+                      acc.push('ellipsis');
+                    }
+                    acc.push(p);
+                    return acc;
+                  }, [])
+                  .map((p, idx) =>
+                    p === 'ellipsis' ? (
+                      <span key={`ell-${idx}`} className="px-1 text-slate-400 select-none text-xs">
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => setCurrentPage(p)}
+                        className={cn(
+                          "min-w-[32px] h-8 px-2 rounded-lg text-xs font-bold transition-all",
+                          currentPage === p
+                            ? "bg-indigo-600 text-white shadow-xs"
+                            : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                        )}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
+              </>
+            )}
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition-colors"
+              title="Trang sau"
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </div>
