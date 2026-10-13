@@ -1394,10 +1394,10 @@ export function TypingQuizView({
                       </span>
                     )}
                   </div>
-                  <div className={`text-xl md:text-2xl font-black ${
+                  <div className={`text-xl md:text-2xl font-black flex flex-col items-center text-center ${
                     feedback === "correct" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
                   }`}>
-                    <MeaningText text={currentItem.meaning} size="lg" />
+                    <MeaningText text={currentItem.meaning} size="lg" align="center" />
                   </div>
                   {currentItem.example && (
                     <div className="text-xs italic text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 text-left">
@@ -1480,10 +1480,10 @@ export function TypingQuizView({
                       </span>
                     )}
                   </div>
-                  <div className={`text-lg md:text-xl font-bold ${
+                  <div className={`text-lg md:text-xl font-bold flex flex-col items-center text-center ${
                     feedback === "correct" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
                   }`}>
-                    <MeaningText text={currentItem.meaning} size="md" />
+                    <MeaningText text={currentItem.meaning} size="md" align="center" />
                   </div>
                   {currentItem.example && (
                     <div className="text-xs italic text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 text-left">

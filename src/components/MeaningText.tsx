@@ -64,6 +64,8 @@ interface MeaningTextProps {
   layout?: "inline" | "block" | "auto";
   /** Kích thước hiển thị: sm (table), md (card), lg (flashcard/quiz to) */
   size?: "sm" | "md" | "lg";
+  /** Căn lề: "left" | "center" | "auto" (mặc định "center" khi size="lg") */
+  align?: "left" | "center" | "auto";
 }
 
 /**
@@ -77,6 +79,7 @@ export function MeaningText({
   hideTip = false,
   layout = "auto",
   size = "md",
+  align = "auto",
 }: MeaningTextProps) {
   if (!text) return null;
 
@@ -89,34 +92,44 @@ export function MeaningText({
   const tipSizeStyles = {
     sm: "text-[11px] px-2 py-0.5 gap-1",
     md: "text-xs px-2.5 py-1 gap-1.5",
-    lg: "text-sm sm:text-base px-3.5 py-1.5 gap-2 font-semibold",
+    lg: "text-xs sm:text-sm px-3.5 py-1 gap-1.5 font-bold",
   };
 
   const isBlock = layout === "block" || (layout === "auto" && size === "lg");
+  const isCenter = align === "center" || (align === "auto" && size === "lg");
 
   return (
-    <span className={cn(isBlock ? "inline-flex flex-col items-start gap-1.5" : "inline-flex items-baseline flex-wrap gap-1.5", className)}>
+    <span
+      className={cn(
+        isBlock
+          ? cn("inline-flex flex-col gap-2", isCenter ? "items-center text-center justify-center" : "items-start text-left")
+          : cn("inline-flex items-baseline flex-wrap gap-1.5", isCenter && "justify-center text-center"),
+        className
+      )}
+    >
       {/* Nghĩa chính */}
-      <span className={meaningClassName}>{cleanMeaning}</span>
+      <span className={cn(isCenter && "text-center", meaningClassName)}>{cleanMeaning}</span>
 
       {/* Danh sách badge mẹo nhớ cách đọc */}
-      {tips.map((tip, idx) => (
-        <span
-          key={idx}
-          title="Mẹo nhớ cách đọc"
-          className={cn(
-            "inline-flex items-center rounded-xl font-bold select-none",
-            "bg-amber-100/80 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300",
-            "border border-amber-300/80 dark:border-amber-500/30 shadow-xs",
-            "align-middle transition-transform hover:scale-105",
-            tipSizeStyles[size],
-            tipClassName
-          )}
-        >
-          <Lightbulb className={cn(size === "sm" ? "w-3 h-3" : size === "lg" ? "w-4 h-4" : "w-3.5 h-3.5", "text-amber-600 dark:text-amber-400 shrink-0")} />
-          <span className="tracking-wide">{tip}</span>
-        </span>
-      ))}
+      <span className={cn("inline-flex flex-wrap gap-1.5", isCenter ? "justify-center" : "justify-start")}>
+        {tips.map((tip, idx) => (
+          <span
+            key={idx}
+            title="Mẹo nhớ cách đọc"
+            className={cn(
+              "inline-flex items-center rounded-full select-none",
+              "bg-amber-100/90 dark:bg-amber-500/20 text-amber-900 dark:text-amber-200",
+              "border border-amber-300 dark:border-amber-500/35 shadow-xs",
+              "align-middle transition-transform hover:scale-105",
+              tipSizeStyles[size],
+              tipClassName
+            )}
+          >
+            <Lightbulb className={cn(size === "sm" ? "w-3 h-3" : size === "lg" ? "w-3.5 h-3.5 sm:w-4 sm:h-4" : "w-3.5 h-3.5", "text-amber-600 dark:text-amber-400 shrink-0")} />
+            <span className="tracking-wide">{tip}</span>
+          </span>
+        ))}
+      </span>
     </span>
   );
 }
