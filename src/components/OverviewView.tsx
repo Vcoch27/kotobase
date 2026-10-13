@@ -9,6 +9,8 @@ import {
   Edit3,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   CheckSquare,
   Square,
   MinusSquare,
@@ -222,6 +224,7 @@ export function OverviewView({
   const [activeScope, setActiveScope] = useState<'all' | 'first30' | 'random' | 'range' | null>('all');
   const [prioritizeSelected, setPrioritizeSelected] = useState(true);
   const [filterOnlySelected, setFilterOnlySelected] = useState(false);
+  const [isBarMinimized, setIsBarMinimized] = useState(false);
 
   // Giữ cố định vị trí cuộn khi người dùng click chọn từ (ngăn browser giật scroll lên đỉnh)
   const savedScrollYRef = useRef<number | null>(null);
@@ -431,6 +434,7 @@ export function OverviewView({
     handleSelectionChange([]);
     setActiveScope(null);
     setFilterOnlySelected(false);
+    setIsBarMinimized(false);
   };
 
   // Danh sách các đối tượng từ vựng đang được chọn
@@ -1220,7 +1224,7 @@ export function OverviewView({
       {/* 3. FLOATING ACTION BAR (Hiện khi có từ được chọn) - Vị trí linh hoạt + Kéo thả tự do */}
 
 
-      {selectedIds.length > 0 && (
+      {selectedIds.length > 0 && !isBarMinimized && (
         <div
           ref={barRef}
           onPointerDown={handlePointerDown}
@@ -1393,7 +1397,62 @@ export function OverviewView({
                 <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-slate-950" />
               </div>
             </div>
+
+            <div className="w-px h-5 bg-slate-700/80 mx-0.5 shrink-0" />
+
+            {/* Nút Thu gọn xuống mép dưới footer */}
+            <div className="relative group">
+              <button
+                type="button"
+                onClick={() => setIsBarMinimized(true)}
+                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 active:scale-90 transition-all shrink-0"
+                title="Thu gọn thanh công cụ xuống mép dưới footer"
+              >
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              <div className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-950 text-white text-[11px] font-bold rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-150 whitespace-nowrap z-30 border border-slate-700/80 scale-95 group-hover:scale-100">
+                Thu gọn
+                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-slate-950" />
+              </div>
+            </div>
           </div>
+        </div>
+      )}
+
+      {/* Mini Pill thu gọn ở mép dưới footer khi người dùng ẩn thanh công cụ */}
+      {selectedIds.length > 0 && isBarMinimized && (
+        <div
+          style={customPos ? {
+            left: `${customPos.x}px`,
+            top: `${customPos.y}px`,
+            transform: 'none',
+            bottom: 'auto',
+          } : undefined}
+          className={cn(
+            "fixed z-[55] select-none transition-all duration-300 animate-slideUp",
+            !customPos && [
+              "bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2",
+              isSidebarCollapsed 
+                ? "md:left-1/2" 
+                : "md:left-[calc(50%+8rem)] lg:left-[calc(50%+9rem)]"
+            ]
+          )}
+        >
+          <button
+            type="button"
+            onClick={() => setIsBarMinimized(false)}
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/95 dark:bg-slate-950/95 text-white border border-slate-700/80 shadow-2xl backdrop-blur-md hover:bg-slate-800 active:scale-95 transition-all text-xs font-bold group cursor-pointer"
+            title="Mở lại thanh công cụ thao tác từ vựng"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <span className="text-slate-200">
+              Đã chọn <strong className="text-emerald-400 font-extrabold">{selectedIds.length}</strong> từ
+            </span>
+            <span className="text-[11px] text-slate-400 group-hover:text-amber-400 flex items-center gap-0.5 ml-1 transition-colors">
+              <span>Mở công cụ</span>
+              <ChevronUp className="w-3.5 h-3.5" />
+            </span>
+          </button>
         </div>
       )}
 
