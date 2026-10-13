@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { ClickableKanjiString } from './ClickableKanjiString';
 import {
   Trash2,
@@ -220,8 +220,23 @@ export function OverviewView({
   const [rangeEndStr, setRangeEndStr] = useState(String(Math.min(30, localVocabs.length || 30)));
   const [randomCountStr, setRandomCountStr] = useState('30');
   const [activeScope, setActiveScope] = useState<'all' | 'first30' | 'random' | 'range' | null>('all');
-  const [prioritizeSelected, setPrioritizeSelected] = useState(false);
+  const [prioritizeSelected, setPrioritizeSelected] = useState(true);
   const [filterOnlySelected, setFilterOnlySelected] = useState(false);
+
+  // Giữ cố định vị trí cuộn khi người dùng click chọn từ (ngăn browser giật scroll lên đỉnh)
+  const savedScrollYRef = useRef<number | null>(null);
+
+  useLayoutEffect(() => {
+    if (savedScrollYRef.current !== null) {
+      const targetY = savedScrollYRef.current;
+      window.scrollTo({ top: targetY, behavior: 'instant' });
+      const rafId = requestAnimationFrame(() => {
+        window.scrollTo({ top: targetY, behavior: 'instant' });
+        savedScrollYRef.current = null;
+      });
+      return () => cancelAnimationFrame(rafId);
+    }
+  }, [selectedIds]);
 
   // Map cố định ID -> STT gốc (1-based) theo đúng thứ tự sắp xếp hiện tại (thứ tự thêm hoặc mới nhất)
   const vocabSttMap = useMemo(() => {
@@ -308,6 +323,17 @@ export function OverviewView({
   const handleToggleSelect = (id: string, globalIndex: number, e: React.MouseEvent) => {
     e.stopPropagation();
 
+    // 1. Lưu lại vị trí cuộn hiện tại
+    savedScrollYRef.current = window.scrollY;
+
+    // 2. Bỏ focus để trình duyệt không tự động cuộn theo button khi DOM dời vị trí lên đầu
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.blur();
+    }
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+
     if (e.shiftKey && lastClickedIndex !== null) {
       const start = Math.min(lastClickedIndex, globalIndex);
       const end = Math.max(lastClickedIndex, globalIndex);
@@ -334,7 +360,14 @@ export function OverviewView({
   const isSomeCurrentPageSelected =
     currentPageIds.some((id) => selectedIds.includes(id)) && !isAllCurrentPageSelected;
 
-  const handleToggleCurrentPage = () => {
+  const handleToggleCurrentPage = (e?: React.MouseEvent) => {
+    savedScrollYRef.current = window.scrollY;
+    if (e?.currentTarget instanceof HTMLElement) {
+      e.currentTarget.blur();
+    }
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     setActiveScope(null);
     if (isAllCurrentPageSelected) {
       handleSelectionChange(selectedIds.filter((id) => !currentPageIds.includes(id)));
@@ -864,7 +897,10 @@ export function OverviewView({
       </div>
 
       {/* 1. DESKTOP VIEW (Table - Hiện từ màn hình md trở lên) */}
-      <div className="hidden md:block w-full overflow-x-auto rounded-2xl bg-[oklch(var(--color-surface))] shadow-elevation-md transition-colors duration-300">
+      <div 
+        className="hidden md:block w-full overflow-x-auto rounded-2xl bg-[oklch(var(--color-surface))] shadow-elevation-md transition-colors duration-300"
+        style={{ overflowAnchor: 'none' }}
+      >
         <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr className="bg-[oklch(var(--color-surface-raised))] text-[oklch(var(--color-text-muted))] text-xs font-semibold uppercase tracking-wider transition-colors duration-300">
@@ -872,7 +908,7 @@ export function OverviewView({
               <th className="py-4 px-3 w-10 text-center">
                 <button
                   type="button"
-                  onClick={handleToggleCurrentPage}
+                  onClick={(e) => handleToggleCurrentPage(e)}
                   className="p-1 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                   title={isAllCurrentPageSelected ? 'Bỏ chọn trang này' : 'Chọn tất cả trang này'}
                 >
@@ -1041,7 +1077,7 @@ export function OverviewView({
       </div>
 
       {/* 2. MOBILE VIEW (Card List - Hiện trên điện thoại < md) */}
-      <div className="md:hidden flex flex-col gap-3">
+      <div className="md:hidden flex flex-col gap-3" style={{ overflowAnchor: 'none' }}>
         {paginatedVocabularies.map((item, index) => {
           const originalStt = vocabSttMap.get(item.id) ?? 1;
           const originalIndex = originalStt - 1;
