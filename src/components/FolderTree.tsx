@@ -247,21 +247,24 @@ export function FolderTree({
   };
 
   const getCanEdit = (folder: FolderItem): boolean => {
-    if (currentUserEmail === 'hoangtungmy123@gmail.com') return true;
+    const userEmailNorm = (currentUserEmail || '').trim().toLowerCase();
+    if (userEmailNorm === 'hoangtungmy123@gmail.com') return true;
     const visited = new Set<string>();
     let curr: FolderItem | undefined = folder;
     while (curr) {
       if (visited.has(curr.id)) break;
       visited.add(curr.id);
-      if (curr.ownerId === currentUserId) return true;
-      if ((curr.coAuthorEmails || []).includes(currentUserEmail || '')) return true;
+      if (curr.ownerId && curr.ownerId === currentUserId) return true;
+      const coAuthors = (curr.coAuthorEmails || []).map(e => e.trim().toLowerCase());
+      if (coAuthors.includes(userEmailNorm)) return true;
       curr = localFolders.find(f => f.id === curr?.parentId);
     }
     return false;
   };
 
   const getCanDelete = (folder: FolderItem): boolean => {
-    if (currentUserEmail === 'hoangtungmy123@gmail.com') return true;
+    const userEmailNorm = (currentUserEmail || '').trim().toLowerCase();
+    if (userEmailNorm === 'hoangtungmy123@gmail.com') return true;
     return !!folder.ownerId && folder.ownerId === currentUserId;
   };
 
@@ -466,7 +469,7 @@ export function FolderTree({
       const isPartiallyOffline = !isFullyOffline && hasRecursiveDownloaded(node);
 
       // Phân quyền hiển thị
-      const isAdmin = currentUserEmail === 'hoangtungmy123@gmail.com';
+      const isAdmin = (currentUserEmail || '').trim().toLowerCase() === 'hoangtungmy123@gmail.com';
       // Thư mục vô danh (!node.ownerId) được tự động xem là thuộc quyền quản trị của Admin
       const isOwner = (currentUserId && node.ownerId && node.ownerId === currentUserId) || (isAdmin && !node.ownerId);
       const hasOwner = !!node.ownerId;

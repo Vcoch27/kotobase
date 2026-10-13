@@ -24,7 +24,8 @@ export interface CreateVocabInput {
 async function checkFolderPermission(folderId: string, currentUid: string, currentUserEmail?: string): Promise<{ allowed: boolean; error?: string }> {
   if (!folderId) return { allowed: true }; // Không thuộc folder nào = không kiểm tra
   
-  const isAdmin = currentUserEmail === "hoangtungmy123@gmail.com";
+  const userEmailNorm = (currentUserEmail || '').trim().toLowerCase();
+  const isAdmin = userEmailNorm === "hoangtungmy123@gmail.com";
   
   const allFolders = await getCachedFoldersRaw();
   const folderMap = new Map(allFolders.map(f => [f.id, f]));
@@ -43,7 +44,8 @@ async function checkFolderPermission(folderId: string, currentUid: string, curre
     if (!folder) break;
     
     // Check if owner or coauthor
-    if (folder.ownerId === currentUid || (folder as any).coAuthorEmails?.includes(currentUserEmail || '')) {
+    const coAuthors = ((folder as any).coAuthorEmails || []).map((e: string) => e.trim().toLowerCase());
+    if (folder.ownerId === currentUid || coAuthors.includes(userEmailNorm)) {
       isAllowed = true;
       break;
     }
@@ -194,20 +196,65 @@ export async function assignVocabularyToFolder(vocabularyId: string, folderId: s
 export async function getVocabularies(folderId?: string | string[], searchQuery?: string) {
   try {
     const currentUser = await getCurrentUser();
-    const isAdmin = currentUser?.email === "hoangtungmy123@gmail.com";
+    const currentUserEmail = (currentUser?.email || "").trim().toLowerCase();
     const currentUid = currentUser?.uid;
+    const isAdmin = currentUserEmail === "hoangtungmy123@gmail.com";
 
     // 1. Lấy danh sách folders để map tên & tìm cây thư mục con đệ quy
     const allFolders = await getCachedFoldersRaw();
     const folderMap = new Map<string, any>();
     allFolders.forEach(f => folderMap.set(f.id, f));
 
+    // Tập các ID thư mục mà user này có quyền truy cập trực tiếp (chủ sở hữu hoặc đồng tác giả)
+    const directAccessibleFolderIds = new Set<string>();
+    if (isAdmin) {
+      allFolders.forEach(f => directAccessibleFolderIds.add(f.id));
+    } else if (currentUserEmail || currentUid) {
+      allFolders.forEach(f => {
+        const isOwner = !!currentUid && f.ownerId === currentUid;
+        const isCoAuthor = !!currentUserEmail && ((f as any).coAuthorEmails || []).some(
+          (email: string) => email.trim().toLowerCase() === currentUserEmail
+        );
+        if (isOwner || isCoAuthor) {
+          directAccessibleFolderIds.add(f.id);
+        }
+      });
+    }
+
+    // Kế thừa quyền xuống các thư mục con cháu
+    const accessibleFolderIds = new Set<string>(directAccessibleFolderIds);
+    let expanded = true;
+    while (expanded) {
+      expanded = false;
+      allFolders.forEach(f => {
+        if (f.parentId && accessibleFolderIds.has(f.parentId) && !accessibleFolderIds.has(f.id)) {
+          accessibleFolderIds.add(f.id);
+          expanded = true;
+        }
+      });
+    }
+
+    // Đảm bảo các thư mục tổ tiên của thư mục mà user có quyền cũng được tính để lấy từ vựng
+    const ancestorIds = new Set<string>();
+    accessibleFolderIds.forEach(fid => {
+      let curr = folderMap.get(fid);
+      const visited = new Set<string>();
+      while (curr && curr.parentId) {
+        if (visited.has(curr.parentId)) break;
+        visited.add(curr.parentId);
+        ancestorIds.add(curr.parentId);
+        curr = folderMap.get(curr.parentId);
+      }
+    });
+
     // Hàm kiểm tra folder có hiển thị với user không (kế thừa theo cây thư mục)
     const isFolderVisible = (fid: string): boolean => {
+      if (isAdmin) return true;
+      if (accessibleFolderIds.has(fid)) return true;
+      if (ancestorIds.has(fid)) return true;
+
       const f = folderMap.get(fid);
       if (!f) return false;
-      if (isAdmin) return true;
-      if (currentUid && f.ownerId === currentUid) return true;
       if (!f.isPublic) return false;
       
       // Kiểm tra toàn bộ tổ tiên
@@ -218,7 +265,7 @@ export async function getVocabularies(folderId?: string | string[], searchQuery?
         visited.add(currParentId);
         const p = folderMap.get(currParentId);
         if (!p) break;
-        if (!p.isPublic) return false;
+        if (!accessibleFolderIds.has(p.id) && !p.isPublic) return false;
         currParentId = p.parentId;
       }
       return true;

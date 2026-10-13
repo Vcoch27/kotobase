@@ -15,7 +15,8 @@ async function getEffectivePermission(
   allFolders: Array<{ id: string; parentId: string | null; ownerId?: string | null; coAuthorEmails?: string[] }>
 ): Promise<Permission> {
   const ADMIN_EMAIL = 'hoangtungmy123@gmail.com';
-  if (userEmail === ADMIN_EMAIL) return 'admin';
+  const userEmailNorm = (userEmail || '').trim().toLowerCase();
+  if (userEmailNorm === ADMIN_EMAIL) return 'admin';
 
   const folderMap = new Map(allFolders.map(f => [f.id, f]));
   
@@ -37,7 +38,8 @@ async function getEffectivePermission(
       return 'coauthor';
     }
     
-    if ((folder.coAuthorEmails || []).includes(userEmail)) {
+    const coAuthors = (folder.coAuthorEmails || []).map(e => e.trim().toLowerCase());
+    if (coAuthors.includes(userEmailNorm)) {
       return 'coauthor';
     }
     
@@ -50,8 +52,9 @@ async function getEffectivePermission(
 export async function getFolders(includeCounts = true) {
   try {
     const currentUser = await getCurrentUser();
-    const isAdmin = currentUser?.email === "hoangtungmy123@gmail.com";
+    const currentUserEmail = (currentUser?.email || "").trim().toLowerCase();
     const currentUid = currentUser?.uid;
+    const isAdmin = currentUserEmail === "hoangtungmy123@gmail.com";
 
     const allRawFolders = await getCachedFoldersRaw();
 
@@ -59,19 +62,61 @@ export async function getFolders(includeCounts = true) {
     const folderMap = new Map<string, typeof allRawFolders[0]>();
     allRawFolders.forEach(f => folderMap.set(f.id, f));
 
+    // Tập các ID thư mục mà user này có quyền truy cập trực tiếp (chủ sở hữu hoặc đồng tác giả)
+    const directAccessibleFolderIds = new Set<string>();
+    if (isAdmin) {
+      allRawFolders.forEach(f => directAccessibleFolderIds.add(f.id));
+    } else if (currentUserEmail || currentUid) {
+      allRawFolders.forEach(f => {
+        const isOwner = !!currentUid && f.ownerId === currentUid;
+        const isCoAuthor = !!currentUserEmail && (f.coAuthorEmails || []).some(
+          (email: string) => email.trim().toLowerCase() === currentUserEmail
+        );
+        if (isOwner || isCoAuthor) {
+          directAccessibleFolderIds.add(f.id);
+        }
+      });
+    }
+
+    // Kế thừa quyền xuống các thư mục con cháu
+    const accessibleFolderIds = new Set<string>(directAccessibleFolderIds);
+    let expanded = true;
+    while (expanded) {
+      expanded = false;
+      allRawFolders.forEach(f => {
+        if (f.parentId && accessibleFolderIds.has(f.parentId) && !accessibleFolderIds.has(f.id)) {
+          accessibleFolderIds.add(f.id);
+          expanded = true;
+        }
+      });
+    }
+
+    // Đảm bảo các thư mục tổ tiên của thư mục mà user có quyền cũng được giữ để dựng cây thư mục
+    const ancestorIds = new Set<string>();
+    accessibleFolderIds.forEach(fid => {
+      let curr = folderMap.get(fid);
+      const visited = new Set<string>();
+      while (curr && curr.parentId) {
+        if (visited.has(curr.parentId)) break;
+        visited.add(curr.parentId);
+        ancestorIds.add(curr.parentId);
+        curr = folderMap.get(curr.parentId);
+      }
+    });
+
     // Hàm kiểm tra một thư mục có hiển thị với user hiện tại không
-    // Quy tắc kế thừa cha con:
-    // 1. Admin luôn thấy tất cả.
-    // 2. Chính chủ sở hữu luôn thấy thư mục của mình.
-    // 3. Người khác chỉ thấy nếu thư mục đó là công khai VÀ toàn bộ tổ tiên của nó cũng công khai.
     const isFolderVisibleToUser = (folder: typeof allRawFolders[0]): boolean => {
       if (isAdmin) return true;
-      if (currentUid && folder.ownerId === currentUid) return true;
-      
-      // Kiểm tra chính thư mục này
+
+      // Nếu user có quyền trên thư mục này (owner / co-author / con cháu thừa kế) -> luôn hiển thị
+      if (accessibleFolderIds.has(folder.id)) return true;
+
+      // Nếu là tổ tiên của thư mục mà user có quyền -> hiển thị làm container dẫn đường
+      if (ancestorIds.has(folder.id)) return true;
+
+      // Với người dùng khác: chỉ thấy nếu thư mục này là công khai VÀ toàn bộ tổ tiên công khai
       if (!folder.isPublic) return false;
 
-      // Kiểm tra toàn bộ chuỗi tổ tiên (cha, ông,...)
       let currParentId = folder.parentId;
       const visited = new Set<string>();
       while (currParentId) {
@@ -81,8 +126,10 @@ export async function getFolders(includeCounts = true) {
         const parentFolder = folderMap.get(currParentId);
         if (!parentFolder) break;
 
-        // Nếu bất kỳ thư mục cha nào bị ẩn => toàn bộ thư mục con cháu bị ẩn với người khác
-        if (!parentFolder.isPublic) return false;
+        // Nếu tổ tiên là accessible thì hợp lệ, còn nếu không accessible mà lại ẩn -> chặn nhánh này
+        if (!accessibleFolderIds.has(parentFolder.id) && !parentFolder.isPublic) {
+          return false;
+        }
         currParentId = parentFolder.parentId;
       }
 
@@ -398,11 +445,12 @@ export async function addCoAuthor(folderId: string, email: string) {
 
   try {
     await adminDb.collection("folders").doc(folderId).update({
-      coAuthorEmails: FieldValue.arrayUnion(email.trim()),
+      coAuthorEmails: FieldValue.arrayUnion(email.trim().toLowerCase()),
       updatedAt: new Date().toISOString()
     });
     revalidatePath("/");
     revalidateTag("folders");
+    revalidateTag("vocabularies");
     return { success: true };
   } catch (error) {
     console.error("Lỗi khi thêm đồng tác giả:", error);
@@ -427,11 +475,12 @@ export async function removeCoAuthor(folderId: string, email: string) {
 
   try {
     await adminDb.collection("folders").doc(folderId).update({
-      coAuthorEmails: FieldValue.arrayRemove(email.trim()),
+      coAuthorEmails: FieldValue.arrayRemove(email.trim(), email.trim().toLowerCase()),
       updatedAt: new Date().toISOString()
     });
     revalidatePath("/");
     revalidateTag("folders");
+    revalidateTag("vocabularies");
     return { success: true };
   } catch (error) {
     console.error("Lỗi khi xóa đồng tác giả:", error);
