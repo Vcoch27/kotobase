@@ -135,9 +135,10 @@ export function ListeningPlayer({ driveFileId, label, userId, focusPart }: { dri
   }
 
   return <section ref={frame} aria-label={`Trình nghe đề ${label}`} className="overflow-hidden rounded-xl bg-surface shadow-elevation-sm">
+    <div className={showTranscript && !preview ? "grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]" : ""}>
     {preview ? <iframe src={`${fileUrl}/preview`} title={`Google Drive · đề N3 ${label}`} className="aspect-video w-full bg-bg" allow="autoplay; fullscreen" allowFullScreen /> :
       <video key={`${driveFileId}-${attempt}`} ref={video} playsInline preload="metadata"
-        aria-label={`Đề nghe N3 ${label}`} className={showTranscript ? "sr-only" : "aspect-video max-h-[45vh] w-full bg-black object-contain"}
+        aria-label={`Đề nghe N3 ${label}`} className={showTranscript ? "aspect-video h-full max-h-[45vh] min-h-64 w-full bg-black object-contain" : "aspect-video max-h-[45vh] w-full bg-black object-contain"}
         onClick={() => playing ? video.current?.pause() : void play()}
         onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)}
         onTimeUpdate={() => setPosition(video.current?.currentTime || 0)}
@@ -163,6 +164,7 @@ export function ListeningPlayer({ driveFileId, label, userId, focusPart }: { dri
       <div className="flex h-64 items-center justify-center px-5 text-center text-body-sm text-text-muted" role="status">
         {transcriptError ? "Không tải được script. Hãy tắt rồi bật lại chế độ script." : transcriptLoading ? "Đang tải script đồng bộ…" : "Đang chuẩn bị script…"}
       </div>)}
+    </div>
     <ListeningLoopLibrary userId={userId} fileId={driveFileId} a={a} b={b} duration={duration} canPlay={ready && !preview} onSelect={selectSavedLoop} renderPlayer={(segments, saveSelection, canSave) => <div className="px-3 pt-2 pb-1 space-y-1">
       {!preview && <>
         <div className="relative flex h-7 items-center">
