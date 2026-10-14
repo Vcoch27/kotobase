@@ -51,3 +51,4 @@ android/.gradle_user_home/
 .agents/
 skills-lock.json
 /docs/runtime-architecture/
+*.pdf
