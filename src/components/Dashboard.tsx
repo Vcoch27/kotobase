@@ -24,7 +24,8 @@ import {
   ShieldCheck,
   Users,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  FileText
 } from "lucide-react";
 import { isAdminEmail } from "@/lib/admin-shared";
 import { useWebVolume } from "@/lib/tts-utils";
@@ -1022,6 +1023,15 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 <ChevronRight className="w-3.5 h-3.5 opacity-50" />
               </Link>
 
+              <Link 
+                href="/documents"
+                className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 border border-transparent hover:border-amber-200 dark:hover:border-amber-500/20 transition-all"
+              >
+                <FileText className="w-4 h-4 shrink-0" />
+                <span className="flex-1">Tài liệu & Giáo trình N3</span>
+                <ChevronRight className="w-3.5 h-3.5 opacity-50" />
+              </Link>
+
               {isAdminEmail(currentUser?.email) && (
                 <Link 
                   href="/admin"
@@ -1710,19 +1720,39 @@ export function Dashboard({ currentUser }: DashboardProps) {
               />
             </div>
 
-            {/* Footer Drawer: Link sang Tra cứu Hán tự */}
-            <div className="p-3.5 px-5 bg-slate-50 dark:bg-slate-950/80 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <Link 
-                href="/kanji"
-                onClick={() => setShowMobileFolderDrawer(false)}
-                className="flex items-center gap-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline"
-              >
-                <Library className="w-4 h-4" />
-                <span>Tra cứu Hán tự (Kanji)</span>
-              </Link>
-              <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-                {folders.length} thư mục
-              </span>
+            {/* Footer Drawer: Link sang Tra cứu Hán tự, Ngữ pháp, Tài liệu */}
+            <div className="p-3.5 px-5 bg-slate-50 dark:bg-slate-950/80 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <Link 
+                  href="/kanji"
+                  onClick={() => setShowMobileFolderDrawer(false)}
+                  className="flex items-center gap-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline"
+                >
+                  <Library className="w-4 h-4" />
+                  <span>Tra cứu Hán tự (Kanji)</span>
+                </Link>
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                  {folders.length} thư mục
+                </span>
+              </div>
+              <div className="flex items-center gap-4 pt-1.5 border-t border-slate-200/50 dark:border-slate-800/50">
+                <Link 
+                  href="/grammar"
+                  onClick={() => setShowMobileFolderDrawer(false)}
+                  className="flex items-center gap-1.5 text-xs font-bold text-violet-600 dark:text-violet-400 hover:underline"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>Ngữ Pháp</span>
+                </Link>
+                <Link 
+                  href="/documents"
+                  onClick={() => setShowMobileFolderDrawer(false)}
+                  className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Tài liệu N3</span>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
