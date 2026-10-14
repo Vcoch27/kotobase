@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getGrammarFolders, createGrammarFolder } from '@/app/actions/grammar';
 import { getGrammarsByFolder, deleteGrammar } from '@/app/actions/grammar';
 import { GrammarFolderTree } from './GrammarFolderTree';
@@ -8,7 +8,7 @@ import { GrammarList } from './GrammarList';
 import { GrammarFlashcard } from './GrammarFlashcard';
 import { GrammarFillBlank } from './GrammarFillBlank';
 import { GrammarFormModal } from './GrammarFormModal'; 
-import { LayoutGrid, Layers, Plus, Loader2, ChevronRight, ChevronDown, ArrowLeft, FolderPlus, BookOpen, PenTool, Database } from 'lucide-react';
+import { LayoutGrid, Layers, Plus, Loader2, ChevronRight, ChevronDown, ArrowLeft, FolderPlus, BookOpen, PenTool, Database, Search, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
@@ -41,7 +41,66 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
   const [importJsonText, setImportJsonText] = useState("");
   const [importing, setImporting] = useState(false);
 
+  const [searchQuery, setSearchQuery] = useState("");
   const isGoogleUser = !!currentUser?.uid;
+
+  const sortedGrammars = useMemo(() => {
+    return [...grammars].sort((a, b) => {
+      if (a.number != null && b.number != null) {
+        return a.number - b.number;
+      }
+      if (a.number != null) return -1;
+      if (b.number != null) return 1;
+      return (a.structure || '').localeCompare(b.structure || '');
+    });
+  }, [grammars]);
+
+  const filteredGrammars = useMemo(() => {
+    if (!searchQuery.trim()) return sortedGrammars;
+    const q = searchQuery.trim().toLowerCase();
+    const cleanNum = q.replace(/^(bài|bai|#|\s)+/i, '').trim();
+    const searchNum = parseInt(cleanNum, 10);
+
+    return sortedGrammars.filter(g => {
+      // Match lesson number
+      if (!isNaN(searchNum) && g.number === searchNum) return true;
+      if (g.number && String(g.number).includes(q)) return true;
+
+      // Match structure
+      if (g.structure && g.structure.toLowerCase().includes(q)) return true;
+      // Match title
+      if (g.title && g.title.toLowerCase().includes(q)) return true;
+      // Match meaning
+      if (g.meaning && g.meaning.toLowerCase().includes(q)) return true;
+      // Match formation
+      if (g.formation && g.formation.toLowerCase().includes(q)) return true;
+      // Match nuance
+      if (g.nuance && g.nuance.toLowerCase().includes(q)) return true;
+
+      // Match blocks
+      if (Array.isArray(g.blocks)) {
+        const matchBlock = g.blocks.some((b: any) =>
+          (b.meaning && b.meaning.toLowerCase().includes(q)) ||
+          (b.formation && b.formation.toLowerCase().includes(q)) ||
+          (b.nuance && b.nuance.toLowerCase().includes(q))
+        );
+        if (matchBlock) return true;
+      }
+
+      // Match examples
+      if (Array.isArray(g.examples)) {
+        const matchEx = g.examples.some((ex: any) =>
+          (ex.jpn && ex.jpn.toLowerCase().includes(q)) ||
+          (ex.vie && ex.vie.toLowerCase().includes(q)) ||
+          (ex.japanese && ex.japanese.toLowerCase().includes(q)) ||
+          (ex.vietnamese && ex.vietnamese.toLowerCase().includes(q))
+        );
+        if (matchEx) return true;
+      }
+
+      return false;
+    });
+  }, [sortedGrammars, searchQuery]);
 
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return;
@@ -216,6 +275,35 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
           </div>
         </div>
 
+        {/* SEARCH BAR & COUNTER */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-2.5 sm:px-4 sm:py-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-500 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tìm theo bài (vd: 1, 25), cấu trúc, ý nghĩa, ví dụ..."
+              className="w-full pl-10 pr-9 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-sm transition-all text-slate-800 dark:text-slate-100 placeholder:text-slate-400"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                title="Xóa tìm kiếm"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          
+          <div className="flex items-center justify-between sm:justify-end gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0 px-1">
+            <span className="px-2.5 py-1 rounded-lg bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-500/20">
+              {searchQuery ? `${filteredGrammars.length} / ${sortedGrammars.length} ngữ pháp` : `${sortedGrammars.length} ngữ pháp`}
+            </span>
+          </div>
+        </div>
+
         {loading ? (
           <div className="flex items-center justify-center p-20">
             <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
@@ -223,17 +311,35 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
         ) : (
           <div className="min-h-[500px]">
             {viewMode === 'list' && (
-              <GrammarList 
-                grammars={grammars} 
-                onEdit={(g) => { setEditingGrammar(g); setShowFormModal(true); }}
-                onDelete={handleDeleteGrammar}
-              />
+              filteredGrammars.length === 0 && searchQuery ? (
+                <div className="flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 border-dashed">
+                  <Search className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-4" />
+                  <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Không tìm thấy ngữ pháp phù hợp
+                  </h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                    Không có ngữ pháp nào khớp với &quot;{searchQuery}&quot;
+                  </p>
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="px-4 py-2 bg-violet-100 hover:bg-violet-200 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300 font-bold rounded-xl text-xs transition-colors"
+                  >
+                    Xóa bộ lọc tìm kiếm
+                  </button>
+                </div>
+              ) : (
+                <GrammarList 
+                  grammars={filteredGrammars} 
+                  onEdit={(g) => { setEditingGrammar(g); setShowFormModal(true); }}
+                  onDelete={handleDeleteGrammar}
+                />
+              )
             )}
             {viewMode === 'flashcard' && (
-              <GrammarFlashcard grammars={grammars} />
+              <GrammarFlashcard grammars={filteredGrammars} />
             )}
             {viewMode === 'fillblank' && (
-              <GrammarFillBlank grammars={grammars} />
+              <GrammarFillBlank grammars={filteredGrammars} />
             )}
           </div>
         )}

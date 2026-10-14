@@ -5,6 +5,7 @@ import { ChevronRight, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 
 interface GrammarItem {
   id: string;
+  number?: number;
   structure: string;
   meaning: string;
   example?: string;

@@ -2,9 +2,11 @@
 
 import React, { useState } from 'react';
 import { Volume2, ArrowRight, ArrowLeft } from 'lucide-react';
+import { playAudio } from '@/lib/tts-utils';
 
 interface GrammarItem {
   id: string;
+  number?: number;
   structure: string;
   formation?: string;
   meaning: string;
@@ -76,14 +78,9 @@ export function GrammarFlashcard({ grammars }: GrammarFlashcardProps) {
     }
   };
 
-  const playAudio = (text: string) => {
-    // Basic TTS fallback
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'ja-JP';
-      utterance.rate = 0.9;
-      window.speechSynthesis.speak(utterance);
-    }
+  const handlePlayAudio = (text: string) => {
+    if (!text) return;
+    playAudio(text);
   };
 
   return (
@@ -109,11 +106,18 @@ export function GrammarFlashcard({ grammars }: GrammarFlashcardProps) {
           
           {/* MẶT TRƯỚC */}
           <div className="absolute inset-0 backface-hidden bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col items-center justify-center p-8">
-            {current.jlptLevel && (
-              <span className="absolute top-4 right-4 px-3 py-1 bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 font-bold rounded-lg text-sm">
-                {current.jlptLevel}
-              </span>
-            )}
+            <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
+              {current.number ? (
+                <span className="px-3 py-1 rounded-xl text-xs font-black bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-xs">
+                  Bài {current.number}
+                </span>
+              ) : <span />}
+              {current.jlptLevel && (
+                <span className="px-3 py-1 bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 font-bold rounded-lg text-sm border border-violet-200 dark:border-violet-700/40">
+                  {current.jlptLevel}
+                </span>
+              )}
+            </div>
             <h2 className="text-4xl md:text-5xl font-bold font-japanese text-center mb-4 text-slate-800 dark:text-slate-100">
               {current.structure}
             </h2>
@@ -124,6 +128,21 @@ export function GrammarFlashcard({ grammars }: GrammarFlashcardProps) {
 
           {/* MẶT SAU */}
           <div className="absolute inset-0 backface-hidden rotate-y-180 bg-white dark:bg-slate-900 rounded-3xl border-2 border-violet-200 dark:border-violet-500/30 shadow-xl flex flex-col p-6 md:p-8 overflow-y-auto custom-scrollbar">
+            <div className="flex items-center justify-between mb-2">
+              {current.number && (
+                <span className="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400">
+                  Bài {current.number}
+                </span>
+              )}
+              <button 
+                onClick={(e) => { e.stopPropagation(); handlePlayAudio(current.structure); }}
+                className="p-1.5 rounded-lg bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 hover:bg-violet-200 transition-colors ml-auto"
+                title="Phát âm cấu trúc"
+              >
+                <Volume2 className="w-4 h-4" />
+              </button>
+            </div>
+
             <h3 className="text-2xl font-bold font-japanese text-violet-600 dark:text-violet-400 mb-2 text-center">
               {current.structure}
             </h3>
@@ -152,7 +171,7 @@ export function GrammarFlashcard({ grammars }: GrammarFlashcardProps) {
                   <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
                     <span>Ví dụ</span>
                     <button 
-                      onClick={(e) => { e.stopPropagation(); playAudio(current.example || ''); }}
+                      onClick={(e) => { e.stopPropagation(); handlePlayAudio(current.example || ''); }}
                       className="p-1.5 rounded-lg bg-violet-100 text-violet-600 hover:bg-violet-200 transition-colors"
                     >
                       <Volume2 className="w-4 h-4" />

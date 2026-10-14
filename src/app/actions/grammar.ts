@@ -155,30 +155,112 @@ export async function createBulkGrammars(jsonString: string, targetFolderId?: st
   if (!currentUser) return { success: false, error: "Bạn cần đăng nhập." };
 
   try {
-    const dataList = JSON.parse(jsonString);
-    if (!Array.isArray(dataList)) return { success: false, error: "Dữ liệu JSON phải là mảng." };
+    const parsedJson = JSON.parse(jsonString);
+    let itemsToProcess: any[] = [];
+
+    // Hỗ trợ cả định dạng { source, count, lessons: [...] } từ shinkanzen scraper
+    if (parsedJson && Array.isArray(parsedJson.lessons)) {
+      itemsToProcess = parsedJson.lessons.map((lesson: any) => {
+        const blocks = Array.isArray(lesson.blocks) ? lesson.blocks.map((blockText: string, bIdx: number) => {
+          const viDuSplit = blockText.split(/Ví\s*dụ\s*:\s*/i);
+          const mainPart = viDuSplit[0].trim();
+          const examplesPart = viDuSplit[1] ? viDuSplit[1].trim() : '';
+          const lines = mainPart.split('\n').map((l: string) => l.trim()).filter(Boolean);
+
+          const formationLines: string[] = [];
+          const explanationLines: string[] = [];
+          let isFormation = true;
+
+          for (let line of lines) {
+            if (isFormation && (line.includes('＋') || line.includes('+') || line.startsWith('[') || line.startsWith('［') || line.includes('形'))) {
+              formationLines.push(line);
+            } else {
+              isFormation = false;
+              explanationLines.push(line);
+            }
+          }
+
+          const jpnExpl: string[] = [];
+          const vieExpl: string[] = [];
+          for (let l of explanationLines) {
+            if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ]/.test(l)) {
+              vieExpl.push(l);
+            } else {
+              jpnExpl.push(l);
+            }
+          }
+
+          const examples: Array<{ jpn: string; vie: string }> = [];
+          if (examplesPart) {
+            const rawExs = examplesPart.split(/\n(?=\d+\.\s*)/g);
+            for (let rawEx of rawExs) {
+              const exLines = rawEx.split('\n').map((l: string) => l.trim()).filter(Boolean);
+              if (exLines.length >= 2) {
+                examples.push({ jpn: exLines[0].replace(/^\d+\.\s*/, ''), vie: exLines.slice(1).join(' ') });
+              } else if (exLines.length === 1) {
+                examples.push({ jpn: exLines[0].replace(/^\d+\.\s*/, ''), vie: '' });
+              }
+            }
+          }
+
+          return {
+            blockNumber: bIdx + 1,
+            formation: formationLines.join('\n'),
+            meaning: vieExpl.join('\n'),
+            nuance: jpnExpl.join('\n'),
+            examples,
+          };
+        }) : [];
+
+        const allExamples = blocks.flatMap((b: any) => b.examples);
+        return {
+          number: lesson.number,
+          title: lesson.title,
+          structure: lesson.grammar || lesson.title?.replace(/^\d+\.\s*/, '') || '',
+          formation: blocks.map((b: any) => b.formation).filter(Boolean).join('\n'),
+          meaning: blocks.map((b: any) => b.meaning).filter(Boolean).join('\n---\n') || lesson.title,
+          nuance: blocks.map((b: any) => b.nuance).filter(Boolean).join('\n---\n'),
+          example: allExamples[0]?.jpn || null,
+          exampleMeaning: allExamples[0]?.vie || null,
+          examples: allExamples,
+          blocks,
+          jlptLevel: 'N3',
+          usageContext: 'writing,conversation',
+          sourceUrl: lesson.url || null,
+        };
+      });
+    } else if (Array.isArray(parsedJson)) {
+      itemsToProcess = parsedJson;
+    } else {
+      return { success: false, error: "Dữ liệu JSON không hợp lệ (cần dạng mảng hoặc đối tượng chứa mảng lessons)." };
+    }
 
     const batch = adminDb.batch();
     const grammarsRef = adminDb.collection("grammars");
     const baseTime = Date.now();
     
     let count = 0;
-    for (let i = 0; i < dataList.length; i++) {
-      const item = dataList[i];
+    for (let i = 0; i < itemsToProcess.length; i++) {
+      const item = itemsToProcess[i];
       if (!item.structure || !item.meaning) continue;
 
       const docRef = grammarsRef.doc();
-      const createdAt = new Date(baseTime + i * 100).toISOString();
+      const createdAt = new Date(baseTime + (item.number ? item.number * 1000 : i * 100)).toISOString();
 
       batch.set(docRef, {
+        number: item.number ?? (i + 1),
+        title: item.title || null,
         structure: item.structure.trim(),
         formation: item.formation?.trim() || null,
         meaning: item.meaning.trim(),
         nuance: item.nuance?.trim() || null,
         example: item.example?.trim() || null,
         exampleMeaning: item.exampleMeaning?.trim() || null,
+        examples: item.examples || null,
+        blocks: item.blocks || null,
         jlptLevel: item.jlptLevel || null,
         usageContext: item.usageContext || null,
+        sourceUrl: item.sourceUrl || null,
         folderIds: targetFolderId ? [targetFolderId] : [],
         ownerId: currentUser.uid,
         createdAt: createdAt,
