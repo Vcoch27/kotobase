@@ -3,22 +3,36 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/session";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { getCachedGrammarFoldersRaw, getCachedGrammarCountByFolderId, getCachedGrammarsByFolderId, getCachedAllGrammars } from "@/lib/cache";
 
 export async function getGrammarFolders(): Promise<{ success: boolean; data?: any[]; error?: string }> {
   try {
-    const rawFolders = await getCachedGrammarFoldersRaw();
-    const folders = rawFolders.map(f => ({
-      ...f,
+    const snapshot = await adminDb.collection("grammar_folders").orderBy("name", "asc").get();
+    const folders = snapshot.docs.map(doc => ({
+      id: doc.id,
+      name: doc.data().name,
+      parentId: doc.data().parentId || null,
+      ownerId: doc.data().ownerId || null,
+      ownerEmail: doc.data().ownerEmail || null,
+      ownerName: doc.data().ownerName || null,
+      isPublic: doc.data().isPublic !== false,
       _count: { folderGrammars: 0 }
     }));
+
     await Promise.all(folders.map(async (folder) => {
       try {
-        folder._count.folderGrammars = await getCachedGrammarCountByFolderId(folder.id);
-      } catch { folder._count.folderGrammars = 0; }
+        const countSnap = await adminDb.collection("grammars")
+          .where("folderIds", "array-contains", folder.id)
+          .count()
+          .get();
+        folder._count.folderGrammars = countSnap.data().count;
+      } catch {
+        folder._count.folderGrammars = 0;
+      }
     }));
+
     return { success: true, data: folders };
   } catch (error: any) {
+    console.error("Lỗi getGrammarFolders:", error);
     return { success: false, error: "Lỗi khi lấy danh sách thư mục ngữ pháp." };
   }
 }
@@ -78,14 +92,18 @@ export async function deleteGrammarFolder(id: string) {
 
 export async function getGrammarsByFolder(folderId: string | "all"): Promise<{ success: boolean; data?: any[]; error?: string }> {
   try {
-    let data;
+    let snapshot;
     if (folderId === "all" || !folderId) {
-      data = await getCachedAllGrammars();
+      snapshot = await adminDb.collection("grammars").get();
     } else {
-      data = await getCachedGrammarsByFolderId(folderId);
+      snapshot = await adminDb.collection("grammars")
+        .where("folderIds", "array-contains", folderId)
+        .get();
     }
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     return { success: true, data };
   } catch (error: any) {
+    console.error("Lỗi getGrammarsByFolder:", error);
     return { success: false, error: "Lỗi lấy danh sách ngữ pháp." };
   }
 }
