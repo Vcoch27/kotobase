@@ -12,8 +12,10 @@ import {
   Minimize2,
   ArrowLeft,
   Download,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { CustomPdfViewer } from './CustomPdfViewer';
 
 interface UserInfo {
   uid: string;
@@ -49,6 +51,7 @@ export function DocumentViewer({ currentUser }: DocumentViewerProps) {
   const [activeTab, setActiveTab] = useState<string>('kanji');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [visitedTabs, setVisitedTabs] = useState<string[]>(['kanji']);
+  const [readerEngine, setReaderEngine] = useState<'kotobase' | 'drive'>('kotobase');
 
   const documents: DocumentItem[] = [
     {
@@ -133,7 +136,7 @@ export function DocumentViewer({ currentUser }: DocumentViewerProps) {
               <h1 className="text-sm sm:text-base font-black truncate text-slate-900 dark:text-white flex items-center gap-2">
                 <span>Tài liệu & Giáo trình N3</span>
                 <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50 hidden md:inline-block">
-                  3 Sách Giáo Trình
+                  {readerEngine === 'kotobase' ? 'Trình đọc Sách' : 'Google Drive'}
                 </span>
               </h1>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate hidden sm:block">
@@ -145,6 +148,36 @@ export function DocumentViewer({ currentUser }: DocumentViewerProps) {
 
         {/* Nút hành động trên Header */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Nút chuyển đổi kiểu Reader: KotoBase Reader (1-2 trang/cuộn dọc) vs Google Drive */}
+          <div className="hidden sm:flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => setReaderEngine('kotobase')}
+              className={cn(
+                "px-2.5 py-1 rounded-lg transition-all text-[11px]",
+                readerEngine === 'kotobase'
+                  ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-extrabold"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              )}
+              title="Đọc dạng sách (1 trang / 2 trang / cuộn dọc mượt mà)"
+            >
+              📖 Đọc sách
+            </button>
+            <button
+              type="button"
+              onClick={() => setReaderEngine('drive')}
+              className={cn(
+                "px-2.5 py-1 rounded-lg transition-all text-[11px]",
+                readerEngine === 'drive'
+                  ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs font-extrabold"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              )}
+              title="Khung xem gốc của Google Drive"
+            >
+              🌐 Drive
+            </button>
+          </div>
+
           <a
             href={getDirectDownloadUrl(currentDoc)}
             target="_blank"
@@ -227,29 +260,40 @@ export function DocumentViewer({ currentUser }: DocumentViewerProps) {
         </div>
       )}
 
-      {/* 3. VÙNG KHUNG XEM TÀI LIỆU (KEEP-ALIVE CACHING) */}
+      {/* 3. VÙNG KHUNG XEM TÀI LIỆU */}
       <main className="flex-1 flex flex-col p-2 sm:p-4 min-h-0 bg-slate-100/70 dark:bg-slate-950">
         <div className={cn(
           "flex-1 w-full flex flex-col rounded-2xl overflow-hidden border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-elevation-md relative",
           isFullscreen ? "h-[calc(100vh-56px)]" : "h-[78vh] md:h-[calc(100vh-140px)] min-h-[550px]"
         )}>
-          {/* Duyệt qua các tab đã ghé thăm để giữ nguyên iframe trong DOM (Không tải lại khi chuyển tab) */}
-          {documents.map((doc) => {
-            if (!visitedTabs.includes(doc.key)) return null;
-            const isCurrent = activeTab === doc.key;
-            return (
-              <iframe
-                key={doc.key}
-                src={getEmbedUrl(doc)}
-                className={cn(
-                  "w-full flex-1 h-full border-0",
-                  isCurrent ? "block" : "hidden pointer-events-none"
-                )}
-                title={doc.title}
-                allow="autoplay; fullscreen"
-              />
-            );
-          })}
+          {readerEngine === 'kotobase' ? (
+            /* TRÌNH ĐỌC PDF KOTOBASE (Hỗ trợ 1 trang / 2 trang song song / Cuộn dọc) */
+            <CustomPdfViewer
+              key={currentDoc.key}
+              url={getDirectDownloadUrl(currentDoc)}
+              title={currentDoc.title}
+              fallbackDriveUrl={getEmbedUrl(currentDoc)}
+              onUseDriveViewer={() => setReaderEngine('drive')}
+            />
+          ) : (
+            /* GOOGLE DRIVE VIEWER TRUYỀN THỐNG */
+            documents.map((doc) => {
+              if (!visitedTabs.includes(doc.key)) return null;
+              const isCurrent = activeTab === doc.key;
+              return (
+                <iframe
+                  key={doc.key}
+                  src={getEmbedUrl(doc)}
+                  className={cn(
+                    "w-full flex-1 h-full border-0",
+                    isCurrent ? "block" : "hidden pointer-events-none"
+                  )}
+                  title={doc.title}
+                  allow="autoplay; fullscreen"
+                />
+              );
+            })
+          )}
         </div>
       </main>
     </div>
