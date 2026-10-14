@@ -22,6 +22,7 @@ export function ListeningDashboard({ userId }: { userId: string }) {
   const { resolvedTheme, setTheme } = useTheme();
   const week = listeningWeeks[weekIndex];
   const day = week.days[dayIndex];
+  const focusPart = day.title.includes("dạng 4–5") ? 4 : day.title.includes("dạng 1–3") ? 1 : undefined;
   const activeExam = libraryExam || day.exam;
   const exam = listeningExams.find(item => item.label === activeExam)!;
 
@@ -112,7 +113,7 @@ export function ListeningDashboard({ userId }: { userId: string }) {
             </div>
             <div className="space-y-4 rounded-xl bg-bg p-4">
               <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="font-semibold">Đề N3 {day.exam}</p><p className="mt-1 text-body-sm text-text-muted">{day.mock ? "Làm lần đầu không dùng lặp A–B. Chỉ lặp khi chữa bài." : "Đặt đoạn A–B quanh câu khó để nghe kỹ."}</p></div><button className={`${button} bg-accent-muted`} onClick={() => setPlaying(playing ? null : day.exam)}>{playing ? "Đóng trình nghe" : "Mở bài nghe"}<Headphones size={16} /></button></div>
-              {playing && <ListeningPlayer key={exam.driveFileId} userId={userId} driveFileId={exam.driveFileId} label={exam.label} />}
+              {playing && <ListeningPlayer key={exam.driveFileId} userId={userId} driveFileId={exam.driveFileId} label={exam.label} focusPart={focusPart} />}
             </div>
             <div className="flex justify-between gap-4">
               <button disabled={weekIndex === 0 && dayIndex === 0} className={`${button} bg-surface-raised disabled:opacity-40`} onClick={() => dayIndex > 0 ? selectDay(weekIndex, dayIndex - 1) : selectDay(weekIndex - 1, 6)}><ArrowLeft size={16} />Buổi trước</button>

@@ -1,0 +1,990 @@
+[
+  {
+    "index": 1,
+    "label": "07/2011",
+    "driveFileId": "11DPrrxm1-vUFs9Y6lIz3fPmiEbrEYqCZ",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 3.76,
+        "end": 459.15
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 459.15,
+        "end": 1035.6
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1035.6,
+        "end": 1329.89
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1329.89,
+        "end": 1478.83
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1478.83,
+        "end": 1722.23
+      }
+    ],
+    "cueCount": 288
+  },
+  {
+    "index": 2,
+    "label": "12/2011",
+    "driveFileId": "17apWkQBg9_aY_8j-7tJZQhiuqL0T41Bv",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 3.86,
+        "end": 408.74
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 408.74,
+        "end": 993.59
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 993.59,
+        "end": 1283.51
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1283.51,
+        "end": 1426.97
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1426.97,
+        "end": 1668.07
+      }
+    ],
+    "cueCount": 250
+  },
+  {
+    "index": 3,
+    "label": "12/2012",
+    "driveFileId": "19ez1mhWgrWIwbQVWxMo48wEeNVDhZcIG",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 3.63,
+        "end": 464.36
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 464.36,
+        "end": 1069.7
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1069.7,
+        "end": 1378.85
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1378.85,
+        "end": 1533.53
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1533.53,
+        "end": 1813.21
+      }
+    ],
+    "cueCount": 294
+  },
+  {
+    "index": 4,
+    "label": "07/2013",
+    "driveFileId": "1HNYr9ZzQyvcQzXnT2YsNemODzGBh_MOZ",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 3.79,
+        "end": 495.25
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 495.25,
+        "end": 1068.38
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1068.38,
+        "end": 1354.44
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1354.44,
+        "end": 1507.25
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1507.25,
+        "end": 1797.73
+      }
+    ],
+    "cueCount": 254
+  },
+  {
+    "index": 5,
+    "label": "12/2013",
+    "driveFileId": "18hYkdaB9QHIS_TlUo0jA9w1HeKt-jh1D",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 3.6,
+        "end": 545.28
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 545.28,
+        "end": 1139.32
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1139.32,
+        "end": 1463.03
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1463.03,
+        "end": 1619.92
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1619.92,
+        "end": 1893.31
+      }
+    ],
+    "cueCount": 275
+  },
+  {
+    "index": 6,
+    "label": "07/2014",
+    "driveFileId": "1kQJ2lTbIvKL7JtZA_xmw1aoM2yiEFoNZ",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 0.0,
+        "end": 522.9
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 522.9,
+        "end": 1153.91
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1153.91,
+        "end": 1458.92
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1458.92,
+        "end": 1607.7
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1607.7,
+        "end": 1905.37
+      }
+    ],
+    "cueCount": 287
+  },
+  {
+    "index": 7,
+    "label": "12/2014",
+    "driveFileId": "1RRe34i5rDLGyR9NcuUbT_lTfbc4AePMQ",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 3.76,
+        "end": 486.33
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 486.33,
+        "end": 1093.58
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1093.58,
+        "end": 1399.07
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1399.07,
+        "end": 1545.93
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1545.93,
+        "end": 1831.59
+      }
+    ],
+    "cueCount": 294
+  },
+  {
+    "index": 8,
+    "label": "07/2015",
+    "driveFileId": "1tYPDKayD9dLiX4PHWWd36Fnc-syhFV4R",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 84.8,
+        "end": 609.08
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 609.08,
+        "end": 1246.92
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1246.92,
+        "end": 1610.79
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1610.79,
+        "end": 1776.22
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1776.22,
+        "end": 2082.07
+      }
+    ],
+    "cueCount": 320
+  },
+  {
+    "index": 9,
+    "label": "12/2015",
+    "driveFileId": "1-SgtSvJYvhHjZzfiR1hVcQkctrMxrtK4",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 3.63,
+        "end": 514.7
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 514.7,
+        "end": 1186.49
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1186.49,
+        "end": 1517.16
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1517.16,
+        "end": 1667.68
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1667.68,
+        "end": 1974.61
+      }
+    ],
+    "cueCount": 299
+  },
+  {
+    "index": 10,
+    "label": "07/2016",
+    "driveFileId": "1hAXZD1zzFD6vkSkvtTwKVLFTVN4CEyjR",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 3.82,
+        "end": 550.04
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 550.04,
+        "end": 1198.0
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1198.0,
+        "end": 1539.85
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1539.85,
+        "end": 1709.19
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1709.19,
+        "end": 2036.83
+      }
+    ],
+    "cueCount": 277
+  },
+  {
+    "index": 11,
+    "label": "12/2016",
+    "driveFileId": "1uDfdOhsDSrYQ8b9pE0t0Lhek1HJWydP7",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 4.11,
+        "end": 503.33
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 503.33,
+        "end": 1186.92
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1186.92,
+        "end": 1499.93
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1499.93,
+        "end": 1705.67
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1705.67,
+        "end": 2002.79
+      }
+    ],
+    "cueCount": 281
+  },
+  {
+    "index": 12,
+    "label": "12/2017",
+    "driveFileId": "1nxSInu0q_MboWXXuQig6mWImnsq65V9l",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 89.48,
+        "end": 603.75
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 603.75,
+        "end": 1280.4
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1280.4,
+        "end": 1602.51
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1602.51,
+        "end": 1782.98
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1782.98,
+        "end": 2093.99
+      }
+    ],
+    "cueCount": 300
+  },
+  {
+    "index": 13,
+    "label": "07/2018",
+    "driveFileId": "1IdqaXHngNj5YBAWKk8NbLDogzmZIADgw",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 89.24,
+        "end": 582.5
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 582.5,
+        "end": 1220.39
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1220.39,
+        "end": 1562.78
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1562.78,
+        "end": 1719.7
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1719.7,
+        "end": 2035.45
+      }
+    ],
+    "cueCount": 268
+  },
+  {
+    "index": 14,
+    "label": "12/2018",
+    "driveFileId": "1yXntsosXxD686IXHOwHXfo2s-8yCaY8p",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 24.68,
+        "end": 577.03
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 577.03,
+        "end": 1267.97
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1267.97,
+        "end": 1597.82
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1597.82,
+        "end": 1769.85
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1769.85,
+        "end": 2090.71
+      }
+    ],
+    "cueCount": 309
+  },
+  {
+    "index": 15,
+    "label": "07/2019",
+    "driveFileId": "1F3lrrj6uE2W6RjP5kkC8mdqlK6aHeV7a",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 26.13,
+        "end": 492.4
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 492.4,
+        "end": 1146.03
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1146.03,
+        "end": 1471.91
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1471.91,
+        "end": 1628.38
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1628.38,
+        "end": 1974.33
+      }
+    ],
+    "cueCount": 263
+  },
+  {
+    "index": 16,
+    "label": "12/2019",
+    "driveFileId": "1JHSnVZiiTLOgF3sYWYEsAA4NpZ9MkBX3",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 8.89,
+        "end": 488.72
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 488.72,
+        "end": 1153.55
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1153.55,
+        "end": 1470.8
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1470.8,
+        "end": 1629.06
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1629.06,
+        "end": 1962.09
+      }
+    ],
+    "cueCount": 223
+  },
+  {
+    "index": 17,
+    "label": "12/2020",
+    "driveFileId": "1iworU0NP0pKaXt5L6URX0f4LUwpwdKRY",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 84.86,
+        "end": 619.22
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 619.22,
+        "end": 1282.2
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1282.2,
+        "end": 1621.85
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1621.85,
+        "end": 1813.25
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1813.25,
+        "end": 2138.87
+      }
+    ],
+    "cueCount": 255
+  },
+  {
+    "index": 18,
+    "label": "07/2021",
+    "driveFileId": "1Te7_dvq0oELBedcxTg6xoH1madF5L5QO",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 77.54,
+        "end": 576.75
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 576.75,
+        "end": 1240.48
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1240.48,
+        "end": 1551.19
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1551.19,
+        "end": 1741.12
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1741.12,
+        "end": 2080.47
+      }
+    ],
+    "cueCount": 242
+  },
+  {
+    "index": 19,
+    "label": "12/2021",
+    "driveFileId": "1A5dsdgv2kbc7Jka0y6SdBmI55WqSKYA9",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 75.32,
+        "end": 686.22
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 686.22,
+        "end": 1476.28
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1476.28,
+        "end": 1888.74
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1888.74,
+        "end": 2097.35
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 2097.35,
+        "end": 2463.43
+      }
+    ],
+    "cueCount": 325
+  },
+  {
+    "index": 20,
+    "label": "07/2022",
+    "driveFileId": "11dSx-SLZRjlUQ7uL1PvihDC3J-Q6AaL2",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 76.96,
+        "end": 625.84
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 625.84,
+        "end": 1319.85
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1319.85,
+        "end": 1668.04
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1668.04,
+        "end": 1852.01
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1852.01,
+        "end": 2215.85
+      }
+    ],
+    "cueCount": 245
+  },
+  {
+    "index": 21,
+    "label": "12/2022",
+    "driveFileId": "1XC4nSsH49qJe4QKhasr5gytUJf8s5SkR",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 77.49,
+        "end": 622.22
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 622.22,
+        "end": 1277.43
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1277.43,
+        "end": 1604.12
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1604.12,
+        "end": 1773.31
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1773.31,
+        "end": 2088.43
+      }
+    ],
+    "cueCount": 280
+  },
+  {
+    "index": 22,
+    "label": "07/2023",
+    "driveFileId": "10I8qkQMrOyMq3_kuvc9APOmHK0q-7Ylp",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 43.78,
+        "end": 549.18
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 549.18,
+        "end": 1233.85
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1233.85,
+        "end": 1557.2
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1557.2,
+        "end": 1716.42
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1716.42,
+        "end": 2032.73
+      }
+    ],
+    "cueCount": 286
+  },
+  {
+    "index": 23,
+    "label": "12/2023",
+    "driveFileId": "1DROHLKBkyN9gYrjS8ub5YcqBqZJMQQhq",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 72.32,
+        "end": 648.89
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 648.89,
+        "end": 1447.02
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1447.02,
+        "end": 1858.07
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1858.07,
+        "end": 2082.24
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 2082.24,
+        "end": 2451.25
+      }
+    ],
+    "cueCount": 354
+  },
+  {
+    "index": 24,
+    "label": "07/2024",
+    "driveFileId": "1YT73G972HDTqKIjx6uRhb_gKYNhEx6OI",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 75.01,
+        "end": 568.58
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 568.58,
+        "end": 1251.08
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1251.08,
+        "end": 1634.45
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1634.45,
+        "end": 1783.72
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1783.72,
+        "end": 2116.51
+      }
+    ],
+    "cueCount": 264
+  },
+  {
+    "index": 25,
+    "label": "12/2024",
+    "driveFileId": "1IE5rZZ3vDzZUTGFXIh15zcdVI2xi2CEM",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 70.69,
+        "end": 553.71
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 553.71,
+        "end": 1300.42
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1300.42,
+        "end": 1627.74
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1627.74,
+        "end": 1833.49
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1833.49,
+        "end": 2134.23
+      }
+    ],
+    "cueCount": 306
+  },
+  {
+    "index": 26,
+    "label": "07/2025",
+    "driveFileId": "1vjC_y2XUxrksFuDLsvcjavo8YgWlXEz5",
+    "sections": [
+      {
+        "part": 1,
+        "label": "課題理解",
+        "start": 69.35,
+        "end": 634.38
+      },
+      {
+        "part": 2,
+        "label": "ポイント理解",
+        "start": 634.38,
+        "end": 1252.32
+      },
+      {
+        "part": 3,
+        "label": "概要理解",
+        "start": 1252.32,
+        "end": 1564.15
+      },
+      {
+        "part": 4,
+        "label": "発話表現",
+        "start": 1564.15,
+        "end": 1712.43
+      },
+      {
+        "part": 5,
+        "label": "即時応答",
+        "start": 1712.43,
+        "end": 2066.37
+      }
+    ],
+    "cueCount": 290
+  }
+]

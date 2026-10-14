@@ -1,17 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Maximize, Scissors, X, Pause, Play, Repeat2, Volume2, VolumeX } from "lucide-react";
+import { FileText, Maximize, Scissors, X, Pause, Play, Repeat2, Volume2, VolumeX } from "lucide-react";
 import { ListeningSelect } from "./ListeningSelect";
 import { ListeningLoopLibrary } from "./ListeningLoopLibrary";
 import type { ListeningLoop } from "@/lib/listening-loops";
+import { ListeningTranscript, type ListeningTranscriptData } from "./ListeningTranscript";
 
 function timeLabel(time: number) {
   return `${Math.floor(time / 60)}:${String(Math.floor(time % 60)).padStart(2, "0")}`;
 }
 
 // Parent keys by Drive file ID so changing exams disposes playback and loop state.
-export function ListeningPlayer({ driveFileId, label, userId }: { driveFileId: string; label: string; userId: string }) {
+export function ListeningPlayer({ driveFileId, label, userId, focusPart }: { driveFileId: string; label: string; userId: string; focusPart?: number }) {
   const video = useRef<HTMLVideoElement>(null);
   const frame = useRef<HTMLElement>(null);
   const resume = useRef<{ time: number; play: boolean } | null>(null);
@@ -30,6 +31,10 @@ export function ListeningPlayer({ driveFileId, label, userId }: { driveFileId: s
   const [message, setMessage] = useState("");
   const [speed, setSpeed] = useState("1");
   const [duration, setDuration] = useState(0);
+  const [showTranscript, setShowTranscript] = useState(false);
+  const [transcript, setTranscript] = useState<ListeningTranscriptData | null>(null);
+  const [transcriptLoading, setTranscriptLoading] = useState(false);
+  const [transcriptError, setTranscriptError] = useState(false);
   const fileUrl = `https://drive.google.com/file/d/${driveFileId}`;
   const source = `/api/listening/${encodeURIComponent(driveFileId)}`;
   const control = "rounded-lg bg-surface-raised px-3 py-2 min-h-10 text-body-sm font-semibold hover:bg-accent-muted focus-visible:outline-none focus-visible:ring-2 disabled:opacity-50 disabled:cursor-not-allowed";
@@ -46,6 +51,31 @@ export function ListeningPlayer({ driveFileId, label, userId }: { driveFileId: s
     const timer = window.setTimeout(() => setMessage("Drive đang phản hồi chậm. Bạn có thể tải lại hoặc chờ thêm."), 25000);
     return () => clearTimeout(timer);
   }, [ready, preview, error, attempt]);
+
+  useEffect(() => {
+    if ((!showTranscript && !focusPart) || transcript) return;
+    const controller = new AbortController();
+    setTranscriptLoading(true);
+    setTranscriptError(false);
+    fetch(`/listening-transcripts/${encodeURIComponent(driveFileId)}.json`, { signal: controller.signal })
+      .then(async response => {
+        if (!response.ok) throw new Error("Transcript unavailable");
+        return response.json() as Promise<ListeningTranscriptData>;
+      })
+      .then(data => {
+        if (data.driveFileId !== driveFileId || !data.cues.length || data.sections.length !== 5) throw new Error("Invalid transcript");
+        setTranscript(data);
+        const focused = data.sections.find(section => section.part === focusPart);
+        const current = video.current;
+        if (focused && current && (current.currentTime < focused.start || current.currentTime >= focused.end)) {
+          current.currentTime = focused.start;
+          setPosition(focused.start);
+        }
+      })
+      .catch(error => { if (error.name !== "AbortError") setTranscriptError(true); })
+      .finally(() => { if (!controller.signal.aborted) setTranscriptLoading(false); });
+    return () => controller.abort();
+  }, [driveFileId, focusPart, showTranscript, transcript]);
 
   useEffect(() => {
     if (!loop || a === null || b === null || !ready || preview) return;
@@ -107,7 +137,7 @@ export function ListeningPlayer({ driveFileId, label, userId }: { driveFileId: s
   return <section ref={frame} aria-label={`Trình nghe đề ${label}`} className="overflow-hidden rounded-xl bg-surface shadow-elevation-sm">
     {preview ? <iframe src={`${fileUrl}/preview`} title={`Google Drive · đề N3 ${label}`} className="aspect-video w-full bg-bg" allow="autoplay; fullscreen" allowFullScreen /> :
       <video key={`${driveFileId}-${attempt}`} ref={video} playsInline preload="metadata"
-        aria-label={`Đề nghe N3 ${label}`} className="aspect-video max-h-[45vh] w-full bg-black object-contain"
+        aria-label={`Đề nghe N3 ${label}`} className={showTranscript ? "sr-only" : "aspect-video max-h-[45vh] w-full bg-black object-contain"}
         onClick={() => playing ? video.current?.pause() : void play()}
         onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)}
         onTimeUpdate={() => setPosition(video.current?.currentTime || 0)}
@@ -120,11 +150,19 @@ export function ListeningPlayer({ driveFileId, label, userId }: { driveFileId: s
           if (current) {
             current.playbackRate = Number(speed); current.muted = muted;
             if (resume.current) { current.currentTime = Math.min(resume.current.time, current.duration); const shouldPlay = resume.current.play; resume.current = null; if (shouldPlay) void play(); }
+            else if (focusPart && transcript) {
+              const focused = transcript.sections.find(section => section.part === focusPart);
+              if (focused) { current.currentTime = focused.start; setPosition(focused.start); }
+            }
           }
         }}
         onError={() => { setError(true); setReady(false); setBuffering(false); }}
         onEnded={() => { if (loop && a !== null && video.current) { video.current.currentTime = a; void play(); } }}
       />}
+    {!preview && showTranscript && (transcript ? <ListeningTranscript data={transcript} position={position} focusPart={focusPart} onSeek={seek} /> :
+      <div className="flex h-64 items-center justify-center px-5 text-center text-body-sm text-text-muted" role="status">
+        {transcriptError ? "Không tải được script. Hãy tắt rồi bật lại chế độ script." : transcriptLoading ? "Đang tải script đồng bộ…" : "Đang chuẩn bị script…"}
+      </div>)}
     <ListeningLoopLibrary userId={userId} fileId={driveFileId} a={a} b={b} duration={duration} canPlay={ready && !preview} onSelect={selectSavedLoop} renderPlayer={(segments, saveSelection, canSave) => <div className="px-3 pt-2 pb-1 space-y-1">
       {!preview && <>
         <div className="relative flex h-7 items-center">
@@ -139,6 +177,7 @@ export function ListeningPlayer({ driveFileId, label, userId }: { driveFileId: s
           <button className={`${control} text-primary`} disabled={!ready} aria-label={playing ? "Tạm dừng" : "Phát"} onClick={() => playing ? video.current?.pause() : void play()}>{playing ? <Pause size={19} /> : <Play size={19} />}</button>
           <span className="mr-auto text-caption tabular-nums text-text-muted">{timeLabel(position)} / {timeLabel(duration)}</span>
           <button className={`${control} ${loop ? "text-primary bg-accent-muted" : ""}`} aria-label={loop ? "Tắt lặp A–B" : "Bật lặp A–B"} title="Lặp A–B" disabled={!ready || b === null} onClick={toggleLoop} aria-pressed={loop}><Repeat2 size={18} /></button>
+          <button className={`${control} flex items-center gap-1 ${showTranscript ? "bg-accent-muted text-primary" : ""}`} aria-label={showTranscript ? "Ẩn script đồng bộ" : "Hiện script đồng bộ"} aria-pressed={showTranscript} onClick={() => setShowTranscript(value => !value)}><FileText size={17} /><span>Script</span></button>
           <ListeningSelect label="Tốc độ phát" className="w-20" value={speed} disabled={!ready} options={["0.75", "1", "1.25", "1.5"].map(value => ({ value, label: `${value}×` }))} onChange={value => { setSpeed(value); if (video.current) video.current.playbackRate = Number(value); }} />
           <button className={`${control} ${cutting ? "text-primary bg-accent-muted" : ""}`} disabled={!ready} title="Tạo đoạn lặp" aria-label="Tạo đoạn lặp" aria-pressed={cutting} onClick={() => { setCutting(!cutting); if (!cutting) markA(); }}><Scissors size={18} /></button>
         </div>
