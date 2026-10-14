@@ -103,7 +103,7 @@ export function DocumentViewer({ currentUser }: DocumentViewerProps) {
   };
 
   const getDirectDownloadUrl = (doc: DocumentItem): string => {
-    return `https://drive.usercontent.google.com/download?id=${doc.fileId}&export=download&confirm=t`;
+    return `/api/pdf/${doc.fileId}`;
   };
 
   const handleTabChange = (key: string) => {
@@ -270,6 +270,7 @@ export function DocumentViewer({ currentUser }: DocumentViewerProps) {
             /* TRÌNH ĐỌC PDF KOTOBASE (Hỗ trợ 1 trang / 2 trang song song / Cuộn dọc) */
             <CustomPdfViewer
               key={currentDoc.key}
+              fileId={currentDoc.fileId}
               url={getDirectDownloadUrl(currentDoc)}
               title={currentDoc.title}
               fallbackDriveUrl={getEmbedUrl(currentDoc)}

@@ -15,11 +15,14 @@ import {
   Loader2,
   AlertCircle,
   ExternalLink,
+  Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { getPdfFromCache, savePdfToCache } from '@/lib/pdf-cache';
 
 interface CustomPdfViewerProps {
   url: string;
+  fileId?: string;
   title: string;
   fallbackDriveUrl?: string;
   onUseDriveViewer?: () => void;
@@ -29,6 +32,7 @@ type ViewMode = 'single' | 'double' | 'continuous';
 
 export function CustomPdfViewer({
   url,
+  fileId,
   title,
   fallbackDriveUrl,
   onUseDriveViewer,
@@ -39,6 +43,10 @@ export function CustomPdfViewer({
   const [viewMode, setViewMode] = useState<ViewMode>('single');
   const [scale, setScale] = useState<number>(1.0);
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadingProgress, setLoadingProgress] = useState<number>(0);
+  const [loadingMessage, setLoadingMessage] = useState<string>('Đang mở sách...');
+  const [isCached, setIsCached] = useState<boolean>(false);
+  const [retryCount, setRetryCount] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [inputPage, setInputPage] = useState<string>('1');
 
@@ -58,10 +66,11 @@ export function CustomPdfViewer({
     }
   }, []);
 
-  // 1. Tải tài liệu PDF qua PDF.js
+  // 1. Tải tài liệu PDF qua PDF.js kèm bộ nhớ đệm IndexedDB
   useEffect(() => {
     let isCancelled = false;
     setLoading(true);
+    setLoadingProgress(0);
     setError(null);
 
     async function loadPdf() {
@@ -71,10 +80,108 @@ export function CustomPdfViewer({
           pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '3.11.174'}/pdf.worker.min.js`;
         }
 
+        let pdfData: ArrayBuffer | null = null;
+
+        // BƯỚC 1: Kiểm tra bộ nhớ đệm IndexedDB trên thiết bị
+        if (fileId) {
+          setLoadingMessage('Kiểm tra bộ nhớ đệm máy...');
+          try {
+            pdfData = await getPdfFromCache(fileId);
+            if (pdfData && !isCancelled) {
+              setIsCached(true);
+              setLoadingMessage('Mở từ bộ nhớ máy (siêu nhanh)...');
+            }
+          } catch (e) {
+            console.warn('Lỗi kiểm tra cache:', e);
+          }
+        }
+
+        // BƯỚC 2: Nếu chưa có trong cache, tải file từ máy chủ KotoBase API / Google Drive
+        if (!pdfData) {
+          setLoadingMessage('Đang kết nối đến máy chủ...');
+
+          // Thử API proxy nội bộ trước (tránh 503 & CORS), sau đó fallback sang direct download
+          const targetUrls = [
+            fileId ? `/api/pdf/${fileId}` : url,
+            url,
+          ];
+
+          let downloadSuccess = false;
+          let lastFetchError: any = null;
+
+          for (const targetUrl of targetUrls) {
+            if (downloadSuccess || isCancelled) break;
+            try {
+              const res = await fetch(targetUrl);
+              if (!res.ok) {
+                throw new Error(`Máy chủ phản hồi mã ${res.status}`);
+              }
+
+              const contentLength = Number(res.headers.get('content-length')) || 0;
+              const reader = res.body?.getReader();
+              if (!reader) throw new Error('Không thể tạo luồng đọc dữ liệu');
+
+              let receivedBytes = 0;
+              const chunks: Uint8Array[] = [];
+
+              while (true) {
+                if (isCancelled) {
+                  await reader.cancel();
+                  return;
+                }
+                const { done, value } = await reader.read();
+                if (done) break;
+                if (value) {
+                  chunks.push(value);
+                  receivedBytes += value.length;
+                  if (contentLength > 0) {
+                    const percent = Math.min(100, Math.round((receivedBytes / contentLength) * 100));
+                    setLoadingProgress(percent);
+                    const mbCurrent = (receivedBytes / (1024 * 1024)).toFixed(1);
+                    const mbTotal = (contentLength / (1024 * 1024)).toFixed(1);
+                    setLoadingMessage(`Đang tải sách: ${percent}% (${mbCurrent} MB / ${mbTotal} MB)`);
+                  } else {
+                    const mbCurrent = (receivedBytes / (1024 * 1024)).toFixed(1);
+                    setLoadingMessage(`Đang tải sách: ${mbCurrent} MB`);
+                  }
+                }
+              }
+
+              // Hợp nhất các khối nhị phân thành 1 ArrayBuffer
+              const merged = new Uint8Array(receivedBytes);
+              let offset = 0;
+              for (const chunk of chunks) {
+                merged.set(chunk, offset);
+                offset += chunk.length;
+              }
+
+              pdfData = merged.buffer;
+              downloadSuccess = true;
+
+              // Lưu vào IndexedDB để lần sau mở tức thì (<0.3s), không tốn mạng
+              if (fileId && pdfData) {
+                savePdfToCache(fileId, pdfData)
+                  .then((saved) => {
+                    if (saved && !isCancelled) setIsCached(true);
+                  })
+                  .catch((e) => console.warn('Lỗi lưu cache:', e));
+              }
+            } catch (err: any) {
+              console.warn(`Tải từ ${targetUrl} không thành công:`, err);
+              lastFetchError = err;
+            }
+          }
+
+          if (!downloadSuccess || !pdfData) {
+            throw lastFetchError || new Error('Không thể tải file PDF từ máy chủ');
+          }
+        }
+
+        if (isCancelled) return;
+
+        setLoadingMessage('Đang xử lý trang sách...');
         const loadingTask = pdfjsLib.getDocument({
-          url,
-          rangeChunkSize: 65536,
-          disableAutoFetch: true,
+          data: pdfData,
           cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
           cMapPacked: true,
         });
@@ -101,7 +208,7 @@ export function CustomPdfViewer({
     return () => {
       isCancelled = true;
     };
-  }, [url]);
+  }, [url, fileId, retryCount]);
 
   // 2. Render 1 trang lên canvas
   const renderPageToCanvas = useCallback(
@@ -345,6 +452,16 @@ export function CustomPdfViewer({
             </button>
           </div>
 
+          {isCached && (
+            <span
+              className="hidden md:inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-xl border border-emerald-500/20"
+              title="Tài liệu đã được lưu an toàn trong bộ nhớ đệm trình duyệt của bạn. Các lần mở sau sẽ mở ngay lập tức không tốn mạng!"
+            >
+              <Zap className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Đã lưu đệm</span>
+            </span>
+          )}
+
           {onUseDriveViewer && (
             <button
               type="button"
@@ -362,13 +479,34 @@ export function CustomPdfViewer({
       {/* VÙNG HIỂN THỊ TRANG SÁCH */}
       <div className="flex-1 overflow-auto p-4 sm:p-6 flex flex-col items-center justify-start bg-slate-950 relative scrollbar-thin scrollbar-thumb-slate-800">
         {loading && (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 gap-3 my-auto">
+          <div className="flex-1 flex flex-col items-center justify-center p-8 gap-4 my-auto max-w-sm text-center">
             <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
-            <p className="text-xs sm:text-sm font-bold text-slate-300">
-              Đang mở {title}...
-            </p>
+            <div className="space-y-1 w-full">
+              <p className="text-sm font-bold text-slate-200">
+                {title}
+              </p>
+              <p className="text-xs text-indigo-400 font-semibold">
+                {loadingMessage}
+              </p>
+            </div>
+
+            {loadingProgress > 0 && (
+              <div className="w-full space-y-1.5">
+                <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden border border-slate-700/60">
+                  <div
+                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-200 rounded-full"
+                    style={{ width: `${loadingProgress}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-[10px] text-slate-500 font-bold px-0.5">
+                  <span>Tiến trình tải</span>
+                  <span>{loadingProgress}%</span>
+                </div>
+              </div>
+            )}
+
             <p className="text-[11px] text-slate-500">
-              Đang tải trang sách từ Google Drive
+              File sẽ được lưu vào bộ nhớ đệm máy của bạn để các lần mở tiếp theo luôn mở tức thì.
             </p>
           </div>
         )}
@@ -378,15 +516,29 @@ export function CustomPdfViewer({
             <AlertCircle className="w-10 h-10 text-rose-500" />
             <h4 className="text-sm font-bold text-white">Không thể tải trực tiếp file PDF</h4>
             <p className="text-xs text-slate-400">{error}</p>
-            {onUseDriveViewer && (
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
               <button
                 type="button"
-                onClick={onUseDriveViewer}
-                className="mt-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition-all"
+                onClick={() => {
+                  setError(null);
+                  setRetryCount((c) => c + 1);
+                }}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 transition-all flex items-center gap-1.5"
               >
-                Chuyển sang khung Google Drive
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Thử tải lại</span>
               </button>
-            )}
+              {onUseDriveViewer && (
+                <button
+                  type="button"
+                  onClick={onUseDriveViewer}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Chuyển sang khung Google Drive</span>
+                </button>
+              )}
+            </div>
           </div>
         )}
 
