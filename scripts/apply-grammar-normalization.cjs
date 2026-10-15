@@ -24,8 +24,10 @@ for (const item of preview) {
   }
 }
 
-if (!process.argv.includes('--apply')) {
-  console.log(`Preview validated: ${preview.length} Firestore grammars. Run with --apply to write.`);
+const apply = process.argv.includes('--apply');
+const verify = process.argv.includes('--verify');
+if (!apply && !verify) {
+  console.log(`Preview validated: ${preview.length} Firestore grammars. Run with --apply to write or --verify to read back.`);
   process.exit(0);
 }
 
@@ -38,6 +40,20 @@ admin.initializeApp({ credential: admin.credential.cert({
 
 async function main() {
   const db = admin.firestore();
+  if (verify) {
+    const docs = await db.collection('grammars').get();
+    if (docs.size !== preview.length) throw new Error(`Expected ${preview.length} documents, found ${docs.size}`);
+    const current = new Map(docs.docs.map(doc => [doc.id, doc.data()]));
+    for (const target of preview) {
+      const stored = current.get(target.id);
+      if (!stored || stored.contentFormatVersion !== 2) throw new Error(`Missing normalized document ${target.id}`);
+      for (const [key, value] of Object.entries(target)) {
+        if (key !== 'id' && !isDeepStrictEqual(stored[key], value)) throw new Error(`Read-back mismatch ${target.id}.${key}`);
+      }
+    }
+    console.log(`Verified ${preview.length} Firestore grammar documents after migration.`);
+    return;
+  }
   const refs = preview.map(item => db.collection('grammars').doc(item.id));
   const result = await db.runTransaction(async transaction => {
     const docs = await transaction.getAll(...refs);
