@@ -103,9 +103,11 @@ export async function getGrammarFolders(): Promise<{ success: boolean; data?: an
 
     // 3. Tính số lượng bài trong mỗi thư mục trong RAM (0 truy vấn Firestore!)
     firestoreFolders.forEach(folder => {
-      folder._count.folderGrammars = allGrammars.filter(g =>
-        Array.isArray(g.folderIds) && g.folderIds.includes(folder.id)
-      ).length;
+      folder._count.folderGrammars = allGrammars.filter(g => {
+        if (Array.isArray(g.folderIds) && g.folderIds.includes(folder.id)) return true;
+        if ((folder.id === 'tndg-n3' || folder.name?.includes('Tiếng Nhật Đơn Giản')) && g.id.startsWith('tndg-')) return true;
+        return false;
+      }).length;
     });
 
     setServerMemoryCache(firestoreFolders, allGrammars);
@@ -179,9 +181,11 @@ export async function getGrammarsByFolder(folderId: string | "all"): Promise<{ s
     if (folderId === "all" || !folderId) {
       return { success: true, data: allGrammars };
     }
-    const filtered = allGrammars.filter(g =>
-      Array.isArray(g.folderIds) && g.folderIds.includes(folderId)
-    );
+    const filtered = allGrammars.filter(g => {
+      if (Array.isArray(g.folderIds) && g.folderIds.includes(folderId)) return true;
+      if (folderId === 'tndg-n3' && g.id.startsWith('tndg-')) return true;
+      return false;
+    });
     return { success: true, data: filtered };
   } catch (error: any) {
     console.error("Lỗi getGrammarsByFolder:", error);

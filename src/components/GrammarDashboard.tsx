@@ -31,11 +31,12 @@ interface GrammarDashboardProps {
 }
 
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 phút (tối ưu hóa 100% lượt đọc Firestore)
+const CACHE_KEY_PREFIX = 'kotobase_grammar_v5_';
 
 function getLocalCache(key: string) {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = localStorage.getItem(key);
+    const raw = localStorage.getItem(CACHE_KEY_PREFIX + key);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (Date.now() - parsed.timestamp > CACHE_TTL_MS) return null;
@@ -48,7 +49,7 @@ function getLocalCache(key: string) {
 function setLocalCache(key: string, data: any) {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
+    localStorage.setItem(CACHE_KEY_PREFIX + key, JSON.stringify({ data, timestamp: Date.now() }));
   } catch {
     // Quota exceeded
   }
@@ -194,7 +195,15 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
       const cachedFolders = getLocalCache(foldersCacheKey);
       const cachedGrammars = getLocalCache(grammarsCacheKey);
 
-      if (cachedFolders && cachedGrammars) {
+      // Kiểm tra tính toàn vẹn của cache:
+      // - Nếu là 'all' thì phải có >= 350 bài (100 Shin Kanzen + 308 TNDG = 408 bài)
+      // - Nếu là 'tndg-n3' thì phải có >= 300 bài
+      const isComplete = cachedFolders && cachedGrammars && Array.isArray(cachedGrammars) &&
+        (selectedFolderId === 'all' 
+          ? cachedGrammars.length >= 350 
+          : (selectedFolderId === 'tndg-n3' ? cachedGrammars.length >= 300 : true));
+
+      if (isComplete) {
         setFolders(cachedFolders);
         setGrammars(cachedGrammars);
         setLoading(false);
@@ -228,6 +237,14 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
   }, [selectedFolderId]);
 
   useEffect(() => {
+    // Dọn dẹp các cache cũ không tương thích
+    try {
+      Object.keys(localStorage).forEach((k) => {
+        if (k.startsWith('kotobase_grammar_') && !k.startsWith(CACHE_KEY_PREFIX)) {
+          localStorage.removeItem(k);
+        }
+      });
+    } catch {}
     fetchData();
   }, [fetchData]);
 
