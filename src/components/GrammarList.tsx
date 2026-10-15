@@ -6,11 +6,13 @@ import { playAudio } from '@/lib/tts-utils';
 import { cn } from '@/lib/cn';
 import { GrammarItem, GrammarBlock, GrammarExample } from '@/lib/grammar-data';
 import { GrammarRubyText } from './GrammarRubyText';
+import { getGrammarStudyDay } from '@/lib/grammar-study-plan';
 
 export type { GrammarItem, GrammarBlock, GrammarExample };
 
 interface GrammarListProps {
   grammars: GrammarItem[];
+  presentation?: 'compact' | 'cards';
   onEdit: (g: GrammarItem) => void;
   onDelete: (id: string) => void;
   onOpenDetail?: (g: GrammarItem) => void;
@@ -23,13 +25,51 @@ const contextIcons: Record<string, string> = {
   anime: '📺 Phim/Anime'
 };
 
-export function GrammarList({ grammars, onEdit, onDelete, onOpenDetail }: GrammarListProps) {
+export function GrammarList({ grammars, presentation = 'compact', onEdit, onDelete, onOpenDetail }: GrammarListProps) {
   if (grammars.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 border-dashed">
         <BookOpen className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-4" />
         <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-1">Chưa có ngữ pháp nào</h3>
         <p className="text-sm text-slate-500 dark:text-slate-400">Hãy chọn thư mục khác hoặc thêm ngữ pháp mới.</p>
+      </div>
+    );
+  }
+
+  if (presentation === 'compact') {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="hidden sm:grid grid-cols-[5rem_minmax(0,1.1fr)_minmax(0,1.6fr)_5rem] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-400">
+          <span>Bài</span><span>Cấu trúc</span><span>Ý nghĩa</span><span>Nguồn</span>
+        </div>
+        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          {grammars.map(g => {
+            const day = getGrammarStudyDay(g);
+            return (
+              <button
+                key={g.id}
+                type="button"
+                onClick={() => onOpenDetail?.(g)}
+                className="grid w-full grid-cols-[3.5rem_minmax(0,1fr)] gap-x-3 gap-y-1 px-4 py-3 text-left transition-colors hover:bg-violet-50/60 focus-visible:bg-violet-50 focus-visible:outline-2 focus-visible:outline-violet-500 sm:grid-cols-[5rem_minmax(0,1.1fr)_minmax(0,1.6fr)_5rem] sm:items-center sm:gap-4 sm:px-5 dark:hover:bg-violet-950/20"
+                aria-label={`Xem chi tiết bài ${g.number ?? ''}: ${g.structure}`}
+              >
+                <span className="text-xs font-semibold tabular-nums text-slate-500 dark:text-slate-400">
+                  {g.number ? `#${g.number}` : '—'}
+                </span>
+                <span className="min-w-0 font-japanese text-base font-semibold text-slate-900 dark:text-slate-100">
+                  <GrammarRubyText text={g.structure} rubyText={g.structureRuby} />
+                </span>
+                <span className="col-start-2 min-w-0 truncate text-sm text-slate-600 sm:col-start-3 dark:text-slate-300" title={g.meaning}>
+                  {g.meaning?.split('\n')[0] || 'Chưa có ý nghĩa'}
+                </span>
+                <span className="col-start-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 sm:col-start-4 sm:flex-col sm:items-start dark:text-slate-400">
+                  <span>{g.id.startsWith('tndg-') ? 'Tổng hợp' : 'Shin Kanzen'}</span>
+                  {day && <span className="rounded-md bg-violet-100 px-1.5 py-0.5 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">Ngày {day}</span>}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     );
   }

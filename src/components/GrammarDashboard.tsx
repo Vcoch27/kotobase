@@ -10,7 +10,7 @@ import { GrammarFillBlank } from './GrammarFillBlank';
 import { GrammarFormModal } from './GrammarFormModal'; 
 import { GrammarDetailModal } from './GrammarDetailModal';
 import { 
-  LayoutGrid, Layers, Plus, Loader2, ChevronRight, ChevronDown, 
+  LayoutGrid, List, Layers, Plus, Loader2, ChevronRight, ChevronDown,
   ArrowLeft, FolderPlus, BookOpen, PenTool, Database, Search, X, 
   RotateCw, Sparkles, Filter 
 } from 'lucide-react';
@@ -18,6 +18,7 @@ import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { cn } from '@/lib/cn';
 import { GrammarItem } from '@/lib/grammar-data';
+import { getGrammarStudyDay, grammarStudyDays } from '@/lib/grammar-study-plan';
 
 interface UserInfo {
   uid: string;
@@ -73,6 +74,8 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'flashcard' | 'fillblank'>('list');
+  const [listPresentation, setListPresentation] = useState<'compact' | 'cards'>('compact');
+  const [selectedStudyDay, setSelectedStudyDay] = useState<number | null>(null);
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingGrammar, setEditingGrammar] = useState<any | null>(null);
   const [isMobileFolderOpen, setIsMobileFolderOpen] = useState(false);
@@ -119,6 +122,15 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
     });
   }, [grammars]);
 
+  const studyDayCounts = useMemo(() => {
+    const counts = new Map<number, number>();
+    sortedGrammars.forEach(grammar => {
+      const day = getGrammarStudyDay(grammar);
+      if (day) counts.set(day, (counts.get(day) || 0) + 1);
+    });
+    return counts;
+  }, [sortedGrammars]);
+
   // Filter grammars by Search & Book
   const filteredGrammars = useMemo(() => {
     let list = sortedGrammars;
@@ -138,6 +150,10 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
         }
         return true;
       });
+    }
+
+    if (selectedStudyDay !== null) {
+      list = list.filter(grammar => getGrammarStudyDay(grammar) === selectedStudyDay);
     }
 
     // 2. Filter by Search Query
@@ -184,7 +200,7 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
 
       return false;
     });
-  }, [sortedGrammars, selectedBook, searchQuery]);
+  }, [sortedGrammars, selectedBook, selectedStudyDay, searchQuery]);
 
   const fetchData = useCallback(async (isBackground = false, forceRefresh = false) => {
     const foldersCacheKey = 'kotobase_grammar_folders';
@@ -250,6 +266,7 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
 
   const handleSelectFolder = (id: string) => {
     setSelectedFolderId(id);
+    setSelectedStudyDay(null);
     setViewMode('list');
     if (window.innerWidth < 768) {
       setIsMobileFolderOpen(false);
@@ -385,7 +402,7 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
                   : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
               )}
             >
-              <LayoutGrid className="w-4 h-4" /> Danh sách
+              <List className="w-4 h-4" /> Ngữ pháp
             </button>
             <button
               onClick={() => setViewMode('flashcard')}
@@ -485,6 +502,53 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
           </div>
         )}
 
+        {/* Optional study plan built from the book's table of contents. */}
+        <div className="flex flex-col gap-2 rounded-2xl border border-violet-200 bg-violet-50/60 p-3 sm:flex-row sm:items-center dark:border-violet-900/50 dark:bg-violet-950/20">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-violet-900 dark:text-violet-200">Học theo 38 ngày · Shin Kanzen N3</p>
+            <p className="text-xs text-violet-700/80 dark:text-violet-300/80">Chọn ngày để tập trung vào các bài đã ghép từ hai thư mục. Các ngày chưa có bài vẫn xem được trong sách.</p>
+          </div>
+          <select
+            aria-label="Chọn ngày học ngữ pháp"
+            value={selectedStudyDay ?? ''}
+            onChange={event => {
+              const day = event.target.value ? Number(event.target.value) : null;
+              setSelectedStudyDay(day);
+              if (day !== null) {
+                setSelectedFolderId('all');
+                setSelectedBook('all');
+                setSearchQuery('');
+                setViewMode('list');
+              }
+            }}
+            className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none focus-visible:ring-2 focus-visible:ring-violet-500 sm:w-72 dark:border-violet-800 dark:bg-slate-900 dark:text-slate-100"
+          >
+            <option value="">Tất cả ngày · không lọc</option>
+            {grammarStudyDays.map(day => (
+              <option key={day.day} value={day.day}>
+                {`Ngày ${day.day} · ${day.title} (${studyDayCounts.get(day.day) || 0})`}
+              </option>
+            ))}
+          </select>
+          <a
+            href="https://drive.google.com/file/d/1zWuU4D2Ow2LSHLdKJeUHNac_9HArdjLz/view"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 rounded-xl px-3 py-2 text-center text-xs font-bold text-violet-700 hover:bg-violet-100 focus-visible:outline-2 focus-visible:outline-violet-500 dark:text-violet-300 dark:hover:bg-violet-900/30"
+          >
+            Mở sách ↗
+          </a>
+        </div>
+
+        {selectedStudyDay && (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+            <span className="rounded-lg bg-white px-2.5 py-1.5 font-bold dark:bg-slate-900">{grammarStudyDays[selectedStudyDay - 1].part}</span>
+            <span>{grammarStudyDays[selectedStudyDay - 1].title}</span>
+            <span>· trang sách {grammarStudyDays[selectedStudyDay - 1].bookPage}</span>
+            <button type="button" onClick={() => setSelectedStudyDay(null)} className="ml-auto font-bold text-violet-700 underline underline-offset-2 dark:text-violet-300">Bỏ lọc ngày</button>
+          </div>
+        )}
+
         {/* SEARCH BAR & COUNTER */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-2.5 sm:px-4 sm:py-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="relative flex-1">
@@ -509,7 +573,7 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
           
           <div className="flex items-center justify-between sm:justify-end gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0 px-1">
             <span className="px-2.5 py-1 rounded-lg bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-500/20">
-              {searchQuery || selectedBook !== 'all' 
+              {searchQuery || selectedBook !== 'all' || selectedStudyDay !== null
                 ? `${filteredGrammars.length} / ${sortedGrammars.length} ngữ pháp` 
                 : `${sortedGrammars.length} ngữ pháp`}
             </span>
@@ -528,6 +592,15 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
         </div>
 
         {/* VIEW AREA */}
+        {viewMode === 'list' && (
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-slate-500 dark:text-slate-400">{listPresentation === 'compact' ? 'Một dòng mỗi bài, bấm để xem chi tiết.' : 'Thẻ đầy đủ với ý nghĩa và ví dụ.'}</span>
+            <div className="inline-flex shrink-0 rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-900" role="group" aria-label="Kiểu hiển thị ngữ pháp">
+              <button type="button" onClick={() => setListPresentation('compact')} aria-pressed={listPresentation === 'compact'} className={cn('flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold', listPresentation === 'compact' ? 'bg-violet-600 text-white' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800')}><List className="h-3.5 w-3.5" /> Danh sách</button>
+              <button type="button" onClick={() => setListPresentation('cards')} aria-pressed={listPresentation === 'cards'} className={cn('flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold', listPresentation === 'cards' ? 'bg-violet-600 text-white' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800')}><LayoutGrid className="h-3.5 w-3.5" /> Thẻ</button>
+            </div>
+          </div>
+        )}
         {loading ? (
           <div className="flex flex-col items-center justify-center p-20 gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
@@ -543,11 +616,11 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
                     Không tìm thấy ngữ pháp phù hợp
                   </h3>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                    {searchQuery ? `Không có ngữ pháp nào khớp với "${searchQuery}"` : 'Thư mục hoặc giáo trình này chưa có bài nào.'}
+                    {selectedStudyDay && !searchQuery ? 'Hai thư mục hiện chưa có bài được xác nhận cho ngày này. Bạn có thể mở sách để học theo mục lục.' : searchQuery ? `Không có ngữ pháp nào khớp với "${searchQuery}"` : 'Thư mục hoặc giáo trình này chưa có bài nào.'}
                   </p>
-                  {(searchQuery || selectedBook !== 'all') && (
+                  {(searchQuery || selectedBook !== 'all' || selectedStudyDay !== null) && (
                     <button
-                      onClick={() => { setSearchQuery(''); setSelectedBook('all'); }}
+                      onClick={() => { setSearchQuery(''); setSelectedBook('all'); setSelectedStudyDay(null); }}
                       className="px-4 py-2 bg-violet-100 hover:bg-violet-200 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300 font-bold rounded-xl text-xs transition-colors"
                     >
                       Xóa bộ lọc
@@ -557,6 +630,7 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
               ) : (
                 <GrammarList 
                   grammars={filteredGrammars} 
+                  presentation={listPresentation}
                   onEdit={(g) => { setEditingGrammar(g); setShowFormModal(true); }}
                   onDelete={handleDeleteGrammar}
                   onOpenDetail={(g) => setSelectedDetailGrammar(g)}
