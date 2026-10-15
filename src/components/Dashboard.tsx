@@ -25,7 +25,8 @@ import {
   Users,
   PanelLeftClose,
   PanelLeftOpen,
-  FileText
+  FileText,
+  Grid3X3
 } from "lucide-react";
 import { isAdminEmail } from "@/lib/admin-shared";
 import { useWebVolume } from "@/lib/tts-utils";
@@ -254,6 +255,97 @@ export function Dashboard({ currentUser }: DashboardProps) {
 
   const settingsDropdownRef = useRef<HTMLDivElement>(null);
   const addMenuRef = useRef<HTMLDivElement>(null);
+  const [showAppsDropdown, setShowAppsDropdown] = useState(false);
+  const appsDropdownRef = useRef<HTMLDivElement>(null);
+
+  // State thu gọn tiện ích phụ ở sidebar (persisted in localStorage, mặc định false = thu gọn icon dock)
+  const [isSidebarUtilitiesOpen, setIsSidebarUtilitiesOpen] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem("kotobase_sidebar_utilities_open") === "true";
+      } catch (e) {}
+    }
+    return false;
+  });
+
+  const toggleSidebarUtilities = () => {
+    setIsSidebarUtilitiesOpen(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem("kotobase_sidebar_utilities_open", String(next));
+      } catch (e) {}
+      return next;
+    });
+  };
+
+  const UTILITY_APPS = [
+    {
+      id: "listening",
+      title: "Luyện nghe N3",
+      subtitle: "Lộ trình 7 tuần",
+      href: "/listening",
+      icon: Headphones,
+      color: "text-sky-600 dark:text-sky-400",
+      bg: "bg-sky-50 dark:bg-sky-950/40",
+      border: "border-sky-200/60 dark:border-sky-800/40",
+      badge: "N3",
+    },
+    {
+      id: "choukai",
+      title: "Chōkai gõ lại",
+      subtitle: "Nghe & gõ chính tả",
+      href: "/choukai",
+      icon: Headphones,
+      color: "text-emerald-600 dark:text-emerald-400",
+      bg: "bg-emerald-50 dark:bg-emerald-950/40",
+      border: "border-emerald-200/60 dark:border-emerald-800/40",
+      badge: "Luyện tập",
+    },
+    {
+      id: "grammar",
+      title: "Ngữ Pháp N3",
+      subtitle: "308 bài & chi tiết",
+      href: "/grammar",
+      icon: BookOpen,
+      color: "text-violet-600 dark:text-violet-400",
+      bg: "bg-violet-50 dark:bg-violet-950/40",
+      border: "border-violet-200/60 dark:border-violet-800/40",
+      badge: "Mới",
+    },
+    {
+      id: "kanji",
+      title: "Tra cứu Kanji",
+      subtitle: "Hán tự & Bộ thủ",
+      href: "/kanji",
+      icon: Library,
+      color: "text-rose-600 dark:text-rose-400",
+      bg: "bg-rose-50 dark:bg-rose-950/40",
+      border: "border-rose-200/60 dark:border-rose-800/40",
+      badge: "Tra cứu",
+    },
+    {
+      id: "sentences",
+      title: "Mẫu câu",
+      subtitle: "Giao tiếp hàng ngày",
+      href: "/sentences",
+      icon: Library,
+      color: "text-teal-600 dark:text-teal-400",
+      bg: "bg-teal-50 dark:bg-teal-950/40",
+      border: "border-teal-200/60 dark:border-teal-800/40",
+      badge: "Hội thoại",
+    },
+    {
+      id: "documents",
+      title: "Tài liệu N3",
+      subtitle: "Giáo trình & Sách PDF",
+      href: "/documents",
+      icon: FileText,
+      color: "text-amber-600 dark:text-amber-400",
+      bg: "bg-amber-50 dark:bg-amber-950/40",
+      border: "border-amber-200/60 dark:border-amber-800/40",
+      badge: "PDF",
+    },
+  ];
 
   // Đóng dropdown khi click bất kỳ đâu bên ngoài
   useEffect(() => {
@@ -265,9 +357,12 @@ export function Dashboard({ currentUser }: DashboardProps) {
       if (showAddMenu && addMenuRef.current && !addMenuRef.current.contains(target)) {
         setShowAddMenu(false);
       }
+      if (showAppsDropdown && appsDropdownRef.current && !appsDropdownRef.current.contains(target)) {
+        setShowAppsDropdown(false);
+      }
     };
 
-    if (showSettingsDropdown || showAddMenu) {
+    if (showSettingsDropdown || showAddMenu || showAppsDropdown) {
       document.addEventListener("mousedown", handleGlobalClick);
       document.addEventListener("touchstart", handleGlobalClick);
     }
@@ -276,7 +371,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
       document.removeEventListener("mousedown", handleGlobalClick);
       document.removeEventListener("touchstart", handleGlobalClick);
     };
-  }, [showSettingsDropdown, showAddMenu]);
+  }, [showSettingsDropdown, showAddMenu, showAppsDropdown]);
 
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderParentId, setNewFolderParentId] = useState<string>("");
@@ -684,6 +779,81 @@ export function Dashboard({ currentUser }: DashboardProps) {
               onLoginRequest={handleGoogleLogin}
             />
 
+            {/* Menu Tiện ích / Ứng dụng phụ (Kanji, Ngữ pháp, Luyện nghe,...) */}
+            <div className="relative" ref={appsDropdownRef}>
+              <button 
+                type="button"
+                onClick={() => setShowAppsDropdown(!showAppsDropdown)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl transition-all border text-xs font-bold ${
+                  showAppsDropdown 
+                    ? 'bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 shadow-xs' 
+                    : 'text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-800'
+                }`}
+                title="Khám phá tiện ích học tập (Ngữ pháp, Kanji, Luyện nghe, Mẫu câu)"
+              >
+                <Grid3X3 className="w-3.5 h-3.5 text-amber-500" />
+                <span className="hidden sm:inline">Tiện ích</span>
+              </button>
+
+              {showAppsDropdown && (
+                <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 p-3 animate-fadeIn">
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Tiện ích học tập</span>
+                    </span>
+                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700">
+                      {isAdminEmail(currentUser?.email) ? '7 tiện ích' : '6 tiện ích'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {UTILITY_APPS.map((app) => {
+                      const Icon = app.icon;
+                      return (
+                        <Link
+                          key={app.id}
+                          href={app.href}
+                          onClick={() => setShowAppsDropdown(false)}
+                          className={cn(
+                            "flex flex-col p-2.5 rounded-xl border transition-all hover:scale-[1.02] active:scale-[0.98]",
+                            app.bg, app.border
+                          )}
+                        >
+                          <div className="flex items-center justify-between mb-1.5">
+                            <div className={cn("p-1.5 rounded-lg bg-white/80 dark:bg-slate-900/80 shadow-2xs", app.color)}>
+                              <Icon className="w-4 h-4" />
+                            </div>
+                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-white/60 dark:bg-slate-900/60 text-slate-500">
+                              {app.badge}
+                            </span>
+                          </div>
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
+                            {app.title}
+                          </span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                            {app.subtitle}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+
+                  {isAdminEmail(currentUser?.email) && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setShowAppsDropdown(false)}
+                      className="mt-2 flex items-center gap-2 p-2 rounded-xl bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 border border-red-200/60 dark:border-red-800/40 text-xs font-bold hover:bg-red-100 transition-colors"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-red-500 shrink-0" />
+                      <span className="flex-1 truncate">Quản trị hệ thống</span>
+                      <ChevronRight className="w-3.5 h-3.5 opacity-50" />
+                    </Link>
+                  )}
+                </div>
+              )}
+            </div>
+
             <button 
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="p-2 rounded-xl transition-colors text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-900"
@@ -984,63 +1154,93 @@ export function Dashboard({ currentUser }: DashboardProps) {
               />
             </div>
 
-            {/* Các công cụ khác (Kanji, Mẫu câu) */}
-            <div className="mt-3 pt-2.5 flex flex-col gap-1.5 border-t border-slate-100 dark:border-slate-800 shrink-0">
-              <Link href="/listening" className="flex items-center gap-2 rounded-lg px-2 py-2 text-xs font-semibold text-primary hover:bg-accent-muted focus-visible:ring-2">
-                <Headphones className="h-4 w-4 shrink-0" />
-                <span className="flex-1">Luyện nghe N3 · 7 tuần</span>
-                <ChevronRight className="h-3.5 w-3.5 opacity-50" />
-              </Link>
-              <Link href="/choukai" className="flex items-center gap-2 rounded-lg px-2 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 focus-visible:ring-2">
-                <Headphones className="h-4 w-4 shrink-0" />
-                <span className="flex-1">Chōkai · Nghe & gõ lại</span>
-                <ChevronRight className="h-3.5 w-3.5 opacity-50" />
-              </Link>
-              <Link 
-                href="/sentences"
-                className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 border border-transparent hover:border-emerald-200 dark:hover:border-emerald-500/20 transition-all"
-              >
-                <Library className="w-4 h-4 shrink-0" />
-                <span className="flex-1">Mẫu câu giao tiếp</span>
-                <ChevronRight className="w-3.5 h-3.5 opacity-50" />
-              </Link>
-              
-              <Link 
-                href="/kanji"
-                className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 transition-all"
-              >
-                <Library className="w-4 h-4 shrink-0" />
-                <span className="flex-1">Tra cứu Hán tự (Kanji)</span>
-                <ChevronRight className="w-3.5 h-3.5 opacity-50" />
-              </Link>
-              
-              <Link 
-                href="/grammar"
-                className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-semibold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 border border-transparent hover:border-violet-200 dark:hover:border-violet-500/20 transition-all"
-              >
-                <BookOpen className="w-4 h-4 shrink-0" />
-                <span className="flex-1">Ngữ Pháp</span>
-                <ChevronRight className="w-3.5 h-3.5 opacity-50" />
-              </Link>
-
-              <Link 
-                href="/documents"
-                className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 border border-transparent hover:border-amber-200 dark:hover:border-amber-500/20 transition-all"
-              >
-                <FileText className="w-4 h-4 shrink-0" />
-                <span className="flex-1">Tài liệu & Giáo trình N3</span>
-                <ChevronRight className="w-3.5 h-3.5 opacity-50" />
-              </Link>
-
-              {isAdminEmail(currentUser?.email) && (
-                <Link 
-                  href="/admin"
-                  className="flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50/70 dark:bg-rose-500/10 hover:bg-rose-100/70 dark:hover:bg-rose-500/20 border border-rose-200/60 dark:border-rose-500/20 transition-all mt-1 shadow-xs"
+            {/* TIỆN ÍCH & CÔNG CỤ HỌC TẬP (GỌN GÀNG, KHÔNG CHIẾM DIỆN TÍCH THƯ MỤC) */}
+            <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 shrink-0 space-y-2">
+              {/* Header Toggle */}
+              <div className="flex items-center justify-between px-1">
+                <button
+                  type="button"
+                  onClick={toggleSidebarUtilities}
+                  className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors group"
+                  title={isSidebarUtilitiesOpen ? "Thu gọn danh sách" : "Mở rộng danh sách"}
                 >
-                  <ShieldCheck className="w-4 h-4 shrink-0 text-rose-500" />
-                  <span className="flex-1">Quản trị hệ thống</span>
-                  <ChevronRight className="w-3.5 h-3.5 opacity-50" />
-                </Link>
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                  <span>Tiện ích phụ</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 font-extrabold border border-slate-200/50 dark:border-slate-700">
+                    {isAdminEmail(currentUser?.email) ? '7' : '6'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={toggleSidebarUtilities}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  title={isSidebarUtilitiesOpen ? "Thu gọn thành hàng icon" : "Mở rộng chi tiết"}
+                >
+                  <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200", !isSidebarUtilitiesOpen && "-rotate-90")} />
+                </button>
+              </div>
+
+              {/* 1. KHI THU GỌN: HÀNG ICON DOCK SIÊU NHỎ GỌN (CHỈ TỐN ~32PX CHIỀU CAO) */}
+              {!isSidebarUtilitiesOpen ? (
+                <div className="flex items-center justify-between gap-1 px-1 py-1 bg-slate-50/70 dark:bg-slate-950/40 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                  {UTILITY_APPS.map((app) => {
+                    const Icon = app.icon;
+                    return (
+                      <Link
+                        key={app.id}
+                        href={app.href}
+                        className={cn(
+                          "p-1.5 rounded-lg transition-all hover:scale-110 active:scale-95 flex items-center justify-center border",
+                          app.bg, app.border, app.color
+                        )}
+                        title={`${app.title} (${app.subtitle})`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                      </Link>
+                    );
+                  })}
+                  {isAdminEmail(currentUser?.email) && (
+                    <Link
+                      href="/admin"
+                      className="p-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-600 border border-red-200/60 dark:border-red-800/40 transition-all hover:scale-110 active:scale-95 flex items-center justify-center"
+                      title="Quản trị hệ thống"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                /* 2. KHI MỞ RỘNG: LƯỚI 2 CỘT MINI GỌN GÀNG */
+                <div className="grid grid-cols-2 gap-1.5 pt-0.5 animate-fadeIn">
+                  {UTILITY_APPS.map((app) => {
+                    const Icon = app.icon;
+                    return (
+                      <Link
+                        key={app.id}
+                        href={app.href}
+                        className={cn(
+                          "flex items-center gap-1.5 px-2 py-1.5 rounded-xl text-[11px] font-bold border transition-all truncate hover:shadow-2xs",
+                          app.bg, app.border, app.color
+                        )}
+                        title={app.title}
+                      >
+                        <Icon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{app.title}</span>
+                      </Link>
+                    );
+                  })}
+                  {isAdminEmail(currentUser?.email) && (
+                    <Link
+                      href="/admin"
+                      className="col-span-2 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-xl text-[11px] font-bold text-red-600 dark:text-red-400 bg-red-50/70 dark:bg-red-950/30 border border-red-200/60 dark:border-red-800/40 hover:bg-red-100 transition-colors"
+                      title="Quản trị hệ thống"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                      <span>Quản trị hệ thống</span>
+                    </Link>
+                  )}
+                </div>
               )}
             </div>
           </div>
