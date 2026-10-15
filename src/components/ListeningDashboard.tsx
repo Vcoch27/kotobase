@@ -44,7 +44,7 @@ export function ListeningDashboard({ userId }: { userId: string }) {
 
   return <div className="listening-page min-h-screen bg-bg text-text-primary pb-28 md:pb-12">
     <header className="bg-surface shadow-elevation-sm">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 md:px-8">
+      <div className="mx-auto flex max-w-[100rem] items-center justify-between gap-4 px-4 py-4 md:px-8">
         <Link href="/" className="flex items-center gap-3 rounded-lg focus-visible:ring-2"><AppLogo size="sm" /><span className="font-display text-heading-3 font-bold">KotoBase</span></Link>
         <div className="flex items-center gap-2">
           <Link href="/" aria-label="Về kho từ vựng" className={`${button} text-text-muted`}><ArrowLeft size={16} /><span className="hidden sm:inline">Kho từ vựng</span></Link>
@@ -53,7 +53,7 @@ export function ListeningDashboard({ userId }: { userId: string }) {
       </div>
     </header>
 
-    <main className={`mx-auto space-y-8 px-4 py-8 md:px-8 ${playing || libraryExam ? "max-w-[100rem]" : "max-w-7xl"}`}>
+    <main className="mx-auto max-w-[100rem] space-y-8 px-4 py-8 md:px-8">
       <section className="grid items-end gap-6 lg:grid-cols-[1fr_auto]">
         <div className="space-y-4">
           <p className="flex items-center gap-2 text-body-sm font-semibold text-primary"><Headphones size={18} /> NGHE HIỂU N3 <span className="text-text-muted">/</span> CHẶNG 7 TUẦN</p>
@@ -73,15 +73,15 @@ export function ListeningDashboard({ userId }: { userId: string }) {
         {([["plan", "Lộ trình từng ngày"], ["method", "Cách luyện cho hiệu quả"], ["library", "Kho 26 đề"]] as const).map(([value, label]) => <button key={value} aria-pressed={tab === value} onClick={() => { setTab(value); setPlaying(null); setLibraryExam(null); }} className={`${button} ${tab === value ? "bg-primary text-surface" : "bg-surface text-text-muted hover:bg-surface-raised"}`}>{label}</button>)}
       </nav>
 
-      {tab === "plan" && <div className={`grid grid-cols-1 items-start gap-6 ${playing ? "lg:grid-cols-1" : "lg:grid-cols-[16rem_minmax(0,1fr)]"}`}>
+      {tab === "plan" && <div className="grid grid-cols-1 items-start gap-6">
         <aside className={`${panel} min-w-0 p-4`} aria-label="Chọn tuần">
           <p className="mb-4 px-2 text-body-sm font-semibold text-text-muted">7 TUẦN · 49 BUỔI</p>
-          <div className={`flex gap-2 overflow-x-auto p-1 ${playing ? "lg:flex" : "lg:grid lg:grid-cols-1"}`}>
-            {listeningWeeks.map((item, index) => <button key={item.title} onClick={() => selectDay(index, 0)} aria-pressed={weekIndex === index} className={`w-48 shrink-0 rounded-xl p-3 text-left focus-visible:outline-none focus-visible:ring-2 ${playing ? "lg:w-48" : "lg:w-auto"} ${weekIndex === index ? "bg-accent-muted" : "hover:bg-surface-raised"}`}>
+          <div className="flex gap-2 overflow-x-auto p-1">
+            {listeningWeeks.map((item, index) => <button key={item.title} onClick={() => selectDay(index, 0)} aria-pressed={weekIndex === index} className={`w-48 shrink-0 rounded-xl p-3 text-left focus-visible:outline-none focus-visible:ring-2 ${weekIndex === index ? "bg-accent-muted" : "hover:bg-surface-raised"}`}>
               <span className="block text-caption font-bold text-primary">TUẦN {index + 1}</span><span className="mt-1 block text-body-sm font-semibold">{item.title}</span>
             </button>)}
           </div>
-          {!playing && <p className="mt-4 px-2 text-body-sm text-text-muted">“Ngày” là thứ tự buổi học. Lỡ một ngày, tiếp tục buổi đang dở; không cần học bù gấp đôi.</p>}
+          <p className="mt-4 px-2 text-body-sm text-text-muted">“Ngày” là thứ tự buổi học. Lỡ một ngày, tiếp tục buổi đang dở; không cần học bù gấp đôi.</p>
         </aside>
 
         <div className="min-w-0 space-y-6">

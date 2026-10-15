@@ -14,7 +14,6 @@ function timeLabel(time: number) {
 // Parent keys by Drive file ID so changing exams disposes playback and loop state.
 export function ListeningPlayer({ driveFileId, label, userId, focusPart }: { driveFileId: string; label: string; userId: string; focusPart?: number }) {
   const video = useRef<HTMLVideoElement>(null);
-  const frame = useRef<HTMLElement>(null);
   const resume = useRef<{ time: number; play: boolean } | null>(null);
   const [buffering, setBuffering] = useState(false);
   const [position, setPosition] = useState(0);
@@ -32,6 +31,7 @@ export function ListeningPlayer({ driveFileId, label, userId, focusPart }: { dri
   const [speed, setSpeed] = useState("1");
   const [duration, setDuration] = useState(0);
   const [showTranscript, setShowTranscript] = useState(false);
+  const [videoFullscreen, setVideoFullscreen] = useState(false);
   const [transcript, setTranscript] = useState<ListeningTranscriptData | null>(null);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [transcriptError, setTranscriptError] = useState(false);
@@ -86,6 +86,12 @@ export function ListeningPlayer({ driveFileId, label, userId, focusPart }: { dri
     return () => clearInterval(timer);
   }, [loop, a, b, ready, preview]);
 
+  useEffect(() => {
+    const syncFullscreen = () => setVideoFullscreen(document.fullscreenElement === video.current);
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    return () => document.removeEventListener("fullscreenchange", syncFullscreen);
+  }, []);
+
   function reset() {
     setLoop(false); setA(null); setB(null); setReady(false); setError(false); setCutting(false);
     setSpeed("1"); setPosition(0); setDuration(0); setPlaying(false); setMessage("");
@@ -134,10 +140,24 @@ export function ListeningPlayer({ driveFileId, label, userId, focusPart }: { dri
     if (a !== null && b !== null && (value < a || value >= b)) setLoop(false);
   }
 
-  return <section ref={frame} aria-label={`Trình nghe đề ${label}`} className="overflow-hidden rounded-xl bg-surface shadow-elevation-sm">
+  async function toggleVideoFullscreen() {
+    const current = video.current;
+    if (!current) return;
+    try {
+      if (document.fullscreenElement === current) await document.exitFullscreen();
+      else if (current.requestFullscreen) await current.requestFullscreen();
+      else {
+        const safariVideo = current as HTMLVideoElement & { webkitEnterFullscreen?: () => void };
+        if (!safariVideo.webkitEnterFullscreen) throw new Error("Fullscreen unavailable");
+        safariVideo.webkitEnterFullscreen();
+      }
+    } catch { setMessage("Trình duyệt chưa hỗ trợ toàn màn hình video."); }
+  }
+
+  return <section aria-label={`Trình nghe đề ${label}`} className="overflow-hidden rounded-xl bg-surface shadow-elevation-sm">
     <div className={showTranscript && !preview ? "grid min-w-0 md:h-[clamp(22rem,30vw,32rem)] md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]" : ""}>
     {preview ? <iframe src={`${fileUrl}/preview`} title={`Google Drive · đề N3 ${label}`} className="aspect-video w-full bg-bg" allow="autoplay; fullscreen" allowFullScreen /> :
-      <video key={`${driveFileId}-${attempt}`} ref={video} playsInline preload="metadata"
+      <video key={`${driveFileId}-${attempt}`} ref={video} playsInline preload="metadata" controls={videoFullscreen}
         aria-label={`Đề nghe N3 ${label}`} className={showTranscript ? "aspect-video w-full min-w-0 bg-black object-contain md:aspect-auto md:h-full" : "aspect-video max-h-[45vh] w-full bg-black object-contain"}
         onClick={() => playing ? video.current?.pause() : void play()}
         onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)}
@@ -180,6 +200,7 @@ export function ListeningPlayer({ driveFileId, label, userId, focusPart }: { dri
           <span className="mr-auto text-caption tabular-nums text-text-muted">{timeLabel(position)} / {timeLabel(duration)}</span>
           <button className={`${control} ${loop ? "text-primary bg-accent-muted" : ""}`} aria-label={loop ? "Tắt lặp A–B" : "Bật lặp A–B"} title="Lặp A–B" disabled={!ready || b === null} onClick={toggleLoop} aria-pressed={loop}><Repeat2 size={18} /></button>
           <button className={`${control} flex items-center gap-1 ${showTranscript ? "bg-accent-muted text-primary" : ""}`} aria-label={showTranscript ? "Ẩn script đồng bộ" : "Hiện script đồng bộ"} aria-pressed={showTranscript} onClick={() => setShowTranscript(value => !value)}><FileText size={17} /><span>Script</span></button>
+          <button className={control} disabled={!ready} aria-label={videoFullscreen ? "Thoát toàn màn hình video" : "Toàn màn hình video"} title="Toàn màn hình video" onClick={() => void toggleVideoFullscreen()}><Maximize size={18} /></button>
           <ListeningSelect label="Tốc độ phát" className="w-20" value={speed} disabled={!ready} options={["0.75", "1", "1.25", "1.5"].map(value => ({ value, label: `${value}×` }))} onChange={value => { setSpeed(value); if (video.current) video.current.playbackRate = Number(value); }} />
           <button className={`${control} ${cutting ? "text-primary bg-accent-muted" : ""}`} disabled={!ready} title="Tạo đoạn lặp" aria-label="Tạo đoạn lặp" aria-pressed={cutting} onClick={() => { setCutting(!cutting); if (!cutting) markA(); }}><Scissors size={18} /></button>
         </div>
@@ -196,7 +217,6 @@ export function ListeningPlayer({ driveFileId, label, userId, focusPart }: { dri
         {!preview && <>
           <button className={control} aria-label={muted ? "Bật tiếng" : "Tắt tiếng"} onClick={() => { if (video.current) video.current.muted = !muted; }}>{muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button>
           <input type="range" min="0" max="1" step="0.05" defaultValue="1" aria-label="Âm lượng" className="w-20 accent-primary" onChange={event => { if (video.current) { video.current.volume = Number(event.target.value); video.current.muted = false; } }} />
-          <button className={control} aria-label="Toàn màn hình" onClick={() => { if (document.fullscreenElement) void document.exitFullscreen(); else void frame.current?.requestFullscreen().catch(() => setMessage("Thiết bị chưa hỗ trợ toàn màn hình.")); }}><Maximize size={18} /></button>
           {a !== null && <button className={control} onClick={() => { setA(null); setB(null); setLoop(false); setMessage(""); }}>Bỏ mốc A–B</button>}
         </>}
         <button className={control} onClick={() => { reset(); setPreview(!preview);  }}>{preview ? "Trình phát A–B" : "Chế độ Drive"}</button>
