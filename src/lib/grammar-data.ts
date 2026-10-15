@@ -2,18 +2,23 @@ import fs from 'fs';
 import path from 'path';
 import tndgSummaryRaw from '../../data/tiengnhatdongian-n3-summary.json';
 import tndgParsedRaw from '../../data/tiengnhatdongian-n3-parsed.json';
+import tndgDetailNormalizedRaw from '../../data/tiengnhatdongian-n3-detail-normalized.json';
 
 export interface GrammarExample {
   jpn: string;
   vie: string;
+  ruby?: string;
 }
 
 export interface GrammarBlock {
   blockNumber: number;
   heading?: string;
   formation?: string;
+  formationRuby?: string;
   meaning?: string;
+  meaningRuby?: string;
   nuance?: string;
+  nuanceRuby?: string;
   examples: GrammarExample[];
   html?: string;
 }
@@ -23,10 +28,15 @@ export interface GrammarItem {
   number?: number;
   title?: string;
   structure: string;
+  structureRuby?: string;
   formation?: string;
+  formationRuby?: string;
   meaning: string;
+  meaningRuby?: string;
   nuance?: string;
+  nuanceRuby?: string;
   example?: string;
+  exampleRuby?: string;
   exampleMeaning?: string;
   examples?: GrammarExample[];
   blocks?: GrammarBlock[];
@@ -99,11 +109,18 @@ export function getTndgSummaryGrammars(): GrammarItem[] {
 export function getTndgFullGrammarDetail(id: string): GrammarItem | null {
   if (!g.__grammarCache?.tndgFullMap) {
     const map = new Map<string, GrammarItem>();
+    const summaryById = new Map(getTndgSummaryGrammars().map(item => [item.id, item]));
+    const detailById = new Map((tndgDetailNormalizedRaw.items as Array<{ id: string; examples: GrammarExample[] }>).map(item => [item.id, item]));
 
     // 1. Lấy từ dữ liệu import tĩnh được bundle
     if (tndgParsedRaw && Array.isArray((tndgParsedRaw as any).items)) {
       ((tndgParsedRaw as any).items as GrammarItem[]).forEach((item) => {
-        map.set(item.id, item);
+        map.set(item.id, {
+          ...item,
+          ...summaryById.get(item.id),
+          examples: detailById.get(item.id)?.examples || summaryById.get(item.id)?.examples || item.examples,
+          articleBlocks: item.articleBlocks,
+        });
       });
     }
 

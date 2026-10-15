@@ -5,6 +5,7 @@ import { Pencil, Trash2, BookOpen, Volume2, ExternalLink, ChevronDown, ChevronUp
 import { playAudio } from '@/lib/tts-utils';
 import { cn } from '@/lib/cn';
 import { GrammarItem, GrammarBlock, GrammarExample } from '@/lib/grammar-data';
+import { GrammarRubyText } from './GrammarRubyText';
 
 export type { GrammarItem, GrammarBlock, GrammarExample };
 
@@ -69,12 +70,15 @@ function GrammarCard({
 
   const currentMeaning = activeBlock?.meaning || g.meaning;
   const currentFormation = activeBlock?.formation || g.formation;
+  const currentFormationRuby = activeBlock?.formation ? activeBlock.formationRuby : g.formationRuby;
   const currentNuance = activeBlock?.nuance || g.nuance;
+  const currentNuanceRuby = activeBlock?.nuance ? activeBlock.nuanceRuby : g.nuanceRuby;
+  const currentMeaningRuby = activeBlock?.meaning ? activeBlock.meaningRuby : g.meaningRuby;
   const currentExamples = activeBlock?.examples && activeBlock.examples.length > 0
     ? activeBlock.examples
     : (g.examples && g.examples.length > 0
       ? g.examples
-      : (g.example ? [{ jpn: g.example, vie: g.exampleMeaning || '' }] : []));
+      : (g.example ? [{ jpn: g.example, vie: g.exampleMeaning || '', ruby: g.exampleRuby }] : []));
 
   const handlePlayAudio = async (text: string) => {
     if (!text || isPlayingAudio) return;
@@ -183,7 +187,7 @@ function GrammarCard({
           )}
           title={onOpenDetail ? "Bấm để xem chi tiết bài học" : undefined}
         >
-          {g.structure}
+          <GrammarRubyText text={g.structure} rubyText={g.structureRuby} />
         </h3>
 
         <button
@@ -223,7 +227,7 @@ function GrammarCard({
           Ý nghĩa:
         </p>
         <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line">
-          {currentMeaning}
+          <GrammarRubyText text={currentMeaning} rubyText={currentMeaningRuby} />
         </p>
       </div>
 
@@ -234,7 +238,7 @@ function GrammarCard({
             Cách kết hợp:
           </span>
           <p className="text-xs font-japanese font-medium text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line">
-            {currentFormation}
+            <GrammarRubyText text={currentFormation} rubyText={currentFormationRuby} />
           </p>
         </div>
       )}
@@ -246,14 +250,14 @@ function GrammarCard({
             Lưu ý & Sắc thái:
           </span>
           <p className="leading-relaxed whitespace-pre-line text-xs font-japanese">
-            {currentNuance}
+            <GrammarRubyText text={currentNuance} rubyText={currentNuanceRuby} />
           </p>
         </div>
       )}
 
       {/* 7. Danh sách Ví dụ thực tế */}
       {currentExamples.length > 0 && (
-        <div className="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-2.5">
+        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
               Ví dụ thực tế ({currentExamples.length})
@@ -284,7 +288,7 @@ function GrammarCard({
           <div className="bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl border border-slate-100 dark:border-slate-800">
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm font-japanese font-medium text-slate-900 dark:text-slate-100 leading-relaxed">
-                {currentExamples[0].jpn}
+                <GrammarRubyText text={currentExamples[0].jpn} rubyText={currentExamples[0].ruby} />
               </p>
               <button
                 type="button"
@@ -310,7 +314,7 @@ function GrammarCard({
             >
               <div className="flex items-start justify-between gap-2">
                 <p className="text-sm font-japanese font-medium text-slate-900 dark:text-slate-100 leading-relaxed">
-                  {ex.jpn}
+                  <GrammarRubyText text={ex.jpn} rubyText={ex.ruby} />
                 </p>
                 <button
                   type="button"

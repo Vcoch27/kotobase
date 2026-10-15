@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import { playAudio } from '@/lib/tts-utils';
 import { cn } from '@/lib/cn';
-import { GrammarItem } from '@/lib/grammar-data';
+import { GrammarItem, GrammarExample } from '@/lib/grammar-data';
+import { GrammarRubyText } from './GrammarRubyText';
 import { getGrammarDetail } from '@/app/actions/grammar';
 import toast from 'react-hot-toast';
 
@@ -124,11 +125,11 @@ export function GrammarDetailModal({
 
   // Extract all examples
   const allExamples = useMemo(() => {
-    const list: Array<{ jpn: string; vie: string }> = [];
+    const list: GrammarExample[] = [];
     if (Array.isArray(currentItem.examples) && currentItem.examples.length > 0) {
       currentItem.examples.forEach(ex => list.push(ex));
     } else if (currentItem.example) {
-      list.push({ jpn: currentItem.example, vie: currentItem.exampleMeaning || '' });
+      list.push({ jpn: currentItem.example, vie: currentItem.exampleMeaning || '', ruby: currentItem.exampleRuby });
     }
 
     // If still empty, check inside blocks
@@ -273,7 +274,7 @@ export function GrammarDetailModal({
           <div className="flex items-center justify-between gap-3 pt-1">
             <div className="min-w-0">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white font-japanese tracking-tight truncate">
-                {currentItem.structure}
+                <GrammarRubyText text={currentItem.structure} rubyText={currentItem.structureRuby} />
               </h2>
               {currentItem.title && currentItem.title !== currentItem.structure && (
                 <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">
@@ -390,7 +391,7 @@ export function GrammarDetailModal({
                       Ý nghĩa chính
                     </h3>
                     <p className="text-base font-semibold text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line">
-                      {currentItem.meaning}
+                      <GrammarRubyText text={currentItem.meaning} rubyText={currentItem.meaningRuby} />
                     </p>
 
                     {currentItem.formation && (
@@ -398,8 +399,8 @@ export function GrammarDetailModal({
                         <span className="text-xs font-bold text-slate-500 uppercase block mb-1">
                           Cách kết hợp (Formation)
                         </span>
-                        <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl font-japanese font-medium text-sm text-slate-800 dark:text-slate-200">
-                          {currentItem.formation}
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl font-japanese font-medium text-sm text-slate-800 dark:text-slate-200 whitespace-pre-line">
+                          <GrammarRubyText text={currentItem.formation} rubyText={currentItem.formationRuby} />
                         </div>
                       </div>
                     )}
@@ -410,7 +411,7 @@ export function GrammarDetailModal({
                           Lưu ý & Sắc thái
                         </span>
                         <p className="whitespace-pre-line font-japanese">
-                          {currentItem.nuance}
+                          <GrammarRubyText text={currentItem.nuance} rubyText={currentItem.nuanceRuby} />
                         </p>
                       </div>
                     )}
@@ -420,22 +421,22 @@ export function GrammarDetailModal({
                   {Array.isArray(currentItem.blocks) && currentItem.blocks.map((b, idx) => (
                     <div key={idx} className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm">
                       <h4 className="text-sm font-bold text-violet-600 dark:text-violet-400 mb-2">
-                        Ý nghĩa {['①', '②', '③', '④', '⑤'][idx] || `#${idx + 1}`}: {b.meaning}
+                        Ý nghĩa {['①', '②', '③', '④', '⑤'][idx] || `#${idx + 1}`}: <GrammarRubyText text={b.meaning || ''} rubyText={b.meaningRuby} />
                       </h4>
                       {b.formation && (
-                        <p className="text-xs font-japanese font-medium text-slate-700 dark:text-slate-300 mb-3 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl">
-                          {b.formation}
+                        <p className="text-xs font-japanese font-medium text-slate-700 dark:text-slate-300 mb-3 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl whitespace-pre-line">
+                          <GrammarRubyText text={b.formation} rubyText={b.formationRuby} />
                         </p>
                       )}
                       {b.nuance && (
-                        <p className="text-xs text-amber-800 dark:text-amber-300 mb-3">
-                          {b.nuance}
+                        <p className="text-xs text-amber-800 dark:text-amber-300 mb-3 whitespace-pre-line">
+                          <GrammarRubyText text={b.nuance} rubyText={b.nuanceRuby} />
                         </p>
                       )}
                       {Array.isArray(b.examples) && b.examples.map((ex, exIdx) => (
                         <div key={exIdx} className="mt-2 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800">
                           <p className="font-japanese text-sm font-medium text-slate-900 dark:text-slate-100">
-                            {ex.jpn}
+                            <GrammarRubyText text={ex.jpn} rubyText={ex.ruby} />
                           </p>
                           <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                             {ex.vie}
@@ -459,7 +460,7 @@ export function GrammarDetailModal({
                     Cấu trúc chính
                   </span>
                   <p className="text-2xl font-black font-japanese text-violet-950 dark:text-violet-100">
-                    {currentItem.structure}
+                    <GrammarRubyText text={currentItem.structure} rubyText={currentItem.structureRuby} />
                   </p>
                 </div>
 
@@ -470,7 +471,7 @@ export function GrammarDetailModal({
                       Cách kết hợp (Formation)
                     </span>
                     <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 font-japanese font-medium text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line">
-                      {currentItem.formation}
+                      <GrammarRubyText text={currentItem.formation} rubyText={currentItem.formationRuby} />
                     </div>
                   </div>
                 )}
@@ -481,7 +482,7 @@ export function GrammarDetailModal({
                     Ý nghĩa tiếng Việt
                   </span>
                   <p className="text-base font-semibold text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line">
-                    {currentItem.meaning}
+                    <GrammarRubyText text={currentItem.meaning} rubyText={currentItem.meaningRuby} />
                   </p>
                 </div>
 
@@ -492,7 +493,7 @@ export function GrammarDetailModal({
                       <AlertCircle className="w-4 h-4" /> Lưu ý & Sắc thái
                     </span>
                     <p className="text-xs sm:text-sm text-amber-900 dark:text-amber-200/90 leading-relaxed font-japanese whitespace-pre-line">
-                      {currentItem.nuance}
+                      <GrammarRubyText text={currentItem.nuance} rubyText={currentItem.nuanceRuby} />
                     </p>
                   </div>
                 )}
@@ -563,7 +564,7 @@ export function GrammarDetailModal({
                             {idx + 1}
                           </span>
                           <p className="font-japanese text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-100 leading-relaxed">
-                            {ex.jpn}
+                            <GrammarRubyText text={ex.jpn} rubyText={ex.ruby} />
                           </p>
                         </div>
                         {ex.vie && (

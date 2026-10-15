@@ -31,7 +31,7 @@ interface GrammarDashboardProps {
 }
 
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 phút (tối ưu hóa 100% lượt đọc Firestore)
-const CACHE_KEY_PREFIX = 'kotobase_grammar_v5_';
+const CACHE_KEY_PREFIX = 'kotobase_grammar_v6_';
 
 function getLocalCache(key: string) {
   if (typeof window === 'undefined') return null;

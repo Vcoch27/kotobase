@@ -45,6 +45,7 @@ next-env.d.ts
 /backups/
 *.json.gz
 /tmp/listening-transcription/
+/tmp/grammar-*
 __pycache__/
 
 # Android release keys and cache
