@@ -79,7 +79,7 @@ export function ListeningTranscript({ data, position, focusPart, onSeek }: {
     return () => cancelAnimationFrame(frame);
   }, [activeIndex, data]);
 
-  return <section className="listening-transcript flex h-[45vh] min-h-80 max-h-[600px] min-w-0 flex-col bg-surface-raised" aria-label="Script đồng bộ bài nghe">
+  return <section className="listening-transcript flex h-[28rem] min-h-0 min-w-0 flex-col overflow-hidden bg-surface-raised md:h-full" aria-label="Script đồng bộ bài nghe">
     <div className="border-b border-primary/10 px-3 py-2.5">
       <div className="flex flex-wrap items-center justify-between gap-1">
         <h3 className="font-body text-body font-bold">Script · đề {data.label}</h3>
@@ -106,7 +106,7 @@ export function ListeningTranscript({ data, position, focusPart, onSeek }: {
         <button type="button" aria-pressed={showRuby} title="Cách đọc tự động, có thể sai ở một số từ" onClick={() => setShowRuby(value => !value)} className={`rounded-md px-2 py-1 text-caption ${showRuby ? "bg-primary text-surface" : "bg-surface text-text-muted"}`}>振 Furigana</button>
       </div>
     </div>
-    <div ref={viewport} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-[360px]" aria-label="Nội dung nghe theo thời gian">
+    <div ref={viewport} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-24" aria-label="Nội dung nghe theo thời gian">
       {data.cues.map((cue, index) => {
         const startingQuestions = firstCueOfQuestion.get(index) || [];
         return <div key={`${cue.start}-${index}`}>

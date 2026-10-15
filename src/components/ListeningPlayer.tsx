@@ -135,10 +135,10 @@ export function ListeningPlayer({ driveFileId, label, userId, focusPart }: { dri
   }
 
   return <section ref={frame} aria-label={`Trình nghe đề ${label}`} className="overflow-hidden rounded-xl bg-surface shadow-elevation-sm">
-    <div className={showTranscript && !preview ? "grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]" : ""}>
+    <div className={showTranscript && !preview ? "grid min-w-0 md:h-[clamp(22rem,30vw,32rem)] md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]" : ""}>
     {preview ? <iframe src={`${fileUrl}/preview`} title={`Google Drive · đề N3 ${label}`} className="aspect-video w-full bg-bg" allow="autoplay; fullscreen" allowFullScreen /> :
       <video key={`${driveFileId}-${attempt}`} ref={video} playsInline preload="metadata"
-        aria-label={`Đề nghe N3 ${label}`} className={showTranscript ? "aspect-video h-full max-h-[45vh] min-h-64 w-full bg-black object-contain" : "aspect-video max-h-[45vh] w-full bg-black object-contain"}
+        aria-label={`Đề nghe N3 ${label}`} className={showTranscript ? "aspect-video w-full min-w-0 bg-black object-contain md:aspect-auto md:h-full" : "aspect-video max-h-[45vh] w-full bg-black object-contain"}
         onClick={() => playing ? video.current?.pause() : void play()}
         onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)}
         onTimeUpdate={() => setPosition(video.current?.currentTime || 0)}
