@@ -43,6 +43,7 @@ export function GrammarFormModal({
     exampleMeaning: '',
     jlptLevel: '',
     usageContext: [] as string[],
+    tags: '',
     folderId: selectedFolderId || '',
   });
 
@@ -59,6 +60,7 @@ export function GrammarFormModal({
         exampleMeaning: initialData.exampleMeaning || '',
         jlptLevel: initialData.jlptLevel || '',
         usageContext: initialData.usageContext ? initialData.usageContext.split(',').filter(Boolean) : [],
+        tags: Array.isArray(initialData.tags) ? initialData.tags.join(', ') : '',
         folderId: initialData.folderIds?.[0] || selectedFolderId || '',
       });
     } else if (selectedFolderId) {
@@ -93,6 +95,7 @@ export function GrammarFormModal({
         exampleMeaning: formData.exampleMeaning.trim(),
         jlptLevel: formData.jlptLevel,
         usageContext: formData.usageContext.join(','),
+        tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
         folderIds: formData.folderId ? [formData.folderId] : [],
       };
 
@@ -254,6 +257,18 @@ export function GrammarFormModal({
                 ))}
               </select>
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Tag (tùy chọn)</label>
+            <input
+              type="text"
+              value={formData.tags}
+              onChange={e => setFormData({ ...formData, tags: e.target.value })}
+              placeholder="Unit 1, Unit 2, Giao tiếp..."
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:border-violet-500 outline-none text-sm"
+            />
+            <p className="text-xs text-slate-500">Ngăn cách nhiều tag bằng dấu phẩy. Tag dùng để lọc bài trong thư mục.</p>
           </div>
 
           <div className="space-y-2">

@@ -15,6 +15,12 @@ import {
 
 export type { GrammarItem };
 
+function normalizeGrammarTags(value: unknown): string[] {
+  const raw = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : [];
+  return [...new Set(raw.filter((tag): tag is string => typeof tag === 'string')
+    .map(tag => tag.trim()).filter(Boolean).map(tag => tag.slice(0, 40)))].slice(0, 12);
+}
+
 /**
  * Tải toàn bộ ngữ pháp (kết hợp Firestore + JSON cục bộ) vào RAM server
  * Giúp giảm 99.9% lượt đọc Firestore (tối ưu tối đa cho gói Firebase Free Tier)
@@ -37,14 +43,10 @@ async function loadCombinedGrammarsInternal(): Promise<GrammarItem[]> {
     console.warn("Lỗi đọc grammars từ Firestore, fallback dùng dữ liệu cục bộ:", e);
   }
 
-  // Hợp nhất và tránh trùng ID
+  // Hợp nhất và tránh trùng ID. Firestore có thể lưu phần chỉnh sửa của bài tĩnh.
   const map = new Map<string, GrammarItem>();
-  firestoreItems.forEach(item => map.set(item.id, item));
-  tndgItems.forEach(item => {
-    if (!map.has(item.id)) {
-      map.set(item.id, item);
-    }
-  });
+  tndgItems.forEach(item => map.set(item.id, item));
+  firestoreItems.forEach(item => map.set(item.id, { ...map.get(item.id), ...item }));
 
   const list = Array.from(map.values());
   return list;
@@ -199,7 +201,12 @@ export async function getGrammarDetail(id: string): Promise<{ success: boolean; 
     if (id.startsWith('tndg-')) {
       const detail = getTndgFullGrammarDetail(id);
       if (detail) {
-        return { success: true, data: detail };
+        try {
+          const override = await adminDb.collection("grammars").doc(id).get();
+          return { success: true, data: override.exists ? { ...detail, ...override.data(), id } : detail };
+        } catch {
+          return { success: true, data: detail };
+        }
       }
     }
 
@@ -235,7 +242,7 @@ export async function getGrammarDetail(id: string): Promise<{ success: boolean; 
 export async function createGrammar(input: {
   structure: string; formation?: string; meaning: string;
   nuance?: string; example?: string; exampleMeaning?: string;
-  jlptLevel?: string; usageContext?: string; folderId?: string;
+  jlptLevel?: string; usageContext?: string; folderId?: string; folderIds?: string[]; tags?: string[];
 }) {
   if (!input.structure.trim() || !input.meaning.trim()) return { success: false, error: "Cấu trúc và ý nghĩa là bắt buộc." };
   const currentUser = await getCurrentUser();
@@ -246,9 +253,11 @@ export async function createGrammar(input: {
       meaning: input.meaning.trim(), nuance: input.nuance?.trim() || null,
       example: input.example?.trim() || null, exampleMeaning: input.exampleMeaning?.trim() || null,
       jlptLevel: input.jlptLevel || null, usageContext: input.usageContext || null,
-      folderIds: input.folderId ? [input.folderId] : [],
+      folderIds: input.folderIds || (input.folderId ? [input.folderId] : []),
+      tags: normalizeGrammarTags(input.tags),
       ownerId: currentUser.uid, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     });
+    invalidateServerMemoryCache();
     revalidatePath("/grammar"); revalidateTag("grammar_folders"); revalidateTag("grammars");
     return { success: true, data: { id: docRef.id } };
   } catch { return { success: false, error: "Không thể thêm ngữ pháp." }; }
@@ -257,23 +266,28 @@ export async function createGrammar(input: {
 export async function updateGrammar(id: string, input: {
   structure: string; formation?: string; meaning: string;
   nuance?: string; example?: string; exampleMeaning?: string;
-  jlptLevel?: string; usageContext?: string; folderId?: string;
+  jlptLevel?: string; usageContext?: string; folderId?: string; folderIds?: string[]; tags?: string[];
 }) {
   const currentUser = await getCurrentUser();
   if (!currentUser) return { success: false, error: "Bạn cần đăng nhập." };
   try {
     const docRef = adminDb.collection("grammars").doc(id);
     const doc = await docRef.get();
-    if (!doc.exists) return { success: false, error: "Ngữ pháp không tồn tại." };
-    if (doc.data()?.ownerId !== currentUser.uid && currentUser.email !== "hoangtungmy123@gmail.com") return { success: false, error: "Không có quyền." };
-    await docRef.update({
+    const isLocalGrammar = id.startsWith('tndg-') && !!getTndgFullGrammarDetail(id);
+    if (!doc.exists && !isLocalGrammar) return { success: false, error: "Ngữ pháp không tồn tại." };
+    if (doc.exists && doc.data()?.ownerId !== currentUser.uid && currentUser.email !== "hoangtungmy123@gmail.com") return { success: false, error: "Không có quyền." };
+    const changes = {
       structure: input.structure.trim(), formation: input.formation?.trim() || null,
       meaning: input.meaning.trim(), nuance: input.nuance?.trim() || null,
       example: input.example?.trim() || null, exampleMeaning: input.exampleMeaning?.trim() || null,
       jlptLevel: input.jlptLevel || null, usageContext: input.usageContext || null,
-      folderIds: input.folderId ? [input.folderId] : (doc.data()?.folderIds || []),
+      folderIds: input.folderIds || (input.folderId ? [input.folderId] : (doc.data()?.folderIds || (isLocalGrammar ? ['tndg-n3'] : []))),
+      tags: normalizeGrammarTags(input.tags),
       updatedAt: new Date().toISOString(),
-    });
+    };
+    if (doc.exists) await docRef.update(changes);
+    else await docRef.set({ ...changes, ownerId: currentUser.uid, createdAt: new Date().toISOString() });
+    invalidateServerMemoryCache();
     revalidatePath("/grammar"); revalidateTag("grammar_folders"); revalidateTag("grammars");
     return { success: true };
   } catch { return { success: false, error: "Không thể sửa ngữ pháp." }; }
@@ -288,6 +302,7 @@ export async function deleteGrammar(id: string) {
     if (!doc.exists) return { success: false, error: "Ngữ pháp không tồn tại." };
     if (doc.data()?.ownerId !== currentUser.uid && currentUser.email !== "hoangtungmy123@gmail.com") return { success: false, error: "Không có quyền." };
     await docRef.delete();
+    invalidateServerMemoryCache();
     revalidatePath("/grammar"); revalidateTag("grammar_folders"); revalidateTag("grammars");
     return { success: true };
   } catch { return { success: false, error: "Không thể xóa ngữ pháp." }; }
@@ -369,6 +384,7 @@ export async function createBulkGrammars(jsonString: string, targetFolderId?: st
           jlptLevel: 'N3',
           usageContext: 'writing,conversation',
           sourceUrl: lesson.url || null,
+          tags: lesson.tags,
         };
       });
     } else if (Array.isArray(parsedJson)) {
@@ -377,7 +393,7 @@ export async function createBulkGrammars(jsonString: string, targetFolderId?: st
       return { success: false, error: "Dữ liệu JSON không hợp lệ (cần dạng mảng hoặc đối tượng chứa mảng lessons)." };
     }
 
-    const batch = adminDb.batch();
+    let batch = adminDb.batch();
     const grammarsRef = adminDb.collection("grammars");
     const baseTime = Date.now();
     
@@ -403,6 +419,7 @@ export async function createBulkGrammars(jsonString: string, targetFolderId?: st
         jlptLevel: item.jlptLevel || null,
         usageContext: item.usageContext || null,
         sourceUrl: item.sourceUrl || null,
+        tags: normalizeGrammarTags(item.tags),
         folderIds: targetFolderId ? [targetFolderId] : [],
         ownerId: currentUser.uid,
         createdAt: createdAt,
@@ -410,11 +427,15 @@ export async function createBulkGrammars(jsonString: string, targetFolderId?: st
       });
       
       count++;
-      if (count % 500 === 0) await batch.commit();
+      if (count % 500 === 0) {
+        await batch.commit();
+        batch = adminDb.batch();
+      }
     }
 
     if (count % 500 !== 0) await batch.commit();
 
+    invalidateServerMemoryCache();
     revalidatePath("/grammar"); revalidateTag("grammar_folders"); revalidateTag("grammars");
     return { success: true, count };
   } catch (error: any) {

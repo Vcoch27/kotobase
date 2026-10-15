@@ -45,6 +45,7 @@ export interface GrammarItem {
   usageContext?: string;
   sourceUrl?: string;
   folderIds?: string[];
+  tags?: string[];
   ownerId?: string;
   source?: string;
   articleBlocks?: Array<{ kind: string; heading: string; text?: string; html: string }>;

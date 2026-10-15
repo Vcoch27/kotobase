@@ -281,6 +281,11 @@ export function GrammarDetailModal({
                   {currentItem.title}
                 </p>
               )}
+              {currentItem.tags && currentItem.tags.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {currentItem.tags.map(tag => <span key={tag} className="rounded-lg bg-sky-100 px-2 py-0.5 text-xs font-bold text-sky-800 dark:bg-sky-900/40 dark:text-sky-200">{tag}</span>)}
+                </div>
+              )}
             </div>
 
             <button

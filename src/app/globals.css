@@ -386,6 +386,11 @@ header.sticky {
 .grammar-ruby { ruby-position: over; }
 .grammar-ruby rt { font-size: 0.62em; font-weight: 500; line-height: 1; color: #7c3aed; user-select: none; }
 .dark .grammar-ruby rt { color: #a78bfa; }
+
+/* Site-wide reading preference; Alt + Shift + F toggles it. */
+html[data-furigana-hidden="true"] ruby rt {
+  display: none !important;
+}
 .grammar-article rt {
   font-size: 0.65em;
   font-weight: 500;

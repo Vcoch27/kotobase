@@ -63,8 +63,9 @@ export function GrammarList({ grammars, presentation = 'compact', onEdit, onDele
                   {g.meaning?.split('\n')[0] || 'Chưa có ý nghĩa'}
                 </span>
                 <span className="col-start-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 sm:col-start-4 sm:flex-col sm:items-start dark:text-slate-400">
-                  <span>{g.id.startsWith('tndg-') ? 'Tổng hợp' : 'Shin Kanzen'}</span>
+                  <span>{g.id.startsWith('tndg-') ? 'Tổng hợp' : g.folderIds?.includes('E9rOfmF2wzKlWWbpWcFY') ? 'Shin Kanzen' : 'Cá nhân'}</span>
                   {day && <span className="rounded-md bg-violet-100 px-1.5 py-0.5 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">Ngày {day}</span>}
+                  {g.tags?.map(tag => <span key={tag} className="rounded-md bg-sky-100 px-1.5 py-0.5 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200">{tag}</span>)}
                 </span>
               </button>
             );
@@ -170,6 +171,7 @@ function GrammarCard({
           })}
 
           {/* Context tags */}
+          {g.tags?.map(tag => <span key={tag} className="rounded-lg bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800 dark:bg-sky-900/40 dark:text-sky-200">{tag}</span>)}
           {g.usageContext && g.usageContext.split(',').map((ctx) => {
             const trimmed = ctx.trim();
             return (

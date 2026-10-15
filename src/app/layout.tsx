@@ -24,6 +24,7 @@ const notoSerifJP = Noto_Serif_JP({
 
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { AppUpdateNotifier } from "@/components/AppUpdateNotifier";
+import { GlobalFuriganaShortcut } from "@/components/GlobalFuriganaShortcut";
 
 export const viewport: Viewport = {
   themeColor: "#4f46e5",
@@ -69,6 +70,7 @@ export default function RootLayout({
           {children}
           <MobileBottomNav />
           <AppUpdateNotifier />
+          <GlobalFuriganaShortcut />
 
           {/* Đăng ký Service Worker hỗ trợ Offline PWA & Web Cache */}
           <script

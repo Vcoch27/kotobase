@@ -12,13 +12,17 @@ import { GrammarDetailModal } from './GrammarDetailModal';
 import { 
   LayoutGrid, List, Layers, Plus, Loader2, ChevronRight, ChevronDown,
   ArrowLeft, FolderPlus, BookOpen, PenTool, Database, Search, X, 
-  RotateCw, Sparkles, Filter 
+  RotateCw, Sparkles, Filter, Copy, Tag
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { cn } from '@/lib/cn';
 import { GrammarItem } from '@/lib/grammar-data';
 import { getGrammarStudyDay, grammarStudyDays } from '@/lib/grammar-study-plan';
+import { grammarImportPrompt } from '@/lib/grammar-import-prompt';
+
+const SHIN_KANZEN_FOLDER_ID = 'E9rOfmF2wzKlWWbpWcFY';
+const TNDG_FOLDER_ID = 'tndg-n3';
 
 interface UserInfo {
   uid: string;
@@ -32,7 +36,7 @@ interface GrammarDashboardProps {
 }
 
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 phút (tối ưu hóa 100% lượt đọc Firestore)
-const CACHE_KEY_PREFIX = 'kotobase_grammar_v6_';
+const CACHE_KEY_PREFIX = 'kotobase_grammar_v7_';
 
 function getLocalCache(key: string) {
   if (typeof window === 'undefined') return null;
@@ -76,6 +80,7 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
   const [viewMode, setViewMode] = useState<'list' | 'flashcard' | 'fillblank'>('list');
   const [listPresentation, setListPresentation] = useState<'compact' | 'cards'>('compact');
   const [selectedStudyDay, setSelectedStudyDay] = useState<number | null>(null);
+  const [selectedTag, setSelectedTag] = useState('');
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingGrammar, setEditingGrammar] = useState<any | null>(null);
   const [isMobileFolderOpen, setIsMobileFolderOpen] = useState(false);
@@ -96,6 +101,10 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
 
   const [searchQuery, setSearchQuery] = useState("");
   const isGoogleUser = !!currentUser?.uid;
+  const showStudyPlan = selectedFolderId === 'all' || selectedFolderId === SHIN_KANZEN_FOLDER_ID || selectedFolderId === TNDG_FOLDER_ID;
+
+  const availableTags = useMemo(() => [...new Set(grammars.flatMap(grammar => Array.isArray(grammar.tags) ? grammar.tags : []))]
+    .sort((a, b) => a.localeCompare(b, 'vi')), [grammars]);
 
   // Book item counts
   const bookCounts = useMemo(() => {
@@ -124,16 +133,20 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
 
   const studyDayCounts = useMemo(() => {
     const counts = new Map<number, number>();
-    sortedGrammars.forEach(grammar => {
+    sortedGrammars.filter(grammar => selectedFolderId !== 'all' || grammar.folderIds?.includes(SHIN_KANZEN_FOLDER_ID)).forEach(grammar => {
       const day = getGrammarStudyDay(grammar);
       if (day) counts.set(day, (counts.get(day) || 0) + 1);
     });
     return counts;
-  }, [sortedGrammars]);
+  }, [sortedGrammars, selectedFolderId]);
 
   // Filter grammars by Search & Book
   const filteredGrammars = useMemo(() => {
     let list = sortedGrammars;
+
+    if (selectedFolderId !== 'all') {
+      list = list.filter(grammar => grammar.folderIds?.includes(selectedFolderId) || (selectedFolderId === TNDG_FOLDER_ID && grammar.id.startsWith('tndg-')));
+    }
 
     // 1. Filter by Book
     if (selectedBook !== 'all') {
@@ -154,6 +167,10 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
 
     if (selectedStudyDay !== null) {
       list = list.filter(grammar => getGrammarStudyDay(grammar) === selectedStudyDay);
+    }
+
+    if (selectedTag) {
+      list = list.filter(grammar => grammar.tags?.includes(selectedTag));
     }
 
     // 2. Filter by Search Query
@@ -200,7 +217,7 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
 
       return false;
     });
-  }, [sortedGrammars, selectedBook, selectedStudyDay, searchQuery]);
+  }, [sortedGrammars, selectedFolderId, selectedBook, selectedStudyDay, selectedTag, searchQuery]);
 
   const fetchData = useCallback(async (isBackground = false, forceRefresh = false) => {
     const foldersCacheKey = 'kotobase_grammar_folders';
@@ -267,6 +284,8 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
   const handleSelectFolder = (id: string) => {
     setSelectedFolderId(id);
     setSelectedStudyDay(null);
+    setSelectedTag('');
+    setSelectedBook('all');
     setViewMode('list');
     if (window.innerWidth < 768) {
       setIsMobileFolderOpen(false);
@@ -315,6 +334,15 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
       fetchData(true, true);
     } else {
       toast.error(res.error || "Lỗi import JSON");
+    }
+  };
+
+  const handleCopyImportPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(grammarImportPrompt);
+      toast.success('Đã sao chép prompt tạo JSON');
+    } catch {
+      toast.error('Không thể sao chép. Hãy kiểm tra quyền clipboard của trình duyệt.');
     }
   };
 
@@ -390,6 +418,8 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
               </button>
             </>
           )}
+
+          <span className="hidden lg:inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300" title="Phím tắt trên mọi trang">Alt + Shift + F · ẩn/hiện furigana</span>
 
           {/* VIEW MODES: LIST / FLASHCARD / FILLBLANK */}
           <div className="hidden sm:flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl items-center flex-1 sm:flex-none justify-center">
@@ -503,11 +533,25 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
         )}
 
         {/* Optional study plan built from the book's table of contents. */}
-        <div className="flex flex-col gap-2 rounded-2xl border border-violet-200 bg-violet-50/60 p-3 sm:flex-row sm:items-center dark:border-violet-900/50 dark:bg-violet-950/20">
+        {showStudyPlan && <div className="flex flex-col gap-2 rounded-2xl border border-violet-200 bg-violet-50/60 p-3 sm:flex-row sm:items-center dark:border-violet-900/50 dark:bg-violet-950/20">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-violet-900 dark:text-violet-200">Học theo 38 ngày · Shin Kanzen N3</p>
-            <p className="text-xs text-violet-700/80 dark:text-violet-300/80">Chọn ngày để tập trung vào các bài đã ghép từ hai thư mục. Các ngày chưa có bài vẫn xem được trong sách.</p>
+            <p className="text-xs text-violet-700/80 dark:text-violet-300/80">Chọn một nguồn và ngày học. Một ngày chỉ hiện bài của nguồn đang chọn.</p>
           </div>
+          <select
+            aria-label="Nguồn bài học 38 ngày"
+            value={selectedFolderId === TNDG_FOLDER_ID ? TNDG_FOLDER_ID : SHIN_KANZEN_FOLDER_ID}
+            onChange={event => {
+              setSelectedFolderId(event.target.value);
+              setSelectedStudyDay(null);
+              setSelectedTag('');
+              setSelectedBook('all');
+            }}
+            className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 sm:w-48 dark:border-violet-800 dark:bg-slate-900 dark:text-slate-100"
+          >
+            <option value={SHIN_KANZEN_FOLDER_ID}>Shin Kanzen</option>
+            <option value={TNDG_FOLDER_ID}>Tổng hợp N3</option>
+          </select>
           <select
             aria-label="Chọn ngày học ngữ pháp"
             value={selectedStudyDay ?? ''}
@@ -515,8 +559,9 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
               const day = event.target.value ? Number(event.target.value) : null;
               setSelectedStudyDay(day);
               if (day !== null) {
-                setSelectedFolderId('all');
+                if (selectedFolderId === 'all') setSelectedFolderId(SHIN_KANZEN_FOLDER_ID);
                 setSelectedBook('all');
+                setSelectedTag('');
                 setSearchQuery('');
                 setViewMode('list');
               }
@@ -538,7 +583,7 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
           >
             Mở sách ↗
           </a>
-        </div>
+        </div>}
 
         {selectedStudyDay && (
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
@@ -546,6 +591,17 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
             <span>{grammarStudyDays[selectedStudyDay - 1].title}</span>
             <span>· trang sách {grammarStudyDays[selectedStudyDay - 1].bookPage}</span>
             <button type="button" onClick={() => setSelectedStudyDay(null)} className="ml-auto font-bold text-violet-700 underline underline-offset-2 dark:text-violet-300">Bỏ lọc ngày</button>
+          </div>
+        )}
+
+        {availableTags.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <label htmlFor="grammar-tag-filter" className="flex items-center gap-1 font-bold text-slate-600 dark:text-slate-300"><Tag className="h-3.5 w-3.5" /> Tag trong thư mục</label>
+            <select id="grammar-tag-filter" value={selectedTag} onChange={event => setSelectedTag(event.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+              <option value="">Tất cả tag</option>
+              {availableTags.map(tag => <option key={tag} value={tag}>{tag}</option>)}
+            </select>
+            {selectedTag && <button type="button" onClick={() => setSelectedTag('')} className="font-bold text-violet-700 underline dark:text-violet-300">Bỏ lọc tag</button>}
           </div>
         )}
 
@@ -573,7 +629,7 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
           
           <div className="flex items-center justify-between sm:justify-end gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0 px-1">
             <span className="px-2.5 py-1 rounded-lg bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-500/20">
-              {searchQuery || selectedBook !== 'all' || selectedStudyDay !== null
+              {searchQuery || selectedBook !== 'all' || selectedStudyDay !== null || selectedTag
                 ? `${filteredGrammars.length} / ${sortedGrammars.length} ngữ pháp` 
                 : `${sortedGrammars.length} ngữ pháp`}
             </span>
@@ -616,11 +672,11 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
                     Không tìm thấy ngữ pháp phù hợp
                   </h3>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                    {selectedStudyDay && !searchQuery ? 'Hai thư mục hiện chưa có bài được xác nhận cho ngày này. Bạn có thể mở sách để học theo mục lục.' : searchQuery ? `Không có ngữ pháp nào khớp với "${searchQuery}"` : 'Thư mục hoặc giáo trình này chưa có bài nào.'}
+                    {selectedStudyDay && !searchQuery ? 'Nguồn này chưa có bài được xác nhận cho ngày học. Bạn có thể mở sách để học theo mục lục.' : searchQuery ? `Không có ngữ pháp nào khớp với "${searchQuery}"` : 'Thư mục hoặc giáo trình này chưa có bài nào.'}
                   </p>
-                  {(searchQuery || selectedBook !== 'all' || selectedStudyDay !== null) && (
+                  {(searchQuery || selectedBook !== 'all' || selectedStudyDay !== null || selectedTag) && (
                     <button
-                      onClick={() => { setSearchQuery(''); setSelectedBook('all'); setSelectedStudyDay(null); }}
+                      onClick={() => { setSearchQuery(''); setSelectedBook('all'); setSelectedStudyDay(null); setSelectedTag(''); }}
                       className="px-4 py-2 bg-violet-100 hover:bg-violet-200 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300 font-bold rounded-xl text-xs transition-colors"
                     >
                       Xóa bộ lọc
@@ -737,6 +793,10 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
             </div>
             
             <div className="p-5 overflow-y-auto custom-scrollbar flex-1 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-200 bg-violet-50 p-3 dark:border-violet-800 dark:bg-violet-950/20">
+                <p className="max-w-md text-xs text-violet-800 dark:text-violet-200">Có danh sách ngữ pháp thô? Sao chép prompt này để nhờ AI tạo JSON đúng định dạng, sau đó dán kết quả vào đây.</p>
+                <button type="button" onClick={handleCopyImportPrompt} className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-3 py-2 text-xs font-bold text-white hover:bg-violet-700"><Copy className="h-3.5 w-3.5" /> Sao chép prompt</button>
+              </div>
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-xl p-4 text-sm text-blue-800 dark:text-blue-300">
                 <p className="font-bold mb-2">Định dạng JSON yêu cầu (Array of Objects):</p>
                 <pre className="bg-white/60 dark:bg-slate-900/60 p-3 rounded-lg overflow-x-auto text-xs font-mono">
@@ -749,7 +809,8 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
     "example": "不景気の影響により...",
     "exampleMeaning": "Do ảnh hưởng suy thoái...",
     "jlptLevel": "N4",
-    "usageContext": "writing,business"
+    "usageContext": "writing,business",
+    "tags": ["Unit 1"]
   }
 ]`}
                 </pre>
