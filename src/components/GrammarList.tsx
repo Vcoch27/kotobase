@@ -1,44 +1,18 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Pencil, Trash2, BookOpen, Volume2, ExternalLink, ChevronDown, ChevronUp, Sparkles, HelpCircle } from 'lucide-react';
+import { Pencil, Trash2, BookOpen, Volume2, ExternalLink, ChevronDown, ChevronUp, Sparkles, HelpCircle, FileText } from 'lucide-react';
 import { playAudio } from '@/lib/tts-utils';
 import { cn } from '@/lib/cn';
+import { GrammarItem, GrammarBlock, GrammarExample } from '@/lib/grammar-data';
 
-export interface GrammarExample {
-  jpn: string;
-  vie: string;
-}
-
-export interface GrammarBlock {
-  blockNumber: number;
-  formation: string;
-  meaning: string;
-  nuance?: string;
-  examples: GrammarExample[];
-}
-
-export interface GrammarItem {
-  id: string;
-  number?: number;
-  title?: string;
-  structure: string;
-  formation?: string;
-  meaning: string;
-  nuance?: string;
-  example?: string;
-  exampleMeaning?: string;
-  examples?: GrammarExample[];
-  blocks?: GrammarBlock[];
-  jlptLevel?: string;
-  usageContext?: string;
-  sourceUrl?: string;
-}
+export type { GrammarItem, GrammarBlock, GrammarExample };
 
 interface GrammarListProps {
   grammars: GrammarItem[];
   onEdit: (g: GrammarItem) => void;
   onDelete: (id: string) => void;
+  onOpenDetail?: (g: GrammarItem) => void;
 }
 
 const contextIcons: Record<string, string> = {
@@ -48,7 +22,7 @@ const contextIcons: Record<string, string> = {
   anime: '📺 Phim/Anime'
 };
 
-export function GrammarList({ grammars, onEdit, onDelete }: GrammarListProps) {
+export function GrammarList({ grammars, onEdit, onDelete, onOpenDetail }: GrammarListProps) {
   if (grammars.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 border-dashed">
@@ -62,7 +36,13 @@ export function GrammarList({ grammars, onEdit, onDelete }: GrammarListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
       {grammars.map((g) => (
-        <GrammarCard key={g.id} grammar={g} onEdit={onEdit} onDelete={onDelete} />
+        <GrammarCard 
+          key={g.id} 
+          grammar={g} 
+          onEdit={onEdit} 
+          onDelete={onDelete} 
+          onOpenDetail={onOpenDetail} 
+        />
       ))}
     </div>
   );
@@ -72,10 +52,12 @@ function GrammarCard({
   grammar: g,
   onEdit,
   onDelete,
+  onOpenDetail,
 }: {
   grammar: GrammarItem;
   onEdit: (g: GrammarItem) => void;
   onDelete: (id: string) => void;
+  onOpenDetail?: (g: GrammarItem) => void;
 }) {
   const hasMultipleBlocks = g.blocks && g.blocks.length > 1;
   const [activeBlockIndex, setActiveBlockIndex] = useState<number>(0);
@@ -106,7 +88,7 @@ function GrammarCard({
 
   return (
     <div className="group flex flex-col bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-lg hover:border-violet-300 dark:hover:border-violet-500/50 transition-all duration-300">
-      {/* 1. Header Card: Badges, Actions, Audio */}
+      {/* 1. Header Card: Badges, Books, Actions */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex flex-wrap items-center gap-1.5 min-w-0">
           {/* Badge số bài */}
@@ -122,6 +104,26 @@ function GrammarCard({
               {g.jlptLevel}
             </span>
           )}
+
+          {/* Book badges */}
+          {Array.isArray(g.books) && g.books.map((b) => {
+            const isSk = b.toLowerCase().includes('shin');
+            const isMimi = b.toLowerCase().includes('mimi');
+            const isSouma = b.toLowerCase().includes('souma');
+            return (
+              <span
+                key={b}
+                className={cn(
+                  "px-2 py-0.5 rounded-lg text-[10px] font-bold border",
+                  isSk && "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40",
+                  isMimi && "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/40",
+                  isSouma && "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/40"
+                )}
+              >
+                {isSk ? '📗 Shinkanzen' : isMimi ? '📙 Mimikara' : isSouma ? '📘 Soumatome' : b}
+              </span>
+            );
+          })}
 
           {/* Context tags */}
           {g.usageContext && g.usageContext.split(',').map((ctx) => {
@@ -145,7 +147,7 @@ function GrammarCard({
               target="_blank"
               rel="noopener noreferrer"
               className="p-1.5 rounded-xl text-slate-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-colors"
-              title="Xem bài gốc trên vnjpclub"
+              title="Xem bài gốc nguồn ngoài"
             >
               <ExternalLink className="w-3.5 h-3.5" />
             </a>
@@ -173,7 +175,14 @@ function GrammarCard({
 
       {/* 2. Cấu trúc ngữ pháp chính + Loa phát âm */}
       <div className="flex items-center justify-between gap-3 mb-3">
-        <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-japanese tracking-tight">
+        <h3 
+          onClick={() => onOpenDetail && onOpenDetail(g)}
+          className={cn(
+            "text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-japanese tracking-tight",
+            onOpenDetail && "cursor-pointer hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+          )}
+          title={onOpenDetail ? "Bấm để xem chi tiết bài học" : undefined}
+        >
           {g.structure}
         </h3>
 
@@ -321,6 +330,26 @@ function GrammarCard({
           ))}
         </div>
       )}
+
+      {/* 8. Bottom Action Bar: Examples count & Xem chi tiết */}
+      <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
+        <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
+          {(g.totalExamplesCount && g.totalExamplesCount > 0) 
+            ? `${g.totalExamplesCount} câu ví dụ` 
+            : `${currentExamples.length} câu ví dụ`}
+        </span>
+
+        {onOpenDetail && (
+          <button
+            type="button"
+            onClick={() => onOpenDetail(g)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-violet-700 bg-violet-50 hover:bg-violet-100 dark:bg-violet-950/40 dark:text-violet-300 dark:hover:bg-violet-900/50 transition-all border border-violet-200/60 dark:border-violet-800/40 active:scale-95 shadow-2xs"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Xem chi tiết</span>
+          </button>
+        )}
+      </div>
     </div>
   );
 }

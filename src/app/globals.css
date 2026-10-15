@@ -375,3 +375,120 @@
 header.sticky {
   padding-top: max(0px, env(safe-area-inset-top));
 }
+
+/* ══════════════════════════════════════════════════════════════
+   GRAMMAR LESSON ARTICLE STYLING (Ruby, Cards, Alerts, Tables)
+   ══════════════════════════════════════════════════════════════ */
+.grammar-article ruby {
+  ruby-position: over;
+  display: inline-ruby;
+}
+.grammar-article rt {
+  font-size: 0.65em;
+  font-weight: 500;
+  color: #7c3aed;
+  line-height: 1;
+  user-select: none;
+}
+.dark .grammar-article rt {
+  color: #a78bfa;
+}
+.grammar-article .card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+}
+.dark .grammar-article .card {
+  background: #0f172a;
+  border-color: #334155;
+}
+.grammar-article .card-header {
+  font-weight: 700;
+  padding: 0.75rem 1.25rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.95rem;
+}
+.dark .grammar-article .card-header {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+.grammar-article .card-body {
+  padding: 1.25rem;
+}
+.grammar-article .card.border-warning {
+  border-color: #fde68a !important;
+  background-color: #fffbeb !important;
+}
+.dark .grammar-article .card.border-warning {
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  background-color: rgba(120, 53, 15, 0.2) !important;
+}
+.grammar-article .card.border-info {
+  border-color: #bfdbfe !important;
+  background-color: #eff6ff !important;
+}
+.dark .grammar-article .card.border-info {
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  background-color: rgba(30, 58, 138, 0.2) !important;
+}
+.grammar-article .alert {
+  padding: 0.875rem 1.25rem;
+  border-radius: 0.875rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid transparent;
+}
+.grammar-article .alert-info {
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+.dark .grammar-article .alert-info {
+  background-color: rgba(30, 58, 138, 0.3);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: #93c5fd;
+}
+.grammar-article .alert-warning {
+  background-color: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+.dark .grammar-article .alert-warning {
+  background-color: rgba(120, 53, 15, 0.3);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #fde68a;
+}
+.grammar-article .list-group-item {
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px dashed #e2e8f0;
+  background: transparent;
+}
+.dark .grammar-article .list-group-item {
+  border-color: #334155;
+}
+.grammar-article table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+.grammar-article th, .grammar-article td {
+  padding: 0.65rem 0.85rem;
+  border: 1px solid #e2e8f0;
+}
+.dark .grammar-article th, .dark .grammar-article td {
+  border-color: #334155;
+}
+.grammar-article img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  margin: 1.25rem auto;
+  display: block;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+

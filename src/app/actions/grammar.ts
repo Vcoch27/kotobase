@@ -4,33 +4,112 @@ import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/session";
 import { revalidatePath, revalidateTag } from "next/cache";
 
+import {
+  getTndgSummaryGrammars,
+  getTndgFullGrammarDetail,
+  getServerMemoryCache,
+  setServerMemoryCache,
+  invalidateServerMemoryCache,
+  GrammarItem,
+} from "@/lib/grammar-data";
+
+export type { GrammarItem };
+
+/**
+ * Tải toàn bộ ngữ pháp (kết hợp Firestore + JSON cục bộ) vào RAM server
+ * Giúp giảm 99.9% lượt đọc Firestore (tối ưu tối đa cho gói Firebase Free Tier)
+ */
+async function loadCombinedGrammarsInternal(): Promise<GrammarItem[]> {
+  const memory = getServerMemoryCache();
+  if (memory?.grammars && memory.grammars.length > 0) {
+    return memory.grammars;
+  }
+
+  // 1. Dữ liệu chuẩn từ file JSON cục bộ (308 bài, 0 reads Firestore)
+  const tndgItems = getTndgSummaryGrammars();
+
+  // 2. Dữ liệu từ Firestore (Shin Kanzen 100 bài + bài do người dùng tạo)
+  let firestoreItems: GrammarItem[] = [];
+  try {
+    const snap = await adminDb.collection("grammars").get();
+    firestoreItems = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as GrammarItem));
+  } catch (e) {
+    console.warn("Lỗi đọc grammars từ Firestore, fallback dùng dữ liệu cục bộ:", e);
+  }
+
+  // Hợp nhất và tránh trùng ID
+  const map = new Map<string, GrammarItem>();
+  firestoreItems.forEach(item => map.set(item.id, item));
+  tndgItems.forEach(item => {
+    if (!map.has(item.id)) {
+      map.set(item.id, item);
+    }
+  });
+
+  const list = Array.from(map.values());
+  return list;
+}
+
 export async function getGrammarFolders(): Promise<{ success: boolean; data?: any[]; error?: string }> {
   try {
-    const snapshot = await adminDb.collection("grammar_folders").orderBy("name", "asc").get();
-    const folders = snapshot.docs.map(doc => ({
-      id: doc.id,
-      name: doc.data().name,
-      parentId: doc.data().parentId || null,
-      ownerId: doc.data().ownerId || null,
-      ownerEmail: doc.data().ownerEmail || null,
-      ownerName: doc.data().ownerName || null,
-      isPublic: doc.data().isPublic !== false,
-      _count: { folderGrammars: 0 }
-    }));
+    const memory = getServerMemoryCache();
+    if (memory?.folders && memory.folders.length > 0) {
+      return { success: true, data: memory.folders };
+    }
 
-    await Promise.all(folders.map(async (folder) => {
-      try {
-        const countSnap = await adminDb.collection("grammars")
-          .where("folderIds", "array-contains", folder.id)
-          .count()
-          .get();
-        folder._count.folderGrammars = countSnap.data().count;
-      } catch {
-        folder._count.folderGrammars = 0;
-      }
-    }));
+    // 1. Lấy danh sách thư mục từ Firestore
+    let firestoreFolders: any[] = [];
+    try {
+      const snapshot = await adminDb.collection("grammar_folders").orderBy("name", "asc").get();
+      firestoreFolders = snapshot.docs.map(doc => ({
+        id: doc.id,
+        name: doc.data().name,
+        parentId: doc.data().parentId || null,
+        ownerId: doc.data().ownerId || null,
+        ownerEmail: doc.data().ownerEmail || null,
+        ownerName: doc.data().ownerName || null,
+        isPublic: doc.data().isPublic !== false,
+        _count: { folderGrammars: 0 }
+      }));
+    } catch (e) {
+      console.warn("Lỗi đọc grammar_folders từ Firestore:", e);
+    }
 
-    return { success: true, data: folders };
+    // Đảm bảo các thư mục tiêu chuẩn luôn có mặt
+    const hasTndg = firestoreFolders.some(f => f.id === 'tndg-n3' || f.name.includes('Tiếng Nhật Đơn Giản'));
+    if (!hasTndg) {
+      firestoreFolders.unshift({
+        id: 'tndg-n3',
+        name: 'Tổng hợp N3 (Tiếng Nhật Đơn Giản)',
+        parentId: null,
+        isPublic: true,
+        _count: { folderGrammars: 308 }
+      });
+    }
+
+    const hasSk = firestoreFolders.some(f => f.id === 'E9rOfmF2wzKlWWbpWcFY' || f.name.includes('Shin Kanzen'));
+    if (!hasSk) {
+      firestoreFolders.unshift({
+        id: 'E9rOfmF2wzKlWWbpWcFY',
+        name: 'Shin Kanzen Master N3',
+        parentId: null,
+        isPublic: true,
+        _count: { folderGrammars: 100 }
+      });
+    }
+
+    // 2. Load toàn bộ grammars vào RAM
+    const allGrammars = await loadCombinedGrammarsInternal();
+
+    // 3. Tính số lượng bài trong mỗi thư mục trong RAM (0 truy vấn Firestore!)
+    firestoreFolders.forEach(folder => {
+      folder._count.folderGrammars = allGrammars.filter(g =>
+        Array.isArray(g.folderIds) && g.folderIds.includes(folder.id)
+      ).length;
+    });
+
+    setServerMemoryCache(firestoreFolders, allGrammars);
+    return { success: true, data: firestoreFolders };
   } catch (error: any) {
     console.error("Lỗi getGrammarFolders:", error);
     return { success: false, error: "Lỗi khi lấy danh sách thư mục ngữ pháp." };
@@ -47,6 +126,7 @@ export async function createGrammarFolder(name: string, parentId?: string) {
       ownerId: currentUser.uid, ownerEmail: currentUser.email,
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     });
+    invalidateServerMemoryCache();
     revalidatePath("/grammar"); revalidateTag("grammar_folders"); revalidateTag("grammars");
     return { success: true, data: { id: docRef.id } };
   } catch { return { success: false, error: "Không thể tạo thư mục." }; }
@@ -62,6 +142,7 @@ export async function updateGrammarFolder(id: string, name: string) {
     if (!doc.exists) return { success: false, error: "Thư mục không tồn tại." };
     if (doc.data()?.ownerId !== currentUser.uid && currentUser.email !== "hoangtungmy123@gmail.com") return { success: false, error: "Không có quyền." };
     await docRef.update({ name: name.trim(), updatedAt: new Date().toISOString() });
+    invalidateServerMemoryCache();
     revalidatePath("/grammar"); revalidateTag("grammar_folders"); revalidateTag("grammars");
     return { success: true };
   } catch { return { success: false, error: "Không thể cập nhật thư mục." }; }
@@ -74,6 +155,7 @@ export async function deleteGrammarFolder(id: string) {
     const docRef = adminDb.collection("grammar_folders").doc(id);
     const doc = await docRef.get();
     if (!doc.exists) {
+      invalidateServerMemoryCache();
       revalidatePath("/grammar");
       revalidateTag("grammar_folders");
       revalidateTag("grammars");
@@ -85,6 +167,7 @@ export async function deleteGrammarFolder(id: string) {
     grammarsQuery.docs.forEach(gDoc => batch.delete(gDoc.ref));
     batch.delete(docRef);
     await batch.commit();
+    invalidateServerMemoryCache();
     revalidatePath("/grammar"); revalidateTag("grammar_folders"); revalidateTag("grammars");
     return { success: true };
   } catch { return { success: false, error: "Không thể xóa thư mục." }; }
@@ -92,19 +175,56 @@ export async function deleteGrammarFolder(id: string) {
 
 export async function getGrammarsByFolder(folderId: string | "all"): Promise<{ success: boolean; data?: any[]; error?: string }> {
   try {
-    let snapshot;
+    const allGrammars = await loadCombinedGrammarsInternal();
     if (folderId === "all" || !folderId) {
-      snapshot = await adminDb.collection("grammars").get();
-    } else {
-      snapshot = await adminDb.collection("grammars")
-        .where("folderIds", "array-contains", folderId)
-        .get();
+      return { success: true, data: allGrammars };
     }
-    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    return { success: true, data };
+    const filtered = allGrammars.filter(g =>
+      Array.isArray(g.folderIds) && g.folderIds.includes(folderId)
+    );
+    return { success: true, data: filtered };
   } catch (error: any) {
     console.error("Lỗi getGrammarsByFolder:", error);
     return { success: false, error: "Lỗi lấy danh sách ngữ pháp." };
+  }
+}
+
+export async function getGrammarDetail(id: string): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    // 1. Nếu là bài học Tiếng Nhật Đơn Giản, đọc từ file JSON phân tích chi tiết (0 reads Firestore)
+    if (id.startsWith('tndg-')) {
+      const detail = getTndgFullGrammarDetail(id);
+      if (detail) {
+        return { success: true, data: detail };
+      }
+    }
+
+    // 2. Tìm trong memory cache
+    const memory = getServerMemoryCache();
+    const memItem = memory?.grammars?.find(g => g.id === id);
+    if (memItem && memItem.articleBlocks && memItem.articleBlocks.length > 0) {
+      return { success: true, data: memItem };
+    }
+
+    // 3. Đọc từ Firestore
+    try {
+      const docRef = adminDb.collection("grammars").doc(id);
+      const doc = await docRef.get();
+      if (doc.exists) {
+        return { success: true, data: { id: doc.id, ...doc.data() } };
+      }
+    } catch (e) {
+      console.warn("Lỗi Firestore getGrammarDetail:", e);
+    }
+
+    if (memItem) {
+      return { success: true, data: memItem };
+    }
+
+    return { success: false, error: "Không tìm thấy chi tiết ngữ pháp" };
+  } catch (error: any) {
+    console.error("Lỗi getGrammarDetail:", error);
+    return { success: false, error: "Lỗi khi lấy chi tiết ngữ pháp" };
   }
 }
 

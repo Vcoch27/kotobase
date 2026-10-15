@@ -54,3 +54,7 @@ android/.gradle_user_home/
 skills-lock.json
 /docs/runtime-architecture/
 *.pdf
+*.zip
+data/tiengnhatdongian-n3/
+
+
