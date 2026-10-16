@@ -132,7 +132,9 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
 
   const scopedGrammars = useMemo(() => selectedFolderId === 'all'
     ? sortedGrammars.filter(grammar => getOverviewSource(grammar) === overviewSource)
-    : sortedGrammars, [sortedGrammars, selectedFolderId, overviewSource]);
+    : sortedGrammars.filter(grammar => grammar.folderIds?.includes(selectedFolderId)
+      || (selectedFolderId === TNDG_FOLDER_ID && grammar.id.startsWith('tndg-'))),
+  [sortedGrammars, selectedFolderId, overviewSource]);
 
   const availableTags = useMemo(() => [...new Set(scopedGrammars.flatMap(grammar => Array.isArray(grammar.tags) ? grammar.tags : []))]
     .sort((a, b) => a.localeCompare(b, 'vi')), [scopedGrammars]);
@@ -160,10 +162,6 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
   // Filter grammars by Search & Book
   const filteredGrammars = useMemo(() => {
     let list = scopedGrammars;
-
-    if (selectedFolderId !== 'all') {
-      list = list.filter(grammar => grammar.folderIds?.includes(selectedFolderId) || (selectedFolderId === TNDG_FOLDER_ID && grammar.id.startsWith('tndg-')));
-    }
 
     // 1. Filter by Book
     if (selectedBook !== 'all') {
