@@ -97,6 +97,7 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
 
   const [showImportModal, setShowImportModal] = useState(false);
   const [importJsonText, setImportJsonText] = useState("");
+  const [importTargetFolderId, setImportTargetFolderId] = useState('');
   const [importing, setImporting] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -324,7 +325,7 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
   const handleImportJson = async () => {
     if (!importJsonText.trim()) return;
     setImporting(true);
-    const res = await import("@/app/actions/grammar").then(m => m.createBulkGrammars(importJsonText, selectedFolderId === 'all' ? undefined : selectedFolderId));
+    const res = await import("@/app/actions/grammar").then(m => m.createBulkGrammars(importJsonText, importTargetFolderId || undefined));
     setImporting(false);
     if (res.success) {
       toast.success(`Đã import thành công ${res.count} điểm ngữ pháp!`);
@@ -411,7 +412,7 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
                 <Plus className="w-4 h-4" /> Thêm Ngữ pháp
               </button>
               <button
-                onClick={() => setShowImportModal(true)}
+                onClick={() => { setImportTargetFolderId(selectedFolderId === 'all' ? '' : selectedFolderId); setShowImportModal(true); }}
                 className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-sm transition-all flex-1 sm:flex-none border border-slate-200 dark:border-slate-700"
               >
                 <Database className="w-4 h-4" /> Import JSON
@@ -460,7 +461,7 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
         </div>
 
         {/* BOOK FILTER TABS (SHINKANZEN / MIMIKARA / SOUMATOME) */}
-        {bookCounts.total > 0 && (
+        {bookCounts.sk + bookCounts.mimi + bookCounts.souma > 0 && (
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
             <span className="text-xs font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1 mr-1 shrink-0">
               <Filter className="w-3.5 h-3.5" /> Giáo trình:
@@ -543,7 +544,6 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
             value={selectedFolderId === TNDG_FOLDER_ID ? TNDG_FOLDER_ID : SHIN_KANZEN_FOLDER_ID}
             onChange={event => {
               setSelectedFolderId(event.target.value);
-              setSelectedStudyDay(null);
               setSelectedTag('');
               setSelectedBook('all');
             }}
@@ -797,6 +797,13 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
                 <p className="max-w-md text-xs text-violet-800 dark:text-violet-200">Có danh sách ngữ pháp thô? Sao chép prompt này để nhờ AI tạo JSON đúng định dạng, sau đó dán kết quả vào đây.</p>
                 <button type="button" onClick={handleCopyImportPrompt} className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-3 py-2 text-xs font-bold text-white hover:bg-violet-700"><Copy className="h-3.5 w-3.5" /> Sao chép prompt</button>
               </div>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-200">
+                Thư mục đích
+                <select value={importTargetFolderId} onChange={event => setImportTargetFolderId(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-900">
+                  <option value="">Không phân loại (hiện ở Tất cả ngữ pháp)</option>
+                  {folders.map(folder => <option key={folder.id} value={folder.id}>{folder.name}</option>)}
+                </select>
+              </label>
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-xl p-4 text-sm text-blue-800 dark:text-blue-300">
                 <p className="font-bold mb-2">Định dạng JSON yêu cầu (Array of Objects):</p>
                 <pre className="bg-white/60 dark:bg-slate-900/60 p-3 rounded-lg overflow-x-auto text-xs font-mono">
