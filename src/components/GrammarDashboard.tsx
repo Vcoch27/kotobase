@@ -23,6 +23,13 @@ import { grammarImportPrompt } from '@/lib/grammar-import-prompt';
 
 const SHIN_KANZEN_FOLDER_ID = 'E9rOfmF2wzKlWWbpWcFY';
 const TNDG_FOLDER_ID = 'tndg-n3';
+type OverviewSource = 'shinkanzen' | 'tndg' | 'other';
+
+function getOverviewSource(grammar: GrammarItem): OverviewSource {
+  if (grammar.id.startsWith('tndg-') || grammar.folderIds?.includes(TNDG_FOLDER_ID)) return 'tndg';
+  if (grammar.folderIds?.includes(SHIN_KANZEN_FOLDER_ID)) return 'shinkanzen';
+  return 'other';
+}
 
 interface UserInfo {
   uid: string;
@@ -75,6 +82,7 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
   const [folders, setFolders] = useState<any[]>([]);
   const [grammars, setGrammars] = useState<GrammarItem[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string>('all');
+  const [overviewSource, setOverviewSource] = useState<OverviewSource>('shinkanzen');
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'flashcard' | 'fillblank'>('list');
@@ -102,23 +110,7 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
 
   const [searchQuery, setSearchQuery] = useState("");
   const isGoogleUser = !!currentUser?.uid;
-  const showStudyPlan = selectedFolderId === 'all' || selectedFolderId === SHIN_KANZEN_FOLDER_ID || selectedFolderId === TNDG_FOLDER_ID;
-
-  const availableTags = useMemo(() => [...new Set(grammars.flatMap(grammar => Array.isArray(grammar.tags) ? grammar.tags : []))]
-    .sort((a, b) => a.localeCompare(b, 'vi')), [grammars]);
-
-  // Book item counts
-  const bookCounts = useMemo(() => {
-    let sk = 0, mimi = 0, souma = 0;
-    grammars.forEach(g => {
-      if (Array.isArray(g.books)) {
-        if (g.books.some((b: string) => b.toLowerCase().includes('shin'))) sk++;
-        if (g.books.some((b: string) => b.toLowerCase().includes('mimi'))) mimi++;
-        if (g.books.some((b: string) => b.toLowerCase().includes('souma'))) souma++;
-      }
-    });
-    return { sk, mimi, souma, total: grammars.length };
-  }, [grammars]);
+  const showStudyPlan = selectedFolderId === SHIN_KANZEN_FOLDER_ID || selectedFolderId === TNDG_FOLDER_ID;
 
   // Sort grammars
   const sortedGrammars = useMemo(() => {
@@ -132,18 +124,42 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
     });
   }, [grammars]);
 
+  const overviewCounts = useMemo(() => {
+    const counts = { shinkanzen: 0, tndg: 0, other: 0 };
+    grammars.forEach(grammar => { counts[getOverviewSource(grammar)]++; });
+    return counts;
+  }, [grammars]);
+
+  const scopedGrammars = useMemo(() => selectedFolderId === 'all'
+    ? sortedGrammars.filter(grammar => getOverviewSource(grammar) === overviewSource)
+    : sortedGrammars, [sortedGrammars, selectedFolderId, overviewSource]);
+
+  const availableTags = useMemo(() => [...new Set(scopedGrammars.flatMap(grammar => Array.isArray(grammar.tags) ? grammar.tags : []))]
+    .sort((a, b) => a.localeCompare(b, 'vi')), [scopedGrammars]);
+
+  const bookCounts = useMemo(() => {
+    let sk = 0, mimi = 0, souma = 0;
+    scopedGrammars.forEach(grammar => {
+      if (!Array.isArray(grammar.books)) return;
+      if (grammar.books.some(book => book.toLowerCase().includes('shin'))) sk++;
+      if (grammar.books.some(book => book.toLowerCase().includes('mimi'))) mimi++;
+      if (grammar.books.some(book => book.toLowerCase().includes('souma'))) souma++;
+    });
+    return { sk, mimi, souma, total: scopedGrammars.length };
+  }, [scopedGrammars]);
+
   const studyDayCounts = useMemo(() => {
     const counts = new Map<number, number>();
-    sortedGrammars.filter(grammar => selectedFolderId !== 'all' || grammar.folderIds?.includes(SHIN_KANZEN_FOLDER_ID)).forEach(grammar => {
+    scopedGrammars.forEach(grammar => {
       const day = getGrammarStudyDay(grammar);
       if (day) counts.set(day, (counts.get(day) || 0) + 1);
     });
     return counts;
-  }, [sortedGrammars, selectedFolderId]);
+  }, [scopedGrammars]);
 
   // Filter grammars by Search & Book
   const filteredGrammars = useMemo(() => {
-    let list = sortedGrammars;
+    let list = scopedGrammars;
 
     if (selectedFolderId !== 'all') {
       list = list.filter(grammar => grammar.folderIds?.includes(selectedFolderId) || (selectedFolderId === TNDG_FOLDER_ID && grammar.id.startsWith('tndg-')));
@@ -218,7 +234,7 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
 
       return false;
     });
-  }, [sortedGrammars, selectedFolderId, selectedBook, selectedStudyDay, selectedTag, searchQuery]);
+  }, [scopedGrammars, selectedFolderId, selectedBook, selectedStudyDay, selectedTag, searchQuery]);
 
   const fetchData = useCallback(async (isBackground = false, forceRefresh = false) => {
     const foldersCacheKey = 'kotobase_grammar_folders';
@@ -460,6 +476,36 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
           </div>
         </div>
 
+        {selectedFolderId === 'all' && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Chọn nguồn ngữ pháp</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Mỗi lần xem một nguồn để các bài tương ứng không lặp trong danh sách.</p>
+              </div>
+              <div className="flex flex-wrap gap-1.5" role="group" aria-label="Nguồn ngữ pháp trong tất cả">
+                {([
+                  { id: 'shinkanzen', label: 'Shin Kanzen', count: overviewCounts.shinkanzen },
+                  { id: 'tndg', label: 'Tổng hợp N3', count: overviewCounts.tndg },
+                  ...(overviewCounts.other > 0 ? [{ id: 'other', label: 'Nguồn khác', count: overviewCounts.other }] : []),
+                ] as Array<{ id: OverviewSource; label: string; count: number }>).map(source => (
+                  <button
+                    key={source.id}
+                    type="button"
+                    aria-pressed={overviewSource === source.id}
+                    onClick={() => { setOverviewSource(source.id); setSelectedBook('all'); setSelectedTag(''); }}
+                    className={cn('rounded-lg px-3 py-2 text-xs font-bold', overviewSource === source.id
+                      ? 'bg-violet-600 text-white'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700')}
+                  >
+                    {source.label} · {source.count}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* BOOK FILTER TABS (SHINKANZEN / MIMIKARA / SOUMATOME) */}
         {bookCounts.sk + bookCounts.mimi + bookCounts.souma > 0 && (
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
@@ -559,7 +605,6 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
               const day = event.target.value ? Number(event.target.value) : null;
               setSelectedStudyDay(day);
               if (day !== null) {
-                if (selectedFolderId === 'all') setSelectedFolderId(SHIN_KANZEN_FOLDER_ID);
                 setSelectedBook('all');
                 setSelectedTag('');
                 setSearchQuery('');
@@ -630,8 +675,10 @@ export function GrammarDashboard({ currentUser }: GrammarDashboardProps) {
           <div className="flex items-center justify-between sm:justify-end gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0 px-1">
             <span className="px-2.5 py-1 rounded-lg bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-500/20">
               {searchQuery || selectedBook !== 'all' || selectedStudyDay !== null || selectedTag
-                ? `${filteredGrammars.length} / ${sortedGrammars.length} ngữ pháp` 
-                : `${sortedGrammars.length} ngữ pháp`}
+                ? `${filteredGrammars.length} / ${scopedGrammars.length} ngữ pháp`
+                : selectedFolderId === 'all'
+                  ? `${scopedGrammars.length} / ${sortedGrammars.length} ngữ pháp`
+                  : `${sortedGrammars.length} ngữ pháp`}
             </span>
 
             {/* Sync / Refresh button */}
