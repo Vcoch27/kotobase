@@ -21,6 +21,27 @@ function normalizeGrammarTags(value: unknown): string[] {
     .map(tag => tag.trim()).filter(Boolean).map(tag => tag.slice(0, 40)))].slice(0, 12);
 }
 
+function mergeGrammarOverride(base: GrammarItem, override: Partial<GrammarItem>): GrammarItem {
+  const merged = { ...base, ...override };
+  if (!base.reviewed) return merged;
+
+  // The first 30 TNDG lessons have curated content. Keep folder/user metadata
+  // from Firestore, but do not let older imported article text replace it.
+  return {
+    ...merged,
+    structure: base.structure,
+    structureRuby: base.structureRuby,
+    meaning: base.meaning,
+    formation: base.formation,
+    nuance: base.nuance,
+    blocks: base.blocks,
+    examples: base.examples,
+    totalExamplesCount: base.totalExamplesCount,
+    articleBlocks: [],
+    reviewed: true,
+  };
+}
+
 /**
  * Tải toàn bộ ngữ pháp (kết hợp Firestore + JSON cục bộ) vào RAM server
  * Giúp giảm 99.9% lượt đọc Firestore (tối ưu tối đa cho gói Firebase Free Tier)
@@ -46,7 +67,10 @@ async function loadCombinedGrammarsInternal(): Promise<GrammarItem[]> {
   // Hợp nhất và tránh trùng ID. Firestore có thể lưu phần chỉnh sửa của bài tĩnh.
   const map = new Map<string, GrammarItem>();
   tndgItems.forEach(item => map.set(item.id, item));
-  firestoreItems.forEach(item => map.set(item.id, { ...map.get(item.id), ...item }));
+  firestoreItems.forEach(item => {
+    const base = map.get(item.id);
+    map.set(item.id, base ? mergeGrammarOverride(base, item) : item);
+  });
 
   const list = Array.from(map.values());
   return list;
@@ -203,7 +227,9 @@ export async function getGrammarDetail(id: string): Promise<{ success: boolean; 
       if (detail) {
         try {
           const override = await adminDb.collection("grammars").doc(id).get();
-          return { success: true, data: override.exists ? { ...detail, ...override.data(), id } : detail };
+          return { success: true, data: override.exists
+            ? mergeGrammarOverride(detail, { ...override.data(), id })
+            : detail };
         } catch {
           return { success: true, data: detail };
         }
