@@ -87,7 +87,21 @@ export function getTndgSummaryGrammars(): GrammarItem[] {
   if (tndgSummaryRaw && Array.isArray((tndgSummaryRaw as any).items) && (tndgSummaryRaw as any).items.length > 0) {
     const items = ((tndgSummaryRaw as any).items as GrammarItem[]).map(item => {
       const reviewed = first30Reviewed.get(item.id);
-      return reviewed ? { ...item, ...reviewed, reviewed: true } : item;
+      if (!reviewed) return item;
+      const firstExample = reviewed.examples?.[0];
+      return {
+        ...item,
+        ...reviewed,
+        structureRuby: reviewed.structureRuby,
+        meaningRuby: reviewed.meaningRuby,
+        formationRuby: reviewed.formationRuby,
+        nuanceRuby: reviewed.nuanceRuby,
+        example: firstExample?.jpn,
+        exampleRuby: firstExample?.ruby,
+        exampleMeaning: firstExample?.vie,
+        articleBlocks: [],
+        reviewed: true,
+      };
     });
     if (!g.__grammarCache) g.__grammarCache = {};
     g.__grammarCache.tndgSummary = items;
