@@ -26,6 +26,7 @@ for (const [index, item] of reviewed.items.entries()) {
       assert.ok(/[一-龯々ぁ-ゖァ-ヿ]/.test(example.jpn), `${item.id}: missing Japanese`);
       assert.ok(example.vie.trim(), `${item.id}: missing translation`);
       assert.ok(!/<[^>]+>/.test(example.jpn), `${item.id}: HTML in example`);
+      assert.ok(!/ +\S/.test(example.jpn), `${item.id}: stray space in Japanese example`);
       if (example.ruby) assert.equal(plain(example.ruby), example.jpn, `${item.id}: ruby mismatch`);
       unique.add(example.jpn);
     }

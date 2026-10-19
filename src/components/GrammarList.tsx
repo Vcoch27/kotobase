@@ -329,7 +329,7 @@ function GrammarCard({
           {/* Ví dụ đầu tiên luôn hiển thị */}
           <div className="bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl border border-slate-100 dark:border-slate-800">
             <div className="flex items-start justify-between gap-2">
-              <p className="text-sm font-japanese font-medium text-slate-900 dark:text-slate-100 leading-relaxed">
+              <p className="text-sm font-japanese font-medium text-slate-900 dark:text-slate-100 leading-relaxed whitespace-pre-line">
                 <GrammarRubyText text={currentExamples[0].jpn} rubyText={currentExamples[0].ruby} />
               </p>
               <button
@@ -355,7 +355,7 @@ function GrammarCard({
               className="bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 animate-fadeIn"
             >
               <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-japanese font-medium text-slate-900 dark:text-slate-100 leading-relaxed">
+                <p className="text-sm font-japanese font-medium text-slate-900 dark:text-slate-100 leading-relaxed whitespace-pre-line">
                   <GrammarRubyText text={ex.jpn} rubyText={ex.ruby} />
                 </p>
                 <button

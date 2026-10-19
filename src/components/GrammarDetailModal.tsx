@@ -446,7 +446,7 @@ export function GrammarDetailModal({
                       {Array.isArray(b.examples) && b.examples.map((ex, exIdx) => (
                         <div key={exIdx} className="mt-2 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800">
                           <span className="mb-1 block text-[11px] font-bold text-slate-500 dark:text-slate-400">Ví dụ {exIdx + 1}{ex.editorial ? ' · đã biên tập/bổ sung' : ''}</span>
-                          <p className="font-japanese text-sm font-medium text-slate-900 dark:text-slate-100">
+                          <p className="font-japanese text-sm font-medium text-slate-900 dark:text-slate-100 whitespace-pre-line">
                             <GrammarRubyText text={ex.jpn} rubyText={ex.ruby} />
                           </p>
                           <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
@@ -574,7 +574,7 @@ export function GrammarDetailModal({
                           <span className="w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 text-[11px] font-black flex items-center justify-center shrink-0">
                             {idx + 1}
                           </span>
-                          <p className="font-japanese text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-100 leading-relaxed">
+                          <p className="font-japanese text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-100 leading-relaxed whitespace-pre-line">
                             <GrammarRubyText text={ex.jpn} rubyText={ex.ruby} />
                           </p>
                         </div>

@@ -5,6 +5,7 @@ output is committed so the website does not need Python at runtime.
 """
 
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -229,6 +230,19 @@ def make_example(example, editorial=False):
         result['ruby'] = example['ruby']
     elif result['jpn'] in EDITORIAL_RUBY:
         result['ruby'] = EDITORIAL_RUBY[result['jpn']]
+    # The scraped article sometimes inserted spaces around Japanese words while
+    # extracting furigana. Apply identical spacing fixes to text and ruby markup.
+    before = result['jpn']
+    for key in ('jpn', 'ruby'):
+        if key not in result:
+            continue
+        value = result[key].replace(' / ', '／')
+        value = re.sub(r'(?<=[ぁ-んァ-ヴー一-龯々、。}]) +(?=[ぁ-んァ-ヴー一-龯々、。{])', '', value)
+        value = re.sub(r' +(?=[A-Z][一-龯{])', '', value)
+        value = re.sub(r'([AB]):\s*', r'\1：', value)
+        value = re.sub(r'(?<=。)([AB]：)', r'\n\1', value)
+        result[key] = value
+    editorial = editorial or result['jpn'] != before
     if editorial:
         result['editorial'] = True
     return result
