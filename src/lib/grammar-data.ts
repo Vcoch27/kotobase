@@ -3,11 +3,13 @@ import path from 'path';
 import tndgSummaryRaw from '../../data/tiengnhatdongian-n3-summary.json';
 import tndgParsedRaw from '../../data/tiengnhatdongian-n3-parsed.json';
 import tndgDetailNormalizedRaw from '../../data/tiengnhatdongian-n3-detail-normalized.json';
+import tndgFirst30ReviewedRaw from '../../data/tiengnhatdongian-n3-first30-reviewed.json';
 
 export interface GrammarExample {
   jpn: string;
   vie: string;
   ruby?: string;
+  editorial?: boolean;
 }
 
 export interface GrammarBlock {
@@ -50,6 +52,7 @@ export interface GrammarItem {
   source?: string;
   articleBlocks?: Array<{ kind: string; heading: string; text?: string; html: string }>;
   totalExamplesCount?: number;
+  reviewed?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -66,6 +69,7 @@ interface GlobalGrammarCache {
 }
 
 const g = globalThis as unknown as { __grammarCache?: GlobalGrammarCache };
+const first30Reviewed = new Map((tndgFirst30ReviewedRaw.items as GrammarItem[]).map(item => [item.id, item]));
 if (!g.__grammarCache) {
   g.__grammarCache = {};
 }
@@ -81,7 +85,10 @@ export function getTndgSummaryGrammars(): GrammarItem[] {
 
   // 1. Lấy trực tiếp từ JSON import tĩnh (Next.js/Webpack bundle)
   if (tndgSummaryRaw && Array.isArray((tndgSummaryRaw as any).items) && (tndgSummaryRaw as any).items.length > 0) {
-    const items = (tndgSummaryRaw as any).items as GrammarItem[];
+    const items = ((tndgSummaryRaw as any).items as GrammarItem[]).map(item => {
+      const reviewed = first30Reviewed.get(item.id);
+      return reviewed ? { ...item, ...reviewed, reviewed: true } : item;
+    });
     if (!g.__grammarCache) g.__grammarCache = {};
     g.__grammarCache.tndgSummary = items;
     return items;
@@ -119,8 +126,8 @@ export function getTndgFullGrammarDetail(id: string): GrammarItem | null {
         map.set(item.id, {
           ...item,
           ...summaryById.get(item.id),
-          examples: detailById.get(item.id)?.examples || summaryById.get(item.id)?.examples || item.examples,
-          articleBlocks: item.articleBlocks,
+          examples: first30Reviewed.get(item.id)?.examples || detailById.get(item.id)?.examples || summaryById.get(item.id)?.examples || item.examples,
+          articleBlocks: first30Reviewed.has(item.id) ? [] : item.articleBlocks,
         });
       });
     }

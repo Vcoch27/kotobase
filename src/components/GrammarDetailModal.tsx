@@ -341,7 +341,7 @@ export function GrammarDetailModal({
               )}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Toàn bộ ví dụ ({allExamples.length})</span>
+              <span>{currentItem.reviewed ? 'Ví dụ đã chọn' : 'Toàn bộ ví dụ'} ({allExamples.length})</span>
             </button>
           </div>
         </div>
@@ -426,8 +426,13 @@ export function GrammarDetailModal({
                   {Array.isArray(currentItem.blocks) && currentItem.blocks.map((b, idx) => (
                     <div key={idx} className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm">
                       <h4 className="text-sm font-bold text-violet-600 dark:text-violet-400 mb-2">
-                        Ý nghĩa {['①', '②', '③', '④', '⑤'][idx] || `#${idx + 1}`}: <GrammarRubyText text={b.meaning || ''} rubyText={b.meaningRuby} />
+                        {b.heading || `Ý nghĩa ${['①', '②', '③', '④', '⑤'][idx] || `#${idx + 1}`}`}
                       </h4>
+                      {b.meaning && (
+                        <p className="mb-3 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                          <GrammarRubyText text={b.meaning} rubyText={b.meaningRuby} />
+                        </p>
+                      )}
                       {b.formation && (
                         <p className="text-xs font-japanese font-medium text-slate-700 dark:text-slate-300 mb-3 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl whitespace-pre-line">
                           <GrammarRubyText text={b.formation} rubyText={b.formationRuby} />
@@ -440,6 +445,7 @@ export function GrammarDetailModal({
                       )}
                       {Array.isArray(b.examples) && b.examples.map((ex, exIdx) => (
                         <div key={exIdx} className="mt-2 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <span className="mb-1 block text-[11px] font-bold text-slate-500 dark:text-slate-400">Ví dụ {exIdx + 1}{ex.editorial ? ' · đã biên tập/bổ sung' : ''}</span>
                           <p className="font-japanese text-sm font-medium text-slate-900 dark:text-slate-100">
                             <GrammarRubyText text={ex.jpn} rubyText={ex.ruby} />
                           </p>

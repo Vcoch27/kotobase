@@ -1,0 +1,2788 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "tndg-001",
+      "structure": "～うちに",
+      "meaning": "Tranh thủ khi một trạng thái còn tiếp diễn; hoặc một thay đổi nảy sinh trong lúc đó.",
+      "formation": "Vる／Vている／Vない + うちに\nAい／Aな + うちに\nN + の + うちに",
+      "nuance": "Vế sau là hành động có chủ ý khi muốn tranh thủ; là thay đổi tự nhiên khi diễn tả diễn biến. Không nối trực tiếp với Vた.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "1. Tranh thủ trước khi trạng thái thay đổi",
+          "meaning": "Khi còn…; trước khi…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "若いうちに勉強しておきなさい。",
+              "vie": "Trong lúc (Nhân lúc) còn trẻ thì hãy học đi.",
+              "ruby": "{若|わか}いうちに{勉強|べんきょう}しておきなさい。"
+            },
+            {
+              "jpn": "雨が降らないうちに帰りましょう。",
+              "vie": "Trước khi trời mưa thì hãy về nhà thôi.",
+              "ruby": "{雨|あめ}が{降|ふ}らないうちに{帰|かえ}りましょう。"
+            },
+            {
+              "jpn": "日本にいるうちに富士山に登りましょう。",
+              "vie": "Trong khi còn ở Nhật thì hãy leo núi Phú Sĩ đi.",
+              "ruby": "{日本|にほん}にいるうちに{富士山|ふじさん}に{登|のぼ}りましょう。"
+            },
+            {
+              "jpn": "花がきれいなうちに、花見に行きたい。",
+              "vie": "Tôi muốn đi ngắm hoa khi hoa vẫn còn đang đẹp.",
+              "ruby": "{花|はな}がきれいなうちに、{花見|はなみ}に{行|い}きたい。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 2,
+          "heading": "2. Thay đổi xảy ra trong lúc một việc tiếp diễn",
+          "meaning": "Trong lúc… thì dần…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "難しい本を読んでいるうちに、眠くなりました。",
+              "vie": "Trong khi đọc cuốn sách khó, tôi dần buồn ngủ.",
+              "editorial": true
+            },
+            {
+              "jpn": "お酒を飲んでいるうちに、顔が赤くなります。",
+              "vie": "Trong lúc tôi đang uống rượu thì mặt dần dần trở nên đỏ.",
+              "ruby": "お{酒|さけ}を{飲|の}んでいるうちに、{顔|かお}が{赤|あか}くなります。"
+            },
+            {
+              "jpn": "彼女の話を聞いているうちに、涙が出てきました。",
+              "vie": "Nghe cô ấy kể chuyện một lúc, tôi đã rơi nước mắt.",
+              "editorial": true
+            },
+            {
+              "jpn": "寒かったが、走っているうちに体が暖かくなった。",
+              "vie": "Mặc dù trời lạnh nhưng trong khi tôi đang chạy bộ thì cơ thể đã ấm dần lên.",
+              "ruby": "{寒|さむ}かったが、{走|はし}っているうちに{体|からだ}が{暖|あたた}かくなった。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "若いうちに勉強しておきなさい。",
+          "vie": "Trong lúc (Nhân lúc) còn trẻ thì hãy học đi.",
+          "ruby": "{若|わか}いうちに{勉強|べんきょう}しておきなさい。"
+        },
+        {
+          "jpn": "雨が降らないうちに帰りましょう。",
+          "vie": "Trước khi trời mưa thì hãy về nhà thôi.",
+          "ruby": "{雨|あめ}が{降|ふ}らないうちに{帰|かえ}りましょう。"
+        },
+        {
+          "jpn": "日本にいるうちに富士山に登りましょう。",
+          "vie": "Trong khi còn ở Nhật thì hãy leo núi Phú Sĩ đi.",
+          "ruby": "{日本|にほん}にいるうちに{富士山|ふじさん}に{登|のぼ}りましょう。"
+        },
+        {
+          "jpn": "花がきれいなうちに、花見に行きたい。",
+          "vie": "Tôi muốn đi ngắm hoa khi hoa vẫn còn đang đẹp.",
+          "ruby": "{花|はな}がきれいなうちに、{花見|はなみ}に{行|い}きたい。"
+        },
+        {
+          "jpn": "難しい本を読んでいるうちに、眠くなりました。",
+          "vie": "Trong khi đọc cuốn sách khó, tôi dần buồn ngủ.",
+          "editorial": true
+        },
+        {
+          "jpn": "お酒を飲んでいるうちに、顔が赤くなります。",
+          "vie": "Trong lúc tôi đang uống rượu thì mặt dần dần trở nên đỏ.",
+          "ruby": "お{酒|さけ}を{飲|の}んでいるうちに、{顔|かお}が{赤|あか}くなります。"
+        },
+        {
+          "jpn": "彼女の話を聞いているうちに、涙が出てきました。",
+          "vie": "Nghe cô ấy kể chuyện một lúc, tôi đã rơi nước mắt.",
+          "editorial": true
+        },
+        {
+          "jpn": "寒かったが、走っているうちに体が暖かくなった。",
+          "vie": "Mặc dù trời lạnh nhưng trong khi tôi đang chạy bộ thì cơ thể đã ấm dần lên.",
+          "ruby": "{寒|さむ}かったが、{走|はし}っているうちに{体|からだ}が{暖|あたた}かくなった。"
+        }
+      ],
+      "totalExamplesCount": 8
+    },
+    {
+      "id": "tndg-002",
+      "structure": "～間",
+      "structureRuby": "～{間|あいだ}",
+      "meaning": "Một việc hoặc trạng thái kéo dài suốt khoảng thời gian của việc khác.",
+      "formation": "Vる／Vている／Vない + 間\nAい／Aな + 間\nN + の + 間",
+      "nuance": "Nhấn mạnh vế sau tiếp diễn trong toàn bộ hoặc phần lớn khoảng thời gian; đối chiếu với 間に ở bài 3.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "Diễn biến liên tục trong khoảng thời gian",
+          "meaning": "Trong suốt lúc…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "お母さんが昼寝をしている間、子供たちはテレビを見ていた。",
+              "vie": "Bọn trẻ xem ti vi suốt lúc mẹ ngủ trưa.",
+              "editorial": true
+            },
+            {
+              "jpn": "昨日は、家にいる間、ずっと本を読んでいました。",
+              "vie": "Hôm qua, tôi đọc sách suốt thời gian ở nhà.",
+              "editorial": true
+            },
+            {
+              "jpn": "子供が小さい間は、ペット を飼わないつもりです。",
+              "vie": "Trong khi bọn trẻ còn nhỏ, tôi dự định không nuôi thú cưng.",
+              "ruby": "{子供|こども}が{小|ちい}さい{間|あいだ}は、ペット を{飼|か}わないつもりです。"
+            },
+            {
+              "jpn": "散歩している間、ずっと雨が降っていた。",
+              "vie": "Trời cứ mưa suốt trong thời gian tôi đang đi dạo.",
+              "ruby": "{散歩|さんぽ}している{間|あいだ}、ずっと{雨|あめ}が{降|ふ}っていた。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "お母さんが昼寝をしている間、子供たちはテレビを見ていた。",
+          "vie": "Bọn trẻ xem ti vi suốt lúc mẹ ngủ trưa.",
+          "editorial": true
+        },
+        {
+          "jpn": "昨日は、家にいる間、ずっと本を読んでいました。",
+          "vie": "Hôm qua, tôi đọc sách suốt thời gian ở nhà.",
+          "editorial": true
+        },
+        {
+          "jpn": "子供が小さい間は、ペット を飼わないつもりです。",
+          "vie": "Trong khi bọn trẻ còn nhỏ, tôi dự định không nuôi thú cưng.",
+          "ruby": "{子供|こども}が{小|ちい}さい{間|あいだ}は、ペット を{飼|か}わないつもりです。"
+        },
+        {
+          "jpn": "散歩している間、ずっと雨が降っていた。",
+          "vie": "Trời cứ mưa suốt trong thời gian tôi đang đi dạo.",
+          "ruby": "{散歩|さんぽ}している{間|あいだ}、ずっと{雨|あめ}が{降|ふ}っていた。"
+        }
+      ],
+      "totalExamplesCount": 4
+    },
+    {
+      "id": "tndg-003",
+      "structure": "～間に",
+      "structureRuby": "～{間|あいだ}に",
+      "meaning": "Một việc xảy ra hoặc hoàn thành tại một thời điểm trong khoảng thời gian đó.",
+      "formation": "Vる／Vている／Vない + 間に\nAい／Aな + 間に\nN + の + 間に",
+      "nuance": "Vế sau không cần kéo dài suốt khoảng thời gian nêu ở vế trước.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "Sự việc xảy ra trong một khoảng thời gian",
+          "meaning": "Trong lúc… thì…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "子供が寝ている間に洗濯をしました。",
+              "vie": "Tôi đã giặt đồ trong lúc con đang ngủ.",
+              "ruby": "{子供|こども}が{寝|ね}ている{間|あいだ}に{洗濯|せんたく}をしました。"
+            },
+            {
+              "jpn": "子どもが学校に行っている間に、家事を終わらせなければいけない。",
+              "vie": "Trong lúc bọn trẻ đi học thì phải hoàn thành việc nhà",
+              "ruby": "{子|こ}どもが{学校|がっこう}に{行|い}っている{間|あいだ}に、{家事|かじ}を{終|お}わらせなければいけない。"
+            },
+            {
+              "jpn": "お母さんが出かけている間に、こっそりお菓子を食べました。",
+              "vie": "Nhân lúc mẹ đang vắng nhà, tôi lén lút ăn vụng kẹo.",
+              "ruby": "お{母|かあ}さんが{出|で}かけている{間|あいだ}に、こっそりお{菓子|かし}を{食|た}べました。"
+            },
+            {
+              "jpn": "夏休みの間に引っ越ししたいです。",
+              "vie": "Tôi muốn chuyển chổ ở trong kỳ nghỉ hè này.",
+              "ruby": "{夏休|なつやす}みの{間|あいだ}に{引|ひ}っ{越|こ}ししたいです。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "子供が寝ている間に洗濯をしました。",
+          "vie": "Tôi đã giặt đồ trong lúc con đang ngủ.",
+          "ruby": "{子供|こども}が{寝|ね}ている{間|あいだ}に{洗濯|せんたく}をしました。"
+        },
+        {
+          "jpn": "子どもが学校に行っている間に、家事を終わらせなければいけない。",
+          "vie": "Trong lúc bọn trẻ đi học thì phải hoàn thành việc nhà",
+          "ruby": "{子|こ}どもが{学校|がっこう}に{行|い}っている{間|あいだ}に、{家事|かじ}を{終|お}わらせなければいけない。"
+        },
+        {
+          "jpn": "お母さんが出かけている間に、こっそりお菓子を食べました。",
+          "vie": "Nhân lúc mẹ đang vắng nhà, tôi lén lút ăn vụng kẹo.",
+          "ruby": "お{母|かあ}さんが{出|で}かけている{間|あいだ}に、こっそりお{菓子|かし}を{食|た}べました。"
+        },
+        {
+          "jpn": "夏休みの間に引っ越ししたいです。",
+          "vie": "Tôi muốn chuyển chổ ở trong kỳ nghỉ hè này.",
+          "ruby": "{夏休|なつやす}みの{間|あいだ}に{引|ひ}っ{越|こ}ししたいです。"
+        }
+      ],
+      "totalExamplesCount": 4
+    },
+    {
+      "id": "tndg-004",
+      "structure": "Phân biệt ～間に và ～うちに",
+      "meaning": "間に xác định khoảng thời gian; うちに thường nhấn mạnh tranh thủ hoặc sự thay đổi tự nhiên.",
+      "formation": "Khoảng thời gian rõ ràng + 間に\nTrước khi trạng thái đổi + うちに",
+      "nuance": "Có trường hợp cả hai dùng được, nhưng trọng tâm ý nghĩa khác nhau. Không thay thế máy móc trong mọi câu.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "1. 間に: khoảng thời gian có giới hạn",
+          "meaning": "Sự việc xảy ra bên trong khoảng thời gian.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "この新聞は電車を待っている間に買った。",
+              "vie": "Tôi mua tờ báo này trong lúc đợi tàu.",
+              "editorial": true
+            },
+            {
+              "jpn": "1時から2時の間に来てください。",
+              "vie": "Hãy đến trong khoảng từ 1 giờ đến 2 giờ.",
+              "editorial": true
+            }
+          ]
+        },
+        {
+          "blockNumber": 2,
+          "heading": "2. うちに: tranh thủ trước khi đổi trạng thái",
+          "meaning": "Tranh thủ khi điều kiện còn thuận lợi.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "若いうちに勉強しておきなさい。",
+              "vie": "Hãy tranh thủ học khi còn trẻ.",
+              "editorial": true
+            },
+            {
+              "jpn": "熱いうちに早く食べましょう。",
+              "vie": "Hãy ăn ngay khi món ăn còn nóng.",
+              "editorial": true
+            },
+            {
+              "jpn": "雨が降らないうちに帰りましょう。",
+              "vie": "Hãy về trước khi trời mưa.",
+              "editorial": true
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "この新聞は電車を待っている間に買った。",
+          "vie": "Tôi mua tờ báo này trong lúc đợi tàu.",
+          "editorial": true
+        },
+        {
+          "jpn": "1時から2時の間に来てください。",
+          "vie": "Hãy đến trong khoảng từ 1 giờ đến 2 giờ.",
+          "editorial": true
+        },
+        {
+          "jpn": "若いうちに勉強しておきなさい。",
+          "vie": "Hãy tranh thủ học khi còn trẻ.",
+          "editorial": true
+        },
+        {
+          "jpn": "熱いうちに早く食べましょう。",
+          "vie": "Hãy ăn ngay khi món ăn còn nóng.",
+          "editorial": true
+        },
+        {
+          "jpn": "雨が降らないうちに帰りましょう。",
+          "vie": "Hãy về trước khi trời mưa.",
+          "editorial": true
+        }
+      ],
+      "totalExamplesCount": 5
+    },
+    {
+      "id": "tndg-005",
+      "structure": "Phân biệt ～間 và ～間に",
+      "meaning": "間 nhấn mạnh sự liên tục; 間に nhấn mạnh một việc xảy ra trong khoảng thời gian.",
+      "formation": "N + の／Vている + 間（suốt thời gian）\nN + の／Vている + 間に（trong khoảng đó）",
+      "nuance": "Một số câu có thể dùng cả hai, nhưng cách hiểu thời lượng của vế sau thay đổi.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "1. 間: kéo dài suốt khoảng",
+          "meaning": "Việc thứ hai tiếp diễn trong suốt thời gian.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "夏休みのあいだ、弟は毎日プール で泳いでいた。",
+              "vie": "Trong suốt thời gian nghỉ hè, em trai tôi ngày nào cũng đi bơi ở bể bơi.",
+              "ruby": "{夏休|なつやす}みのあいだ、{弟|おとうと}は{毎日|まいにち}プール で{泳|およ}いでいた。"
+            },
+            {
+              "jpn": "雨が降っているあいだ、喫茶店で雨が止むの を待っていた。",
+              "vie": "Trong khi trời mưa, tôi đã ngồi suốt ở quán cà phê để chờ mưa tạnh.",
+              "ruby": "{雨|あめ}が{降|ふ}っているあいだ、{喫茶店|きっさてん}で{雨|あめ}が{止|と}むの を{待|ま}っていた。"
+            },
+            {
+              "jpn": "彼は日本にいるあいだ 、ずっと横浜に住んでいました。",
+              "vie": "Trong suốt thời gian ở Nhật, anh ấy sống ở Yokohama.",
+              "ruby": "{彼|かれ}は{日本|にほん}にいるあいだ 、ずっと{横浜|よこはま}に{住|す}んでいました。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 2,
+          "heading": "2. 間に: xảy ra trong khoảng",
+          "meaning": "Việc thứ hai diễn ra hoặc hoàn tất trong khoảng đó.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "この新聞は電車を待っているあいだに、買った。",
+              "vie": "Tờ báo này là tôi đã mua trong khi đợi tàu.",
+              "ruby": "この{新聞|しんぶん}は{電車|でんしゃ}を{待|ま}っているあいだに、{買|か}った。"
+            },
+            {
+              "jpn": "夏休みのあいだに練習しておいてくださいね。",
+              "vie": "Hãy luyện tập trong thời gian nghỉ hè nhé.",
+              "ruby": "{夏休|なつやす}みのあいだに{練習|れんしゅう}しておいてくださいね。"
+            },
+            {
+              "jpn": "子供が寝ている間に洗濯を しました。",
+              "vie": "Trong khi con ngủ, tôi đã giặt đồ.",
+              "ruby": "{子供|こども}が{寝|ね}ている{間|あいだ}に{洗濯|せんたく}を しました。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "夏休みのあいだ、弟は毎日プール で泳いでいた。",
+          "vie": "Trong suốt thời gian nghỉ hè, em trai tôi ngày nào cũng đi bơi ở bể bơi.",
+          "ruby": "{夏休|なつやす}みのあいだ、{弟|おとうと}は{毎日|まいにち}プール で{泳|およ}いでいた。"
+        },
+        {
+          "jpn": "雨が降っているあいだ、喫茶店で雨が止むの を待っていた。",
+          "vie": "Trong khi trời mưa, tôi đã ngồi suốt ở quán cà phê để chờ mưa tạnh.",
+          "ruby": "{雨|あめ}が{降|ふ}っているあいだ、{喫茶店|きっさてん}で{雨|あめ}が{止|と}むの を{待|ま}っていた。"
+        },
+        {
+          "jpn": "彼は日本にいるあいだ 、ずっと横浜に住んでいました。",
+          "vie": "Trong suốt thời gian ở Nhật, anh ấy sống ở Yokohama.",
+          "ruby": "{彼|かれ}は{日本|にほん}にいるあいだ 、ずっと{横浜|よこはま}に{住|す}んでいました。"
+        },
+        {
+          "jpn": "この新聞は電車を待っているあいだに、買った。",
+          "vie": "Tờ báo này là tôi đã mua trong khi đợi tàu.",
+          "ruby": "この{新聞|しんぶん}は{電車|でんしゃ}を{待|ま}っているあいだに、{買|か}った。"
+        },
+        {
+          "jpn": "夏休みのあいだに練習しておいてくださいね。",
+          "vie": "Hãy luyện tập trong thời gian nghỉ hè nhé.",
+          "ruby": "{夏休|なつやす}みのあいだに{練習|れんしゅう}しておいてくださいね。"
+        },
+        {
+          "jpn": "子供が寝ている間に洗濯を しました。",
+          "vie": "Trong khi con ngủ, tôi đã giặt đồ.",
+          "ruby": "{子供|こども}が{寝|ね}ている{間|あいだ}に{洗濯|せんたく}を しました。"
+        }
+      ],
+      "totalExamplesCount": 6
+    },
+    {
+      "id": "tndg-006",
+      "structure": "～てからでないと／てからでなければ",
+      "meaning": "Chỉ sau khi làm việc trước thì mới có thể làm việc sau.",
+      "formation": "Vて + からでないと／からでなければ + kết quả không thể thực hiện",
+      "nuance": "Vế sau thường là phủ định, diễn tả điều kiện cần; không đồng nghĩa với thứ tự đơn thuần của ～てから.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "Điều kiện cần phải hoàn tất trước",
+          "meaning": "Nếu chưa… thì không thể…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "手を洗ってからでないと、ご飯を食べてはいけませんよ。",
+              "vie": "Nếu mà chưa rửa tay thì không được ăn cơm đâu đấy.",
+              "ruby": "{手|て}を{洗|あら}ってからでないと、ご{飯|はん}を{食|た}べてはいけませんよ。"
+            },
+            {
+              "jpn": "運転免許を取ってからでなければ車を運転してはいけない。",
+              "vie": "Nếu chưa lấy được giấy phép lái xe, vẫn không thể lái được xe ô tô.",
+              "ruby": "{運転免許|うんてんめんきょ}を{取|と}ってからでなければ{車|くるま}を{運転|うんてん}してはいけない。"
+            },
+            {
+              "jpn": "親の許可をもらってからでなければ、申し込めない。",
+              "vie": "Nếu chưa xin phép bố mẹ thì không thể đăng ký được.",
+              "ruby": "{親|おや}の{許可|きょか}をもらってからでなければ、{申|もう}し{込|こ}めない。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "手を洗ってからでないと、ご飯を食べてはいけませんよ。",
+          "vie": "Nếu mà chưa rửa tay thì không được ăn cơm đâu đấy.",
+          "ruby": "{手|て}を{洗|あら}ってからでないと、ご{飯|はん}を{食|た}べてはいけませんよ。"
+        },
+        {
+          "jpn": "運転免許を取ってからでなければ車を運転してはいけない。",
+          "vie": "Nếu chưa lấy được giấy phép lái xe, vẫn không thể lái được xe ô tô.",
+          "ruby": "{運転免許|うんてんめんきょ}を{取|と}ってからでなければ{車|くるま}を{運転|うんてん}してはいけない。"
+        },
+        {
+          "jpn": "親の許可をもらってからでなければ、申し込めない。",
+          "vie": "Nếu chưa xin phép bố mẹ thì không thể đăng ký được.",
+          "ruby": "{親|おや}の{許可|きょか}をもらってからでなければ、{申|もう}し{込|こ}めない。"
+        }
+      ],
+      "totalExamplesCount": 3
+    },
+    {
+      "id": "tndg-007",
+      "structure": "～ところだ／ところです",
+      "meaning": "Diễn tả hành động sắp bắt đầu, đang diễn ra hoặc vừa kết thúc.",
+      "formation": "Vる + ところだ（sắp）\nVている + ところだ（đang）\nVた + ところだ（vừa）",
+      "nuance": "Chia thể động từ trước ところ để xác định mốc thời gian. ～たばかりだ diễn tả cảm giác “mới đây”, không nhất thiết sát thời điểm nói.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "1. Vる + ところ: sắp làm",
+          "meaning": "Ngay trước khi bắt đầu.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "これから パン を焼くところです。",
+              "vie": "Bây giờ tôi chuẩn bị nướng bánh mì.",
+              "ruby": "これから パン を{焼|や}くところです。"
+            },
+            {
+              "jpn": "これから食事に行くところなんですが、一緒にいかがですか。",
+              "vie": "Bây giờ tôi chuẩn bị đi ăn, bạn có đi ăn cùng không?",
+              "ruby": "これから{食事|しょくじ}に{行|い}くところなんですが、{一緒|いっしょ}にいかがですか。"
+            },
+            {
+              "jpn": "今映画が始まるところです。",
+              "vie": "Đúng lúc phim sắp sửa bắt đầu.",
+              "ruby": "{今映画|いまえいが}が{始|はじ}まるところです。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 2,
+          "heading": "2. Vている + ところ: đang làm",
+          "meaning": "Đúng lúc hành động đang tiến hành.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "わたしは今、家で日本語を勉強しているところです。",
+              "vie": "Bây giờ tôi đang học tiếng Nhật ở nhà.",
+              "ruby": "わたしは{今|いま}、{家|いえ}で{日本語|にほんご}を{勉強|べんきょう}しているところです。"
+            },
+            {
+              "jpn": "今対策を考えているところです。",
+              "vie": "Bây giờ tôi đang suy nghĩ đối sách.",
+              "ruby": "{今|いま}{対策|たいさく}を{考|かんが}えているところです。"
+            },
+            {
+              "jpn": "今ご飯を作っているところです。",
+              "vie": "Bây giờ tôi đang nấu cơm.",
+              "editorial": true
+            }
+          ]
+        },
+        {
+          "blockNumber": 3,
+          "heading": "3. Vた + ところ: vừa làm xong",
+          "meaning": "Ngay sau khi hành động kết thúc.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "たった今バスが出たところです。",
+              "vie": "Xe buýt vừa rời đi.",
+              "editorial": true
+            },
+            {
+              "jpn": "たった今空港に着いたところだ。",
+              "vie": "Tôi vừa mới đến sân bay.",
+              "ruby": "たった{今|いま}{空港|くうこう}に{着|つ}いたところだ。"
+            },
+            {
+              "jpn": "たった今仕事が終わったところです。",
+              "vie": "Tôi vừa mới kết thúc công việc xong tức thì.",
+              "ruby": "たった{今仕事|いましごと}が{終|お}わったところです。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 4,
+          "heading": "4. ～ところだった: suýt nữa",
+          "meaning": "Một việc gần xảy ra nhưng cuối cùng đã không xảy ra.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "もう少しで遅刻するところだった。",
+              "vie": "Suýt chút nữa thì bị muộn.",
+              "ruby": "もう{少|すこ}しで{遅刻|ちこく}するところだった。"
+            },
+            {
+              "jpn": "別の人に メッセージ を送ってしまうところだったけど、送る前に気づいた。よかった。",
+              "vie": "Suýt nữa thì gửi tin nhắn nhầm cho người khác nhưng đã kịp nhận ra trước khi gửi, tốt quá.",
+              "ruby": "{別|べつ}の{人|ひと}に メッセージ を{送|おく}ってしまうところだったけど、{送|おく}る{前|まえ}に{気|き}づいた。よかった。"
+            },
+            {
+              "jpn": "道を歩いていたら、急に車が来て、死ぬところだった。",
+              "vie": "Đang đi bộ thì xe bất ngờ lao tới; tôi suýt mất mạng.",
+              "editorial": true
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "これから パン を焼くところです。",
+          "vie": "Bây giờ tôi chuẩn bị nướng bánh mì.",
+          "ruby": "これから パン を{焼|や}くところです。"
+        },
+        {
+          "jpn": "これから食事に行くところなんですが、一緒にいかがですか。",
+          "vie": "Bây giờ tôi chuẩn bị đi ăn, bạn có đi ăn cùng không?",
+          "ruby": "これから{食事|しょくじ}に{行|い}くところなんですが、{一緒|いっしょ}にいかがですか。"
+        },
+        {
+          "jpn": "今映画が始まるところです。",
+          "vie": "Đúng lúc phim sắp sửa bắt đầu.",
+          "ruby": "{今映画|いまえいが}が{始|はじ}まるところです。"
+        },
+        {
+          "jpn": "わたしは今、家で日本語を勉強しているところです。",
+          "vie": "Bây giờ tôi đang học tiếng Nhật ở nhà.",
+          "ruby": "わたしは{今|いま}、{家|いえ}で{日本語|にほんご}を{勉強|べんきょう}しているところです。"
+        },
+        {
+          "jpn": "今対策を考えているところです。",
+          "vie": "Bây giờ tôi đang suy nghĩ đối sách.",
+          "ruby": "{今|いま}{対策|たいさく}を{考|かんが}えているところです。"
+        },
+        {
+          "jpn": "今ご飯を作っているところです。",
+          "vie": "Bây giờ tôi đang nấu cơm.",
+          "editorial": true
+        },
+        {
+          "jpn": "たった今バスが出たところです。",
+          "vie": "Xe buýt vừa rời đi.",
+          "editorial": true
+        },
+        {
+          "jpn": "たった今空港に着いたところだ。",
+          "vie": "Tôi vừa mới đến sân bay.",
+          "ruby": "たった{今|いま}{空港|くうこう}に{着|つ}いたところだ。"
+        },
+        {
+          "jpn": "たった今仕事が終わったところです。",
+          "vie": "Tôi vừa mới kết thúc công việc xong tức thì.",
+          "ruby": "たった{今仕事|いましごと}が{終|お}わったところです。"
+        },
+        {
+          "jpn": "もう少しで遅刻するところだった。",
+          "vie": "Suýt chút nữa thì bị muộn.",
+          "ruby": "もう{少|すこ}しで{遅刻|ちこく}するところだった。"
+        },
+        {
+          "jpn": "別の人に メッセージ を送ってしまうところだったけど、送る前に気づいた。よかった。",
+          "vie": "Suýt nữa thì gửi tin nhắn nhầm cho người khác nhưng đã kịp nhận ra trước khi gửi, tốt quá.",
+          "ruby": "{別|べつ}の{人|ひと}に メッセージ を{送|おく}ってしまうところだったけど、{送|おく}る{前|まえ}に{気|き}づいた。よかった。"
+        },
+        {
+          "jpn": "道を歩いていたら、急に車が来て、死ぬところだった。",
+          "vie": "Đang đi bộ thì xe bất ngờ lao tới; tôi suýt mất mạng.",
+          "editorial": true
+        }
+      ],
+      "totalExamplesCount": 12
+    },
+    {
+      "id": "tndg-008",
+      "structure": "～ところに／へ／を／で",
+      "meaning": "Các trợ từ đi với ところ biểu thị thời điểm xảy ra, cảnh đang bị bắt gặp hoặc mốc chuyển tiếp.",
+      "formation": "Vる／Vている／Vた + ところに／ところへ\nVている + ところを\nVた + ところで",
+      "nuance": "ところに／へ: đúng lúc có việc khác đến; ところを: đúng cảnh bị thấy/bắt gặp; ところで: ngay tại mốc vừa xong.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "1. ところに／へ: đúng lúc",
+          "meaning": "Một sự việc đến vào đúng thời điểm đó.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "私が昼寝をしているところに、お客さんが来た。",
+              "vie": "Đúng vào lúc tôi đang ngủ trưa thì khách đến nhà.",
+              "ruby": "{私|わたし}が{昼寝|ひるね}をしているところに、お{客|きゃく}さんが{来|き}た。"
+            },
+            {
+              "jpn": "出かけようとしたところに、電話がかかってきた。",
+              "vie": "Đúng vào lúc tôi định đi ra ngoài thì có điện thoại gọi đến.",
+              "ruby": "出かけようとしたところに、{電話|でんわ}がかかってきた。"
+            },
+            {
+              "jpn": "夕食が終わったところに、友だちが来た。",
+              "vie": "Đúng vào lúc tôi vừa ăn tối xong thì bạn tôi đến.",
+              "ruby": "{夕食|ゆうしょく}が{終|お}わったところに、{友|とも}だちが{来|き}た。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 2,
+          "heading": "2. ところを: bị bắt gặp",
+          "meaning": "Một hành động đang diễn ra bị quan sát hoặc ngăn lại.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "母に彼氏と一緒に帰っているところを見られた。",
+              "vie": "Tôi bị mẹ nhìn thấy khi đang đi về cùng bạn trai.",
+              "ruby": "母に{彼氏|かれし}と{一緒|いっしょ}に{帰|かえ}っているところを{見|み}られた。"
+            },
+            {
+              "jpn": "授業中に居眠りしているところを先生に見つかってしまった。",
+              "vie": "Tôi bị thầy giáo phát hiện ngủ gật trong giờ học.",
+              "editorial": true
+            },
+            {
+              "jpn": "指揮者の物まねをしているところを妹に見られてしまった。",
+              "vie": "Tôi bị em gái nhìn thấy lúc đang bắt chước nhạc trưởng.",
+              "editorial": true
+            }
+          ]
+        },
+        {
+          "blockNumber": 3,
+          "heading": "3. ところで: ngay khi vừa xong",
+          "meaning": "Sự việc khác xảy ra tại mốc vừa hoàn tất.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "駅に着いたところで財布を忘れてきたことに気がついた。",
+              "vie": "Sau khi đến nhà ga thì tôi phát hiện mình đã bỏ quên ví.",
+              "ruby": "{駅|えき}に{着|つ}いたところで{財布|さいふ}を{忘|わす}れてきたことに{気|き}がついた。"
+            },
+            {
+              "jpn": "必死で走り、飛び乗ったところで電車の ドア が閉まった。",
+              "vie": "Tôi chạy bán sống bán chết và lao vào tàu điện đúng lúc cửa tàu điện cũng vừa đóng lại.",
+              "ruby": "{必死|ひっし}で{走|はし}り、{飛|と}び{乗|じょう}ったところで{電車|でんしゃ}の ドア が{閉|し}まった。"
+            },
+            {
+              "jpn": "レポート の最後の一行を書いたところで、突然気絶した。",
+              "vie": "Đúng vào lúc vừa viết dòng cuối cùng của báo cáo thì tôi đột nhiên ngất đi.",
+              "ruby": "レポート の{最後|さいご}の{一行|いちぎょう}を{書|か}いたところで、{突然|とつぜん}{気絶|きぜつ}した。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "私が昼寝をしているところに、お客さんが来た。",
+          "vie": "Đúng vào lúc tôi đang ngủ trưa thì khách đến nhà.",
+          "ruby": "{私|わたし}が{昼寝|ひるね}をしているところに、お{客|きゃく}さんが{来|き}た。"
+        },
+        {
+          "jpn": "出かけようとしたところに、電話がかかってきた。",
+          "vie": "Đúng vào lúc tôi định đi ra ngoài thì có điện thoại gọi đến.",
+          "ruby": "出かけようとしたところに、{電話|でんわ}がかかってきた。"
+        },
+        {
+          "jpn": "夕食が終わったところに、友だちが来た。",
+          "vie": "Đúng vào lúc tôi vừa ăn tối xong thì bạn tôi đến.",
+          "ruby": "{夕食|ゆうしょく}が{終|お}わったところに、{友|とも}だちが{来|き}た。"
+        },
+        {
+          "jpn": "母に彼氏と一緒に帰っているところを見られた。",
+          "vie": "Tôi bị mẹ nhìn thấy khi đang đi về cùng bạn trai.",
+          "ruby": "母に{彼氏|かれし}と{一緒|いっしょ}に{帰|かえ}っているところを{見|み}られた。"
+        },
+        {
+          "jpn": "授業中に居眠りしているところを先生に見つかってしまった。",
+          "vie": "Tôi bị thầy giáo phát hiện ngủ gật trong giờ học.",
+          "editorial": true
+        },
+        {
+          "jpn": "指揮者の物まねをしているところを妹に見られてしまった。",
+          "vie": "Tôi bị em gái nhìn thấy lúc đang bắt chước nhạc trưởng.",
+          "editorial": true
+        },
+        {
+          "jpn": "駅に着いたところで財布を忘れてきたことに気がついた。",
+          "vie": "Sau khi đến nhà ga thì tôi phát hiện mình đã bỏ quên ví.",
+          "ruby": "{駅|えき}に{着|つ}いたところで{財布|さいふ}を{忘|わす}れてきたことに{気|き}がついた。"
+        },
+        {
+          "jpn": "必死で走り、飛び乗ったところで電車の ドア が閉まった。",
+          "vie": "Tôi chạy bán sống bán chết và lao vào tàu điện đúng lúc cửa tàu điện cũng vừa đóng lại.",
+          "ruby": "{必死|ひっし}で{走|はし}り、{飛|と}び{乗|じょう}ったところで{電車|でんしゃ}の ドア が{閉|し}まった。"
+        },
+        {
+          "jpn": "レポート の最後の一行を書いたところで、突然気絶した。",
+          "vie": "Đúng vào lúc vừa viết dòng cuối cùng của báo cáo thì tôi đột nhiên ngất đi.",
+          "ruby": "レポート の{最後|さいご}の{一行|いちぎょう}を{書|か}いたところで、{突然|とつぜん}{気絶|きぜつ}した。"
+        }
+      ],
+      "totalExamplesCount": 9
+    },
+    {
+      "id": "tndg-009",
+      "structure": "～とおり／どおり",
+      "meaning": "Làm hoặc diễn ra đúng như điều đã nói, nghĩ, dự tính hay hướng dẫn.",
+      "formation": "Vる／Vた + とおり（に）\nN + の + とおり（に）\nN + どおり（に）",
+      "nuance": "どおり gắn trực tiếp sau danh từ; とおり nối với động từ hoặc Nの.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "Đúng như mẫu hoặc dự định",
+          "meaning": "Theo đúng…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "私の思ったとおりだ。",
+              "vie": "Theo đúng như những gì tôi đã nghĩ.",
+              "ruby": "{私|わたし}の{思|おも}ったとおりだ。"
+            },
+            {
+              "jpn": "私が書いたとおりに、書いてください。",
+              "vie": "Hãy viết theo đúng như tôi đã viết.",
+              "ruby": "{私|わたし}が{書|か}いたとおりに、{書|か}いてください。"
+            },
+            {
+              "jpn": "この絵のとおりに、描いてください。",
+              "vie": "Hãy vẽ theo bức tranh này.",
+              "ruby": "この{絵|え}のとおりに、{描|か}いてください。"
+            },
+            {
+              "jpn": "説明書のとおりに、組み立てました。",
+              "vie": "Tôi đã lắp ráp theo sách hướng dẫn.",
+              "ruby": "{説明書|せつめいしょ}のとおりに、{組|く}み{立|た}てました。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "私の思ったとおりだ。",
+          "vie": "Theo đúng như những gì tôi đã nghĩ.",
+          "ruby": "{私|わたし}の{思|おも}ったとおりだ。"
+        },
+        {
+          "jpn": "私が書いたとおりに、書いてください。",
+          "vie": "Hãy viết theo đúng như tôi đã viết.",
+          "ruby": "{私|わたし}が{書|か}いたとおりに、{書|か}いてください。"
+        },
+        {
+          "jpn": "この絵のとおりに、描いてください。",
+          "vie": "Hãy vẽ theo bức tranh này.",
+          "ruby": "この{絵|え}のとおりに、{描|か}いてください。"
+        },
+        {
+          "jpn": "説明書のとおりに、組み立てました。",
+          "vie": "Tôi đã lắp ráp theo sách hướng dẫn.",
+          "ruby": "{説明書|せつめいしょ}のとおりに、{組|く}み{立|た}てました。"
+        }
+      ],
+      "totalExamplesCount": 4
+    },
+    {
+      "id": "tndg-010",
+      "structure": "～によって／により／による／によっては",
+      "meaning": "Phương tiện; nguyên nhân; sự khác biệt theo đối tượng; tác nhân trong câu bị động.",
+      "formation": "N／Vること + によって／により\nN + による + N\nN + によっては",
+      "nuance": "により trang trọng, thường dùng trong văn viết. によっては chỉ một số trường hợp trong tập hợp.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "1. Phương tiện hoặc phương pháp",
+          "meaning": "Bằng; thông qua…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "インターネットによって、レストランやホテルを予約することができます。",
+              "vie": "Có thể đặt nhà hàng và khách sạn qua Internet.",
+              "editorial": true
+            },
+            {
+              "jpn": "習った言葉をすぐ使ってみることによって、その言葉を覚えられます。",
+              "vie": "Dùng ngay từ vừa học giúp tôi nhớ từ đó.",
+              "editorial": true
+            },
+            {
+              "jpn": "バスによる移動は便利だが、時間がかかる。",
+              "vie": "Đi bằng xe buýt thuận tiện nhưng mất thời gian.",
+              "editorial": true
+            },
+            {
+              "jpn": "問題は話し合いによって解決したほうがいい。",
+              "vie": "Vấn đề nên được giải quyết thông qua thương lượng.",
+              "ruby": "{問題|もんだい}は{話|はな}し{合|あ}いによって{解決|かいけつ}したほうがいい。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 2,
+          "heading": "2. Nguyên nhân dẫn đến kết quả",
+          "meaning": "Do; vì…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "地震によって、ビル が壊れました。",
+              "vie": "Tòa nhà bị hỏng vì động đất.",
+              "ruby": "{地震|じしん}によって、ビル が{壊|こわ}れました。"
+            },
+            {
+              "jpn": "台風によって、橋が壊れました。",
+              "vie": "Cây cầu bị hỏng do bão.",
+              "ruby": "{台風|たいふう}によって、{橋|はし}が{壊|こわ}れました。"
+            },
+            {
+              "jpn": "交通事故により、入院することになりました。",
+              "vie": "Tôi phải nhập viện vì tai nạn giao thông.",
+              "ruby": "{交通事故|こうつうじこ}により、{入院|にゅういん}することになりました。"
+            },
+            {
+              "jpn": "大雨による被害は、予想より大きかった。",
+              "vie": "Thiệt hại do mưa lớn gây ra lớn hơn dự đoán.",
+              "ruby": "{大雨|おおあめ}による{被害|ひがい}は、{予想|よそう}より{大|おお}きかった。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 3,
+          "heading": "3. Thay đổi tùy đối tượng",
+          "meaning": "Tùy theo… mà khác.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "人によって、考え方が違います。",
+              "vie": "Mỗi người có một cách suy nghĩ khác nhau.",
+              "ruby": "{人|ひと}によって、{考|かんが}え{方|かた}が{違|ちが}います。"
+            },
+            {
+              "jpn": "国によって習慣が違う。",
+              "vie": "Tùy theo từng nước (quốc gia), mà tập quán khác nhau.",
+              "ruby": "{国|くに}によって{習慣|しゅうかん}が{違|ちが}う。"
+            },
+            {
+              "jpn": "曜日によって、ランチ の メニュー が変わります。",
+              "vie": "Thực đơn bữa trưa thay đổi theo từng ngày trong tuần.",
+              "ruby": "{曜日|ようび}によって、ランチ の メニュー が{変|か}わります。"
+            },
+            {
+              "jpn": "生き方や考え方は人によって様々だ。",
+              "vie": "Cách sống và quan điểm mỗi người thì khác nhau.",
+              "ruby": "{生|い}き{方|かた}や{考|かんが}え{方|かた}は{人|ひと}によって{様々|さまざま}だ。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 4,
+          "heading": "4. Một số trường hợp: ～によっては",
+          "meaning": "Trong một số trường hợp thì…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "この薬は人によっては副作用が出ることがあります。",
+              "vie": "Thuốc này có thể có tác dụng phụ đối với một số người.",
+              "ruby": "この{薬|くすり}は{人|ひと}によっては{副作用|ふくさよう}が{出|で}ることがあります。"
+            },
+            {
+              "jpn": "場合によっては今年の文化祭は中止になるかもしれない。",
+              "vie": "Tùy từng trường hợp, ngày hội văn hóa năm nay có thể bị ngưng.",
+              "ruby": "{場合|ばあい}によっては{今年|ことし}の{文化祭|ぶんかさい}は{中止|ちゅうし}になるかもしれない。"
+            },
+            {
+              "jpn": "この地方ではよくお茶を飲む。人によっては、一日20杯も飲むそうだ。",
+              "vie": "Ở vùng này thì rất thường uống trà. Có người một ngày uống đến 20 chén trà.",
+              "ruby": "この{地方|ちほう}ではよくお{茶|ちゃ}を{飲|の}む。{人|ひと}によっては、{一日|いちにち}20{杯|はい}も{飲|の}むそうだ。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 5,
+          "heading": "5. Tác nhân của câu bị động",
+          "meaning": "Được thực hiện bởi…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "川に落ちた子どもは若い男性によって、助けられました。",
+              "vie": "Đứa trẻ bị rơi xuống sông đã được cứu bởi một chàng trai trẻ.",
+              "ruby": "{川|かわ}に{落|お}ちた{子|こ}どもは{若|わか}い{男性|だんせい}によって、{助|たす}けられました。"
+            },
+            {
+              "jpn": "この ドレス は有名な デザイナー によって、デザイン されました。",
+              "vie": "Chiếc váy này được thiết kế bởi một nhà thiết kế nổi tiếng.",
+              "ruby": "この ドレス は{有名|ゆうめい}な デザイナー によって、デザイン されました。"
+            },
+            {
+              "jpn": "この建物は有名な建築家によって設計された。",
+              "vie": "Tòa nhà này được thiết kế bởi một kiến trúc sư nổi tiếng.",
+              "ruby": "この{建物|たてもの}は{有名|ゆうめい}な{建築家|けんちくか}によって{設計|せっけい}された。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "インターネットによって、レストランやホテルを予約することができます。",
+          "vie": "Có thể đặt nhà hàng và khách sạn qua Internet.",
+          "editorial": true
+        },
+        {
+          "jpn": "習った言葉をすぐ使ってみることによって、その言葉を覚えられます。",
+          "vie": "Dùng ngay từ vừa học giúp tôi nhớ từ đó.",
+          "editorial": true
+        },
+        {
+          "jpn": "バスによる移動は便利だが、時間がかかる。",
+          "vie": "Đi bằng xe buýt thuận tiện nhưng mất thời gian.",
+          "editorial": true
+        },
+        {
+          "jpn": "問題は話し合いによって解決したほうがいい。",
+          "vie": "Vấn đề nên được giải quyết thông qua thương lượng.",
+          "ruby": "{問題|もんだい}は{話|はな}し{合|あ}いによって{解決|かいけつ}したほうがいい。"
+        },
+        {
+          "jpn": "地震によって、ビル が壊れました。",
+          "vie": "Tòa nhà bị hỏng vì động đất.",
+          "ruby": "{地震|じしん}によって、ビル が{壊|こわ}れました。"
+        },
+        {
+          "jpn": "台風によって、橋が壊れました。",
+          "vie": "Cây cầu bị hỏng do bão.",
+          "ruby": "{台風|たいふう}によって、{橋|はし}が{壊|こわ}れました。"
+        },
+        {
+          "jpn": "交通事故により、入院することになりました。",
+          "vie": "Tôi phải nhập viện vì tai nạn giao thông.",
+          "ruby": "{交通事故|こうつうじこ}により、{入院|にゅういん}することになりました。"
+        },
+        {
+          "jpn": "大雨による被害は、予想より大きかった。",
+          "vie": "Thiệt hại do mưa lớn gây ra lớn hơn dự đoán.",
+          "ruby": "{大雨|おおあめ}による{被害|ひがい}は、{予想|よそう}より{大|おお}きかった。"
+        },
+        {
+          "jpn": "人によって、考え方が違います。",
+          "vie": "Mỗi người có một cách suy nghĩ khác nhau.",
+          "ruby": "{人|ひと}によって、{考|かんが}え{方|かた}が{違|ちが}います。"
+        },
+        {
+          "jpn": "国によって習慣が違う。",
+          "vie": "Tùy theo từng nước (quốc gia), mà tập quán khác nhau.",
+          "ruby": "{国|くに}によって{習慣|しゅうかん}が{違|ちが}う。"
+        },
+        {
+          "jpn": "曜日によって、ランチ の メニュー が変わります。",
+          "vie": "Thực đơn bữa trưa thay đổi theo từng ngày trong tuần.",
+          "ruby": "{曜日|ようび}によって、ランチ の メニュー が{変|か}わります。"
+        },
+        {
+          "jpn": "生き方や考え方は人によって様々だ。",
+          "vie": "Cách sống và quan điểm mỗi người thì khác nhau.",
+          "ruby": "{生|い}き{方|かた}や{考|かんが}え{方|かた}は{人|ひと}によって{様々|さまざま}だ。"
+        },
+        {
+          "jpn": "この薬は人によっては副作用が出ることがあります。",
+          "vie": "Thuốc này có thể có tác dụng phụ đối với một số người.",
+          "ruby": "この{薬|くすり}は{人|ひと}によっては{副作用|ふくさよう}が{出|で}ることがあります。"
+        },
+        {
+          "jpn": "場合によっては今年の文化祭は中止になるかもしれない。",
+          "vie": "Tùy từng trường hợp, ngày hội văn hóa năm nay có thể bị ngưng.",
+          "ruby": "{場合|ばあい}によっては{今年|ことし}の{文化祭|ぶんかさい}は{中止|ちゅうし}になるかもしれない。"
+        },
+        {
+          "jpn": "この地方ではよくお茶を飲む。人によっては、一日20杯も飲むそうだ。",
+          "vie": "Ở vùng này thì rất thường uống trà. Có người một ngày uống đến 20 chén trà.",
+          "ruby": "この{地方|ちほう}ではよくお{茶|ちゃ}を{飲|の}む。{人|ひと}によっては、{一日|いちにち}20{杯|はい}も{飲|の}むそうだ。"
+        },
+        {
+          "jpn": "川に落ちた子どもは若い男性によって、助けられました。",
+          "vie": "Đứa trẻ bị rơi xuống sông đã được cứu bởi một chàng trai trẻ.",
+          "ruby": "{川|かわ}に{落|お}ちた{子|こ}どもは{若|わか}い{男性|だんせい}によって、{助|たす}けられました。"
+        },
+        {
+          "jpn": "この ドレス は有名な デザイナー によって、デザイン されました。",
+          "vie": "Chiếc váy này được thiết kế bởi một nhà thiết kế nổi tiếng.",
+          "ruby": "この ドレス は{有名|ゆうめい}な デザイナー によって、デザイン されました。"
+        },
+        {
+          "jpn": "この建物は有名な建築家によって設計された。",
+          "vie": "Tòa nhà này được thiết kế bởi một kiến trúc sư nổi tiếng.",
+          "ruby": "この{建物|たてもの}は{有名|ゆうめい}な{建築家|けんちくか}によって{設計|せっけい}された。"
+        }
+      ],
+      "totalExamplesCount": 18
+    },
+    {
+      "id": "tndg-011",
+      "structure": "～たびに",
+      "meaning": "Mỗi lần xảy ra A thì B lại xảy ra.",
+      "formation": "Vる + たびに\nN + の + たびに",
+      "nuance": "Dùng cho việc lặp lại theo từng lần; không dùng đơn thuần cho thói quen liên tục không có mốc từng lần.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "Cứ mỗi lần…",
+          "meaning": "Sự việc lặp lại tương ứng với từng lần.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "コンビニへ行くたびに、つい買いすぎてしまう。",
+              "vie": "Cứ mỗi lần vào cửa hàng tiện lợi là tôi lại lỡ mua quá nhiều.",
+              "editorial": true
+            },
+            {
+              "jpn": "この本を読むたびに、彼のこと を思い出す。",
+              "vie": "Mỗi lần đọc cuốn sách này tôi lại nhớ đến anh ấy.",
+              "ruby": "この{本|ほん}を{読|よ}むたびに、{彼|か}のこと を{思|おも}い{出|だ}す。"
+            },
+            {
+              "jpn": "山田さんは会うたびに髪型が違う。",
+              "vie": "Cứ lần nào gặp Yamada là cậu ấy lại có kiểu tóc khác.",
+              "ruby": "{山田|やまだ}さんは{会|あ}うたびに{髪型|かみがた}が{違|ちが}う。"
+            },
+            {
+              "jpn": "人は失敗するたびに成長していく。",
+              "vie": "Con người ta cứ mỗi lần thất bại là sẽ trưởng thành hơn.",
+              "ruby": "{人|ひと}は{失敗|しっぱい}するたびに{成長|せいちょう}していく。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "コンビニへ行くたびに、つい買いすぎてしまう。",
+          "vie": "Cứ mỗi lần vào cửa hàng tiện lợi là tôi lại lỡ mua quá nhiều.",
+          "editorial": true
+        },
+        {
+          "jpn": "この本を読むたびに、彼のこと を思い出す。",
+          "vie": "Mỗi lần đọc cuốn sách này tôi lại nhớ đến anh ấy.",
+          "ruby": "この{本|ほん}を{読|よ}むたびに、{彼|か}のこと を{思|おも}い{出|だ}す。"
+        },
+        {
+          "jpn": "山田さんは会うたびに髪型が違う。",
+          "vie": "Cứ lần nào gặp Yamada là cậu ấy lại có kiểu tóc khác.",
+          "ruby": "{山田|やまだ}さんは{会|あ}うたびに{髪型|かみがた}が{違|ちが}う。"
+        },
+        {
+          "jpn": "人は失敗するたびに成長していく。",
+          "vie": "Con người ta cứ mỗi lần thất bại là sẽ trưởng thành hơn.",
+          "ruby": "{人|ひと}は{失敗|しっぱい}するたびに{成長|せいちょう}していく。"
+        }
+      ],
+      "totalExamplesCount": 4
+    },
+    {
+      "id": "tndg-012",
+      "structure": "～ば～ほど",
+      "meaning": "Mức độ vế sau tăng hoặc giảm theo mức độ vế trước.",
+      "formation": "Vば + Vる + ほど\nAければ + Aい + ほど\nAなら（ば） + Aな + ほど",
+      "nuance": "Thường lặp lại cùng động từ hoặc tính từ ở hai dạng để biểu thị quan hệ “càng… càng…”.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "Càng… càng…",
+          "meaning": "Hai mức độ biến đổi tương ứng.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "休みの日は多ければ多いほどうれしい。",
+              "vie": "Ngày nghỉ càng nhiều càng sướng.",
+              "ruby": "{休|やす}みの{日|ひ}は{多|おお}ければ{多|おお}いほどうれしい。"
+            },
+            {
+              "jpn": "荷物は少なければ少ないほど便利です。",
+              "vie": "Hành lý càng ít càng tiện.",
+              "ruby": "{荷物|にもつ}は少なければ少ないほど{便利|べんり}です。"
+            },
+            {
+              "jpn": "仕事は楽なら楽なほどいいです。",
+              "vie": "Công việc càng nhàn càng tốt.",
+              "ruby": "{仕事|しごと}は{楽|らく}なら楽なほどいいです。"
+            },
+            {
+              "jpn": "食べれば食べるほど、太っていきます。",
+              "vie": "Càng ăn càng béo.",
+              "ruby": "{食|た}べれば食べるほど、{太|ふと}っていきます。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "休みの日は多ければ多いほどうれしい。",
+          "vie": "Ngày nghỉ càng nhiều càng sướng.",
+          "ruby": "{休|やす}みの{日|ひ}は{多|おお}ければ{多|おお}いほどうれしい。"
+        },
+        {
+          "jpn": "荷物は少なければ少ないほど便利です。",
+          "vie": "Hành lý càng ít càng tiện.",
+          "ruby": "{荷物|にもつ}は少なければ少ないほど{便利|べんり}です。"
+        },
+        {
+          "jpn": "仕事は楽なら楽なほどいいです。",
+          "vie": "Công việc càng nhàn càng tốt.",
+          "ruby": "{仕事|しごと}は{楽|らく}なら楽なほどいいです。"
+        },
+        {
+          "jpn": "食べれば食べるほど、太っていきます。",
+          "vie": "Càng ăn càng béo.",
+          "ruby": "{食|た}べれば食べるほど、{太|ふと}っていきます。"
+        }
+      ],
+      "totalExamplesCount": 4
+    },
+    {
+      "id": "tndg-013",
+      "structure": "～ついでに",
+      "meaning": "Nhân tiện làm việc chính A thì làm thêm việc B.",
+      "formation": "Vる／Vた + ついでに\nN + の + ついでに",
+      "nuance": "A là mục đích hoặc dịp chính; B là việc làm thêm trong cùng cơ hội.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "Nhân tiện; tiện thể",
+          "meaning": "Làm thêm một việc khi có dịp làm việc khác.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "散歩のついでに、この手紙を出してきてくれませんか。",
+              "vie": "Tiện thể đi dạo thì gửi luôn hộ tôi bức thư này nhé.",
+              "ruby": "{散歩|さんぽ}のついでに、この{手紙|てがみ}を{出|だ}してきてくれませんか。"
+            },
+            {
+              "jpn": "郵便局へ行ったついでに、はがき を買ってきた。",
+              "vie": "Nhân tiện đến bưu điện tôi đã mua 1 tấm bưu thiếp.",
+              "ruby": "{郵便局|ゆうびんきょく}へ{行|い}ったついでに、はがき を{買|か}ってきた。"
+            },
+            {
+              "jpn": "出かけるついでに、ごみを捨てます。",
+              "vie": "Tiện đi ngoài tôi sẽ vứt rác luôn.",
+              "ruby": "{出|で}かけるついでに、ごみを{捨|す}てます。"
+            },
+            {
+              "jpn": "彼に会いに行くついでにこの資料を渡してくれる？",
+              "vie": "Nhân tiện cậu đi gặp anh ấy thì đưa hộ tớ tài liệu này cho anh ấy nhé.",
+              "ruby": "{彼|かれ}に{会|あ}いに{行|い}くついでにこの{資料|しりょう}を{渡|わた}してくれる？"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "散歩のついでに、この手紙を出してきてくれませんか。",
+          "vie": "Tiện thể đi dạo thì gửi luôn hộ tôi bức thư này nhé.",
+          "ruby": "{散歩|さんぽ}のついでに、この{手紙|てがみ}を{出|だ}してきてくれませんか。"
+        },
+        {
+          "jpn": "郵便局へ行ったついでに、はがき を買ってきた。",
+          "vie": "Nhân tiện đến bưu điện tôi đã mua 1 tấm bưu thiếp.",
+          "ruby": "{郵便局|ゆうびんきょく}へ{行|い}ったついでに、はがき を{買|か}ってきた。"
+        },
+        {
+          "jpn": "出かけるついでに、ごみを捨てます。",
+          "vie": "Tiện đi ngoài tôi sẽ vứt rác luôn.",
+          "ruby": "{出|で}かけるついでに、ごみを{捨|す}てます。"
+        },
+        {
+          "jpn": "彼に会いに行くついでにこの資料を渡してくれる？",
+          "vie": "Nhân tiện cậu đi gặp anh ấy thì đưa hộ tớ tài liệu này cho anh ấy nhé.",
+          "ruby": "{彼|かれ}に{会|あ}いに{行|い}くついでにこの{資料|しりょう}を{渡|わた}してくれる？"
+        }
+      ],
+      "totalExamplesCount": 4
+    },
+    {
+      "id": "tndg-014",
+      "structure": "～ほど／ほどだ",
+      "meaning": "Lấy một hình ảnh hoặc kết quả để diễn tả mức độ cao.",
+      "formation": "Vる／Vない + ほど（だ）\nAい／Aな + ほど（だ）\nN + ほど（だ）",
+      "nuance": "Câu ví dụ trước ほど thường là hình ảnh so sánh về mức độ, không nhất thiết là sự thật theo nghĩa đen.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "Đến mức; đến độ",
+          "meaning": "Nhấn mạnh mức độ bằng một ví dụ cụ thể.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "歯を抜いたときは、死ぬほど痛かった。",
+              "vie": "Lúc nhổ răng tôi đau gần chết.",
+              "ruby": "{歯|は}を{抜|ぬ}いたときは、{死|し}ぬほど{痛|いた}かった。"
+            },
+            {
+              "jpn": "泣きたいほど宿題が多い。",
+              "vie": "Bài tập nhiều đến mức muốn khóc.",
+              "ruby": "{泣|な}きたいほど{宿題|しゅくだい}が{多|おお}い。"
+            },
+            {
+              "jpn": "昨日は、声がかれるほど歌った。",
+              "vie": "Hôm qua tôi đã hát đến cháy cả họng.",
+              "ruby": "{昨日|きのう}は、{声|こえ}がかれるほど{歌|うた}った。"
+            },
+            {
+              "jpn": "今、家の近くで工事をしていて、集中できないほどうるさいです。",
+              "vie": "Gần nhà đang thi công, ồn đến mức tôi không thể tập trung.",
+              "editorial": true
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "歯を抜いたときは、死ぬほど痛かった。",
+          "vie": "Lúc nhổ răng tôi đau gần chết.",
+          "ruby": "{歯|は}を{抜|ぬ}いたときは、{死|し}ぬほど{痛|いた}かった。"
+        },
+        {
+          "jpn": "泣きたいほど宿題が多い。",
+          "vie": "Bài tập nhiều đến mức muốn khóc.",
+          "ruby": "{泣|な}きたいほど{宿題|しゅくだい}が{多|おお}い。"
+        },
+        {
+          "jpn": "昨日は、声がかれるほど歌った。",
+          "vie": "Hôm qua tôi đã hát đến cháy cả họng.",
+          "ruby": "{昨日|きのう}は、{声|こえ}がかれるほど{歌|うた}った。"
+        },
+        {
+          "jpn": "今、家の近くで工事をしていて、集中できないほどうるさいです。",
+          "vie": "Gần nhà đang thi công, ồn đến mức tôi không thể tập trung.",
+          "editorial": true
+        }
+      ],
+      "totalExamplesCount": 4
+    },
+    {
+      "id": "tndg-015",
+      "structure": "～くらい／ぐらい",
+      "meaning": "Biểu thị mức độ, mức tối thiểu hoặc đánh giá một việc là nhỏ.",
+      "formation": "V／A ở thể thường + くらい／ぐらい\nN + くらい／ぐらい",
+      "nuance": "くらい và ぐらい thường thay thế được cho nhau; sắc thái cần đọc theo ngữ cảnh.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "1. Mức độ hoặc so sánh",
+          "meaning": "Đến mức; cỡ như…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "もう動けないくらい疲れた。",
+              "vie": "Tôi mệt đến mức không thể vận động được nữa.",
+              "ruby": "もう{動|うご}けないくらい{疲|つか}れた。"
+            },
+            {
+              "jpn": "泣きたいくらい / ほど宿題が多い。",
+              "vie": "Bài tập nhiều đến mức muốn khóc.",
+              "ruby": "{泣|な}きたいくらい / ほど{宿題|しゅくだい}が{多|おお}い。"
+            },
+            {
+              "jpn": "顔も見たくないくらい嫌いだ。",
+              "vie": "Tôi ghét đến mức chẳng thèm nhìn mặt.",
+              "ruby": "{顔|かお}も{見|み}たくないくらい{嫌|きら}いだ。"
+            },
+            {
+              "jpn": "昨日は、声がかれるくらい / ほど歌った。",
+              "vie": "Hôm qua tôi đã hát đến cháy cả họng.",
+              "ruby": "{昨日|きのう}は、{声|こえ}がかれるくらい / ほど{歌|うた}った。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 2,
+          "heading": "2. Mức tối thiểu",
+          "meaning": "Ít nhất; tối thiểu…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "ひらがなくらいも読めないの？",
+              "vie": "Đến hiragana mà cũng không đọc được à?",
+              "ruby": "ひらがなくらいも{読|よ}めないの？"
+            },
+            {
+              "jpn": "自分の部屋くらい自分で掃除しなさい。",
+              "vie": "Ít nhất thì cũng nên tự dọn dẹp phòng của mình đi.",
+              "ruby": "{自分|じぶん}の{部屋|へや}くらい{自分|じぶん}で{掃除|そうじ}しなさい。"
+            },
+            {
+              "jpn": "せめてチョコくらいは買ってくれ。",
+              "vie": "Ít nhất hãy mua giúp tôi ít sô cô la.",
+              "editorial": true
+            },
+            {
+              "jpn": "挨拶ぐらいしたらどうだ！",
+              "vie": "Tối thiểu anh cũng nên chào hỏi một lời.",
+              "ruby": "{挨拶|あいさつ}ぐらいしたらどうだ！"
+            }
+          ]
+        },
+        {
+          "blockNumber": 3,
+          "heading": "3. Xem nhẹ mức độ",
+          "meaning": "Chỉ có bấy nhiêu…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "一回会ったくらいで結婚を決めるなんて、勇気 があるよね。",
+              "vie": "Mới gặp 1 lần đã quyết định kết hôn thì can đảm quá nhỉ.",
+              "ruby": "{一回|いっかい}{会|あ}ったくらいで{結婚|けっこん}を{決|き}めるなんて、{勇気|ゆうき} があるよね。"
+            },
+            {
+              "jpn": "ちょっと足がだるいぐらい、風呂に入ればすぐ治るよ。",
+              "vie": "Cỡ như mỏi chân một chút thì ngâm mình trong nước nóng là khỏi ngay đấy.",
+              "ruby": "ちょっと{足|あし}がだるいぐらい、{風呂|ふろ}に{入|はい}ればすぐ{治|なお}るよ。"
+            },
+            {
+              "jpn": "少し歩いたぐらいで疲れた疲れたって言うなよ。",
+              "vie": "Chỉ mới đi bộ được một chút thôi mà đã than rằng “mệt quá, mệt quá” rồi sao!",
+              "ruby": "{少|すこ}し{歩|ある}いたぐらいで{疲|つか}れた{疲|つか}れたって{言|い}うなよ。"
+            },
+            {
+              "jpn": "挨拶くらいの簡単な日本語しか話せない。",
+              "vie": "Tôi chỉ nói được thứ tiếng Nhật đơn giản, cỡ chào hỏi thôi.",
+              "ruby": "{挨拶|あいさつ}くらいの{簡単|かんたん}な{日本語|にほんご}しか話せない。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "もう動けないくらい疲れた。",
+          "vie": "Tôi mệt đến mức không thể vận động được nữa.",
+          "ruby": "もう{動|うご}けないくらい{疲|つか}れた。"
+        },
+        {
+          "jpn": "泣きたいくらい / ほど宿題が多い。",
+          "vie": "Bài tập nhiều đến mức muốn khóc.",
+          "ruby": "{泣|な}きたいくらい / ほど{宿題|しゅくだい}が{多|おお}い。"
+        },
+        {
+          "jpn": "顔も見たくないくらい嫌いだ。",
+          "vie": "Tôi ghét đến mức chẳng thèm nhìn mặt.",
+          "ruby": "{顔|かお}も{見|み}たくないくらい{嫌|きら}いだ。"
+        },
+        {
+          "jpn": "昨日は、声がかれるくらい / ほど歌った。",
+          "vie": "Hôm qua tôi đã hát đến cháy cả họng.",
+          "ruby": "{昨日|きのう}は、{声|こえ}がかれるくらい / ほど{歌|うた}った。"
+        },
+        {
+          "jpn": "ひらがなくらいも読めないの？",
+          "vie": "Đến hiragana mà cũng không đọc được à?",
+          "ruby": "ひらがなくらいも{読|よ}めないの？"
+        },
+        {
+          "jpn": "自分の部屋くらい自分で掃除しなさい。",
+          "vie": "Ít nhất thì cũng nên tự dọn dẹp phòng của mình đi.",
+          "ruby": "{自分|じぶん}の{部屋|へや}くらい{自分|じぶん}で{掃除|そうじ}しなさい。"
+        },
+        {
+          "jpn": "せめてチョコくらいは買ってくれ。",
+          "vie": "Ít nhất hãy mua giúp tôi ít sô cô la.",
+          "editorial": true
+        },
+        {
+          "jpn": "挨拶ぐらいしたらどうだ！",
+          "vie": "Tối thiểu anh cũng nên chào hỏi một lời.",
+          "ruby": "{挨拶|あいさつ}ぐらいしたらどうだ！"
+        },
+        {
+          "jpn": "一回会ったくらいで結婚を決めるなんて、勇気 があるよね。",
+          "vie": "Mới gặp 1 lần đã quyết định kết hôn thì can đảm quá nhỉ.",
+          "ruby": "{一回|いっかい}{会|あ}ったくらいで{結婚|けっこん}を{決|き}めるなんて、{勇気|ゆうき} があるよね。"
+        },
+        {
+          "jpn": "ちょっと足がだるいぐらい、風呂に入ればすぐ治るよ。",
+          "vie": "Cỡ như mỏi chân một chút thì ngâm mình trong nước nóng là khỏi ngay đấy.",
+          "ruby": "ちょっと{足|あし}がだるいぐらい、{風呂|ふろ}に{入|はい}ればすぐ{治|なお}るよ。"
+        },
+        {
+          "jpn": "少し歩いたぐらいで疲れた疲れたって言うなよ。",
+          "vie": "Chỉ mới đi bộ được một chút thôi mà đã than rằng “mệt quá, mệt quá” rồi sao!",
+          "ruby": "{少|すこ}し{歩|ある}いたぐらいで{疲|つか}れた{疲|つか}れたって{言|い}うなよ。"
+        },
+        {
+          "jpn": "挨拶くらいの簡単な日本語しか話せない。",
+          "vie": "Tôi chỉ nói được thứ tiếng Nhật đơn giản, cỡ chào hỏi thôi.",
+          "ruby": "{挨拶|あいさつ}くらいの{簡単|かんたん}な{日本語|にほんご}しか話せない。"
+        }
+      ],
+      "totalExamplesCount": 12
+    },
+    {
+      "id": "tndg-016",
+      "structure": "～ほど／くらい／ぐらい～はない",
+      "meaning": "Theo đánh giá của người nói, không có gì bằng đối tượng được nêu.",
+      "formation": "N + ほど／くらい／ぐらい + …はない／いない",
+      "nuance": "Đây là nhận xét có tính chủ quan, không nhất thiết là kết luận khách quan.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "Không có gì bằng…",
+          "meaning": "Nêu mức cao nhất theo cảm nhận.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "彼女くらい親切な人はいない。",
+              "vie": "Người tốt bụng như cô ấy thì không có đâu. (Cô ấy là người tốt bụng nhất)",
+              "ruby": "{彼女|かのじょ}くらい{親切|しんせつ}な人はいない。"
+            },
+            {
+              "jpn": "私は、料理を作ることぐらい楽しいことはないと思っています。",
+              "vie": "Tôi nghĩ không có việc nào vui bằng việc nấu ăn.",
+              "ruby": "{私|わたし}は、{料理|りょうり}を{作|つく}ることぐらい{楽|たの}しいことはないと{思|おも}っています。"
+            },
+            {
+              "jpn": "うちの猫くらいかわいい動物はいない。",
+              "vie": "Không có động vật nào đáng yêu như con mèo nhà tôi.",
+              "ruby": "うちの{猫|ねこ}くらいかわいい{動物|どうぶつ}はいない。"
+            },
+            {
+              "jpn": "母の料理ほどおいしいものはありません。",
+              "vie": "Không có đồ nào ngon bằng món ăn mẹ nấu.",
+              "ruby": "{母|はは}の{料理|りょうり}ほどおいしいものはありません。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "彼女くらい親切な人はいない。",
+          "vie": "Người tốt bụng như cô ấy thì không có đâu. (Cô ấy là người tốt bụng nhất)",
+          "ruby": "{彼女|かのじょ}くらい{親切|しんせつ}な人はいない。"
+        },
+        {
+          "jpn": "私は、料理を作ることぐらい楽しいことはないと思っています。",
+          "vie": "Tôi nghĩ không có việc nào vui bằng việc nấu ăn.",
+          "ruby": "{私|わたし}は、{料理|りょうり}を{作|つく}ることぐらい{楽|たの}しいことはないと{思|おも}っています。"
+        },
+        {
+          "jpn": "うちの猫くらいかわいい動物はいない。",
+          "vie": "Không có động vật nào đáng yêu như con mèo nhà tôi.",
+          "ruby": "うちの{猫|ねこ}くらいかわいい{動物|どうぶつ}はいない。"
+        },
+        {
+          "jpn": "母の料理ほどおいしいものはありません。",
+          "vie": "Không có đồ nào ngon bằng món ăn mẹ nấu.",
+          "ruby": "{母|はは}の{料理|りょうり}ほどおいしいものはありません。"
+        }
+      ],
+      "totalExamplesCount": 4
+    },
+    {
+      "id": "tndg-017",
+      "structure": "～くらいなら／ぐらいなら",
+      "meaning": "Nếu phải làm A thì người nói thà chọn B còn hơn.",
+      "formation": "Vる + くらいなら／ぐらいなら、B のほうがいい／ましだ",
+      "nuance": "A là phương án người nói rất không muốn chọn; B có thể cũng không lý tưởng.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "Nếu phải… thì thà…",
+          "meaning": "Chọn B để tránh A.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "あいつに助けてもらうくらいなら、死んだほうがましだ。",
+              "vie": "Nếu phải nhờ hắn giúp thì thà chết còn sướng hơn.",
+              "ruby": "あいつに{助|たす}けてもらうくらいなら、{死|し}んだほうがましだ。"
+            },
+            {
+              "jpn": "上司と飲みに行くくらいなら、残業したほうがいいよ。",
+              "vie": "Nếu phải đi nhậu với cấp trên thì thà là làm tăng ca còn hơn.",
+              "ruby": "{上司|じょうし}と{飲|の}みに{行|い}くくらいなら、{残業|ざんぎょう}したほうがいいよ。"
+            },
+            {
+              "jpn": "気が合わない人と一緒に生活するぐらいなら、このまま独身でいたい。",
+              "vie": "Nếu mà phải sống cùng với người mình không hợp, thì thà ở độc thân còn hơn.",
+              "ruby": "{気|き}が{合|あ}わない{人|ひと}と{一緒|いっしょ}に{生活|せいかつ}するぐらいなら、このまま{独身|どくしん}でいたい。"
+            },
+            {
+              "jpn": "お金を払ってこんな料理を食べるくらいなら、自分で作ったほうがいい。",
+              "vie": "Nếu phải trả tiền để ăn món này thì tự mình nấu còn hơn.",
+              "ruby": "お{金|かね}を{払|はら}ってこんな{料理|りょうり}を{食|た}べるくらいなら、{自分|じぶん}で{作|つく}ったほうがいい。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "あいつに助けてもらうくらいなら、死んだほうがましだ。",
+          "vie": "Nếu phải nhờ hắn giúp thì thà chết còn sướng hơn.",
+          "ruby": "あいつに{助|たす}けてもらうくらいなら、{死|し}んだほうがましだ。"
+        },
+        {
+          "jpn": "上司と飲みに行くくらいなら、残業したほうがいいよ。",
+          "vie": "Nếu phải đi nhậu với cấp trên thì thà là làm tăng ca còn hơn.",
+          "ruby": "{上司|じょうし}と{飲|の}みに{行|い}くくらいなら、{残業|ざんぎょう}したほうがいいよ。"
+        },
+        {
+          "jpn": "気が合わない人と一緒に生活するぐらいなら、このまま独身でいたい。",
+          "vie": "Nếu mà phải sống cùng với người mình không hợp, thì thà ở độc thân còn hơn.",
+          "ruby": "{気|き}が{合|あ}わない{人|ひと}と{一緒|いっしょ}に{生活|せいかつ}するぐらいなら、このまま{独身|どくしん}でいたい。"
+        },
+        {
+          "jpn": "お金を払ってこんな料理を食べるくらいなら、自分で作ったほうがいい。",
+          "vie": "Nếu phải trả tiền để ăn món này thì tự mình nấu còn hơn.",
+          "ruby": "お{金|かね}を{払|はら}ってこんな{料理|りょうり}を{食|た}べるくらいなら、{自分|じぶん}で{作|つく}ったほうがいい。"
+        }
+      ],
+      "totalExamplesCount": 4
+    },
+    {
+      "id": "tndg-018",
+      "structure": "～に限る",
+      "meaning": "Theo ý người nói, cách đó hoặc lựa chọn đó là tốt nhất.",
+      "formation": "N + に限る\nVる／Vない + に限る",
+      "nuance": "Thể hiện lời khuyên hoặc đánh giá chủ quan, không phải quy tắc tuyệt đối.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "Là tốt nhất; không gì bằng",
+          "meaning": "Chọn điều phù hợp nhất trong hoàn cảnh.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "やっぱり映画は、映画館で見るに限る。",
+              "vie": "Quả nhiên, xem phim thì xem ở rạp chiếu phim là tốt nhất.",
+              "ruby": "やっぱり{映画|えいが}は、{映画館|えいがかん}で{見|み}るに{限|かぎ}る。"
+            },
+            {
+              "jpn": "何もしたくない時は、家で寝るに限る。",
+              "vie": "Lúc không muốn làm gì cả, thì ở nhà ngủ là tốt nhất.",
+              "ruby": "{何|なに}もしたくない時は、{家|いえ}で{寝|ね}るに{限|かぎ}る。"
+            },
+            {
+              "jpn": "夏は冷たいビールに限る。",
+              "vie": "Mùa hè thì một chai bia lạnh là nhất.",
+              "ruby": "{夏|なつ}は{冷|つめ}たいビールに{限|かぎ}る。"
+            },
+            {
+              "jpn": "危険な所には近寄らないに限る。",
+              "vie": "Với những nơi nguy hiểm thì không đến gần là hay nhất.",
+              "ruby": "{危険|きけん}な{所|ところ}には{近寄|ちかよ}らないに{限|かぎ}る。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "やっぱり映画は、映画館で見るに限る。",
+          "vie": "Quả nhiên, xem phim thì xem ở rạp chiếu phim là tốt nhất.",
+          "ruby": "やっぱり{映画|えいが}は、{映画館|えいがかん}で{見|み}るに{限|かぎ}る。"
+        },
+        {
+          "jpn": "何もしたくない時は、家で寝るに限る。",
+          "vie": "Lúc không muốn làm gì cả, thì ở nhà ngủ là tốt nhất.",
+          "ruby": "{何|なに}もしたくない時は、{家|いえ}で{寝|ね}るに{限|かぎ}る。"
+        },
+        {
+          "jpn": "夏は冷たいビールに限る。",
+          "vie": "Mùa hè thì một chai bia lạnh là nhất.",
+          "ruby": "{夏|なつ}は{冷|つめ}たいビールに{限|かぎ}る。"
+        },
+        {
+          "jpn": "危険な所には近寄らないに限る。",
+          "vie": "Với những nơi nguy hiểm thì không đến gần là hay nhất.",
+          "ruby": "{危険|きけん}な{所|ところ}には{近寄|ちかよ}らないに{限|かぎ}る。"
+        }
+      ],
+      "totalExamplesCount": 4
+    },
+    {
+      "id": "tndg-019",
+      "structure": "～に対して／に対する",
+      "meaning": "Hướng tới một đối tượng; đặt hai điều đối lập; hoặc biểu thị tỷ lệ.",
+      "formation": "N + に対して + mệnh đề\nN1 + に対する + N2\nSố lượng A + に対して + số lượng B",
+      "nuance": "に対する bổ nghĩa cho danh từ theo sau; に対して đi trước mệnh đề.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "1. Đối tượng của hành động/thái độ",
+          "meaning": "Đối với…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "目上の人に対して、敬語を使うようにしている。",
+              "vie": "Tôi (cố gắng) dùng kính ngữ với người bề trên.",
+              "ruby": "{目上|めうえ}の{人|ひと}に{対|たい}して、{敬語|けいご}を{使|つか}うようにしている。"
+            },
+            {
+              "jpn": "発表に対する質問は、この紙に書いてください。",
+              "vie": "Xin hãy viết câu hỏi đối với bài phát biểu vào giấy này.",
+              "ruby": "{発表|はっぴょう}に{対|たい}する{質問|しつもん}は、この{紙|かみ}に{書|か}いてください。"
+            },
+            {
+              "jpn": "お客様に対して、失礼なことを言ってはいけません。",
+              "vie": "Không được nói lời thất lễ với khách hàng.",
+              "editorial": true
+            }
+          ]
+        },
+        {
+          "blockNumber": 2,
+          "heading": "2. Đối lập, tương phản",
+          "meaning": "Trong khi… thì ngược lại…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "彼が自民党を支持しているのに対して、彼女は共産党を支援している。",
+              "vie": "Anh ta thì ủng hộ đảng Tự do dân chủ, ngược lại, cô ấy thì ủng hộ đảng Cộng sản.",
+              "ruby": "{彼|かれ}が{自民党|じみんとう}を{支持|しじ}しているのに{対|たい}して、{彼女|かのじょ}は{共産党|きょうさんとう}を{支援|しえん}している。"
+            },
+            {
+              "jpn": "あの二人は双子なのに、兄はおとなしいのに対して、弟はよくしゃべる。",
+              "vie": "Dù là sinh đôi, người anh ít nói còn người em nói rất nhiều.",
+              "editorial": true
+            },
+            {
+              "jpn": "この映画は海外では人気があるのに対して、日本国内ではそうでもない。",
+              "vie": "Bộ phim đó nổi tiếng ở nước ngoài nhưng ở trong nước Nhật thì không hẳn thế.",
+              "ruby": "この{映画|えいが}は{海外|かいがい}では{人気|にんき}があるのに{対|たい}して、{日本国内|にほんこくない}ではそうでもない。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 3,
+          "heading": "3. Tỷ lệ hoặc phân bổ",
+          "meaning": "Cứ mỗi… thì…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "学生20人に対して教員一人が配置されている。",
+              "vie": "Người ta bố trí một giáo viên cho mỗi 20 học sinh.",
+              "ruby": "{学生|がくせい}20{人|ひと}に{対|たい}して{教員一人|きょういんひとり}が{配置|はいち}されている。"
+            },
+            {
+              "jpn": "学生一人に対して20平米のスペースが確保されている。",
+              "vie": "Người ta dành một diện tích 20 mét vuông cho mỗi học sinh.",
+              "ruby": "{学生一人|がくせいひとり}に{対|たい}して20{平米|へいべい}のスペースが{確保|かくほ}されている。"
+            },
+            {
+              "jpn": "砂3に対して土1の割合で混ぜます。",
+              "vie": "Trộn theo tỷ lệ ba phần cát với một phần đất.",
+              "editorial": true
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "目上の人に対して、敬語を使うようにしている。",
+          "vie": "Tôi (cố gắng) dùng kính ngữ với người bề trên.",
+          "ruby": "{目上|めうえ}の{人|ひと}に{対|たい}して、{敬語|けいご}を{使|つか}うようにしている。"
+        },
+        {
+          "jpn": "発表に対する質問は、この紙に書いてください。",
+          "vie": "Xin hãy viết câu hỏi đối với bài phát biểu vào giấy này.",
+          "ruby": "{発表|はっぴょう}に{対|たい}する{質問|しつもん}は、この{紙|かみ}に{書|か}いてください。"
+        },
+        {
+          "jpn": "お客様に対して、失礼なことを言ってはいけません。",
+          "vie": "Không được nói lời thất lễ với khách hàng.",
+          "editorial": true
+        },
+        {
+          "jpn": "彼が自民党を支持しているのに対して、彼女は共産党を支援している。",
+          "vie": "Anh ta thì ủng hộ đảng Tự do dân chủ, ngược lại, cô ấy thì ủng hộ đảng Cộng sản.",
+          "ruby": "{彼|かれ}が{自民党|じみんとう}を{支持|しじ}しているのに{対|たい}して、{彼女|かのじょ}は{共産党|きょうさんとう}を{支援|しえん}している。"
+        },
+        {
+          "jpn": "あの二人は双子なのに、兄はおとなしいのに対して、弟はよくしゃべる。",
+          "vie": "Dù là sinh đôi, người anh ít nói còn người em nói rất nhiều.",
+          "editorial": true
+        },
+        {
+          "jpn": "この映画は海外では人気があるのに対して、日本国内ではそうでもない。",
+          "vie": "Bộ phim đó nổi tiếng ở nước ngoài nhưng ở trong nước Nhật thì không hẳn thế.",
+          "ruby": "この{映画|えいが}は{海外|かいがい}では{人気|にんき}があるのに{対|たい}して、{日本国内|にほんこくない}ではそうでもない。"
+        },
+        {
+          "jpn": "学生20人に対して教員一人が配置されている。",
+          "vie": "Người ta bố trí một giáo viên cho mỗi 20 học sinh.",
+          "ruby": "{学生|がくせい}20{人|ひと}に{対|たい}して{教員一人|きょういんひとり}が{配置|はいち}されている。"
+        },
+        {
+          "jpn": "学生一人に対して20平米のスペースが確保されている。",
+          "vie": "Người ta dành một diện tích 20 mét vuông cho mỗi học sinh.",
+          "ruby": "{学生一人|がくせいひとり}に{対|たい}して20{平米|へいべい}のスペースが{確保|かくほ}されている。"
+        },
+        {
+          "jpn": "砂3に対して土1の割合で混ぜます。",
+          "vie": "Trộn theo tỷ lệ ba phần cát với một phần đất.",
+          "editorial": true
+        }
+      ],
+      "totalExamplesCount": 9
+    },
+    {
+      "id": "tndg-020",
+      "structure": "～反面",
+      "structureRuby": "～{反面|はんめん}",
+      "meaning": "Một sự vật có hai mặt hoặc hai đặc điểm trái chiều.",
+      "formation": "V／Aい ở thể thường + 反面\nAな + な／である + 反面\nN + である + 反面",
+      "nuance": "Hai vế cùng nói về một đối tượng và nêu hai mặt đối lập của nó.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "Mặt khác; ngược lại",
+          "meaning": "Một ưu điểm đi kèm nhược điểm hoặc ngược lại.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "この薬はよく効く反面、副作用も強い。",
+              "vie": "Thuốc này rất hiệu quả nhưng tác dụng phụ cũng mạnh.",
+              "ruby": "この{薬|くすり}はよく{効|き}く{反面|はんめん}、{副作用|ふくさよう}も{強|つよ}い。",
+              "editorial": true
+            },
+            {
+              "jpn": "この部屋は日当たりがいい反面、夏はかなり暑い。",
+              "vie": "Phòng này nhiều ánh nắng nhưng mùa hè lại khá nóng.",
+              "ruby": "この{部屋|へや}は{日当|ひあ}たりがいい{反面|はんめん}、{夏|なつ}はかなり{暑|あつ}い。",
+              "editorial": true
+            },
+            {
+              "jpn": "化学繊維は丈夫である反面、火に弱い。",
+              "vie": "Sợi tổng hợp bền nhưng lại dễ bị ảnh hưởng bởi lửa.",
+              "ruby": "{化学繊維|かがくせんい}は{丈夫|じょうぶ}である{反面|はんめん}、{火|ひ}に{弱|よわ}い。",
+              "editorial": true
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "この薬はよく効く反面、副作用も強い。",
+          "vie": "Thuốc này rất hiệu quả nhưng tác dụng phụ cũng mạnh.",
+          "ruby": "この{薬|くすり}はよく{効|き}く{反面|はんめん}、{副作用|ふくさよう}も{強|つよ}い。",
+          "editorial": true
+        },
+        {
+          "jpn": "この部屋は日当たりがいい反面、夏はかなり暑い。",
+          "vie": "Phòng này nhiều ánh nắng nhưng mùa hè lại khá nóng.",
+          "ruby": "この{部屋|へや}は{日当|ひあ}たりがいい{反面|はんめん}、{夏|なつ}はかなり{暑|あつ}い。",
+          "editorial": true
+        },
+        {
+          "jpn": "化学繊維は丈夫である反面、火に弱い。",
+          "vie": "Sợi tổng hợp bền nhưng lại dễ bị ảnh hưởng bởi lửa.",
+          "ruby": "{化学繊維|かがくせんい}は{丈夫|じょうぶ}である{反面|はんめん}、{火|ひ}に{弱|よわ}い。",
+          "editorial": true
+        }
+      ],
+      "totalExamplesCount": 3
+    },
+    {
+      "id": "tndg-021",
+      "structure": "～一方（で）",
+      "structureRuby": "～{一方|いっぽう}（で）",
+      "meaning": "Đặt hai việc cùng diễn ra hoặc hai mặt khác nhau cạnh nhau.",
+      "formation": "V／Aい ở thể thường + 一方（で）\nAな／N + である + 一方（で）",
+      "nuance": "Có thể nêu hai mặt đối lập của một việc hoặc hai việc diễn ra song song; đọc ngữ cảnh để phân biệt.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "1. Hai mặt đối lập",
+          "meaning": "Một mặt… nhưng mặt khác…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "いい親は厳しくしかる一方で、ほめることも忘れない。",
+              "vie": "Cha mẹ tốt thì một mặt la rầy nghiêm khắc, nhưng mặt khác cũng không quên khen ngợi con cái.",
+              "ruby": "いい{親|おや}は{厳|きび}しくしかる{一方|いっぽう}で、ほめることも{忘|わす}れない。"
+            },
+            {
+              "jpn": "一人暮らしは厳しさを感じることが多い一方、気楽だというよさもある。",
+              "vie": "Sống một mình thì nhiều khi sẽ cảm thấy khó khăn, nhưng mặt khác lại cảm thấy tự do thoải mái.",
+              "ruby": "{一人暮|ひとりぐ}らしは{厳|きび}しさを{感|かん}じることが{多|おお}い{一方|いっぽう}、{気楽|きらく}だというよさもある。"
+            },
+            {
+              "jpn": "彼女はお金に困っていると言う一方で、ずいぶん無駄遣いもしているらしい。",
+              "vie": "Cô ta một mặt nói rằng đang gặp khó khăn về tiền bạc, nhưng mặt khác lại nghe nói rằng cô ta đang tiêu xài khá hoang phí.",
+              "ruby": "{彼女|かのじょ}はお{金|かね}に{困|こま}っていると{言|い}う{一方|いっぽう}で、ずいぶん{無駄遣|むだづか}いもしているらしい。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 2,
+          "heading": "2. Hai hoạt động song song",
+          "meaning": "Vừa… vừa…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "自分の仕事をこなす一方で、部下の面倒も見なければならない。",
+              "vie": "Tôi vừa phải hoàn thành công việc của mình, vừa phải chăm sóc các nhân viên cấp dưới.",
+              "ruby": "{自分|じぶん}の{仕事|しごと}をこなす{一方|いっぽう}で、{部下|ぶか}の{面倒|めんどう}も{見|み}なければならない。"
+            },
+            {
+              "jpn": "私の家では兄が父の会社を手伝う一方、姉がうちで母の店を手伝っている。",
+              "vie": "Ở nhà tôi, anh trai tôi thì giúp đỡ công ty của ba, còn chị gái thì giúp đỡ cửa hàng của mẹ.",
+              "ruby": "{私|わたし}の{家|いえ}では{兄|あに}が{父|ちち}の{会社|かいしゃ}を{手伝|てつだ}う{一方|いっぽう}、{姉|あね}がうちで{母|はは}の{店|みせ}を{手伝|てつだ}っている。"
+            },
+            {
+              "jpn": "この出版社は大衆向けの雑誌を発行する一方で、研究書も多く出版している。",
+              "vie": "Nhà xuất bản này một mặt phát hành tạp chí dành cho dân đại chúng, mặt khác cũng xuất bản nhiều sách nghiên cứu.",
+              "ruby": "この{出版社|しゅっぱんしゃ}は{大衆向|たいしゅうむ}けの{雑誌|ざっし}を{発行|はっこう}する{一方|いっぽう}で、{研究書|けんきゅうしょ}も{多|おお}く{出版|しゅっぱん}している。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "いい親は厳しくしかる一方で、ほめることも忘れない。",
+          "vie": "Cha mẹ tốt thì một mặt la rầy nghiêm khắc, nhưng mặt khác cũng không quên khen ngợi con cái.",
+          "ruby": "いい{親|おや}は{厳|きび}しくしかる{一方|いっぽう}で、ほめることも{忘|わす}れない。"
+        },
+        {
+          "jpn": "一人暮らしは厳しさを感じることが多い一方、気楽だというよさもある。",
+          "vie": "Sống một mình thì nhiều khi sẽ cảm thấy khó khăn, nhưng mặt khác lại cảm thấy tự do thoải mái.",
+          "ruby": "{一人暮|ひとりぐ}らしは{厳|きび}しさを{感|かん}じることが{多|おお}い{一方|いっぽう}、{気楽|きらく}だというよさもある。"
+        },
+        {
+          "jpn": "彼女はお金に困っていると言う一方で、ずいぶん無駄遣いもしているらしい。",
+          "vie": "Cô ta một mặt nói rằng đang gặp khó khăn về tiền bạc, nhưng mặt khác lại nghe nói rằng cô ta đang tiêu xài khá hoang phí.",
+          "ruby": "{彼女|かのじょ}はお{金|かね}に{困|こま}っていると{言|い}う{一方|いっぽう}で、ずいぶん{無駄遣|むだづか}いもしているらしい。"
+        },
+        {
+          "jpn": "自分の仕事をこなす一方で、部下の面倒も見なければならない。",
+          "vie": "Tôi vừa phải hoàn thành công việc của mình, vừa phải chăm sóc các nhân viên cấp dưới.",
+          "ruby": "{自分|じぶん}の{仕事|しごと}をこなす{一方|いっぽう}で、{部下|ぶか}の{面倒|めんどう}も{見|み}なければならない。"
+        },
+        {
+          "jpn": "私の家では兄が父の会社を手伝う一方、姉がうちで母の店を手伝っている。",
+          "vie": "Ở nhà tôi, anh trai tôi thì giúp đỡ công ty của ba, còn chị gái thì giúp đỡ cửa hàng của mẹ.",
+          "ruby": "{私|わたし}の{家|いえ}では{兄|あに}が{父|ちち}の{会社|かいしゃ}を{手伝|てつだ}う{一方|いっぽう}、{姉|あね}がうちで{母|はは}の{店|みせ}を{手伝|てつだ}っている。"
+        },
+        {
+          "jpn": "この出版社は大衆向けの雑誌を発行する一方で、研究書も多く出版している。",
+          "vie": "Nhà xuất bản này một mặt phát hành tạp chí dành cho dân đại chúng, mặt khác cũng xuất bản nhiều sách nghiên cứu.",
+          "ruby": "この{出版社|しゅっぱんしゃ}は{大衆向|たいしゅうむ}けの{雑誌|ざっし}を{発行|はっこう}する{一方|いっぽう}で、{研究書|けんきゅうしょ}も{多|おお}く{出版|しゅっぱん}している。"
+        }
+      ],
+      "totalExamplesCount": 6
+    },
+    {
+      "id": "tndg-022",
+      "structure": "～というより／というか",
+      "meaning": "Sửa lại cách diễn đạt: B chính xác hơn A.",
+      "formation": "A（thể thường／N）+ というより／というか + B",
+      "nuance": "Không nhất thiết phủ nhận hoàn toàn A; người nói chọn B để diễn đạt sát ý hơn.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "Nói đúng hơn là…",
+          "meaning": "B phù hợp hơn A.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "美人というよりかわいいです。",
+              "vie": "(Cô ấy) đáng yêu thì đúng hơn là đẹp.",
+              "ruby": "{美人|びじん}というよりかわいいです。"
+            },
+            {
+              "jpn": "今日は涼しいというより寒いくらいだった。",
+              "vie": "Hôm nay hơi lạnh thì đúng hơn là mát.",
+              "ruby": "{今日|きょう}は{涼|すず}しいというより{寒|さむ}いくらいだった。"
+            },
+            {
+              "jpn": "あの学生はできないというか、やる気がないのでしょう。",
+              "vie": "Cậu sinh viên đó đúng hơn là không có động lực chứ không phải là không có năng lực.",
+              "ruby": "あの{学生|がくせい}はできないというか、やる{気|き}がないのでしょう。"
+            },
+            {
+              "jpn": "あの人は、失礼というより、無神経なのだ。",
+              "vie": "Người đó nói đúng ra là thiếu suy nghĩ, hơn là vô lễ.",
+              "ruby": "あの人は、{失礼|しつれい}というより、{無神経|むしんけい}なのだ。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "美人というよりかわいいです。",
+          "vie": "(Cô ấy) đáng yêu thì đúng hơn là đẹp.",
+          "ruby": "{美人|びじん}というよりかわいいです。"
+        },
+        {
+          "jpn": "今日は涼しいというより寒いくらいだった。",
+          "vie": "Hôm nay hơi lạnh thì đúng hơn là mát.",
+          "ruby": "{今日|きょう}は{涼|すず}しいというより{寒|さむ}いくらいだった。"
+        },
+        {
+          "jpn": "あの学生はできないというか、やる気がないのでしょう。",
+          "vie": "Cậu sinh viên đó đúng hơn là không có động lực chứ không phải là không có năng lực.",
+          "ruby": "あの{学生|がくせい}はできないというか、やる{気|き}がないのでしょう。"
+        },
+        {
+          "jpn": "あの人は、失礼というより、無神経なのだ。",
+          "vie": "Người đó nói đúng ra là thiếu suy nghĩ, hơn là vô lễ.",
+          "ruby": "あの人は、{失礼|しつれい}というより、{無神経|むしんけい}なのだ。"
+        }
+      ],
+      "totalExamplesCount": 4
+    },
+    {
+      "id": "tndg-023",
+      "structure": "～かわりに／かわりの",
+      "meaning": "Thay cho; thay vì; hoặc đổi lại một lợi ích bằng điều khác.",
+      "formation": "N + の + かわりに／かわりの + N\nVる／Vた + かわりに\nAい／Aな + かわりに",
+      "nuance": "Nêu rõ đang thay người/vật, chọn phương án khác, hay nói về sự bù trừ.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "1. Người/vật thay thế",
+          "meaning": "Thay cho…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "最近、時計のかわりに携帯電話を使う人が増えた。",
+              "vie": "Gần đây số người sử dụng điện thoại di động thay cho đồng hồ đã tăng lên.",
+              "ruby": "{最近|さいきん}、{時計|とけい}のかわりに{携帯電話|けいたいでんわ}を{使|つか}う{人|ひと}が{増|ふ}えた。"
+            },
+            {
+              "jpn": "山下さんのかわりに、山田さんが A社の会議に出ます。",
+              "vie": "Anh Yamada sẽ đi họp ở công ty A thay cho anh Yamashita.",
+              "ruby": "{山下|やました}さんのかわりに、{山田|やまだ}さんが A{社|しゃ}の{会議|かいぎ}に{出|で}ます。"
+            },
+            {
+              "jpn": "山下さんのかわりの人は、決まりましたか。",
+              "vie": "Đã quyết định được người sẽ thay thế anh Yamashita chưa?",
+              "ruby": "{山下|やました}さんのかわりの{人|ひと}は、{決|き}まりましたか。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 2,
+          "heading": "2. Chọn phương án khác",
+          "meaning": "Thay vì…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "正月は海外旅行に行く代わりに、近くの温泉に行った。",
+              "vie": "Thay vì đi du lịch nước ngoài vào dịp Tết, tôi đã đi onsen ở gần nhà.",
+              "ruby": "{正月|しょうがつ}は{海外旅行|かいがいりょこう}に{行|い}く{代|か}わりに、{近|ちか}くの{温泉|おんせん}に{行|い}った。"
+            },
+            {
+              "jpn": "映画を見に行く代わりに家でテレビを見る。",
+              "vie": "Tôi sẽ xem tivi ở nhà thay vì đi xem phim ở ngoài.",
+              "ruby": "{映画|えいが}を{見|み}に{行|い}く{代|か}わりに{家|いえ}でテレビを{見|み}る。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 3,
+          "heading": "3. Sự trao đổi hoặc bù trừ",
+          "meaning": "Đổi lại; bù lại…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "引っ越しを手伝うかわりに、宿題を手伝ってよ。",
+              "vie": "Đổi lại việc tớ giúp cậu chuyển nhà, hãy giúp tớ làm bài tập đi.",
+              "ruby": "{引|ひ}っ{越|こ}しを{手伝|てつだ}うかわりに、{宿題|しゅくだい}を{手伝|てつだ}ってよ。"
+            },
+            {
+              "jpn": "手伝ってもらった代わりに晩御飯をおごらせてください。",
+              "vie": "Xin hãy để tôi mời anh ăn tối để cảm ơn việc anh đã giúp đỡ tôi.",
+              "ruby": "{手伝|てつだ}ってもらった{代|か}わりに{晩御飯|ばんごはん}をおごらせてください。"
+            },
+            {
+              "jpn": "この仕事は安定しているかわりに、給料があまり高くない。",
+              "vie": "Công việc này ổn định nhưng đổi lại lương không cao lắm.",
+              "ruby": "この{仕事|しごと}は{安定|あんてい}しているかわりに、{給料|きゅうりょう}があまり{高|たか}くない。"
+            },
+            {
+              "jpn": "ジェムさんに英語を教えてもらう代わりに、彼に日本語を教えてあげることにした。",
+              "vie": "Tôi đã quyết định sẽ dạy James tiếng Nhật, đổi lại tôi nhờ anh dạy tôi tiếng Anh.",
+              "ruby": "ジェムさんに{英語|えいご}を{教|おし}えてもらう{代|か}わりに、{彼|かれ}に{日本語|にほんご}を教えてあげることにした。"
+            },
+            {
+              "jpn": "夫は新聞は読まない代わりに、雑誌はすみずみまで読む。",
+              "vie": "Chông tôi không đọc báo nhưng bù lại đọc các tạp chí rất chăm chú.",
+              "ruby": "{夫|おっと}は{新聞|しんぶん}は{読|よ}まない{代|か}わりに、{雑誌|ざっし}はすみずみまで{読|よ}む。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "最近、時計のかわりに携帯電話を使う人が増えた。",
+          "vie": "Gần đây số người sử dụng điện thoại di động thay cho đồng hồ đã tăng lên.",
+          "ruby": "{最近|さいきん}、{時計|とけい}のかわりに{携帯電話|けいたいでんわ}を{使|つか}う{人|ひと}が{増|ふ}えた。"
+        },
+        {
+          "jpn": "山下さんのかわりに、山田さんが A社の会議に出ます。",
+          "vie": "Anh Yamada sẽ đi họp ở công ty A thay cho anh Yamashita.",
+          "ruby": "{山下|やました}さんのかわりに、{山田|やまだ}さんが A{社|しゃ}の{会議|かいぎ}に{出|で}ます。"
+        },
+        {
+          "jpn": "山下さんのかわりの人は、決まりましたか。",
+          "vie": "Đã quyết định được người sẽ thay thế anh Yamashita chưa?",
+          "ruby": "{山下|やました}さんのかわりの{人|ひと}は、{決|き}まりましたか。"
+        },
+        {
+          "jpn": "正月は海外旅行に行く代わりに、近くの温泉に行った。",
+          "vie": "Thay vì đi du lịch nước ngoài vào dịp Tết, tôi đã đi onsen ở gần nhà.",
+          "ruby": "{正月|しょうがつ}は{海外旅行|かいがいりょこう}に{行|い}く{代|か}わりに、{近|ちか}くの{温泉|おんせん}に{行|い}った。"
+        },
+        {
+          "jpn": "映画を見に行く代わりに家でテレビを見る。",
+          "vie": "Tôi sẽ xem tivi ở nhà thay vì đi xem phim ở ngoài.",
+          "ruby": "{映画|えいが}を{見|み}に{行|い}く{代|か}わりに{家|いえ}でテレビを{見|み}る。"
+        },
+        {
+          "jpn": "引っ越しを手伝うかわりに、宿題を手伝ってよ。",
+          "vie": "Đổi lại việc tớ giúp cậu chuyển nhà, hãy giúp tớ làm bài tập đi.",
+          "ruby": "{引|ひ}っ{越|こ}しを{手伝|てつだ}うかわりに、{宿題|しゅくだい}を{手伝|てつだ}ってよ。"
+        },
+        {
+          "jpn": "手伝ってもらった代わりに晩御飯をおごらせてください。",
+          "vie": "Xin hãy để tôi mời anh ăn tối để cảm ơn việc anh đã giúp đỡ tôi.",
+          "ruby": "{手伝|てつだ}ってもらった{代|か}わりに{晩御飯|ばんごはん}をおごらせてください。"
+        },
+        {
+          "jpn": "この仕事は安定しているかわりに、給料があまり高くない。",
+          "vie": "Công việc này ổn định nhưng đổi lại lương không cao lắm.",
+          "ruby": "この{仕事|しごと}は{安定|あんてい}しているかわりに、{給料|きゅうりょう}があまり{高|たか}くない。"
+        },
+        {
+          "jpn": "ジェムさんに英語を教えてもらう代わりに、彼に日本語を教えてあげることにした。",
+          "vie": "Tôi đã quyết định sẽ dạy James tiếng Nhật, đổi lại tôi nhờ anh dạy tôi tiếng Anh.",
+          "ruby": "ジェムさんに{英語|えいご}を{教|おし}えてもらう{代|か}わりに、{彼|かれ}に{日本語|にほんご}を教えてあげることにした。"
+        },
+        {
+          "jpn": "夫は新聞は読まない代わりに、雑誌はすみずみまで読む。",
+          "vie": "Chông tôi không đọc báo nhưng bù lại đọc các tạp chí rất chăm chú.",
+          "ruby": "{夫|おっと}は{新聞|しんぶん}は{読|よ}まない{代|か}わりに、{雑誌|ざっし}はすみずみまで{読|よ}む。"
+        }
+      ],
+      "totalExamplesCount": 10
+    },
+    {
+      "id": "tndg-024",
+      "structure": "～ため／ために／ためだ",
+      "meaning": "Nêu nguyên nhân dẫn đến kết quả, thường dùng trong văn viết/trang trọng.",
+      "formation": "V／Aい ở thể thường + ため（に）／ためだ\nAな + な + ため（に）／ためだ\nN + の + ため（に）／ためだ",
+      "nuance": "Bài này nói về nguyên nhân. Vる + ために còn có cách dùng khác là mục đích; không đánh đồng hai cách dùng.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "Nguyên nhân; lý do",
+          "meaning": "Vì… nên…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "雪が降ったため（に）、電車が遅れた。",
+              "vie": "Vì tuyết rơi nên tàu đến muộn.",
+              "ruby": "{雪|ゆき}が{降|ふ}ったため（に）、{電車|でんしゃ}が{遅|おく}れた。"
+            },
+            {
+              "jpn": "会議が延期されたのは、社長の体調が悪いためだ。",
+              "vie": "Cuộc họp bị hoãn là do sức khỏe của giám đốc không tốt.",
+              "ruby": "{会議|かいぎ}が{延期|えんき}されたのは、{社長|しゃちょう}の{体調|たいちょう}が{悪|わる}いためだ。"
+            },
+            {
+              "jpn": "ただ今、品川駅で人身事故が起こったため、電車が止まっております。",
+              "vie": "Hiện tàu đang dừng vì đã xảy ra tai nạn liên quan đến người tại ga Shinagawa.",
+              "editorial": true
+            },
+            {
+              "jpn": "雨のために、ハイキングは中止になりました。",
+              "vie": "Cuộc đi bộ đường dài đã bị dừng lại do trời mưa.",
+              "ruby": "{雨|あめ}のために、ハイキングは{中止|ちゅうし}になりました。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "雪が降ったため（に）、電車が遅れた。",
+          "vie": "Vì tuyết rơi nên tàu đến muộn.",
+          "ruby": "{雪|ゆき}が{降|ふ}ったため（に）、{電車|でんしゃ}が{遅|おく}れた。"
+        },
+        {
+          "jpn": "会議が延期されたのは、社長の体調が悪いためだ。",
+          "vie": "Cuộc họp bị hoãn là do sức khỏe của giám đốc không tốt.",
+          "ruby": "{会議|かいぎ}が{延期|えんき}されたのは、{社長|しゃちょう}の{体調|たいちょう}が{悪|わる}いためだ。"
+        },
+        {
+          "jpn": "ただ今、品川駅で人身事故が起こったため、電車が止まっております。",
+          "vie": "Hiện tàu đang dừng vì đã xảy ra tai nạn liên quan đến người tại ga Shinagawa.",
+          "editorial": true
+        },
+        {
+          "jpn": "雨のために、ハイキングは中止になりました。",
+          "vie": "Cuộc đi bộ đường dài đã bị dừng lại do trời mưa.",
+          "ruby": "{雨|あめ}のために、ハイキングは{中止|ちゅうし}になりました。"
+        }
+      ],
+      "totalExamplesCount": 4
+    },
+    {
+      "id": "tndg-025",
+      "structure": "～によって／による（bị động）",
+      "meaning": "Nêu người hoặc tổ chức thực hiện hành động trong câu bị động.",
+      "formation": "N（tác nhân）+ によって + V bị động\nN1 + による + N2",
+      "nuance": "Đặc biệt thường gặp trong văn viết khi nói về tác phẩm, phát minh hoặc sự kiện.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "Tác nhân trong câu bị động",
+          "meaning": "Được… bởi…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "川に落ちた子どもは若い男性によって、助けられました。",
+              "vie": "Đứa trẻ bị rơi xuống sông đã được cứu bởi một chàng trai trẻ.",
+              "ruby": "{川|かわ}に{落|お}ちた{子|こ}どもは{若|わか}い{男性|だんせい}によって、{助|たす}けられました。"
+            },
+            {
+              "jpn": "このドレスは有名なデザイナーによってデザインされました。",
+              "vie": "Chiếc váy này được một nhà thiết kế nổi tiếng thiết kế.",
+              "editorial": true
+            },
+            {
+              "jpn": "この建物は有名な建築家によって設計された。",
+              "vie": "Tòa nhà này được thiết kế bởi một kiến trúc sư nổi tiếng.",
+              "ruby": "この{建物|たてもの}は{有名|ゆうめい}な{建築家|けんちくか}によって{設計|せっけい}された。"
+            },
+            {
+              "jpn": "このボランティア活動はある宗教団体によって運営されている。",
+              "vie": "Các hoạt động tình nguyện này được triển khai bởi một tổ chức tôn giáo nọ.",
+              "ruby": "このボランティア{活動|かつどう}はある{宗教団体|しゅうきょうだんたい}によって{運営|うんえい}されている。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "川に落ちた子どもは若い男性によって、助けられました。",
+          "vie": "Đứa trẻ bị rơi xuống sông đã được cứu bởi một chàng trai trẻ.",
+          "ruby": "{川|かわ}に{落|お}ちた{子|こ}どもは{若|わか}い{男性|だんせい}によって、{助|たす}けられました。"
+        },
+        {
+          "jpn": "このドレスは有名なデザイナーによってデザインされました。",
+          "vie": "Chiếc váy này được một nhà thiết kế nổi tiếng thiết kế.",
+          "editorial": true
+        },
+        {
+          "jpn": "この建物は有名な建築家によって設計された。",
+          "vie": "Tòa nhà này được thiết kế bởi một kiến trúc sư nổi tiếng.",
+          "ruby": "この{建物|たてもの}は{有名|ゆうめい}な{建築家|けんちくか}によって{設計|せっけい}された。"
+        },
+        {
+          "jpn": "このボランティア活動はある宗教団体によって運営されている。",
+          "vie": "Các hoạt động tình nguyện này được triển khai bởi một tổ chức tôn giáo nọ.",
+          "ruby": "このボランティア{活動|かつどう}はある{宗教団体|しゅうきょうだんたい}によって{運営|うんえい}されている。"
+        }
+      ],
+      "totalExamplesCount": 4
+    },
+    {
+      "id": "tndg-026",
+      "structure": "～ことから／ところから",
+      "meaning": "Dựa vào một sự thật để suy luận, xác định nguyên nhân hoặc đặt tên.",
+      "formation": "V／Aい ở thể thường + ことから\nAな + な／だった + ことから\nN + だった + ことから",
+      "nuance": "Lấy sự thật đã quan sát làm căn cứ. ところから có thể dùng với nghĩa tương tự trong một số ngữ cảnh.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "1. Căn cứ để suy luận",
+          "meaning": "Từ dấu hiệu… suy ra…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "顔がそっくりなことから、双子であることを知った。",
+              "vie": "Tôi biết họ một cặp song sinh do gương mặt họ giống nhau như đúc.",
+              "ruby": "{顔|かお}がそっくりなことから、{双子|ふたご}であることを{知|し}った。"
+            },
+            {
+              "jpn": "道がぬれていることから、昨夜、雨が降ったことがわかった。",
+              "vie": "Do đường ướt nên tôi biết là đêm qua trời đã mưa.",
+              "ruby": "{道|みち}がぬれていることから、{昨夜|さくや}、{雨|あめ}が{降|ふ}ったことがわかった。"
+            },
+            {
+              "jpn": "医者は彼女の顔色が悪いことから、貧血ではないかと思ったそうだ。",
+              "vie": "Nghe nói bác sĩ suy đoán cô ta bị thiếu máu do thấy gương mặt cô ấy rất xanh xao.",
+              "ruby": "{医者|いしゃ}は{彼女|かのじょ}の{顔色|かおいろ}が{悪|わる}いことから、{貧血|ひんけつ}ではないかと{思|おも}ったそうだ。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 2,
+          "heading": "2. Khởi điểm hoặc nguyên do",
+          "meaning": "Từ việc… mà…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "二人が一緒に仕事をしたことから、交際が始まった。",
+              "vie": "Hai người họ đã bắt đầu quen nhau do đã làm việc cùng nhau.",
+              "ruby": "{二人|ふたり}が{一緒|いっしょ}に{仕事|しごと}をしたことから、{交際|こうさい}が{始|はじ}まった。"
+            },
+            {
+              "jpn": "彼女はアラビア語ができるということから、オリンピックの通訳に推薦された。",
+              "vie": "Cô ấy đã được đề cử làm thông dịch cho Thế Vận hội do có thể nói được tiếng Ả Rập.",
+              "ruby": "{彼女|かのじょ}はアラビア{語|ご}ができるということから、オリンピックの{通訳|つうやく}に{推薦|すいせん}された。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 3,
+          "heading": "3. Nguồn gốc tên gọi",
+          "meaning": "Được gọi như vậy vì…",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "この鳥は目のまわりが白いことから、メジロと呼ばれている。",
+              "vie": "Con chim này do quanh mắt màu trắng nên được gọi là chim mắt trắng (mejiro)",
+              "ruby": "この{鳥|とり}は{目|め}のまわりが{白|しろ}いことから、メジロと{呼|よ}ばれている。"
+            },
+            {
+              "jpn": "この町は桜が多いことから、桜町と名付けられた。",
+              "vie": "Thị trấn này có nhiều hoa anh đào nên được đặt tên là Sakuramachi.",
+              "editorial": true
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "顔がそっくりなことから、双子であることを知った。",
+          "vie": "Tôi biết họ một cặp song sinh do gương mặt họ giống nhau như đúc.",
+          "ruby": "{顔|かお}がそっくりなことから、{双子|ふたご}であることを{知|し}った。"
+        },
+        {
+          "jpn": "道がぬれていることから、昨夜、雨が降ったことがわかった。",
+          "vie": "Do đường ướt nên tôi biết là đêm qua trời đã mưa.",
+          "ruby": "{道|みち}がぬれていることから、{昨夜|さくや}、{雨|あめ}が{降|ふ}ったことがわかった。"
+        },
+        {
+          "jpn": "医者は彼女の顔色が悪いことから、貧血ではないかと思ったそうだ。",
+          "vie": "Nghe nói bác sĩ suy đoán cô ta bị thiếu máu do thấy gương mặt cô ấy rất xanh xao.",
+          "ruby": "{医者|いしゃ}は{彼女|かのじょ}の{顔色|かおいろ}が{悪|わる}いことから、{貧血|ひんけつ}ではないかと{思|おも}ったそうだ。"
+        },
+        {
+          "jpn": "二人が一緒に仕事をしたことから、交際が始まった。",
+          "vie": "Hai người họ đã bắt đầu quen nhau do đã làm việc cùng nhau.",
+          "ruby": "{二人|ふたり}が{一緒|いっしょ}に{仕事|しごと}をしたことから、{交際|こうさい}が{始|はじ}まった。"
+        },
+        {
+          "jpn": "彼女はアラビア語ができるということから、オリンピックの通訳に推薦された。",
+          "vie": "Cô ấy đã được đề cử làm thông dịch cho Thế Vận hội do có thể nói được tiếng Ả Rập.",
+          "ruby": "{彼女|かのじょ}はアラビア{語|ご}ができるということから、オリンピックの{通訳|つうやく}に{推薦|すいせん}された。"
+        },
+        {
+          "jpn": "この鳥は目のまわりが白いことから、メジロと呼ばれている。",
+          "vie": "Con chim này do quanh mắt màu trắng nên được gọi là chim mắt trắng (mejiro)",
+          "ruby": "この{鳥|とり}は{目|め}のまわりが{白|しろ}いことから、メジロと{呼|よ}ばれている。"
+        },
+        {
+          "jpn": "この町は桜が多いことから、桜町と名付けられた。",
+          "vie": "Thị trấn này có nhiều hoa anh đào nên được đặt tên là Sakuramachi.",
+          "editorial": true
+        }
+      ],
+      "totalExamplesCount": 7
+    },
+    {
+      "id": "tndg-027",
+      "structure": "～おかげで／おかげだ／おかげか",
+      "meaning": "Nhờ một nguyên nhân mà có kết quả tốt; おかげか biểu thị phỏng đoán.",
+      "formation": "V／Aい ở thể thường + おかげで／おかげだ／おかげか\nAな + な + おかげで／おかげだ／おかげか\nN + の + おかげで／おかげだ／おかげか",
+      "nuance": "おかげで đi trước kết quả; おかげだ kết câu; おかげか nói nguyên nhân chưa chắc chắn.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "1. おかげで: nhờ… nên…",
+          "meaning": "Nguyên nhân tạo kết quả tích cực.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "奨学金をもらったおかげで、留学できた。",
+              "vie": "Nhờ nhận học bổng mà tôi có thể đi du học.",
+              "editorial": true
+            },
+            {
+              "jpn": "先生のおかげで、僕の英語はすこしずつ上手になった。",
+              "vie": "Nhờ có cô giáo mà tiếng Anh của tôi đã dần dần giỏi lên.",
+              "ruby": "{先生|せんせい}のおかげで、{僕|ぼく}の{英語|えいご}はすこしずつ{上手|じょうず}になった。"
+            },
+            {
+              "jpn": "日本に来たおかげで、日本語が上手になりました。",
+              "vie": "Nhờ sang Nhật mà tôi đã giỏi tiếng Nhật.",
+              "ruby": "{日本|にほん}に{来|き}たおかげで、{日本語|にほんご}が{上手|じょうず}になりました。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 2,
+          "heading": "2. おかげだ: chính là nhờ…",
+          "meaning": "Nêu nguyên nhân ở cuối câu.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "病気が治ったのは、この薬のおかげだ。",
+              "vie": "Bệnh khỏi được là nhờ vào thuốc này.",
+              "ruby": "{病気|びょうき}が{治|なお}ったのは、この{薬|くすり}のおかげだ。"
+            },
+            {
+              "jpn": "合格できたのは先生のおかげだ。",
+              "vie": "Tôi thi đỗ được là nhờ thầy cô.",
+              "editorial": true
+            }
+          ]
+        },
+        {
+          "blockNumber": 3,
+          "heading": "3. おかげか: có lẽ nhờ…",
+          "meaning": "Phỏng đoán nguyên nhân tích cực.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "早く寝たおかげか、今日は体調がいい。",
+              "vie": "Có lẽ nhờ ngủ sớm nên hôm nay tôi thấy khỏe.",
+              "editorial": true
+            },
+            {
+              "jpn": "運動を始めたおかげか、疲れにくくなった。",
+              "vie": "Có lẽ nhờ bắt đầu tập thể dục nên tôi đỡ mệt hơn.",
+              "editorial": true
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "奨学金をもらったおかげで、留学できた。",
+          "vie": "Nhờ nhận học bổng mà tôi có thể đi du học.",
+          "editorial": true
+        },
+        {
+          "jpn": "先生のおかげで、僕の英語はすこしずつ上手になった。",
+          "vie": "Nhờ có cô giáo mà tiếng Anh của tôi đã dần dần giỏi lên.",
+          "ruby": "{先生|せんせい}のおかげで、{僕|ぼく}の{英語|えいご}はすこしずつ{上手|じょうず}になった。"
+        },
+        {
+          "jpn": "日本に来たおかげで、日本語が上手になりました。",
+          "vie": "Nhờ sang Nhật mà tôi đã giỏi tiếng Nhật.",
+          "ruby": "{日本|にほん}に{来|き}たおかげで、{日本語|にほんご}が{上手|じょうず}になりました。"
+        },
+        {
+          "jpn": "病気が治ったのは、この薬のおかげだ。",
+          "vie": "Bệnh khỏi được là nhờ vào thuốc này.",
+          "ruby": "{病気|びょうき}が{治|なお}ったのは、この{薬|くすり}のおかげだ。"
+        },
+        {
+          "jpn": "合格できたのは先生のおかげだ。",
+          "vie": "Tôi thi đỗ được là nhờ thầy cô.",
+          "editorial": true
+        },
+        {
+          "jpn": "早く寝たおかげか、今日は体調がいい。",
+          "vie": "Có lẽ nhờ ngủ sớm nên hôm nay tôi thấy khỏe.",
+          "editorial": true
+        },
+        {
+          "jpn": "運動を始めたおかげか、疲れにくくなった。",
+          "vie": "Có lẽ nhờ bắt đầu tập thể dục nên tôi đỡ mệt hơn.",
+          "editorial": true
+        }
+      ],
+      "totalExamplesCount": 7
+    },
+    {
+      "id": "tndg-028",
+      "structure": "～せいで／せいだ／せいか／せいにする",
+      "meaning": "Quy một kết quả xấu cho nguyên nhân; phỏng đoán hoặc đổ lỗi.",
+      "formation": "V／Aい ở thể thường + せいで／せいだ／せいか\nAな + な + せいで／せいだ／せいか\nN + の + せいで／せいだ／せいか\nN + のせいにする",
+      "nuance": "せい thường nêu kết quả không mong muốn; trong một số câu せいか có thể nêu kết quả tốt với sắc thái đùa hoặc bất ngờ.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "1. せいで: tại… nên…",
+          "meaning": "Nguyên nhân của kết quả không mong muốn.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "バスが遅れたせいで、約束の時間に間に合わなかった。",
+              "vie": "Do xe buýt đến muộn, tôi không kịp giờ hẹn.",
+              "editorial": true
+            },
+            {
+              "jpn": "寝不足のせいで、今日は頭がぼんやりしている。",
+              "vie": "Do thiếu ngủ nên đầu óc tôi hôm nay không được minh mẫn.",
+              "ruby": "{寝不足|ねぶそく}のせいで、{今日|きょう}は{頭|あたま}がぼんやりしている。"
+            },
+            {
+              "jpn": "朝寝坊したせいで、学校に遅れました。",
+              "vie": "Vì sáng tôi ngủ quên nên bị muộn học.",
+              "ruby": "{朝寝坊|あさねぼう}したせいで、{学校|がっこう}に{遅|おく}れました。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 2,
+          "heading": "2. せいだ: là do…",
+          "meaning": "Đặt nguyên nhân ở cuối câu.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "私が失敗したのは彼のせいだ。",
+              "vie": "Sở dĩ tôi thất bại là tại vì anh ta.",
+              "ruby": "{私|わたし}が{失敗|しっぱい}したのは{彼|かれ}のせいだ。"
+            },
+            {
+              "jpn": "目が悪くなったのはテレビを見すぎたせいだ。",
+              "vie": "Sở dĩ thị lực kém đi là do coi ti vi quá nhiều.",
+              "ruby": "{目|め}が悪くなったのはテレビを{見|み}すぎたせいだ。"
+            },
+            {
+              "jpn": "夜眠れないのは騒音のせいだ。",
+              "vie": "Ban đêm tôi không ngủ được là do tiếng ồn.",
+              "ruby": "{夜眠|よるねむ}れないのは{騒音|そうおん}のせいだ。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 3,
+          "heading": "3. せいか: không biết có phải do…",
+          "meaning": "Phỏng đoán nguyên nhân.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "神経を使ったせいか、胃が痛いです。",
+              "vie": "Không biết có phải do suy nghĩ nhiều quá hay không mà giờ tôi đau dạ dày quá.",
+              "ruby": "{神経|しんけい}を{使|つか}ったせいか、{胃|い}が{痛|いた}いです。"
+            },
+            {
+              "jpn": "暑いせいか、食欲がない。",
+              "vie": "Không biết có phải do trời nóng hay không mà tôi chẳng muốn ăn gì.",
+              "ruby": "{暑|あつ}いせいか、{食欲|しょくよく}がない。"
+            },
+            {
+              "jpn": "疲れたせいか、頭が痛い。",
+              "vie": "Có lẽ là do mệt nên tôi bị đau đầu.",
+              "ruby": "{疲|つか}れたせいか、{頭|あたま}が{痛|いた}い。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 4,
+          "heading": "4. せいにする: đổ lỗi",
+          "meaning": "Quy trách nhiệm cho người/vật khác.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "彼は自分の失敗を人のせいにする。",
+              "vie": "Anh ta thường đổ lỗi thất bại của mình cho người khác.",
+              "ruby": "{彼|かれ}は{自分|じぶん}の{失敗|しっぱい}を{人|ひと}のせいにする。"
+            },
+            {
+              "jpn": "学校は責任をとりたくないので、その事故は生徒のせいにして公表しようとしない。",
+              "vie": "Vì nhà trường không muốn nhận lãnh trách nhiệm, nên không có ý định công bố tai nạn ấy, mà định quy trách nhiệm cho học sinh.",
+              "ruby": "{学校|がっこう}は{責任|せきにん}をとりたくないので、その{事故|じこ}は{生徒|せいと}のせいにして{公表|こうひょう}しようとしない。"
+            },
+            {
+              "jpn": "他人のせいにするのは、自らの弱さを露呈しているようなものです。",
+              "vie": "Đổ lỗi cho người khác chẳng khác nào bộc lộ sự yếu đuối của chính mình.",
+              "editorial": true
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "バスが遅れたせいで、約束の時間に間に合わなかった。",
+          "vie": "Do xe buýt đến muộn, tôi không kịp giờ hẹn.",
+          "editorial": true
+        },
+        {
+          "jpn": "寝不足のせいで、今日は頭がぼんやりしている。",
+          "vie": "Do thiếu ngủ nên đầu óc tôi hôm nay không được minh mẫn.",
+          "ruby": "{寝不足|ねぶそく}のせいで、{今日|きょう}は{頭|あたま}がぼんやりしている。"
+        },
+        {
+          "jpn": "朝寝坊したせいで、学校に遅れました。",
+          "vie": "Vì sáng tôi ngủ quên nên bị muộn học.",
+          "ruby": "{朝寝坊|あさねぼう}したせいで、{学校|がっこう}に{遅|おく}れました。"
+        },
+        {
+          "jpn": "私が失敗したのは彼のせいだ。",
+          "vie": "Sở dĩ tôi thất bại là tại vì anh ta.",
+          "ruby": "{私|わたし}が{失敗|しっぱい}したのは{彼|かれ}のせいだ。"
+        },
+        {
+          "jpn": "目が悪くなったのはテレビを見すぎたせいだ。",
+          "vie": "Sở dĩ thị lực kém đi là do coi ti vi quá nhiều.",
+          "ruby": "{目|め}が悪くなったのはテレビを{見|み}すぎたせいだ。"
+        },
+        {
+          "jpn": "夜眠れないのは騒音のせいだ。",
+          "vie": "Ban đêm tôi không ngủ được là do tiếng ồn.",
+          "ruby": "{夜眠|よるねむ}れないのは{騒音|そうおん}のせいだ。"
+        },
+        {
+          "jpn": "神経を使ったせいか、胃が痛いです。",
+          "vie": "Không biết có phải do suy nghĩ nhiều quá hay không mà giờ tôi đau dạ dày quá.",
+          "ruby": "{神経|しんけい}を{使|つか}ったせいか、{胃|い}が{痛|いた}いです。"
+        },
+        {
+          "jpn": "暑いせいか、食欲がない。",
+          "vie": "Không biết có phải do trời nóng hay không mà tôi chẳng muốn ăn gì.",
+          "ruby": "{暑|あつ}いせいか、{食欲|しょくよく}がない。"
+        },
+        {
+          "jpn": "疲れたせいか、頭が痛い。",
+          "vie": "Có lẽ là do mệt nên tôi bị đau đầu.",
+          "ruby": "{疲|つか}れたせいか、{頭|あたま}が{痛|いた}い。"
+        },
+        {
+          "jpn": "彼は自分の失敗を人のせいにする。",
+          "vie": "Anh ta thường đổ lỗi thất bại của mình cho người khác.",
+          "ruby": "{彼|かれ}は{自分|じぶん}の{失敗|しっぱい}を{人|ひと}のせいにする。"
+        },
+        {
+          "jpn": "学校は責任をとりたくないので、その事故は生徒のせいにして公表しようとしない。",
+          "vie": "Vì nhà trường không muốn nhận lãnh trách nhiệm, nên không có ý định công bố tai nạn ấy, mà định quy trách nhiệm cho học sinh.",
+          "ruby": "{学校|がっこう}は{責任|せきにん}をとりたくないので、その{事故|じこ}は{生徒|せいと}のせいにして{公表|こうひょう}しようとしない。"
+        },
+        {
+          "jpn": "他人のせいにするのは、自らの弱さを露呈しているようなものです。",
+          "vie": "Đổ lỗi cho người khác chẳng khác nào bộc lộ sự yếu đuối của chính mình.",
+          "editorial": true
+        }
+      ],
+      "totalExamplesCount": 12
+    },
+    {
+      "id": "tndg-029",
+      "structure": "～のだから",
+      "meaning": "Vì một sự thật đã rõ hoặc người nghe cũng biết nên đưa ra nhận xét, lời khuyên.",
+      "formation": "V／Aい ở thể thường + のだから\nAな／N + な + のだから",
+      "nuance": "Trong văn nói thường rút thành ～んだから. Vế sau hay là lời khuyên, phán đoán hoặc yêu cầu.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "Vì đã… nên…",
+          "meaning": "Lấy điều đã rõ làm căn cứ.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "世界は広いのだから、いろいろな習慣があるのは当然だ。",
+              "vie": "Vì thế giới rộng lớn nên tất nhiên có nhiều tập quán khác nhau.",
+              "ruby": "{世界|せかい}は{広|ひろ}いのだから、いろいろな{習慣|しゅうかん}があるのは{当然|とうぜん}だ。"
+            },
+            {
+              "jpn": "あなたはけがをしているんだから、無理をしてはいけませんよ。",
+              "vie": "Vì bạn đang bị thương nên đừng cố quá sức.",
+              "editorial": true
+            },
+            {
+              "jpn": "笑わないでください。真剣にやっているんですから。",
+              "vie": "Vì tôi đang làm nghiêm túc nên xin đừng cười.",
+              "ruby": "{笑|わら}わないでください。{真剣|しんけん}にやっているんですから。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "世界は広いのだから、いろいろな習慣があるのは当然だ。",
+          "vie": "Vì thế giới rộng lớn nên tất nhiên có nhiều tập quán khác nhau.",
+          "ruby": "{世界|せかい}は{広|ひろ}いのだから、いろいろな{習慣|しゅうかん}があるのは{当然|とうぜん}だ。"
+        },
+        {
+          "jpn": "あなたはけがをしているんだから、無理をしてはいけませんよ。",
+          "vie": "Vì bạn đang bị thương nên đừng cố quá sức.",
+          "editorial": true
+        },
+        {
+          "jpn": "笑わないでください。真剣にやっているんですから。",
+          "vie": "Vì tôi đang làm nghiêm túc nên xin đừng cười.",
+          "ruby": "{笑|わら}わないでください。{真剣|しんけん}にやっているんですから。"
+        }
+      ],
+      "totalExamplesCount": 3
+    },
+    {
+      "id": "tndg-030",
+      "structure": "～なら／のなら",
+      "meaning": "Nêu điều kiện từ thông tin đã biết, rồi đưa ra ý kiến hoặc hành động.",
+      "formation": "V／Aい ở thể thường + なら／のなら\nAな／N + なら",
+      "nuance": "N và Aな thường nối trực tiếp với なら; khi dùng のなら cần dạng danh từ hóa phù hợp. Phần sau thường là lời khuyên, đề nghị hoặc phán đoán.",
+      "blocks": [
+        {
+          "blockNumber": 1,
+          "heading": "1. ～なら: nếu là vậy thì…",
+          "meaning": "Phản ứng với điều kiện hoặc thông tin được nêu.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "東京へ行くなら、新幹線が便利です。",
+              "vie": "Nếu mà đi Tokyo thì đi shinkansen là tiện.",
+              "ruby": "{東京|とうきょう}へ{行|い}くなら、{新幹線|しんかんせん}が{便利|べんり}です。"
+            },
+            {
+              "jpn": "近いなら、歩きましょう。",
+              "vie": "Nếu mà gần thì đi bộ đi.",
+              "ruby": "{近|ちか}いなら、{歩|ある}きましょう。"
+            },
+            {
+              "jpn": "彼女のことがそんなに嫌いなら別れたらいい。",
+              "vie": "Nếu ghét cô ấy đến thế thì anh nên chia tay.",
+              "ruby": "{彼女|かのじょ}のことがそんなに{嫌|きら}いなら{別|わか}れたらいい。"
+            },
+            {
+              "jpn": "大学生なら、このくらいはできるはずです。",
+              "vie": "Nếu là sinh viên đại học thì chắc chắn có thể làm được như thế này.",
+              "ruby": "{大学生|だいがくせい}なら、このくらいはできるはずです。"
+            }
+          ]
+        },
+        {
+          "blockNumber": 2,
+          "heading": "2. ～のなら: nếu thực sự…",
+          "meaning": "Nhấn mạnh điều kiện đã được xác nhận.",
+          "formation": "",
+          "nuance": "",
+          "examples": [
+            {
+              "jpn": "その本、読んでしまったのならわたしに貸してくれませんか。",
+              "vie": "Cuốn sách nếu mà đã đọc xong rồi thì có thể cho tôi mượn được không?",
+              "ruby": "その{本|ほん}、{読|よ}んでしまったのならわたしに{貸|か}してくれませんか。"
+            },
+            {
+              "jpn": "行きたくないのならやめておいたらどうですか。",
+              "vie": "Nếu không muốn đi, anh nên bỏ quách đừng đi nữa.",
+              "ruby": "{行|い}きたくないのならやめておいたらどうですか。"
+            },
+            {
+              "jpn": "真相を知っているのなら私に教えてほしい。",
+              "vie": "Nếu biết sự thật xin anh hãy báo cho tôi biết.",
+              "ruby": "{真相|しんそう}を{知|し}っているのなら{私|わたし}に{教|おし}えてほしい。"
+            },
+            {
+              "jpn": "A: 頭がずきずき痛むんです。B: そんなに痛いのなら早く帰ったほうがいいですよ。",
+              "vie": "A: Đầu tôi đau buốt.  B: Nếu đau như thế tốt hơn anh nên về sớm.",
+              "ruby": "A: {頭|あたま}がずきずき{痛|いた}むんです。B: そんなに{痛|いた}いのなら{早|はや}く{帰|かえ}ったほうがいいですよ。"
+            }
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "jpn": "東京へ行くなら、新幹線が便利です。",
+          "vie": "Nếu mà đi Tokyo thì đi shinkansen là tiện.",
+          "ruby": "{東京|とうきょう}へ{行|い}くなら、{新幹線|しんかんせん}が{便利|べんり}です。"
+        },
+        {
+          "jpn": "近いなら、歩きましょう。",
+          "vie": "Nếu mà gần thì đi bộ đi.",
+          "ruby": "{近|ちか}いなら、{歩|ある}きましょう。"
+        },
+        {
+          "jpn": "彼女のことがそんなに嫌いなら別れたらいい。",
+          "vie": "Nếu ghét cô ấy đến thế thì anh nên chia tay.",
+          "ruby": "{彼女|かのじょ}のことがそんなに{嫌|きら}いなら{別|わか}れたらいい。"
+        },
+        {
+          "jpn": "大学生なら、このくらいはできるはずです。",
+          "vie": "Nếu là sinh viên đại học thì chắc chắn có thể làm được như thế này.",
+          "ruby": "{大学生|だいがくせい}なら、このくらいはできるはずです。"
+        },
+        {
+          "jpn": "その本、読んでしまったのならわたしに貸してくれませんか。",
+          "vie": "Cuốn sách nếu mà đã đọc xong rồi thì có thể cho tôi mượn được không?",
+          "ruby": "その{本|ほん}、{読|よ}んでしまったのならわたしに{貸|か}してくれませんか。"
+        },
+        {
+          "jpn": "行きたくないのならやめておいたらどうですか。",
+          "vie": "Nếu không muốn đi, anh nên bỏ quách đừng đi nữa.",
+          "ruby": "{行|い}きたくないのならやめておいたらどうですか。"
+        },
+        {
+          "jpn": "真相を知っているのなら私に教えてほしい。",
+          "vie": "Nếu biết sự thật xin anh hãy báo cho tôi biết.",
+          "ruby": "{真相|しんそう}を{知|し}っているのなら{私|わたし}に{教|おし}えてほしい。"
+        },
+        {
+          "jpn": "A: 頭がずきずき痛むんです。B: そんなに痛いのなら早く帰ったほうがいいですよ。",
+          "vie": "A: Đầu tôi đau buốt.  B: Nếu đau như thế tốt hơn anh nên về sớm.",
+          "ruby": "A: {頭|あたま}がずきずき{痛|いた}むんです。B: そんなに{痛|いた}いのなら{早|はや}く{帰|かえ}ったほうがいいですよ。"
+        }
+      ],
+      "totalExamplesCount": 8
+    }
+  ]
+}

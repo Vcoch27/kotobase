@@ -257,7 +257,7 @@ function GrammarCard({
                   : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
               )}
             >
-              Ý nghĩa {['①', '②', '③', '④', '⑤'][idx] || `#${idx + 1}`}
+              {block.heading || `Ý nghĩa ${['①', '②', '③', '④', '⑤'][idx] || `#${idx + 1}`}`}
             </button>
           ))}
         </div>
