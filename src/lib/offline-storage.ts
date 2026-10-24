@@ -3,6 +3,8 @@
  * Cung cấp khả năng lưu và truy vấn từ vựng, thư mục ngay trên điện thoại không cần internet.
  */
 
+import { getVocabularyScope, filterVocabularyScope } from "./vocabulary-view";
+
 const DB_NAME = "kotobase_offline_db";
 const DB_VERSION = 1;
 
@@ -97,6 +99,7 @@ export async function saveFoldersOffline(folders: any[]): Promise<number> {
  */
 export async function getOfflineVocabularies(folderId: string | string[] = "all"): Promise<any[]> {
   try {
+    const scope = getVocabularyScope(folderId, await getOfflineFolders());
     const db = await openDB();
     return new Promise((resolve, reject) => {
       const tx = db.transaction("vocabularies", "readonly");
@@ -105,26 +108,8 @@ export async function getOfflineVocabularies(folderId: string | string[] = "all"
 
       request.onsuccess = () => {
         const allVocabs = request.result || [];
-        const targetIds: string[] = Array.isArray(folderId)
-          ? folderId.filter(id => id && id !== "all")
-          : (folderId && folderId !== "all" ? [folderId] : []);
-
-        if (targetIds.length === 0) {
-          return resolve(allVocabs);
-        }
-
-        const targetSet = new Set(targetIds);
-        // Lọc theo targetSet
-        const filtered = allVocabs.filter((v: any) => {
-          if (Array.isArray(v.folderIds)) {
-            return v.folderIds.some((fid: string) => targetSet.has(fid));
-          }
-          if (Array.isArray(v.folderVocabularies)) {
-            return v.folderVocabularies.some((fv: any) => targetSet.has(fv.folderId));
-          }
-          return false;
-        });
-        resolve(filtered);
+        // Keep raw copies for syncing/editing; the view chooses word winners.
+        resolve(filterVocabularyScope(allVocabs, scope));
       };
 
       request.onerror = () => reject(request.error);

@@ -69,7 +69,7 @@ export function OfflineSyncButton({
       
       // Nếu là all hoặc chưa có đủ data, fetch trực tiếp
       if (!vocabsToSave || vocabsToSave.length === 0) {
-        const res = await getVocabularies(currentFolderId);
+        const res = await getVocabularies(currentFolderId, undefined, true);
         if (Array.isArray(res)) {
           vocabsToSave = res;
         }

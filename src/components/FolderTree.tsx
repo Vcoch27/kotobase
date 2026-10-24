@@ -25,6 +25,7 @@ import {
   FolderPlus,
 } from 'lucide-react';
 import { getDownloadedDecks } from '@/lib/offline-storage';
+import { getFolderVocabularyWords } from '@/lib/vocabulary-view';
 
 interface FolderItem {
   id: string;
@@ -35,7 +36,8 @@ interface FolderItem {
   ownerName?: string | null;
   isPublic?: boolean;
   coAuthorEmails?: string[];
-  _count?: { folderVocabularies: number };
+  vocabularyWords?: string[];
+  _count?: { folderVocabularies: number; rootVocabularies?: number };
 }
 
 interface FolderTreeProps {
@@ -414,34 +416,17 @@ export function FolderTree({
     }
   };
 
-  // Hàm tính tổng số từ vựng đệ quy (bao gồm cả thư mục con)
+  // Count the union of words throughout the subtree, including the node itself.
   const getRecursiveCount = (node: any): number => {
-    let count = node._count?.folderVocabularies || 0;
-    if (node.children && node.children.length > 0) {
-      node.children.forEach((child: any) => {
-        count += getRecursiveCount(child);
-      });
-    }
-    return count;
+    return getFolderVocabularyWords(node.id, localFolders).size;
   };
 
   const totalSelectedWords = useMemo(() => {
     const validIds = activeSelectedIds.filter((id) => id !== 'all');
     if (validIds.length === 0) return 0;
 
-    const countMap = new Map<string, number>();
-    const computeCount = (nodes: any[]) => {
-      nodes.forEach((node) => {
-        countMap.set(node.id, getRecursiveCount(node));
-        if (node.children && node.children.length > 0) {
-          computeCount(node.children);
-        }
-      });
-    };
-    computeCount(tree);
-
-    return validIds.reduce((sum, id) => sum + (countMap.get(id) || 0), 0);
-  }, [activeSelectedIds, tree]);
+    return getFolderVocabularyWords(validIds, localFolders).size;
+  }, [activeSelectedIds, localFolders]);
 
   // Hàm kiểm tra bất kỳ thư mục con nào đã được tải offline (cục bộ thư mục con)
   const hasRecursiveDownloaded = (node: any): boolean => {
@@ -790,7 +775,7 @@ export function FolderTree({
             </span>
           )}
           <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-full shrink-0">
-            {folders.reduce((acc, f) => acc + (f._count?.folderVocabularies || 0), 0)}
+            {localFolders[0]?._count?.rootVocabularies ?? getFolderVocabularyWords('all', localFolders).size}
           </span>
         </div>
       </div>

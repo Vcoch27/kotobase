@@ -52,18 +52,24 @@ export const getCachedVocabsByFolderId = async (folderId: string) => {
   )();
 };
 
-export const getCachedAllVocabsLimit = async () => {
-  return unstable_cache(
+const readCachedAllVocabs = unstable_cache(
     async () => {
       const snap = await adminDb.collection("vocabularies")
-        .orderBy("createdAt", "desc")
-        .limit(100)
         .get();
       return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     },
-    ['vocabs-all-limit-100'],
+    ['vocabs-all-raw-v1'],
     { tags: ['vocabularies'], revalidate: 3600 }
-  )();
+  );
+
+// The dashboard fetches folders and vocabulary concurrently. Coalesce their
+// shared cold-cache read so it does not scan the same collection twice.
+let pendingAllVocabs: ReturnType<typeof readCachedAllVocabs> | null = null;
+export const getCachedAllVocabs = () => {
+  if (!pendingAllVocabs) {
+    pendingAllVocabs = readCachedAllVocabs().finally(() => { pendingAllVocabs = null; });
+  }
+  return pendingAllVocabs;
 };
 
 // ==========================================

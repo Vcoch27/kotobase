@@ -3,7 +3,8 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/session";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { getCachedFoldersRaw, getCachedFolderVocabCount } from "@/lib/cache";
+import { getCachedFoldersRaw, getCachedAllVocabs } from "@/lib/cache";
+import { uniqueVocabularyByWord } from "@/lib/vocabulary-view";
 import { FieldValue } from "firebase-admin/firestore";
 
 type Permission = 'admin' | 'owner' | 'coauthor' | 'none';
@@ -139,20 +140,37 @@ export async function getFolders(includeCounts = true) {
     // Lọc danh sách thư mục hiển thị cho user này
     const visibleFolders = allRawFolders.filter(isFolderVisibleToUser).map(f => ({
       ...f,
+      vocabularyWords: [] as string[],
       _count: {
-        folderVocabularies: 0
+        folderVocabularies: 0,
+        rootVocabularies: 0,
       }
     }));
 
-    // The Kanji editor only needs folder names; avoid a count query per folder there.
+    // Share the raw vocabulary cache with the root view; do not query count()
+    // for every folder or sum child document counts (which counts copies twice).
     if (includeCounts) {
-      await Promise.all(visibleFolders.map(async (folder) => {
-        try {
-          folder._count.folderVocabularies = await getCachedFolderVocabCount(folder.id);
-        } catch (e) {
-          folder._count.folderVocabularies = 0;
+      const visibleIds = new Set(visibleFolders.map(folder => folder.id));
+      const records = (await getCachedAllVocabs()).filter((record: any) => {
+        if (isAdmin || (currentUid && record.createdBy === currentUid)) return true;
+        const ids: string[] = record.folderIds || [];
+        return !ids.length || ids.some(id => visibleIds.has(id));
+      });
+      const wordsByFolder = new Map<string, Set<string>>();
+      for (const record of records as Array<{ word?: string; folderIds?: string[] }>) {
+        if (!record.word) continue;
+        for (const id of record.folderIds || []) {
+          if (!visibleIds.has(id)) continue;
+          if (!wordsByFolder.has(id)) wordsByFolder.set(id, new Set());
+          wordsByFolder.get(id)!.add(record.word);
         }
-      }));
+      }
+      const rootCount = uniqueVocabularyByWord(records).length;
+      for (const folder of visibleFolders) {
+        folder.vocabularyWords = Array.from(wordsByFolder.get(folder.id) || []);
+        folder._count.folderVocabularies = folder.vocabularyWords.length;
+        folder._count.rootVocabularies = rootCount;
+      }
     }
     
     return visibleFolders;

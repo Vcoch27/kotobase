@@ -15,6 +15,7 @@ import { BgSettingsModal } from "./BgSettingsModal";
 import { useCustomBg } from "@/hooks/useCustomBg";
 import { JishoSearchResults } from "./JishoSearchResults";
 import { getVocabularies } from "@/app/actions/vocabulary";
+import { getVocabularyView, getVocabularyScope, filterVocabularyScope } from "@/lib/vocabulary-view";
 import { getFolders, createFolder } from "@/app/actions/folder";
 import { 
   LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, 
@@ -414,6 +415,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const isGoogleUser = !!currentUser?.uid;
 
   const fetchData = async (isBackground = false) => {
+    if (isBackground) vocabCache.current = {};
     if (!isBackground) {
       setLoading(true);
     }
@@ -462,6 +464,18 @@ export function Dashboard({ currentUser }: DashboardProps) {
       let vocabData: any[];
       let folderData: any[];
 
+      // A complete ancestor/root cache also contains every original leaf copy.
+      if (!isBackground && !vocabCache.current[cacheKey] && foldersCache.current) {
+        const scope = getVocabularyScope(selectedFolderIds, foldersCache.current);
+        for (const [key, records] of Object.entries(vocabCache.current)) {
+          const cachedScope = getVocabularyScope(key.split(","), foldersCache.current);
+          if (!cachedScope || (scope && Array.from(scope).every(id => cachedScope.has(id)))) {
+            vocabCache.current[cacheKey] = filterVocabularyScope(records, scope);
+            break;
+          }
+        }
+      }
+
       // Kiểm tra xem trong cache đã có folder này chưa
       if (!isBackground && vocabCache.current[cacheKey] && foldersCache.current) {
         vocabData = vocabCache.current[cacheKey];
@@ -469,7 +483,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
       } else {
         // Chỉ tải mới từ Firebase khi chưa có cache hoặc vừa có thay đổi dữ liệu (isBackground)
         const [vData, fData] = await Promise.all([
-          getVocabularies(selectedFolderIds.length === 1 ? selectedFolderIds[0] : selectedFolderIds),
+          getVocabularies(selectedFolderIds.length === 1 ? selectedFolderIds[0] : selectedFolderIds, undefined, true),
           getFolders(),
         ]);
         
@@ -504,7 +518,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
       // Fallback: Khi có lỗi (hết Quota Firebase hoặc rớt mạng đột ngột), đọc ngay từ IndexedDB
       try {
         const [offlineVocabs, fallbackFolders] = await Promise.all([
-          getOfflineVocabularies(selectedFolderId),
+          getOfflineVocabularies(selectedFolderIds),
           getFallbackFolders()
         ]);
 
@@ -566,7 +580,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
 
   // Client-side Filtering & Sorting cực nhanh và 0 tốn read của Firebase
   const filteredVocabularies = React.useMemo(() => {
-    let result = vocabularies;
+    let result = getVocabularyView(vocabularies, selectedFolderIds, folders);
     if (debouncedSearchQuery.trim()) {
       const q = debouncedSearchQuery.trim().toLowerCase();
       result = result.filter(v => 
@@ -599,7 +613,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
     }
 
     return sorted;
-  }, [vocabularies, debouncedSearchQuery, sortOrder]);
+  }, [vocabularies, selectedFolderIds, folders, debouncedSearchQuery, sortOrder]);
 
   // Cập nhật riêng danh sách thư mục (KHÔNG chạm vào từ vựng, KHÔNG reset tiến trình học)
   const refreshFoldersOnly = async () => {
@@ -1392,7 +1406,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                       ? 'Tất cả từ vựng' 
                       : folders.find(f => f.id === selectedFolderId)?.name || 'Thư mục'
                 }
-                currentVocabs={filteredVocabularies}
+                currentVocabs={vocabularies}
                 folders={folders}
                 isOnline={isOnline}
                 onOfflineDataChanged={() => fetchData(true)}

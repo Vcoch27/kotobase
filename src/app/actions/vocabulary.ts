@@ -5,11 +5,11 @@ import { getCurrentUser } from "@/lib/session";
 import { revalidatePath, revalidateTag } from "next/cache";
 import {
   getCachedFoldersRaw,
-  getCachedVocabsByFolderId,
-  getCachedAllVocabsLimit,
+  getCachedAllVocabs,
   getCachedVocabsByKanji,
 } from "@/lib/cache";
 import { extractKanji } from "@/lib/kanji-parser";
+import { uniqueVocabularyByWord } from "@/lib/vocabulary-view";
 
 export interface CreateVocabInput {
   word: string;
@@ -193,7 +193,7 @@ export async function assignVocabularyToFolder(vocabularyId: string, folderId: s
   }
 }
 
-export async function getVocabularies(folderId?: string | string[], searchQuery?: string) {
+export async function getVocabularies(folderId?: string | string[], searchQuery?: string, preserveFolderCopies = false) {
   try {
     const currentUser = await getCurrentUser();
     const currentUserEmail = (currentUser?.email || "").trim().toLowerCase();
@@ -273,7 +273,7 @@ export async function getVocabularies(folderId?: string | string[], searchQuery?
 
     // Chuẩn hoá inputFolderIds (hỗ trợ cả chọn 1 thư mục hoặc chọn nhiều thư mục gộp)
     const inputFolderIds: string[] = Array.isArray(folderId)
-      ? folderId.filter(id => id && id !== "all")
+      ? (folderId.includes("all") ? [] : folderId.filter(id => id))
       : (folderId && folderId !== "all" ? [folderId] : []);
 
     // 2. Tìm tất cả ID thư mục con cháu nếu có chọn thư mục cụ thể (chỉ lấy thư mục con mà user được phép xem)
@@ -303,22 +303,14 @@ export async function getVocabularies(folderId?: string | string[], searchQuery?
     let snapshotDocs: any[] = [];
 
     if (inputFolderIds.length > 0) {
-      // Nếu có chọn thư mục (1 hoặc nhiều), thực hiện query riêng cho từng folderId và khử trùng bằng docMap
-      const promises = Array.from(targetFolderIds).map(fid => 
-        getCachedVocabsByFolderId(fid)
+      // Folder counts already use this complete cache. Filter it in memory
+      // rather than reading each descendant again from Firestore.
+      snapshotDocs = (await getCachedAllVocabs()).filter((doc: any) =>
+        (doc.folderIds || []).some((id: string) => targetFolderIds.has(id))
       );
-      const snapshots = await Promise.all(promises);
-      
-      const docMap = new Map();
-      snapshots.forEach(snapDocs => {
-        snapDocs.forEach(doc => {
-          docMap.set(doc.id, doc);
-        });
-      });
-      snapshotDocs = Array.from(docMap.values());
     } else {
-      // Nếu là tất cả thư mục, buộc phải get(). Để tránh vượt quota và load nhanh, giới hạn 100 từ vựng gần nhất
-      snapshotDocs = await getCachedAllVocabsLimit();
+      // Cache the complete raw collection so root winners include older-created documents.
+      snapshotDocs = await getCachedAllVocabs();
     }
 
     let vocabs = snapshotDocs
@@ -344,6 +336,12 @@ export async function getVocabularies(folderId?: string | string[], searchQuery?
         if (fIds.length === 0) return true;
         return fIds.some((fid: string) => isFolderVisible(fid));
       });
+    }
+
+    // Select winners only after permissions, and before search. Raw copies are
+    // retained by Dashboard/IndexedDB so leaf views remain complete offline.
+    if (!preserveFolderCopies && (inputFolderIds.length === 0 || targetFolderIds.size > 1)) {
+      vocabs = uniqueVocabularyByWord(vocabs);
     }
 
     // 4. Lọc tìm kiếm nếu có
@@ -644,7 +642,7 @@ export async function updateVocabulary(id: string, input: Partial<CreateVocabInp
 
     await adminDb.collection("vocabularies").doc(id).update(updateData);
     revalidateTag("vocabularies");
-    return { success: true };
+    return { success: true, updatedAt: updateData.updatedAt };
   } catch (error) {
     console.error("Lỗi khi cập nhật từ vựng:", error);
     return { success: false, error: "Không thể cập nhật từ vựng." };

@@ -84,7 +84,7 @@ export function VocabularyEditModal({
 
     if (res.success) {
       toast.success('Lưu từ vựng thành công!');
-      onSuccess({ ...vocabulary, ...formData });
+      onSuccess({ ...vocabulary, ...formData, updatedAt: res.updatedAt });
       onClose();
     } else {
       toast.error(res.error || 'Có lỗi xảy ra khi lưu.');
