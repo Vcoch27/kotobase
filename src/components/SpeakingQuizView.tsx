@@ -116,6 +116,7 @@ export function SpeakingQuizView({
     } catch {
       /* Sound must not block answer submission. */
     }
+    sample(true);
   }, [item, isActive, finished, delay]);
   const speech = useSpeechQuiz({
     questionKey,
