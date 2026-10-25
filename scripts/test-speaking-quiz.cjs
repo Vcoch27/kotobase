@@ -165,7 +165,7 @@ test("explicit start only; Japanese settings and real start/speech events drive 
   const r = h.current();
   assert.equal(r.lang, "ja-JP");
   assert.equal(r.interimResults, true);
-  assert.equal(r.maxAlternatives, 3);
+  assert.equal(r.maxAlternatives, 5);
   assert.equal(h.state().status, "starting");
   r.onstart();
   assert.equal(h.state().status, "listening");
@@ -341,6 +341,8 @@ test("hold release stops audio capture but still accepts a late final result", (
   const r = h.current();
   r.onstart();
   h.session.release();
+  assert.equal(r.stopped, undefined);
+  h.advance(250);
   assert.equal(r.stopped, true);
   assert.equal(r.aborted, undefined);
   assert.equal(h.state().status, "processing");
@@ -349,6 +351,43 @@ test("hold release stops audio capture but still accepts a late final result", (
   h.session.setContext("q2", true);
   h.advance(1000);
   assert.equal(h.instances.length, 1);
+  h.session.dispose();
+});
+test("short words accept exact reading plus desu, never unrelated words or substrings", () => {
+  const short = { word: "背", reading: "せ" };
+  for (const text of ["せ", "背", "せです", "背です"])
+    assert.equal(match.matchSpokenAnswer([text], short), text);
+  for (const text of ["僕は", "先生です", "せいです", "はせです", "せですね"])
+    assert.equal(match.matchSpokenAnswer([text], short), null);
+  assert.equal(
+    match.matchSpokenAnswer(["です"], { word: "です", reading: "です" }),
+    "です",
+  );
+  assert.equal(match.matchSpokenAnswer(["つよみです"], vocab), null);
+  assert.equal(match.compareSpokenVocabulary("せです", short)[1].exact, true);
+});
+test("short exact interim survives an early engine end instead of being discarded", () => {
+  const h = harness();
+  h.session.start(false);
+  const r = h.current();
+  r.onstart();
+  h.result(r, ["つよみ"], false);
+  r.onend();
+  assert.equal(h.passed.length, 1);
+  h.advance(500);
+  assert.equal(h.passed.length, 1);
+  h.session.dispose();
+});
+test("short speech tail timer is cancelled when changing questions", () => {
+  const h = harness();
+  h.session.start(false);
+  const r = h.current();
+  r.onstart();
+  h.session.release();
+  h.session.setContext("q2", true);
+  h.advance(500);
+  assert.equal(r.stopped, undefined);
+  assert.equal(r.aborted, true);
   h.session.dispose();
 });
 test("released wrong answer never restarts; holding can start another attempt", () => {

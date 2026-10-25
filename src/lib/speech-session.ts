@@ -72,6 +72,7 @@ export class SpeechSession {
   private stableTimer?: ReturnType<typeof setTimeout>;
   private pendingMatch: string | null = null;
   private watchdog?: ReturnType<typeof setTimeout>;
+  private releaseTimer?: ReturnType<typeof setTimeout>;
   constructor(
     private factory: (() => RecognitionLike) | null,
     private emit: (state: SpeechSnapshot) => void,
@@ -92,6 +93,7 @@ export class SpeechSession {
     clearTimeout(this.restartTimer);
     clearTimeout(this.stableTimer);
     clearTimeout(this.watchdog);
+    clearTimeout(this.releaseTimer);
     this.pendingMatch = null;
     const old = this.recognition;
     this.recognition = null;
@@ -150,11 +152,16 @@ export class SpeechSession {
       () => this.pause("Đã kết thúc lượt nói. Giữ Space để thử lại."),
       3000,
     );
-    try {
-      this.recognition.stop();
-    } catch {
-      this.pause();
-    }
+    const epoch = this.generation;
+    // Keep a brief tail so a short final vowel reaches Web Audio / ASR buffers.
+    this.releaseTimer = setTimeout(() => {
+      if (epoch !== this.generation || !this.draining) return;
+      try {
+        this.recognition?.stop();
+      } catch {
+        this.pause();
+      }
+    }, 250);
   }
   pause(message = "Đã tạm dừng micro. Bấm tiếp tục khi sẵn sàng.") {
     this.wanted = false;
@@ -207,12 +214,13 @@ export class SpeechSession {
     }
     this.recognition = recognition;
     recognition.lang = "ja-JP";
-    recognition.continuous = false;
+    recognition.continuous = this.handsFree;
     recognition.interimResults = true;
-    recognition.maxAlternatives = 3;
+    recognition.maxAlternatives = 5;
     this.update({
       status: "starting",
-      message: "Đang mở micro… Nếu được hỏi, hãy cho phép sử dụng micro.",
+      message:
+        "Đang mở micro… Chờ trạng thái Đang lắng nghe rồi nói để không mất âm đầu.",
     });
     this.watchdog = setTimeout(() => {
       if (live())
@@ -226,7 +234,8 @@ export class SpeechSession {
       clearTimeout(this.watchdog);
       this.update({
         status: "listening",
-        message: "Đang nghe tiếng Nhật. Bạn có thể nói ngay.",
+        message:
+          "Mic đã sẵn sàng. Bạn có thể nói ngay; từ ngắn có thể nói thêm です.",
       });
       this.watchdog = setTimeout(() => {
         if (live())
@@ -254,7 +263,7 @@ export class SpeechSession {
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
         const alternatives = Array.from(
-          { length: Math.min(3, result.length) },
+          { length: Math.min(5, result.length) },
           (_, n) => result[n].transcript.trim(),
         ).filter(Boolean);
         const text = alternatives[0] || "";
@@ -314,6 +323,11 @@ export class SpeechSession {
     };
     recognition.onend = () => {
       if (!live()) return;
+      if (this.pendingMatch) {
+        // Some engines end a very short utterance before emitting a final result.
+        this.accept(this.pendingMatch, [this.pendingMatch]);
+        return;
+      }
       if (this.draining) {
         this.pause("Đã kết thúc lượt nói. Giữ Space để thử lại.");
         return;

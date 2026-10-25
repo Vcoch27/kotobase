@@ -9,7 +9,7 @@ Truy cập từ Cài đặt → Micro & luyện nói · Test mic, nút cài đ�
 - Cài đặt mic lưu localStorage trên thiết bị. Mở cài đặt hoặc lưu sẽ dừng ASR Quiz hiện tại, tránh hai phiên cùng chiếm mic. Quyền mở mic chỉ xin khi người học bấm Test/mở mic Quiz, không tự xin khi mở modal.
 - Chrome/Chromium máy tính từ 135 và Edge tương ứng hỗ trợ `SpeechRecognition.start(audioTrack)` theo MDN BCD. Dùng gate tương thích thận trọng, loại Android/iOS/Safari/Opera. Đưa track đã lọc vào ASR, không mở một luồng để đo rồi âm thầm nhận dạng luồng khác. Nếu đường track bị lỗi, báo lỗi rõ, không âm thầm đổi sang mic mặc định.
 - Trình duyệt khác: Test mic vẫn dùng bộ lọc theo khả năng; ASR dùng đường mic mặc định do trình duyệt quản lý. UI công khai giới hạn này. Không hứa Krisp/RNNoise hay khử mọi tiếng ồn.
-- Đóng, chuyển trang, kết thúc, thả Space, lỗi và quyền trả về muộn đều có xử lý giải phóng track/context. ASR giữ track đích tới khi chốt kết quả sau khi thả Space, nhưng dừng track mic gốc ngay.
+- Đóng, chuyển trang, kết thúc, thả Space, lỗi và quyền trả về muộn đều có xử lý giải phóng track/context. Khi thả Space, giữ đệm âm 250 ms rồi dừng track mic gốc; track đích giữ tới khi chốt kết quả. Đổi câu/thoát/hủy vẫn giải phóng ngay.
 
 ## Kiểm tra
 

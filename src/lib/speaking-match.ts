@@ -34,9 +34,26 @@ export function matchSpokenAnswer(
   const answers = spokenAnswers(vocab);
   return (
     alternatives.find((text) =>
-      answers.includes(normalizeSpokenJapanese(text)),
+      answers.includes(normalizeSpokenAttempt(text, vocab)),
     ) ?? null
   );
+}
+
+export function isShortSpokenVocabulary(vocab: SpokenVocabulary): boolean {
+  return (vocab.reading || vocab.word).split(/[/／;；、\n]+/).some((value) => {
+    const kana = normalizeSpokenJapanese(value);
+    return (
+      /^[ぁ-ゖー]+$/.test(kana) &&
+      kana.replace(/[ゃゅょぁぃぅぇぉゎ]/g, "").length <= 2
+    );
+  });
+}
+function normalizeSpokenAttempt(text: string, vocab: SpokenVocabulary): string {
+  const normalized = normalizeSpokenJapanese(text);
+  if (spokenAnswers(vocab).includes(normalized)) return normalized;
+  return isShortSpokenVocabulary(vocab) && normalized.endsWith("です")
+    ? normalized.slice(0, -2)
+    : normalized;
 }
 
 export function compareSpokenVocabulary(
@@ -49,21 +66,23 @@ export function compareSpokenVocabulary(
   ].map((row) => ({
     ...row,
     exact:
-      !!normalizeSpokenJapanese(actual) &&
+      !!normalizeSpokenAttempt(actual, vocab) &&
       (row.label === "Cách đọc"
         ? row.expected.split(/[/／;；、\n]+/)
         : [row.expected]
       ).some(
         (value) =>
-          normalizeSpokenJapanese(value) === normalizeSpokenJapanese(actual),
+          normalizeSpokenJapanese(value) ===
+          normalizeSpokenAttempt(actual, vocab),
       ),
     characters: compareSpokenText(
-      actual,
+      normalizeSpokenAttempt(actual, vocab),
       row.expected
         .split(/[/／;；、\n]+/)
         .find(
           (value) =>
-            normalizeSpokenJapanese(value) === normalizeSpokenJapanese(actual),
+            normalizeSpokenJapanese(value) ===
+            normalizeSpokenAttempt(actual, vocab),
         ) || row.expected.split(/[/／;；、\n]+/)[0],
     ),
   }));

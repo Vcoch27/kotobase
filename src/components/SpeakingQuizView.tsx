@@ -29,6 +29,7 @@ import {
   matchSpokenAnswer,
   compareSpokenVocabulary,
   addReviewWord,
+  isShortSpokenVocabulary,
 } from "@/lib/speaking-match";
 import { bindSpeakingShortcuts } from "@/lib/speaking-shortcuts";
 import { playSpeakingSample } from "@/lib/speaking-sample";
@@ -804,6 +805,13 @@ export function SpeakingQuizView({
                         </div>
                       )}
                       <div className="mt-5 border-t border-slate-200 pt-4 dark:border-slate-700">
+                        {isShortSpokenVocabulary(item) && (
+                          <p className="mb-3 text-xs text-emerald-700 dark:text-emerald-300">
+                            Từ ngắn: chờ mic sẵn sàng rồi nói trọn âm. Có thể
+                            nói thêm “です” sau từ để máy nhận rõ hơn; không cần
+                            đọc cả câu.
+                          </p>
+                        )}
                         <div className="flex justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
                           <span>Máy đang nhận được</span>
                           <span>

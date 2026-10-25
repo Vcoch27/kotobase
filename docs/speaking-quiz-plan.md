@@ -13,7 +13,7 @@ Thêm một kiểu trả lời trong Quiz: nói tiếng Nhật thay vì gõ. Hai
 
 ## Quyết định thiết kế
 
-- Web Speech `ja-JP`, `interimResults`, tối đa 3 alternatives, từng phát ngôn riêng rồi tự khởi động lại. Không cần bấm kết thúc lượt nói. Kết quả final khớp được nhận ngay; interim khớp giữ ổn định 350 ms rồi nhận.
+- Web Speech `ja-JP`, `interimResults`, tối đa 5 alternatives. Tự nghe dùng continuous để giảm khoảng hở giữa các lượt; giữ–thả dùng phiên riêng, thêm đệm 250 ms khi thả để tránh cắt âm cuối. Kết quả final khớp được nhận ngay; interim khớp giữ ổn định 350 ms, hoặc được giữ lại khi engine kết thúc sớm.
 - Chỉ khớp toàn bộ `word` hoặc một cách đọc khai báo rõ trong `reading`. Hỗ trợ cách đọc phân tách bằng `/`, `／`, `;`, `；`, `、`, xuống dòng; không tự sinh cách đọc Kanji, không gộp từ đồng âm hoặc bỏ âm dài/âm ngắt/âm đục.
 - Hiện những gì dịch vụ thực sự nhận được. Đối chiếu ký tự chỉ là giải thích văn bản; không gọi đó là điểm phát âm/trọng âm. Không tự đánh sai khi dịch vụ không nghe được.
 - Sai được nói lại không giới hạn. Lịch sử giới hạn 6 lượt để tránh bộ nhớ tăng mãi. Im lặng lâu hoặc lỗi yêu cầu thao tác tiếp tục rõ ràng, tránh vòng lặp vô tận.
@@ -35,6 +35,7 @@ Web Speech phụ thuộc trình duyệt, quyền micro, mạng và dịch vụ n
 ## Bổ sung giữ–thả và luyện lại
 
 - Space dùng `stop()` khi thả để giữ kết quả cuối, thay vì `abort()` hủy phát ngôn. Chờ tối đa 3 giây; không tự mở mic ở câu sau trong kiểu giữ–thả. Blur, Escape và sự kiện từ câu cũ được xử lý an toàn.
+- Từ có cách đọc 1–2 mora cho phép thêm đúng đuôi `です` để tạo ngữ cảnh ASR, ví dụ `せです`/`背です`. Vẫn đối chiếu toàn bộ từ chính, không khớp chuỗi con, không châm chước thiếu âm/âm khác. UI nhắc chờ mic sẵn sàng để tránh nói trước khi mở mic xong.
 - Tab hiển thị đáp án, tắt micro rồi phát cách đọc bằng giọng Nhật trên thiết bị. Đếm ngược chờ âm thanh xong (hoặc lỗi/timeout), có thể chủ động qua câu ngay. Không có giọng Nhật thì báo rõ và tiếp tục phiên.
 - Đáp án có nút “Thử lại ngay” và “Nghe & thử lại”. Nút thứ hai chờ phát xong rồi tự mở phiên thử lại. Hủy âm thanh khi đổi câu/rời Quiz.
 - Các từ có kết quả final chưa khớp hoặc đã bỏ qua đều vào nhóm “chưa vững”, khử trùng theo ID. Nói đúng sau đó không xóa từ khỏi nhóm này. Cuối phiên người học chọn luyện lại cả nhóm.
