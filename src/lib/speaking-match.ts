@@ -39,6 +39,43 @@ export function matchSpokenAnswer(
   );
 }
 
+export function compareSpokenVocabulary(
+  actual: string,
+  vocab: SpokenVocabulary,
+) {
+  return [
+    { label: "Từ vựng", expected: vocab.word },
+    { label: "Cách đọc", expected: vocab.reading || vocab.word },
+  ].map((row) => ({
+    ...row,
+    exact:
+      !!normalizeSpokenJapanese(actual) &&
+      (row.label === "Cách đọc"
+        ? row.expected.split(/[/／;；、\n]+/)
+        : [row.expected]
+      ).some(
+        (value) =>
+          normalizeSpokenJapanese(value) === normalizeSpokenJapanese(actual),
+      ),
+    characters: compareSpokenText(
+      actual,
+      row.expected
+        .split(/[/／;；、\n]+/)
+        .find(
+          (value) =>
+            normalizeSpokenJapanese(value) === normalizeSpokenJapanese(actual),
+        ) || row.expected.split(/[/／;；、\n]+/)[0],
+    ),
+  }));
+}
+
+export function addReviewWord<T extends { id: string }>(
+  items: T[],
+  word: T,
+): T[] {
+  return items.some((item) => item.id === word.id) ? items : [...items, word];
+}
+
 /** LCS marks exact normalized characters, without turning similarity into a pass. */
 export function compareSpokenText(actual: string, expected: string) {
   const a = Array.from(normalizeSpokenJapanese(actual)).slice(0, 120);

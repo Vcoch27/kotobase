@@ -24,7 +24,14 @@ import { MeaningText, parseMeaning } from "./MeaningText";
 import { StudyCardArtwork } from "./StudyCardArtwork";
 import { useCustomBg } from "@/hooks/useCustomBg";
 import { useSpeechQuiz } from "@/hooks/useSpeechQuiz";
-import { matchSpokenAnswer, compareSpokenText } from "@/lib/speaking-match";
+import {
+  matchSpokenAnswer,
+  compareSpokenVocabulary,
+  addReviewWord,
+} from "@/lib/speaking-match";
+import { bindSpeakingShortcuts } from "@/lib/speaking-shortcuts";
+import { playSpeakingSample } from "@/lib/speaking-sample";
+import { getWebVolume } from "@/lib/tts-utils";
 import { audioFX } from "@/lib/audio-fx";
 
 type PromptMode = "word" | "meaning";
@@ -76,6 +83,7 @@ export function SpeakingQuizView({
   const [finished, setFinished] = useState(false);
   const [correct, setCorrect] = useState<string[]>([]);
   const [skipped, setSkipped] = useState<VocabularyData[]>([]);
+  const [review, setReview] = useState<VocabularyData[]>([]);
   const [showReading, setShowReading] = useState(false);
   const [delay, setDelay] = useState(5);
   const [countdown, setCountdown] = useState(5);
@@ -83,6 +91,9 @@ export function SpeakingQuizView({
   const [fullscreen, setFullscreen] = useState(false);
   const [visible, setVisible] = useState(true);
   const [sampleMessage, setSampleMessage] = useState("");
+  const [audioBusy, setAudioBusy] = useState(false);
+  const cancelSample = useRef<(() => void) | null>(null);
+  const resumeAfterRetry = useRef(false);
   const settled = useRef(false);
   const advancing = useRef(false);
   const customBg = useCustomBg();
@@ -109,6 +120,10 @@ export function SpeakingQuizView({
     evaluate: (alternatives) =>
       item ? matchSpokenAnswer(alternatives, item) : null,
     onMatch: accept,
+    onAttempt: (attempt) => {
+      if (!attempt.matched && item)
+        setReview((prev) => addReviewWord(prev, item));
+    },
   });
   const listening = [
     "starting",
@@ -143,6 +158,8 @@ export function SpeakingQuizView({
   const restart = useCallback(
     (items: VocabularyData[]) => {
       speech.pause();
+      cancelSample.current?.();
+      setAudioBusy(false);
       if (typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
       settled.current = false;
       advancing.current = false;
@@ -153,6 +170,7 @@ export function SpeakingQuizView({
       setFinished(false);
       setCorrect([]);
       setSkipped([]);
+      setReview([]);
       setShowReading(false);
       setSampleMessage("");
       setHold(false);
@@ -168,13 +186,20 @@ export function SpeakingQuizView({
     advancing.current = false;
     setShowReading(false);
     setSampleMessage("");
+    if (resumeAfterRetry.current) {
+      resumeAfterRetry.current = false;
+      speech.start();
+    }
   }, [questionKey]);
   useEffect(() => {
     if (!isActive) {
+      cancelSample.current?.();
+      setAudioBusy(false);
       speech.pause("Đã tạm dừng khi rời Quiz.");
       setFullscreen(false);
     }
     return () => {
+      cancelSample.current?.();
       if (typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
     };
   }, [isActive, speech.pause]);
@@ -182,10 +207,18 @@ export function SpeakingQuizView({
     onFullscreenChange?.(fullscreen);
   }, [fullscreen, onFullscreenChange]);
   useEffect(() => () => onFullscreenChange?.(false), [onFullscreenChange]);
+  useEffect(() => {
+    if (!visible) {
+      cancelSample.current?.();
+      setAudioBusy(false);
+    }
+  }, [visible]);
 
   const advance = useCallback(() => {
     if (!outcome || advancing.current) return;
     advancing.current = true;
+    cancelSample.current?.();
+    setAudioBusy(false);
     if (typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
     if (index >= queue.length - 1) {
       speech.pause("Đã hoàn thành phiên luyện.");
@@ -196,97 +229,111 @@ export function SpeakingQuizView({
     }
   }, [outcome, index, queue.length, speech.pause]);
   useEffect(() => {
-    if (!outcome || finished || hold || !isActive || !visible) return;
+    if (!outcome || finished || hold || audioBusy || !isActive || !visible)
+      return;
     if (countdown <= 0) {
       advance();
       return;
     }
     const timer = setTimeout(() => setCountdown((n) => n - 1), 1000);
     return () => clearTimeout(timer);
-  }, [outcome, finished, hold, isActive, visible, countdown, advance]);
+  }, [
+    outcome,
+    finished,
+    hold,
+    audioBusy,
+    isActive,
+    visible,
+    countdown,
+    advance,
+  ]);
 
   useEffect(() => {
     if (!isActive || finished) return;
-    const keydown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement;
-      if (
-        event.isComposing ||
-        event.repeat ||
-        event.ctrlKey ||
-        event.altKey ||
-        event.metaKey ||
-        target.closest(
-          'input,textarea,select,[contenteditable="true"],[role="dialog"]',
-        )
-      )
-        return;
-      if (event.key === "Escape") {
+    return bindSpeakingShortcuts(window, {
+      canSpeak: () => !outcome && !!item && !settled.current && visible,
+      canSkip: () => !outcome && !!item && !settled.current,
+      canAdvance: () => !!outcome,
+      startHeld: () => startListening(true),
+      releaseHeld: speech.release,
+      skip: () => skip(),
+      advance,
+      pause: () => {
         speech.pause();
+        cancelSample.current?.();
+        setAudioBusy(false);
         setFullscreen(false);
-      }
-      if (
-        event.key === "Enter" &&
-        outcome &&
-        !target.closest("button,a,summary")
-      ) {
-        event.preventDefault();
-        advance();
-      }
-    };
-    window.addEventListener("keydown", keydown);
-    return () => window.removeEventListener("keydown", keydown);
-  }, [isActive, finished, outcome, advance, speech.pause]);
+      },
+    });
+  }, [
+    isActive,
+    finished,
+    outcome,
+    questionKey,
+    visible,
+    advance,
+    speech.pause,
+    speech.release,
+    delay,
+  ]);
 
   const skip = () => {
     if (!item || settled.current) return;
     settled.current = true;
     speech.suspend();
-    setSkipped((prev) => [...prev, item]);
+    setSkipped((prev) => addReviewWord(prev, item));
+    setReview((prev) => addReviewWord(prev, item));
     setOutcome("skipped");
     setHold(false);
     setCountdown(delay);
+    sample(true);
   };
-  const sample = () => {
-    speech.pause("Micro đã tắt để nghe mẫu. Bấm tiếp tục khi sẵn sàng nói.");
-    setHold(true);
-    if (!("speechSynthesis" in window)) {
-      setSampleMessage(
-        "Thiết bị chưa hỗ trợ đọc mẫu. Cách đọc đã được hiện bên dưới.",
-      );
-      setShowReading(true);
-      return;
-    }
-    const synth = window.speechSynthesis;
-    const voice = synth
-      .getVoices()
-      .find((voice) => voice.lang.toLowerCase().startsWith("ja"));
-    if (!voice) {
-      setSampleMessage(
-        "Thiết bị chưa có giọng Nhật. Bạn vẫn có thể luyện bằng cách đọc hiển thị.",
-      );
-      setShowReading(true);
-      return;
-    }
-    synth.cancel();
-    const utterance = new SpeechSynthesisUtterance(
-      (item.reading || item.word).split(/[/／;；、\n]/)[0],
+  const sample = (automatic = false, thenRetry = false) => {
+    if (!item) return;
+    cancelSample.current?.();
+    if (automatic) speech.suspend();
+    else
+      speech.pause("Micro đã tắt để nghe mẫu. Bấm tiếp tục khi sẵn sàng nói.");
+    if (!automatic) setHold(true);
+    setAudioBusy(true);
+    cancelSample.current = playSpeakingSample(
+      item.reading || item.word,
+      {
+        status: setSampleMessage,
+        done: (error) => {
+          setAudioBusy(false);
+          setSampleMessage(
+            error ||
+              "Đã nghe mẫu. Bạn có thể thử lại ngay hoặc tiếp tục phiên.",
+          );
+          if (error) setShowReading(true);
+          if (thenRetry) retryCurrent();
+        },
+      },
+      undefined,
+      undefined,
+      getWebVolume(),
     );
-    utterance.lang = "ja-JP";
-    utterance.voice = voice;
-    utterance.rate = 0.85;
-    utterance.onerror = () =>
-      setSampleMessage(
-        "Chưa phát được giọng mẫu. Hãy kiểm tra âm thanh thiết bị.",
-      );
-    setSampleMessage("Đang nghe mẫu. Micro đã tạm dừng.");
-    utterance.onend = () =>
-      setSampleMessage("Đã nghe mẫu. Bấm tiếp tục để nói lại.");
-    synth.speak(utterance);
   };
-  const startListening = () => {
+  const retryCurrent = () => {
+    cancelSample.current?.();
+    setAudioBusy(false);
+    speech.pause();
+    settled.current = false;
+    advancing.current = false;
+    setSkipped((prev) => prev.filter((v) => v.id !== item.id));
+    setCorrect((prev) => prev.filter((id) => id !== item.id));
+    resumeAfterRetry.current = true;
+    setOutcome(null);
+    setHold(false);
+    setRound((n) => n + 1);
+  };
+  const startListening = (held = false) => {
+    cancelSample.current?.();
+    setAudioBusy(false);
     if (typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
     setSampleMessage("");
-    speech.start();
+    speech.start(held);
   };
   const changeMode = (value: PromptMode) => {
     if (value === mode) return;
@@ -294,15 +341,16 @@ export function SpeakingQuizView({
     save("kotobase_speaking_mode", value);
     restart(scoped);
   };
-  const currentReading =
-    item?.reading?.split(/[/／;；、\n]/)[0] || item?.word || "";
-  const comparison = compareSpokenText(speech.transcript, currentReading);
+  const comparisons = item
+    ? compareSpokenVocabulary(speech.transcript, item)
+    : [];
   const statusText = (
     {
       idle: "Sẵn sàng luyện nói",
       starting: "Đang mở micro",
       listening: "Đang lắng nghe",
       hearing: "Đã nghe giọng bạn",
+      processing: "Đang xử lý lượt nói",
       reconnecting: "Đang nghe tiếp",
       paused: "Micro đã tạm dừng",
       error: "Phiên nghe bị gián đoạn",
@@ -384,8 +432,8 @@ export function SpeakingQuizView({
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs dark:border-slate-800">
             <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-              <Mic size={14} /> Tiếng Nhật · tự nhận đáp án · thử lại không giới
-              hạn
+              <Mic size={14} /> Giữ Space để nói · thả để nhận kết quả · Tab bỏ
+              qua
             </span>
             <label className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
               Chuyển câu sau{" "}
@@ -434,13 +482,13 @@ export function SpeakingQuizView({
               Đã nhận đúng {correct.length}/{queue.length} từ
             </h2>
             <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-              {skipped.length
-                ? `${skipped.length} từ đã bỏ qua đang chờ bạn luyện lại.`
+              {review.length
+                ? `${review.length} từ từng nhận chưa đúng hoặc bỏ qua đang chờ bạn luyện lại.`
                 : "Bạn đã đi hết bộ từ. Hãy thử hướng đề còn lại để luyện phản xạ."}
             </p>
-            {!!skipped.length && (
+            {!!review.length && (
               <div className="mx-auto mt-5 flex max-w-lg flex-wrap justify-center gap-2">
-                {skipped.map((v) => (
+                {review.map((v) => (
                   <span
                     key={v.id}
                     className="rounded-lg bg-amber-50 px-3 py-1.5 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200"
@@ -451,14 +499,14 @@ export function SpeakingQuizView({
               </div>
             )}
             <div className="mt-7 flex flex-wrap justify-center gap-3">
-              {!!skipped.length && (
+              {!!review.length && (
                 <button
                   type="button"
                   className={primary}
-                  onClick={() => restart(skipped)}
+                  onClick={() => restart(review)}
                 >
                   <Mic size={16} />
-                  Luyện lại {skipped.length} từ bỏ qua
+                  Luyện lại {review.length} từ chưa vững
                 </button>
               )}
               <button
@@ -593,10 +641,26 @@ export function SpeakingQuizView({
                       <button
                         type="button"
                         className={secondary}
-                        onClick={sample}
+                        onClick={() => sample()}
                       >
                         <Volume2 size={16} />
                         Nghe mẫu
+                      </button>
+                      <button
+                        type="button"
+                        className={secondary}
+                        onClick={retryCurrent}
+                      >
+                        <Mic size={16} />
+                        Thử lại ngay
+                      </button>
+                      <button
+                        type="button"
+                        className={secondary}
+                        onClick={() => sample(false, true)}
+                      >
+                        <Volume2 size={16} />
+                        Nghe & thử lại
                       </button>
                       <div className="flex flex-wrap items-center gap-2">
                         <button
@@ -621,9 +685,11 @@ export function SpeakingQuizView({
                       </div>
                     </div>
                     <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-                      {hold
-                        ? "Đang giữ đáp án để bạn đọc kỹ."
-                        : `Tự chuyển câu sau ${countdown} giây. Bạn có thể bấm Enter để qua ngay.`}
+                      {audioBusy
+                        ? "Đang phát cách đọc; đếm ngược tiếp tục sau khi phát xong."
+                        : hold
+                          ? "Đang giữ đáp án để bạn đọc kỹ."
+                          : `Tự chuyển câu sau ${countdown} giây. Bạn có thể bấm Enter để qua ngay.`}
                     </p>
                     {sampleMessage && (
                       <p
@@ -681,7 +747,9 @@ export function SpeakingQuizView({
                             type="button"
                             className={primary}
                             onClick={
-                              listening ? () => speech.pause() : startListening
+                              listening
+                                ? () => speech.pause()
+                                : () => startListening()
                             }
                           >
                             {listening ? (
@@ -699,7 +767,7 @@ export function SpeakingQuizView({
                             <button
                               type="button"
                               className={secondary}
-                              onClick={startListening}
+                              onClick={() => startListening()}
                             >
                               <RotateCcw size={15} />
                               Thử lượt mới
@@ -752,7 +820,7 @@ export function SpeakingQuizView({
                         <button
                           type="button"
                           className={secondary}
-                          onClick={sample}
+                          onClick={() => sample()}
                         >
                           <Volume2 size={16} />
                           Nghe mẫu
@@ -763,7 +831,7 @@ export function SpeakingQuizView({
                         className={`${button} text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800`}
                         onClick={skip}
                       >
-                        Bỏ qua <SkipForward size={16} />
+                        Bỏ qua (Tab) <SkipForward size={16} />
                       </button>
                     </div>
                     {sampleMessage && (
@@ -777,36 +845,50 @@ export function SpeakingQuizView({
                     {showReading && (
                       <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/40">
                         <p className="text-xs font-bold text-amber-800 dark:text-amber-300">
-                          Cách đọc trong bộ từ
+                          Đối chiếu kết quả máy nhận với cả từ vựng và cách đọc
                         </p>
-                        <p
-                          lang="ja"
-                          className="mt-2 break-words text-2xl font-bold"
-                        >
-                          {item.reading || item.word}
+                        <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">
+                          Xanh: ký tự trùng · gạch chân: chưa trùng. Chỉ cần
+                          khớp toàn bộ một đáp án là đúng.
                         </p>
-                        {!!speech.transcript && (
-                          <>
-                            <p className="mt-3 text-xs text-slate-600 dark:text-slate-300">
-                              Văn bản đã chuẩn hóa · xanh: ký tự trùng · gạch
-                              chân: chưa trùng
-                            </p>
-                            <p lang="ja" className="mt-2 break-all text-xl">
-                              {comparison.map((part, i) => (
-                                <span
-                                  key={i}
-                                  className={
-                                    part.matched
-                                      ? "text-emerald-700 dark:text-emerald-300"
-                                      : "underline decoration-amber-500 decoration-2 underline-offset-4"
-                                  }
-                                >
-                                  {part.text}
-                                </span>
-                              ))}
-                            </p>
-                          </>
-                        )}
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          {comparisons.map((row) => (
+                            <div
+                              key={row.label}
+                              className="rounded-lg border border-amber-200 bg-white/70 p-3 dark:border-amber-900 dark:bg-slate-900/70"
+                            >
+                              <p className="text-xs font-bold">
+                                {row.label}
+                                {row.exact ? " · Khớp toàn bộ" : ""}
+                              </p>
+                              <p
+                                lang="ja"
+                                className="mt-2 break-words text-xl font-bold"
+                              >
+                                {row.expected}
+                              </p>
+                              <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                                Máy nhận (chuẩn hóa)
+                              </p>
+                              <p lang="ja" className="mt-1 break-all text-xl">
+                                {row.characters.length
+                                  ? row.characters.map((part, i) => (
+                                      <span
+                                        key={i}
+                                        className={
+                                          part.matched
+                                            ? "text-emerald-700 dark:text-emerald-300"
+                                            : "underline decoration-amber-500 decoration-2 underline-offset-4"
+                                        }
+                                      >
+                                        {part.text}
+                                      </span>
+                                    ))
+                                  : "…"}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
                         <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                           So văn bản giúp bạn thử lại; đây không phải điểm chấm
                           âm hay trọng âm.
@@ -856,8 +938,10 @@ export function SpeakingQuizView({
             dừng khi rời Quiz hoặc ẩn trang. KotoBase không lưu bản ghi âm;
             trình duyệt có thể gửi âm thanh đến dịch vụ nhận dạng của hãng và
             cần mạng. Không cần API key. Nhận dạng từ không đánh giá độ chuẩn
-            phát âm hay trọng âm. Esc tạm dừng; Enter chuyển câu khi đang xem
-            đáp án. Đổi hướng đề hoặc phạm vi sẽ bắt đầu phiên mới.
+            phát âm hay trọng âm. Giữ Space để nói, thả để nhận nốt kết quả. Tab
+            bỏ qua và phát cách đọc; Shift+Tab di chuyển bàn phím. Esc tạm dừng;
+            Enter chuyển câu khi đang xem đáp án. Đổi hướng đề hoặc phạm vi sẽ
+            bắt đầu phiên mới.
           </p>
         </details>
       </div>

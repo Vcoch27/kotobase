@@ -119,6 +119,9 @@ function harness(factoryPresent = true) {
       abort() {
         this.aborted = true;
       },
+      stop() {
+        this.stopped = true;
+      },
     };
     instances.push(recognition);
     return recognition;
@@ -330,4 +333,286 @@ test("attempt history retains only six actual final attempts", () => {
   assert.equal(h.state().history.length, 6);
   assert.equal(h.state().attempts, 12);
   h.session.dispose();
+});
+
+test("hold release stops audio capture but still accepts a late final result", () => {
+  const h = harness();
+  h.session.start(false);
+  const r = h.current();
+  r.onstart();
+  h.session.release();
+  assert.equal(r.stopped, true);
+  assert.equal(r.aborted, undefined);
+  assert.equal(h.state().status, "processing");
+  h.result(r, ["つよみ"]);
+  assert.equal(h.passed.length, 1);
+  h.session.setContext("q2", true);
+  h.advance(1000);
+  assert.equal(h.instances.length, 1);
+  h.session.dispose();
+});
+test("released wrong answer never restarts; holding can start another attempt", () => {
+  const h = harness();
+  h.session.start(false);
+  const r = h.current();
+  r.onstart();
+  h.session.release();
+  h.result(r, ["つよに"]);
+  r.onend();
+  h.advance(1000);
+  assert.equal(h.instances.length, 1);
+  assert.equal(h.state().status, "paused");
+  h.session.start(false);
+  assert.equal(h.instances.length, 2);
+  h.session.dispose();
+});
+test("release while permission is starting and missing final both time out safely", () => {
+  const h = harness();
+  h.session.start(false);
+  const r = h.current();
+  h.session.release();
+  r.onstart();
+  h.advance(3000);
+  assert.equal(h.state().status, "paused");
+  assert.equal(h.passed.length, 0);
+  h.session.dispose();
+});
+test("hold mode cannot arm the next question while the key is still held", () => {
+  const h = harness();
+  h.session.start(false);
+  h.current().onstart();
+  h.result(h.current(), ["強み"]);
+  h.session.setContext("q2", true);
+  h.advance(1000);
+  assert.equal(h.instances.length, 1);
+  h.session.release();
+  h.session.dispose();
+});
+test("comparison shows distinct word and reading matches including reading variants", () => {
+  const rows = match.compareSpokenVocabulary("つよみ", vocab);
+  assert.equal(rows[0].expected, "強み");
+  assert.equal(rows[0].exact, false);
+  assert.equal(rows[1].expected, "つよみ");
+  assert.equal(rows[1].exact, true);
+  const variants = match.compareSpokenVocabulary("あす", {
+    word: "明日",
+    reading: "あした／あす",
+  });
+  assert.equal(variants[1].exact, true);
+  assert.equal(
+    variants[1].characters.every((c) => c.matched),
+    true,
+  );
+  assert.equal(
+    match.compareSpokenVocabulary("", vocab).some((row) => row.exact),
+    false,
+  );
+});
+test("review keeps unique missed words even after subsequent correct attempts", () => {
+  const list = [vocab];
+  const item = { id: "a", ...vocab };
+  let review = match.addReviewWord([], item);
+  review = match.addReviewWord(review, item);
+  review = match.addReviewWord(review, { id: "b", word: "反省" });
+  assert.equal(review.length, 2);
+  assert.equal(review[0].id, "a");
+  assert.equal(list.length, 1);
+});
+
+function shortcutHarness() {
+  const callbacks = new Map();
+  const calls = [];
+  let canSpeak = true,
+    canSkip = true;
+  const target = {
+    addEventListener(name, fn) {
+      callbacks.set(name, fn);
+    },
+    removeEventListener(name) {
+      callbacks.delete(name);
+    },
+  };
+  const { bindSpeakingShortcuts } = load("src/lib/speaking-shortcuts.ts");
+  const cleanup = bindSpeakingShortcuts(target, {
+    canSpeak: () => canSpeak,
+    canSkip: () => canSkip,
+    canAdvance: () => !canSkip,
+    startHeld: () => calls.push("start"),
+    releaseHeld: () => calls.push("release"),
+    skip: () => calls.push("skip"),
+    advance: () => calls.push("advance"),
+    pause: () => calls.push("pause"),
+  });
+  function event(name, props = {}) {
+    const e = {
+      key: " ",
+      code: "Space",
+      target: { closest: () => false },
+      preventDefault() {
+        this.prevented = true;
+      },
+      ...props,
+    };
+    callbacks.get(name)?.(e);
+    return e;
+  }
+  return {
+    calls,
+    callbacks,
+    cleanup,
+    event,
+    resolve() {
+      canSpeak = false;
+      canSkip = false;
+    },
+  };
+}
+test("Space hold starts once, autorepeat does not restart, keyup releases even from an input", () => {
+  const h = shortcutHarness();
+  assert.equal(h.event("keydown").prevented, true);
+  h.event("keydown", { repeat: true });
+  h.event("keyup", { target: { closest: () => true } });
+  assert.deepEqual(h.calls, ["start", "release"]);
+  h.cleanup();
+  assert.equal(h.callbacks.size, 0);
+});
+test("Tab skips with no repeat; Shift+Tab and text inputs keep native navigation", () => {
+  const h = shortcutHarness();
+  assert.equal(
+    h.event("keydown", { key: "Tab", code: "Tab", shiftKey: true }).prevented,
+    undefined,
+  );
+  h.event("keydown", {
+    key: "Tab",
+    code: "Tab",
+    target: { closest: () => true },
+  });
+  h.event("keydown", { key: "Tab", code: "Tab" });
+  h.event("keydown", { key: "Tab", code: "Tab", repeat: true });
+  assert.deepEqual(h.calls, ["skip"]);
+  h.cleanup();
+});
+test("blur/cleanup release held mic; resolved question cannot be skipped again", () => {
+  const h = shortcutHarness();
+  h.event("keydown");
+  h.event("blur");
+  assert.deepEqual(h.calls, ["start", "release", "pause"]);
+  h.resolve();
+  h.event("keydown", { key: "Tab", code: "Tab" });
+  h.event("keydown", { key: "Enter", code: "Enter" });
+  assert.equal(h.calls.at(-1), "advance");
+  assert.equal(h.calls.includes("skip"), false);
+  h.cleanup();
+});
+
+function sampleHarness(loaded = true) {
+  let voiceLoaded = loaded,
+    id = 0;
+  const timers = new Map(),
+    listeners = new Map(),
+    utterances = [],
+    completed = [],
+    statuses = [];
+  const { playSpeakingSample } = load("src/lib/speaking-sample.ts", {
+    setTimeout(fn) {
+      timers.set(++id, fn);
+      return id;
+    },
+    clearTimeout(key) {
+      timers.delete(key);
+    },
+  });
+  const synth = {
+    cancel() {},
+    getVoices: () => (voiceLoaded ? [{ lang: "ja-JP" }] : []),
+    addEventListener: (name, fn) => listeners.set(name, fn),
+    removeEventListener: (name) => listeners.delete(name),
+    speak(utterance) {
+      utterances.push(utterance);
+    },
+  };
+  const cancel = playSpeakingSample(
+    "つよみ／別",
+    {
+      status: (value) => statuses.push(value),
+      done: (error) => completed.push(error),
+    },
+    synth,
+    (text) => ({ text }),
+    0.7,
+  );
+  return {
+    utterances,
+    completed,
+    timers,
+    listeners,
+    cancel,
+    statuses,
+    voices() {
+      voiceLoaded = true;
+      listeners.get("voiceschanged")?.();
+    },
+    timeout() {
+      const fn = timers.values().next().value;
+      if (fn) fn();
+    },
+  };
+}
+test("sample uses Japanese first reading, reports completion once and respects volume", () => {
+  const h = sampleHarness();
+  const u = h.utterances[0];
+  assert.equal(u.text, "つよみ");
+  assert.equal(u.lang, "ja-JP");
+  assert.equal(u.volume, 0.7);
+  u.onend();
+  u.onerror();
+  assert.equal(h.completed.length, 1);
+  assert.equal(h.timers.size, 0);
+  h.cancel();
+});
+test("delayed voices start sample once; cancel blocks late callbacks", () => {
+  const h = sampleHarness(false);
+  assert.equal(h.utterances.length, 0);
+  h.voices();
+  h.voices();
+  assert.equal(h.utterances.length, 1);
+  h.cancel();
+  h.utterances[0].onend();
+  assert.equal(h.completed.length, 0);
+  assert.equal(h.timers.size, 0);
+});
+test("missing voices and synthesis errors surface failure without hanging countdown", () => {
+  const h = sampleHarness(false);
+  h.timeout();
+  assert.equal(h.completed.length, 1);
+  assert.ok(h.completed[0]);
+  h.cancel();
+  const broken = sampleHarness();
+  broken.utterances[0].onerror();
+  assert.equal(broken.completed.length, 1);
+  broken.cancel();
+});
+
+test("utterance construction failure reports an error instead of leaving audio busy", () => {
+  const { playSpeakingSample } = load("src/lib/speaking-sample.ts", {
+    setTimeout,
+    clearTimeout,
+  });
+  const completed = [];
+  const synth = {
+    cancel() {},
+    getVoices: () => [{ lang: "ja-JP" }],
+    removeEventListener() {},
+    speak() {},
+  };
+  playSpeakingSample(
+    "つよみ",
+    { status() {}, done: (error) => completed.push(error) },
+    synth,
+    () => {
+      throw new Error("unsupported voice");
+    },
+  );
+  assert.equal(completed.length, 1);
+  assert.ok(completed[0]);
 });

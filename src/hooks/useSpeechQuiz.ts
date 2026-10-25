@@ -5,6 +5,7 @@ import {
   browserRecognitionFactory,
   SpeechSession,
   SpeechSnapshot,
+  SpeechAttempt,
 } from "@/lib/speech-session";
 
 export function useSpeechQuiz(options: {
@@ -12,6 +13,7 @@ export function useSpeechQuiz(options: {
   enabled: boolean;
   evaluate: (alternatives: string[]) => string | null;
   onMatch: (text: string) => void;
+  onAttempt?: (attempt: SpeechAttempt) => void;
 }) {
   const latest = useRef(options);
   latest.current = options;
@@ -36,6 +38,10 @@ export function useSpeechQuiz(options: {
       (text) => {
         if (contextKey.current === latest.current.questionKey)
           latest.current.onMatch(text);
+      },
+      (attempt) => {
+        if (contextKey.current === latest.current.questionKey)
+          latest.current.onAttempt?.(attempt);
       },
     );
     session.current = controller;
@@ -69,7 +75,7 @@ export function useSpeechQuiz(options: {
       session.current?.setContext(options.questionKey, false);
     };
   }, [options.questionKey, options.enabled]);
-  const start = useCallback(() => {
+  const start = useCallback((holdToTalk = false) => {
     if (!window.isSecureContext) {
       session.current?.pause(
         "Micro cần HTTPS hoặc localhost. Hãy mở bản web HTTPS.",
@@ -80,7 +86,7 @@ export function useSpeechQuiz(options: {
       session.current?.pause("Cần kết nối mạng để dùng nhận giọng nói.");
       return;
     }
-    session.current?.start();
+    session.current?.start(!holdToTalk);
   }, []);
   const pause = useCallback(
     (message?: string) => session.current?.pause(message),
@@ -90,5 +96,6 @@ export function useSpeechQuiz(options: {
     () => session.current?.setContext(latest.current.questionKey, false),
     [],
   );
-  return { ...snapshot, start, pause, suspend };
+  const release = useCallback(() => session.current?.release(), []);
+  return { ...snapshot, start, pause, suspend, release };
 }

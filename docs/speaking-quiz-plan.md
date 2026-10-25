@@ -19,7 +19,7 @@ Thêm một kiểu trả lời trong Quiz: nói tiếng Nhật thay vì gõ. Hai
 - Sai được nói lại không giới hạn. Lịch sử giới hạn 6 lượt để tránh bộ nhớ tăng mãi. Im lặng lâu hoặc lỗi yêu cầu thao tác tiếp tục rõ ràng, tránh vòng lặp vô tận.
 - Không ghi âm/lưu tiếng nói vào KotoBase. Trình duyệt có thể gửi âm thanh tới dịch vụ của hãng; cần mạng trong cấu hình mặc định. Không hứa hỗ trợ mọi trình duyệt hay offline. Không thêm model lớn cần tải về.
 - Nghe mẫu dùng giọng Nhật có sẵn trên thiết bị, tắt micro trước; người học bấm tiếp tục sau khi nghe để không tự chấm tiếng máy.
-- Phím tắt không chiếm Tab; giữ truy cập bàn phím và dùng nút Bỏ qua. Enter chuyển câu sau khi đã chấm, Esc tạm dừng. Tạm dừng đếm ngược cho phép đọc kỹ đáp án.
+- Phím tắt theo yêu cầu bổ sung: giữ Space để nói, thả để nhận nốt kết quả; Tab bỏ qua và phát cách đọc. Shift+Tab vẫn di chuyển focus. Không chặn phím trong ô nhập liệu, select hay hộp thoại. Enter chuyển câu sau khi đã chấm, Esc tạm dừng.
 
 ## Giới hạn / phần cần người thật xác nhận
 
@@ -28,9 +28,21 @@ Web Speech phụ thuộc trình duyệt, quyền micro, mạng và dịch vụ n
 ## Tiến độ
 
 - [x] Khảo sát Quiz, phạm vi học, âm thanh và quota tài khoản.
-- [x] Nền tảng và kiểm thử (16 ca bằng Node, recognition và đồng hồ giả).
+- [x] Nền tảng và kiểm thử (29 ca bằng Node, recognition và đồng hồ giả).
 - [x] Giao diện và tích hợp.
-- [x] Kiểm chứng cục bộ: 16 kiểm thử luyện nói + 14 kiểm thử từ vựng, TypeScript, production build và trình duyệt.
+- [x] Kiểm chứng cục bộ: 29 kiểm thử luyện nói + 14 kiểm thử từ vựng, TypeScript, production build và trình duyệt.
+
+## Bổ sung giữ–thả và luyện lại
+
+- Space dùng `stop()` khi thả để giữ kết quả cuối, thay vì `abort()` hủy phát ngôn. Chờ tối đa 3 giây; không tự mở mic ở câu sau trong kiểu giữ–thả. Blur, Escape và sự kiện từ câu cũ được xử lý an toàn.
+- Tab hiển thị đáp án, tắt micro rồi phát cách đọc bằng giọng Nhật trên thiết bị. Đếm ngược chờ âm thanh xong (hoặc lỗi/timeout), có thể chủ động qua câu ngay. Không có giọng Nhật thì báo rõ và tiếp tục phiên.
+- Đáp án có nút “Thử lại ngay” và “Nghe & thử lại”. Nút thứ hai chờ phát xong rồi tự mở phiên thử lại. Hủy âm thanh khi đổi câu/rời Quiz.
+- Các từ có kết quả final chưa khớp hoặc đã bỏ qua đều vào nhóm “chưa vững”, khử trùng theo ID. Nói đúng sau đó không xóa từ khỏi nhóm này. Cuối phiên người học chọn luyện lại cả nhóm.
+- Đối chiếu có hai ô riêng: word và reading. Hiển thị phần văn bản trùng; các cách đọc thay thế khớp cũng được đối chiếu đúng.
+- Kiểm tra UI bằng recognition/TTS giả đã xác nhận Tab phát `つよみ`, nghe xong mở lại micro, đối chiếu hai ô, tổng kết giữ từ từng sai rồi nói đúng, và Space không tự mở mic ở câu sau. Ảnh mới: `docs/previews/speaking-quiz/dual-comparison.png`.
+- Đã sửa trường hợp khởi tạo giọng TTS ném lỗi làm kẹt trạng thái phát; thêm kiểm thử hồi quy. Bộ preview giữ recognition qua React ref để tránh mất đối tượng khi Fast Refresh.
+
+Nếu cache dev cũ còn giữ JavaScript của phiên trước, chạy preview trên cổng riêng bằng biến `SPEAKING_PREVIEW_PORT` (mặc định 3007). Kiểm tra này dùng dữ liệu giả, không xác nhận chất lượng micro/phát âm thật trên thiết bị người học.
 
 Build cục bộ đã khóa Firestore về `127.0.0.1:9` để không tiêu quota. Build hoàn thành; route cũ `/api/kanji/notes-map` có log kết nối bị từ chối trong bước dựng trang. Tính năng luyện nói không gọi Firestore hoặc API TTS. Bước triển khai dùng quy trình Vercel hiện tại.
 

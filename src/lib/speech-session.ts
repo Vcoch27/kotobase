@@ -20,6 +20,7 @@ export interface RecognitionLike {
   onerror: ((event: { error: string }) => void) | null;
   onend: (() => void) | null;
   start(): void;
+  stop(): void;
   abort(): void;
 }
 export type SpeechStatus =
@@ -27,6 +28,7 @@ export type SpeechStatus =
   | "starting"
   | "listening"
   | "hearing"
+  | "processing"
   | "reconnecting"
   | "paused"
   | "error"
@@ -69,6 +71,8 @@ export class SpeechSession {
   private recognition: RecognitionLike | null = null;
   private generation = 0;
   private wanted = false;
+  private draining = false;
+  private handsFree = true;
   private enabled = false;
   private key = "";
   private disposed = false;
@@ -83,6 +87,7 @@ export class SpeechSession {
     private emit: (state: SpeechSnapshot) => void,
     private evaluate: (alternatives: string[]) => string | null,
     private onMatch: (text: string) => void,
+    private onAttempt?: (attempt: SpeechAttempt) => void,
   ) {
     if (!factory) this.snapshot.status = "unsupported";
   }
@@ -92,6 +97,7 @@ export class SpeechSession {
     if (!this.disposed) this.emit(this.snapshot);
   }
   private cancel() {
+    this.draining = false;
     this.generation++;
     clearTimeout(this.restartTimer);
     clearTimeout(this.stableTimer);
@@ -117,7 +123,10 @@ export class SpeechSession {
   setContext(key: string, enabled: boolean) {
     if (this.key === key && this.enabled === enabled) return;
     this.cancel();
-    if (key !== this.key) this.snapshot = blank();
+    if (key !== this.key) {
+      this.snapshot = blank();
+      if (!this.handsFree) this.wanted = false;
+    }
     this.key = key;
     this.enabled = enabled;
     if (!this.factory) {
@@ -127,13 +136,35 @@ export class SpeechSession {
     if (enabled && this.wanted) this.begin();
     else this.update({ status: this.wanted ? "paused" : "idle" });
   }
-  start() {
+  start(handsFree = true) {
     if (this.disposed || !this.enabled || !this.factory) return;
     this.cancel();
+    this.handsFree = handsFree;
     this.wanted = true;
     this.idleSince = Date.now();
     this.silentEnds = 0;
     this.begin();
+  }
+  /** Finish a held utterance without discarding the final recognition result. */
+  release() {
+    this.wanted = false;
+    if (!this.recognition || this.draining) return;
+    this.draining = true;
+    clearTimeout(this.restartTimer);
+    clearTimeout(this.watchdog);
+    this.update({
+      status: "processing",
+      message: "Đã thả phím. Đang nhận nốt kết quả…",
+    });
+    this.watchdog = setTimeout(
+      () => this.pause("Đã kết thúc lượt nói. Giữ Space để thử lại."),
+      3000,
+    );
+    try {
+      this.recognition.stop();
+    } catch {
+      this.pause();
+    }
   }
   pause(message = "Đã tạm dừng micro. Bấm tiếp tục khi sẵn sàng.") {
     this.wanted = false;
@@ -157,9 +188,11 @@ export class SpeechSession {
         ...this.snapshot.history,
       ].slice(0, 6),
     });
+    this.onAttempt?.({ text, alternatives, matched });
   }
   private accept(text: string, alternatives: string[]) {
     this.record(text, alternatives, true);
+    if (!this.handsFree) this.wanted = false;
     this.cancel();
     this.update({ status: "paused", message: "Đã nhận đúng từ." });
     this.onMatch(text);
@@ -171,7 +204,7 @@ export class SpeechSession {
     const live = () =>
       !this.disposed &&
       epoch === this.generation &&
-      this.wanted &&
+      (this.wanted || this.draining) &&
       this.enabled;
     let recognition: RecognitionLike;
     try {
@@ -199,6 +232,7 @@ export class SpeechSession {
     }, 12000);
     recognition.onstart = () => {
       if (!live()) return;
+      if (this.draining) return;
       clearTimeout(this.watchdog);
       this.update({
         status: "listening",
@@ -210,11 +244,11 @@ export class SpeechSession {
       }, 90000);
     };
     recognition.onspeechstart = () => {
-      if (live())
+      if (live() && !this.draining)
         this.update({ status: "hearing", message: "Đã phát hiện giọng nói…" });
     };
     recognition.onspeechend = () => {
-      if (live())
+      if (live() && !this.draining)
         this.update({
           status: "listening",
           message: "Đang đối chiếu. Bạn không cần bấm kết thúc.",
@@ -286,6 +320,10 @@ export class SpeechSession {
     };
     recognition.onend = () => {
       if (!live()) return;
+      if (this.draining) {
+        this.pause("Đã kết thúc lượt nói. Giữ Space để thử lại.");
+        return;
+      }
       clearTimeout(this.watchdog);
       clearTimeout(this.stableTimer);
       this.silentEnds++;

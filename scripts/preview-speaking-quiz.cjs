@@ -4,6 +4,9 @@ const path = require("node:path");
 const { spawn } = require("node:child_process");
 const root = path.resolve(__dirname, "..");
 const route = path.join(root, "src/app/speaking-qa");
+const port = Number(process.env.SPEAKING_PREVIEW_PORT || 3007);
+if (!Number.isInteger(port) || port < 1024 || port > 65535)
+  throw new Error("Invalid preview port");
 if (fs.existsSync(route))
   throw new Error("src/app/speaking-qa already exists; refusing to overwrite.");
 fs.mkdirSync(route);
@@ -11,13 +14,20 @@ fs.copyFileSync(
   path.join(__dirname, "fixtures/speaking-quiz-preview.tsx"),
   path.join(route, "page.tsx"),
 );
-console.log("Synthetic speaking quiz: http://localhost:3007/speaking-qa");
+console.log(`Synthetic speaking quiz: http://localhost:${port}/speaking-qa`);
 console.log(
   "Localhost only. Recognition is mocked; no audio or production Firestore. Ctrl+C to stop.",
 );
 const child = spawn(
   process.execPath,
-  ["node_modules/next/dist/bin/next", "dev", "-p", "3007", "-H", "127.0.0.1"],
+  [
+    "node_modules/next/dist/bin/next",
+    "dev",
+    "-p",
+    String(port),
+    "-H",
+    "127.0.0.1",
+  ],
   {
     cwd: root,
     stdio: "inherit",

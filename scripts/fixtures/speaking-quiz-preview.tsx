@@ -1,6 +1,6 @@
 "use client";
 // Temporary local-only fixture. Removed before production build/commit.
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { QuizView } from "@/components/QuizView";
 import type { RecognitionLike } from "@/lib/speech-session";
 const words = [
@@ -23,10 +23,11 @@ const words = [
   },
   { id: "qa-3", word: "コーヒー", reading: "コーヒー", meaning: "Cà phê" },
 ];
-let current: RecognitionLike | null = null;
 let starts = 0,
   aborts = 0;
 export default function SpeakingQA() {
+  const current = useRef<RecognitionLike | null>(null);
+  const lastSample = useRef<SpeechSynthesisUtterance | null>(null);
   const [ready, setReady] = useState(false);
   const [text, setText] = useState("つよみ");
   const [active, setActive] = useState(true);
@@ -34,6 +35,34 @@ export default function SpeakingQA() {
   const [embedded, setEmbedded] = useState(false);
   const [stats, setStats] = useState("");
   useEffect(() => {
+    const originalUtterance = window.SpeechSynthesisUtterance;
+    Object.defineProperty(window, "SpeechSynthesisUtterance", {
+      configurable: true,
+      value: class {
+        constructor(public text: string) {}
+      },
+    });
+    const originalSynth = Object.getOwnPropertyDescriptor(
+      window,
+      "speechSynthesis",
+    );
+    Object.defineProperty(window, "speechSynthesis", {
+      configurable: true,
+      value: {
+        getVoices: () => [{ lang: "ja-JP" }],
+        addEventListener() {},
+        removeEventListener() {},
+        cancel() {
+          lastSample.current = null;
+        },
+        speak(utterance: SpeechSynthesisUtterance) {
+          lastSample.current = utterance;
+          setStats(
+            `Starts ${starts} / Aborts ${aborts} / Audio ${utterance.text}`,
+          );
+        },
+      },
+    });
     setEmbedded(new URLSearchParams(location.search).has("embedded"));
     class Mock {
       lang = "";
@@ -47,26 +76,38 @@ export default function SpeakingQA() {
       onerror = null;
       onend = null;
       start() {
-        current = this;
+        current.current = this;
         starts++;
         setStats(`Starts ${starts} / Aborts ${aborts}`);
         setTimeout(() => this.onstart?.(), 10);
       }
       abort() {
         aborts++;
-        if (current === this) current = null;
+        if (current.current === this) current.current = null;
         setStats(`Starts ${starts} / Aborts ${aborts}`);
+      }
+      stop() {
+        setStats(`Starts ${starts} / Aborts ${aborts} / Released`);
       }
     }
     Object.assign(window, { SpeechRecognition: Mock });
     setReady(true);
     return () => {
+      Object.defineProperty(window, "SpeechSynthesisUtterance", {
+        configurable: true,
+        value: originalUtterance,
+      });
+      if (originalSynth)
+        Object.defineProperty(window, "speechSynthesis", originalSynth);
+      else
+        delete (window as unknown as { speechSynthesis?: unknown })
+          .speechSynthesis;
       delete (window as unknown as { SpeechRecognition?: unknown })
         .SpeechRecognition;
     };
   }, []);
   const result = (isFinal: boolean) =>
-    current?.onresult?.({
+    current.current?.onresult?.({
       resultIndex: 0,
       results: [{ 0: { transcript: text }, length: 1, isFinal }],
     });
@@ -107,12 +148,25 @@ export default function SpeakingQA() {
             <div className="mt-3 flex flex-wrap gap-3">
               <button onClick={() => result(false)}>Mock interim</button>
               <button onClick={() => result(true)}>Mock final</button>
-              <button onClick={() => current?.onend?.()}>Mock end</button>
-              <button onClick={() => current?.onerror?.({ error: "network" })}>
+              <button onClick={() => current.current?.onend?.()}>
+                Mock end
+              </button>
+              <button
+                onClick={() =>
+                  lastSample.current?.onend?.({} as SpeechSynthesisEvent)
+                }
+              >
+                Mock audio end
+              </button>
+              <button
+                onClick={() => current.current?.onerror?.({ error: "network" })}
+              >
                 Mock network error
               </button>
               <button
-                onClick={() => current?.onerror?.({ error: "not-allowed" })}
+                onClick={() =>
+                  current.current?.onerror?.({ error: "not-allowed" })
+                }
               >
                 Mock denied
               </button>
@@ -121,7 +175,7 @@ export default function SpeakingQA() {
               </button>
               <button
                 onClick={() => {
-                  current?.onresult?.({
+                  current.current?.onresult?.({
                     resultIndex: 0,
                     results: [
                       {
