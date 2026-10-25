@@ -16,6 +16,7 @@ export function browserRecognitionFactory(): (() => RecognitionLike) | null {
   return Constructor
     ? () => {
         const native = new Constructor();
+        native.lang = "ja-JP";
         return supportsProcessedRecognition(navigator.userAgent)
           ? withProcessedMicrophone(native, (signal) =>
               openMicrophone(loadMicrophoneSettings(), signal),

@@ -27,6 +27,7 @@ export function withProcessedMicrophone(
               const track = value.stream.getAudioTracks()[0];
               if (!track || track.readyState !== "live")
                 throw new Error("No live processed audio track");
+              target.lang = "ja-JP";
               target.start(track);
             })
             .catch((error) => {

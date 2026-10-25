@@ -288,6 +288,17 @@ test("recognition receives processed track; release stops hardware and keeps fin
   assert.equal(h.calls.dispose, 1);
   assert.equal(h.calls.ended, 1);
 });
+test("Japanese language is reapplied immediately before processed recognition starts", async () => {
+  const h = adapterHarness();
+  h.proxy.lang = "ja-JP";
+  h.proxy.start();
+  h.native.lang = "vi-VN";
+  h.resolve();
+  await flush();
+  assert.equal(h.native.lang, "ja-JP");
+  assert.equal(h.calls.starts[0], h.track);
+  h.proxy.abort();
+});
 test("recognition cancelled before permission reply cannot start later", async () => {
   const h = adapterHarness();
   h.proxy.start();

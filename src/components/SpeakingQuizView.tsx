@@ -601,6 +601,7 @@ export function SpeakingQuizView({
                 <div className="flex min-h-40 flex-col items-center justify-center py-8 text-center sm:min-h-48">
                   <h2
                     lang={mode === "word" || reveal ? "ja" : "vi"}
+                    translate={mode === "word" || reveal ? "no" : "yes"}
                     className={`max-w-full break-words font-bold leading-snug ${mode === "word" || reveal ? "text-5xl text-amber-600 dark:text-amber-400 sm:text-6xl" : "text-3xl text-slate-800 dark:text-slate-100 sm:text-4xl"}`}
                   >
                     {mode === "word" || reveal
@@ -611,6 +612,7 @@ export function SpeakingQuizView({
                     <div className="mt-4 space-y-2">
                       <p
                         lang="ja"
+                        translate="no"
                         className="text-2xl font-semibold text-emerald-700 dark:text-emerald-300"
                       >
                         {item.reading}
@@ -645,7 +647,11 @@ export function SpeakingQuizView({
                           : "Đã bỏ qua · cùng xem lại đáp án"}
                       </span>
                       {speech.transcript && (
-                        <span lang="ja" className="break-all text-sm">
+                        <span
+                          lang="ja"
+                          translate="no"
+                          className="notranslate break-all text-sm"
+                        >
                           Máy nghe: {speech.transcript}
                         </span>
                       )}
@@ -813,29 +819,48 @@ export function SpeakingQuizView({
                           </p>
                         )}
                         <div className="flex justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-                          <span>Máy đang nhận được</span>
                           <span>
-                            {speech.interim
-                              ? "Kết quả tạm thời"
-                              : speech.attempts
-                                ? `Lượt ${speech.attempts}`
-                                : "Chưa có kết quả"}
+                            Máy đang nhận được
+                            <span className="mt-1 block text-[10px] font-normal">
+                              Ngôn ngữ yêu cầu: Nhật · ja-JP
+                            </span>
+                          </span>
+                          <span>
+                            {speech.languageMismatch
+                              ? "Kết quả ngoài chữ Nhật"
+                              : speech.interim
+                                ? "Kết quả tạm thời"
+                                : speech.attempts
+                                  ? `Lượt ${speech.attempts}`
+                                  : "Chưa có kết quả"}
                           </span>
                         </div>
                         <p
-                          lang="ja"
+                          lang={speech.languageMismatch ? "und" : "ja"}
+                          translate="no"
                           aria-live="polite"
                           aria-atomic="true"
-                          className={`mt-2 min-h-10 break-words text-2xl font-semibold ${speech.transcript ? "text-slate-800 dark:text-slate-100" : "text-slate-400 dark:text-slate-500"}`}
+                          className={`notranslate mt-2 min-h-10 break-words text-2xl font-semibold ${speech.transcript ? "text-slate-800 dark:text-slate-100" : "text-slate-400 dark:text-slate-500"}`}
                         >
                           {speech.transcript || "…"}
                         </p>
-                        {speech.transcript && !speech.interim && (
-                          <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
-                            Chưa khớp toàn bộ từ. Cứ nói lại, bạn không cần bấm
-                            kết thúc.
+                        {speech.languageMismatch && (
+                          <p
+                            role="status"
+                            className="mt-2 text-xs text-amber-700 dark:text-amber-300"
+                          >
+                            Dịch vụ trả kết quả ngoài chữ Nhật; lượt này không
+                            tính là bạn đọc sai. Hãy thử lại khi mic sẵn sàng.
                           </p>
                         )}
+                        {speech.transcript &&
+                          !speech.interim &&
+                          !speech.languageMismatch && (
+                            <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                              Chưa khớp toàn bộ từ. Cứ nói lại, bạn không cần
+                              bấm kết thúc.
+                            </p>
+                          )}
                       </div>
                     </div>
                     <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
@@ -899,6 +924,7 @@ export function SpeakingQuizView({
                               </p>
                               <p
                                 lang="ja"
+                                translate="no"
                                 className="mt-2 break-words text-xl font-bold"
                               >
                                 {row.expected}
@@ -906,7 +932,11 @@ export function SpeakingQuizView({
                               <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
                                 Máy nhận (chuẩn hóa)
                               </p>
-                              <p lang="ja" className="mt-1 break-all text-xl">
+                              <p
+                                lang="ja"
+                                translate="no"
+                                className="notranslate mt-1 break-all text-xl"
+                              >
                                 {row.characters.length
                                   ? row.characters.map((part, i) => (
                                       <span
@@ -942,7 +972,11 @@ export function SpeakingQuizView({
                               key={i}
                               className="border-t border-slate-100 pt-2 dark:border-slate-800"
                             >
-                              <p lang="ja" className="break-all">
+                              <p
+                                lang="ja"
+                                translate="no"
+                                className="notranslate break-all"
+                              >
                                 {attempt.text}
                               </p>
                               {attempt.alternatives.length > 1 && (

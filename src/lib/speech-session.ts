@@ -45,6 +45,7 @@ export interface SpeechSnapshot {
   message: string;
   history: SpeechAttempt[];
   attempts: number;
+  languageMismatch?: boolean;
 }
 const blank = (): SpeechSnapshot => ({
   status: "idle",
@@ -54,6 +55,14 @@ const blank = (): SpeechSnapshot => ({
   history: [],
   attempts: 0,
 });
+
+/** A script check, not a language detector: never infer the intended Japanese word. */
+export function isNonJapaneseTranscript(text: string): boolean {
+  return (
+    !/[\u3040-\u30ff\u3400-\u9fff]/u.test(text) &&
+    /[À-ÖØ-öø-ÿĂăĐđĨĩŨũƠơƯư\u1ea0-\u1ef9]/u.test(text.normalize("NFC"))
+  );
+}
 
 /** Owns one microphone session. All delayed events are fenced by a generation ID. */
 export class SpeechSession {
@@ -73,6 +82,7 @@ export class SpeechSession {
   private pendingMatch: string | null = null;
   private watchdog?: ReturnType<typeof setTimeout>;
   private releaseTimer?: ReturnType<typeof setTimeout>;
+  private languageRetries = 0;
   constructor(
     private factory: (() => RecognitionLike) | null,
     private emit: (state: SpeechSnapshot) => void,
@@ -117,6 +127,7 @@ export class SpeechSession {
     this.cancel();
     if (key !== this.key) {
       this.snapshot = blank();
+      this.languageRetries = 0;
       if (!this.handsFree) this.wanted = false;
     }
     this.key = key;
@@ -131,6 +142,7 @@ export class SpeechSession {
   start(handsFree = true) {
     if (this.disposed || !this.enabled || !this.factory) return;
     this.cancel();
+    this.languageRetries = 0;
     this.handsFree = handsFree;
     this.wanted = true;
     this.idleSince = Date.now();
@@ -140,7 +152,11 @@ export class SpeechSession {
   /** Finish a held utterance without discarding the final recognition result. */
   release() {
     this.wanted = false;
-    if (!this.recognition || this.draining) return;
+    if (!this.recognition) {
+      this.pause("Đã kết thúc lượt nói. Giữ Space để thử lại.");
+      return;
+    }
+    if (this.draining) return;
     this.draining = true;
     clearTimeout(this.restartTimer);
     clearTimeout(this.watchdog);
@@ -274,7 +290,35 @@ export class SpeechSession {
           continue;
         }
         const match = this.evaluate(alternatives);
-        this.update({ transcript: match || text, interim: !result.isFinal });
+        if (
+          !match &&
+          result.isFinal &&
+          isNonJapaneseTranscript(text) &&
+          !alternatives.some((value) =>
+            /[\u3040-\u30ff\u3400-\u9fff]/u.test(value),
+          )
+        ) {
+          const resume = this.wanted && this.languageRetries < 1;
+          this.languageRetries++;
+          this.cancel();
+          this.update({
+            transcript: text,
+            interim: false,
+            languageMismatch: true,
+            status: resume ? "reconnecting" : "paused",
+            message: resume
+              ? "Dịch vụ trả kết quả ngoài chữ Nhật. Đang mở lại phiên ja-JP…"
+              : "Dịch vụ chưa nhận đúng ngôn ngữ. Bấm tiếp tục hoặc giữ Space để thử lại tiếng Nhật.",
+          });
+          if (resume) this.restartTimer = setTimeout(() => this.begin(), 400);
+          else this.wanted = false;
+          return;
+        }
+        this.update({
+          transcript: match || text,
+          interim: !result.isFinal,
+          languageMismatch: false,
+        });
         if (match) {
           if (result.isFinal) this.accept(match, alternatives);
           else if (this.pendingMatch !== match) {
@@ -350,6 +394,7 @@ export class SpeechSession {
       }, 400);
     };
     try {
+      recognition.lang = "ja-JP";
       recognition.start();
     } catch {
       this.fail("Không mở được phiên nghe. Chờ một chút rồi bấm thử lại.");

@@ -390,6 +390,67 @@ test("short speech tail timer is cancelled when changing questions", () => {
   assert.equal(r.aborted, true);
   h.session.dispose();
 });
+test("Vietnamese result resets Japanese once without counting a wrong answer", () => {
+  const h = harness();
+  h.session.start();
+  let r = h.current();
+  r.onstart();
+  h.result(r, ["Cái số cũ", "kaiso"]);
+  assert.equal(h.state().languageMismatch, true);
+  assert.equal(h.state().attempts, 0);
+  assert.equal(h.passed.length, 0);
+  h.advance(400);
+  r = h.current();
+  assert.equal(r.lang, "ja-JP");
+  r.onstart();
+  h.result(r, ["つよみ"]);
+  assert.equal(h.passed.length, 1);
+  assert.equal(h.state().languageMismatch, false);
+  h.session.dispose();
+});
+test("Vietnamese result after releasing Space never reopens the mic", () => {
+  const h = harness();
+  h.session.start(false);
+  const r = h.current();
+  r.onstart();
+  h.session.release();
+  h.result(r, ["Cái số cũ"]);
+  h.advance(1000);
+  assert.equal(h.instances.length, 1);
+  assert.equal(h.state().status, "paused");
+  assert.equal(h.state().attempts, 0);
+  h.session.dispose();
+});
+test("Vietnamese retry pending is cancelled immediately when Space is released", () => {
+  const h = harness();
+  h.session.start(false);
+  h.current().onstart();
+  h.result(h.current(), ["Cái số cũ"]);
+  h.session.release();
+  h.advance(1000);
+  assert.equal(h.instances.length, 1);
+  assert.equal(h.state().status, "paused");
+  h.session.dispose();
+});
+test("Vietnamese recovery is bounded and a Japanese alternate is still accepted", () => {
+  const h = harness();
+  h.session.start();
+  h.current().onstart();
+  h.result(h.current(), ["Cái số cũ"]);
+  h.advance(400);
+  h.current().onstart();
+  h.result(h.current(), ["Cái số cũ"]);
+  h.advance(1000);
+  assert.equal(h.instances.length, 2);
+  assert.equal(h.state().status, "paused");
+  h.session.dispose();
+  const valid = harness();
+  valid.session.start();
+  valid.current().onstart();
+  valid.result(valid.current(), ["Cái số cũ", "強み"]);
+  assert.equal(valid.passed.length, 1);
+  valid.session.dispose();
+});
 test("released wrong answer never restarts; holding can start another attempt", () => {
   const h = harness();
   h.session.start(false);
