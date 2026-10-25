@@ -18,6 +18,7 @@ import {
   Minimize,
   Info,
   ChevronDown,
+  Settings2,
 } from "lucide-react";
 import { StudyScopeSelector, VocabularyData } from "./StudyScopeSelector";
 import { MeaningText, parseMeaning } from "./MeaningText";
@@ -33,6 +34,7 @@ import { bindSpeakingShortcuts } from "@/lib/speaking-shortcuts";
 import { playSpeakingSample } from "@/lib/speaking-sample";
 import { getWebVolume } from "@/lib/tts-utils";
 import { audioFX } from "@/lib/audio-fx";
+import { MicrophoneSettingsModal } from "./MicrophoneSettingsModal";
 
 type PromptMode = "word" | "meaning";
 type Outcome = "correct" | "skipped" | null;
@@ -91,6 +93,7 @@ export function SpeakingQuizView({
   const [fullscreen, setFullscreen] = useState(false);
   const [visible, setVisible] = useState(true);
   const [sampleMessage, setSampleMessage] = useState("");
+  const [showMicrophoneSettings, setShowMicrophoneSettings] = useState(false);
   const [audioBusy, setAudioBusy] = useState(false);
   const cancelSample = useRef<(() => void) | null>(null);
   const resumeAfterRetry = useRef(false);
@@ -207,6 +210,16 @@ export function SpeakingQuizView({
     onFullscreenChange?.(fullscreen);
   }, [fullscreen, onFullscreenChange]);
   useEffect(() => () => onFullscreenChange?.(false), [onFullscreenChange]);
+  useEffect(() => {
+    const stopOutput = () => {
+      cancelSample.current?.();
+      setAudioBusy(false);
+      if (typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
+    };
+    window.addEventListener("kotobase_microphone_test_opened", stopOutput);
+    return () =>
+      window.removeEventListener("kotobase_microphone_test_opened", stopOutput);
+  }, []);
   useEffect(() => {
     if (!visible) {
       cancelSample.current?.();
@@ -367,6 +380,11 @@ export function SpeakingQuizView({
       }
     >
       <div className="mx-auto max-w-4xl space-y-4 text-slate-800 dark:text-slate-100">
+        {showMicrophoneSettings && (
+          <MicrophoneSettingsModal
+            onClose={() => setShowMicrophoneSettings(false)}
+          />
+        )}
         {!fullscreen && (
           <StudyScopeSelector
             allVocabularies={vocabularies}
@@ -401,6 +419,15 @@ export function SpeakingQuizView({
               ))}
             </div>
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className={`${secondary} p-2.5`}
+                aria-label="Cài đặt và kiểm tra micro"
+                title="Cài đặt và kiểm tra micro"
+                onClick={() => setShowMicrophoneSettings(true)}
+              >
+                <Settings2 size={16} />
+              </button>
               <button
                 type="button"
                 className={`${secondary} p-2.5`}

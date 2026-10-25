@@ -10,6 +10,7 @@ import { OverviewView } from "./OverviewView";
 import { FolderTree } from "./FolderTree";
 import { AnkiSettingsModal } from "./AnkiSettingsModal";
 import { TTSSettingsModal } from "./TTSSettingsModal";
+import { MicrophoneSettingsModal } from './MicrophoneSettingsModal';
 import { GeminiSettingsModal } from "./GeminiSettingsModal";
 import { BgSettingsModal } from "./BgSettingsModal";
 import { useCustomBg } from "@/hooks/useCustomBg";
@@ -231,6 +232,14 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showTTSSettingsModal, setShowTTSSettingsModal] = useState(false);
+  const [showMicrophoneSettingsModal, setShowMicrophoneSettingsModal] = useState(false);
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('settings') === 'microphone') {
+      setShowMicrophoneSettingsModal(true); url.searchParams.delete('settings');
+      window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    }
+  }, []);
   const [showGeminiSettingsModal, setShowGeminiSettingsModal] = useState(false);
   const [showBgSettingsModal, setShowBgSettingsModal] = useState(false);
   const customBg = useCustomBg();
@@ -973,6 +982,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                       <Volume2 className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                       Cài đặt Âm thanh
                     </button>
+                    <button onClick={() => { setShowSettingsDropdown(false); setShowMicrophoneSettingsModal(true); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-left border-b border-slate-100 dark:border-slate-800"><Headphones className="w-4 h-4 text-emerald-500" />Micro & luyện nói · Test mic</button>
                     <button 
                       onClick={() => {
                         setShowSettingsDropdown(false);
@@ -1807,6 +1817,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
       )}
 
       {/* Modal Cài đặt Phát âm (TTS) */}
+      {showMicrophoneSettingsModal && <MicrophoneSettingsModal onClose={() => setShowMicrophoneSettingsModal(false)} />}
       {showTTSSettingsModal && (
         <TTSSettingsModal onClose={() => setShowTTSSettingsModal(false)} />
       )}

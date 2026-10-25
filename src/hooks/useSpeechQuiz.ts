@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  browserRecognitionFactory,
   SpeechSession,
   SpeechSnapshot,
   SpeechAttempt,
 } from "@/lib/speech-session";
+import { browserRecognitionFactory } from "@/lib/speech-browser";
 
 export function useSpeechQuiz(options: {
   questionKey: string;
@@ -55,6 +55,18 @@ export function useSpeechQuiz(options: {
     const pagehide = () => controller.pause("Đã rời trang.");
     const offline = () =>
       controller.pause("Bạn đang mất mạng. Kết nối lại rồi bấm tiếp tục.");
+    const microphoneSettings = () =>
+      controller.pause(
+        "Đã dừng mic Quiz để kiểm tra hoặc đổi cài đặt. Bấm tiếp tục khi sẵn sàng.",
+      );
+    window.addEventListener(
+      "kotobase_microphone_test_opened",
+      microphoneSettings,
+    );
+    window.addEventListener(
+      "kotobase_microphone_settings_changed",
+      microphoneSettings,
+    );
     document.addEventListener("visibilitychange", hide);
     window.addEventListener("offline", offline);
     window.addEventListener("pagehide", pagehide);
@@ -63,6 +75,14 @@ export function useSpeechQuiz(options: {
       session.current = null;
       document.removeEventListener("visibilitychange", hide);
       window.removeEventListener("offline", offline);
+      window.removeEventListener(
+        "kotobase_microphone_test_opened",
+        microphoneSettings,
+      );
+      window.removeEventListener(
+        "kotobase_microphone_settings_changed",
+        microphoneSettings,
+      );
       window.removeEventListener("pagehide", pagehide);
     };
   }, []);

@@ -19,7 +19,7 @@ export interface RecognitionLike {
     | null;
   onerror: ((event: { error: string }) => void) | null;
   onend: (() => void) | null;
-  start(): void;
+  start(audioTrack?: MediaStreamTrack): void;
   stop(): void;
   abort(): void;
 }
@@ -54,16 +54,6 @@ const blank = (): SpeechSnapshot => ({
   history: [],
   attempts: 0,
 });
-
-export function browserRecognitionFactory(): (() => RecognitionLike) | null {
-  if (typeof window === "undefined") return null;
-  const host = window as unknown as {
-    SpeechRecognition?: new () => RecognitionLike;
-    webkitSpeechRecognition?: new () => RecognitionLike;
-  };
-  const Constructor = host.SpeechRecognition || host.webkitSpeechRecognition;
-  return Constructor ? () => new Constructor() : null;
-}
 
 /** Owns one microphone session. All delayed events are fenced by a generation ID. */
 export class SpeechSession {
@@ -307,6 +297,10 @@ export class SpeechSession {
           "Trình duyệt chưa cho phép dịch vụ nhận giọng nói. Hãy thử Chrome.",
         "audio-capture":
           "Không tìm thấy micro khả dụng. Kiểm tra kết nối và micro mặc định của thiết bị.",
+        "device-unavailable":
+          "Micro đã chọn không còn khả dụng. Mở Cài đặt micro và chọn Thiết bị mặc định.",
+        "processed-audio":
+          "Không mở được luồng mic đã xử lý. Kiểm tra micro trong Cài đặt; thử Chrome/Edge máy tính mới nhất.",
         network:
           "Dịch vụ nhận giọng nói không kết nối được. Kiểm tra mạng rồi bấm thử lại.",
         "language-not-supported":

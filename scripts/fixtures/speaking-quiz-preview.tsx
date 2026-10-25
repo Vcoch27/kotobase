@@ -28,6 +28,7 @@ let starts = 0,
 export default function SpeakingQA() {
   const current = useRef<RecognitionLike | null>(null);
   const lastSample = useRef<SpeechSynthesisUtterance | null>(null);
+  const denyMic = useRef(false);
   const [ready, setReady] = useState(false);
   const [text, setText] = useState("つよみ");
   const [active, setActive] = useState(true);
@@ -35,6 +36,65 @@ export default function SpeakingQA() {
   const [embedded, setEmbedded] = useState(false);
   const [stats, setStats] = useState("");
   useEffect(() => {
+    const originalMedia = Object.getOwnPropertyDescriptor(
+      navigator,
+      "mediaDevices",
+    );
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        getSupportedConstraints: () => ({
+          noiseSuppression: true,
+          echoCancellation: true,
+          autoGainControl: true,
+        }),
+        enumerateDevices: async () => [
+          {
+            kind: "audioinput",
+            deviceId: "qa-mic",
+            label: "Micro mô phỏng (không thu âm thật)",
+          },
+          { kind: "audiooutput", deviceId: "default", label: "Loa mặc định" },
+        ],
+        addEventListener() {},
+        removeEventListener() {},
+        getUserMedia: async (constraints: MediaStreamConstraints) => {
+          if (denyMic.current) {
+            denyMic.current = false;
+            throw new DOMException("QA denied", "NotAllowedError");
+          }
+          const context = new AudioContext();
+          await context.resume();
+          const oscillator = context.createOscillator();
+          oscillator.frequency.value = 220;
+          const gain = context.createGain();
+          gain.gain.value = 0.16;
+          const output = context.createMediaStreamDestination();
+          oscillator.connect(gain);
+          gain.connect(output);
+          oscillator.start();
+          const track = output.stream.getAudioTracks()[0];
+          const stop = track.stop.bind(track);
+          let stopped = false;
+          track.stop = () => {
+            if (stopped) return;
+            stopped = true;
+            stop();
+            oscillator.stop();
+            void context.close();
+          };
+          const requested = constraints.audio as MediaTrackConstraints;
+          track.getSettings = () => ({
+            noiseSuppression:
+              (requested.noiseSuppression as ConstrainBooleanParameters)
+                ?.ideal === true,
+            echoCancellation: true,
+            autoGainControl: true,
+          });
+          return output.stream;
+        },
+      },
+    });
     const originalUtterance = window.SpeechSynthesisUtterance;
     Object.defineProperty(window, "SpeechSynthesisUtterance", {
       configurable: true,
@@ -93,6 +153,11 @@ export default function SpeakingQA() {
     Object.assign(window, { SpeechRecognition: Mock });
     setReady(true);
     return () => {
+      if (originalMedia)
+        Object.defineProperty(navigator, "mediaDevices", originalMedia);
+      else
+        delete (navigator as unknown as { mediaDevices?: unknown })
+          .mediaDevices;
       Object.defineProperty(window, "SpeechSynthesisUtterance", {
         configurable: true,
         value: originalUtterance,
@@ -172,6 +237,14 @@ export default function SpeakingQA() {
               </button>
               <button onClick={() => setActive((v) => !v)}>
                 Toggle active
+              </button>
+              <button
+                onClick={() => {
+                  denyMic.current = true;
+                  setStats("Lượt mở micro tiếp theo sẽ bị từ chối (mô phỏng)");
+                }}
+              >
+                Mock deny capture
               </button>
               <button
                 onClick={() => {
