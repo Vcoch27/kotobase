@@ -3,7 +3,7 @@
 ## Sự cố đã xác minh ngày 25/10/2026
 
 - Query Insights: toàn bộ `vocabularies` có 2.948 tài liệu, chạy 14 lần, tốn 41.298 document reads.
-- Cloud Monitoring: 50.746 reads trong kỳ bắt đầu `2026-10-24T07:00:00Z`. Metrics có độ trễ, không phải cam kết số dư tức thời.
+- Truy vấn Monitoring ban đầu trả 50.746 khi align theo 86.400 giây. Khi triển khai phát hiện bucket này có thể vượt ranh kỳ quota Pacific, nên không dùng nó làm số dư quota chính xác. Cần lấy mẫu gốc hoặc align 60 giây và kiểm tra interval. Metrics vẫn có độ trễ.
 - Bản trước bắt cả `getFolders()` và mở một thư mục phải tải toàn bộ collection, rồi mới lọc trong RAM. Cùng lúc, các thao tác ghi invalidated cache chung.
 - Next.js 14.2.8 đang cài giới hạn Data Cache entry 2 MiB. Gom toàn bộ bản ghi có `example`/`note` vào một cache tạo thêm rủi ro không lưu được cache; chưa có log production xác nhận đây là nguyên nhân thực tế.
 - Firebase CLI 15.30.1, project `kotobase-42cdc`, `(default)`, `FIRESTORE_NATIVE`, `STANDARD`, `asia-southeast1`, `freeTier: true`.
@@ -75,14 +75,14 @@ Production đã hết quota khi kiểm tra. Không chạy preview rồi apply li
 3. Khi quota đã hồi phục và còn ít nhất 3.500 reads, chạy đúng **một lần**:
 
 ```powershell
-npm run vocabulary:index -- --apply --max-reads=3500
+node scripts/build-vocabulary-index.cjs --apply --max-reads=3500
 ```
 
 Script chỉ chọn các trường summary, giới hạn ngân sách, giữ nguyên tài liệu gốc, ghi đè đủ 32 shard và đặt manifest ready trong cùng transaction. `maxAttempts: 1` tránh retry tự động một lần quét hàng nghìn tài liệu. Nếu chạm budget hoặc shard quá lớn, transaction abort, không ghi dở chỉ mục. Khi script lỗi không tự động chạy lại; kiểm tra quota/lỗi trước.
 
 Không chạy apply từ bản code cũ khi website vẫn còn writer chưa cập nhật. Nếu cần dựng sẵn trước deploy, phải dừng thao tác ghi trong suốt bootstrap và đổi phiên bản.
 
-4. Kiểm tra `npm run vocabulary:index -- --status` (1 read), mở `debug/1`, `debug/2`, `debug`, gốc; unique `強み` ở cha/gốc bằng 1, ưu tiên bản mới nhất. Manifest chưa ready không được cache thành công, nên bootstrap mới có hiệu lực mà không chờ một giờ. Rebuild một catalog đã ready cần deploy/revalidate để xóa cache shard cũ.
+4. Kiểm tra `node scripts/build-vocabulary-index.cjs --status` (1 read), mở `debug/1`, `debug/2`, `debug`, gốc nếu dữ liệu thử còn tồn tại; unique `強み` ở cha/gốc bằng 1, ưu tiên bản mới nhất. Manifest chưa ready không được cache thành công, nên bootstrap mới có hiệu lực mà không chờ một giờ. Rebuild một catalog đã ready cần deploy/revalidate để xóa cache shard cũ. Dùng lệnh `node` trực tiếp trên PowerShell để tránh wrapper npm bỏ mất các flag của script.
 5. Theo dõi Query Insights: browsing không còn query toàn `vocabularies`; chỉ còn document GET cho trang đang xem và shard nhỏ. Không bật preload tất cả trang chạy nền.
 
 ## Kiểm thử
@@ -98,3 +98,13 @@ npx tsc --noEmit --incremental false
 Emulator luôn dùng project `demo-kotobase`; integration test từ chối chạy nếu không có `FIRESTORE_EMULATOR_HOST`. Bao phủ copy/move/delete/import >400, atomicity, latest winner, giữ bản gốc, giới hạn trang, tìm kiếm ngoài trang đầu, bootstrap và abort khi hết budget. Giao diện đã kiểm tra trên 92 bản ghi giả: gốc/cha 91 từ unique, tải 40 → 80, tìm được từ thứ 91, chế độ học tải đủ 91/91.
 
 Nguồn nền tảng: [Firestore quotas](https://firebase.google.com/docs/firestore/quotas), [write-time aggregation](https://firebase.google.com/docs/firestore/solutions/aggregation), [pagination](https://firebase.google.com/docs/firestore/query-data/query-cursors).
+
+## Kết quả triển khai production, 25/10/2026
+
+- Commit logic `bf59a55` đã push main; Vercel production Ready, Functions ở `sin1`, alias `kotobase.vanhoang.online`.
+- Monitoring align 60 giây trong cửa sổ từ `2026-10-25T07:00:00Z` ghi nhận khoảng 3.068 reads trước bootstrap, còn đủ ngân sách. Truy vấn align 24 giờ trước đó trả 44.194 đã bị loại khỏi kết luận vì lẫn bucket cũ.
+- Bootstrap chạy đúng một lần lúc `2026-10-25T07:47:38.783Z`: 2.960 tài liệu gốc, ước tính 2.961 reads, 32 shard + 1 manifest, shard lớn nhất 32.976 byte, **0 canonical writes**.
+- Đã đọc lại manifest ready/version1 và 32 shard: đủ 2.960 entries. Góc nhìn toàn dữ liệu trước lọc quyền có 2.289 từ unique; giao diện khách chỉ hiển thị 1.918 từ công khai hợp quyền.
+- Trên website thật: gốc tải 40/1.918 rồi 80/1.918; tìm kiếm `幸せな` trả về đúng một dòng; cha Mimikara N3 tải 40/876; Unit 3 tải trang đầu40 rồi chuyển ôn tập được đủ52/52; tải offline báo hoàn tất.
+- Thư mục `debug` và từ thử `強み` không còn trong dữ liệu production lúc kiểm tra. Không tự tạo lại hoặc sửa dữ liệu người dùng. Regression cho case này, latest winner, copy/move/delete và giữ bản riêng đã qua trên emulator.
+- Không đọc lại toàn bộ collection để xác minh sau bootstrap. Kiểm tra dùng catalog, metadata thư mục và một truy vấn chính xác theo từ hiện có.
