@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test:vocabulary": "node --test scripts/test-vocabulary-view.cjs",
+    "test:speaking": "node --test scripts/test-speaking-quiz.cjs",
     "test:vocabulary:emulator": "firebase emulators:exec --only firestore --project demo-kotobase \"node --test scripts/test-vocabulary-index-emulator.cjs\"",
     "vocabulary:index": "node scripts/build-vocabulary-index.cjs",
     "backup": "node scripts/run-backup.js",

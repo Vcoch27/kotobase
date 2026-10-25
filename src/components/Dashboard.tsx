@@ -46,7 +46,7 @@ import { loginWithGoogle } from "@/app/actions/auth";
 
 import { FocusRecallView } from "./FocusRecallView";
 import { FlashcardView } from "./FlashcardView";
-import { TypingQuizView } from "./TypingQuizView";
+import { QuizView } from "./QuizView";
 import { NotificationBell } from "./NotificationBell";
 
 interface UserInfo {
@@ -1431,7 +1431,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
               <div className="flex items-center gap-2">
                 <WifiOff className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                 <span>
-                  <strong>Chế độ Ngoại tuyến (Offline):</strong> Đang sử dữ liệu được lưu trực tiếp trên bộ nhớ thiết bị. Flashcard và Quiz vẫn hoạt động 100%!
+                  <strong>Chế độ Ngoại tuyến (Offline):</strong> Đang sử dụng dữ liệu được lưu trên thiết bị. Flashcard và Quiz gõ phím vẫn hoạt động; luyện nói cần kết nối mạng và trình duyệt hỗ trợ.
                 </span>
               </div>
               <button
@@ -1449,7 +1449,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
               { id: "overview",  icon: <LayoutGrid className="w-3.5 h-3.5" />,   label: "Tổng quan",        color: "text-amber-500" },
               { id: "focus",     icon: <Eye className="w-3.5 h-3.5" />,          label: "Ôn tập",           color: "text-indigo-500" },
               { id: "flashcard", icon: <Layers className="w-3.5 h-3.5" />,       label: "Flashcard",        color: "text-emerald-500" },
-              { id: "quiz",      icon: <BrainCircuit className="w-3.5 h-3.5" />, label: "Quiz (Gõ phím)",   color: "text-purple-500" },
+              { id: "quiz",      icon: <BrainCircuit className="w-3.5 h-3.5" />, label: "Quiz (Gõ / Nói)",   color: "text-purple-500" },
             ] as const;
 
             return (
@@ -1504,7 +1504,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     {viewMode === "overview" && "Quản lý & Danh sách tổng quan"}
                     {viewMode === "focus" && "Ôn tập che đáp án (Active Recall)"}
                     {viewMode === "flashcard" && "Flashcard lặp lại ngắt quãng (SRS)"}
-                    {viewMode === "quiz" && "Kiểm tra gõ phím tiếng Nhật"}
+                    {viewMode === "quiz" && "Luyện phản xạ tiếng Nhật: gõ phím hoặc nói"}
                   </span>
                 </div>
               </div>
@@ -1578,7 +1578,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 </div>
                 <div className={viewMode === "quiz" ? "block" : "hidden"}>
                   {isGoogleUser ? (
-                    <TypingQuizView 
+                    <QuizView
                       vocabularies={filteredVocabularies}
                       selectedVocabIds={selectedVocabIds}
                       isActive={viewMode === "quiz"}
@@ -1593,7 +1593,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                         Chế độ Quiz yêu cầu Đăng nhập
                       </h3>
                       <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-sm leading-relaxed">
-                        Vui lòng đăng nhập tài khoản Google để tham gia luyện phản xạ gõ phím, lưu điểm số và đồng bộ tiến độ học tập của bạn.
+                        Vui lòng đăng nhập tài khoản Google để luyện phản xạ tiếng Nhật bằng gõ phím hoặc giọng nói.
                       </p>
                       <div className="flex flex-col sm:flex-row items-center gap-3 w-full justify-center">
                         <button
