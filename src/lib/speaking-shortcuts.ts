@@ -2,6 +2,8 @@ interface ShortcutActions {
   canSpeak(): boolean;
   canSkip(): boolean;
   canAdvance(): boolean;
+  canSample(): boolean;
+  sample(): void;
   startHeld(): void;
   releaseHeld(): void;
   skip(): void;
@@ -37,6 +39,12 @@ export function bindSpeakingShortcuts(
       if (!held && !event.repeat) {
         held = true;
         actions.startHeld();
+      }
+    } else if ((event.code === "Backquote" || event.key === "`") && !event.shiftKey && actions.canSample()) {
+      event.preventDefault();
+      if (!event.repeat) {
+        release();
+        actions.sample();
       }
     } else if (event.key === "Tab" && !event.shiftKey && actions.canSkip()) {
       event.preventDefault();

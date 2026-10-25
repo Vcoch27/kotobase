@@ -537,6 +537,8 @@ function shortcutHarness() {
     canSpeak: () => canSpeak,
     canSkip: () => canSkip,
     canAdvance: () => !canSkip,
+    canSample: () => true,
+    sample: () => calls.push("sample"),
     startHeld: () => calls.push("start"),
     releaseHeld: () => calls.push("release"),
     skip: () => calls.push("skip"),
@@ -575,6 +577,64 @@ test("Space hold starts once, autorepeat does not restart, keyup releases even f
   assert.deepEqual(h.calls, ["start", "release"]);
   h.cleanup();
   assert.equal(h.callbacks.size, 0);
+});
+test("Backquote plays sample before/after answer, releases held mic and ignores repeats/inputs/modifiers", () => {
+  const h = shortcutHarness();
+  const key = { key: "`", code: "Backquote" };
+  h.event("keydown");
+  h.event("keydown", key);
+  h.event("keydown", { ...key, repeat: true });
+  h.event("keydown", { ...key, target: { closest: () => true } });
+  h.event("keydown", { ...key, ctrlKey: true });
+  h.event("keydown", { ...key, shiftKey: true });
+  assert.deepEqual(h.calls, ["start", "release", "sample"]);
+  h.resolve();
+  h.event("keydown", key);
+  assert.equal(h.calls.at(-1), "sample");
+  assert.equal(h.calls.length, 4);
+  h.cleanup();
+});
+
+test("homophones accept exact shared reading with paired dictionary entries, not similar Kanji", () => {
+  const target = { word: "明ける", reading: "あける" };
+  const words = match.homophonesFromDictionary(target, [
+    { japanese: [{ word: "開ける", reading: "あける" }, { word: "開く", reading: "ひらく" }] },
+    { japanese: [{ word: "空ける", reading: "アケル" }] },
+    { japanese: [{ word: "明るい", reading: "あかるい" }] },
+    { japanese: [{ word: "誤り" }] },
+    null,
+  ]);
+  assert.equal(match.matchSpokenAnswer(["開ける"], target, words), "開ける");
+  assert.equal(match.matchSpokenAnswer(["空ける。"], target, words), "空ける。");
+  for (const wrong of ["開く", "明るい", "誤り", "開け", "開けるです"])
+    assert.equal(match.matchSpokenAnswer([wrong], target, words), null);
+  assert.equal(match.compareSpokenVocabulary("開ける", target, words)[1].exact, true);
+  assert.equal(match.compareSpokenVocabulary("開ける", target, words)[0].exact, false);
+  assert.deepEqual(Array.from(match.homophonesFromDictionary(target, {})), []);
+});
+
+test("homophones lookup shares cached reading requests and fails closed without Firestore", async () => {
+  let requests = 0;
+  const resolver = load("src/lib/speaking-match.ts", {
+    AbortController, setTimeout, clearTimeout,
+    fetch: async (url) => {
+      requests++;
+      assert.equal(url.startsWith("/api/jisho?keyword="), true);
+      return { ok: true, json: async () => ({ data: [{ japanese: [{ word: "開ける", reading: "あける" }] }] }) };
+    },
+  });
+  const results = await Promise.all([
+    resolver.loadSpokenHomophones({ word: "明ける", reading: "あける" }),
+    resolver.loadSpokenHomophones({ word: "空ける", reading: "あける" }),
+  ]);
+  assert.equal(requests, 1);
+  assert.equal(results[0][0], "開ける");
+  assert.equal(results[1][0], "開ける");
+  const failed = load("src/lib/speaking-match.ts", {
+    AbortController, setTimeout, clearTimeout,
+    fetch: async () => { throw Error("offline"); },
+  });
+  assert.equal((await failed.loadSpokenHomophones({ word: "明ける", reading: "あける" })).length, 0);
 });
 test("Tab skips with no repeat; Shift+Tab and text inputs keep native navigation", () => {
   const h = shortcutHarness();

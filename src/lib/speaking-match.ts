@@ -30,13 +30,71 @@ export function spokenAnswers(vocab: SpokenVocabulary): string[] {
 export function matchSpokenAnswer(
   alternatives: string[],
   vocab: SpokenVocabulary,
+  homophones: string[] = [],
 ): string | null {
-  const answers = spokenAnswers(vocab);
+  const answers = [...spokenAnswers(vocab), ...homophones.map(normalizeSpokenJapanese)];
   return (
     alternatives.find((text) =>
       answers.includes(normalizeSpokenAttempt(text, vocab)),
     ) ?? null
   );
+}
+
+/** Only paired, exact kana readings establish equivalence; never fuzzy Kanji. */
+export function homophonesFromVocabulary(
+  vocab: SpokenVocabulary,
+  candidates: SpokenVocabulary[],
+): string[] {
+  const readings = spokenAnswers({ word: "", reading: vocab.reading || vocab.word })
+    .filter((value) => /^[ぁ-ゖー]+$/.test(value));
+  return Array.from(new Set(candidates.filter((candidate) =>
+    spokenAnswers({ word: "", reading: candidate.reading })
+      .some((reading) => readings.includes(reading)),
+  ).map((candidate) => candidate.word).filter(Boolean)));
+}
+
+export function homophonesFromDictionary(vocab: SpokenVocabulary, data: unknown): string[] {
+  if (!Array.isArray(data)) return [];
+  const candidates: SpokenVocabulary[] = [];
+  for (const entry of data) {
+    if (!Array.isArray(entry?.japanese)) continue;
+    for (const pair of entry.japanese) {
+      if (typeof pair?.word === "string" && typeof pair?.reading === "string")
+        candidates.push({ word: pair.word, reading: pair.reading });
+    }
+  }
+  return homophonesFromVocabulary(vocab, candidates);
+}
+
+const readingCache = new Map<string, Promise<unknown>>();
+/** Reuse the app's cached dictionary route; no vocabulary/Firestore queries. */
+export async function loadSpokenHomophones(vocab: SpokenVocabulary): Promise<string[]> {
+  const readings = spokenAnswers({ word: "", reading: vocab.reading || vocab.word })
+    .filter((value) => /^[ぁ-ゖー]+$/.test(value)).slice(0, 4);
+  const responses = await Promise.all(readings.map((reading) => {
+    let pending = readingCache.get(reading);
+    if (!pending) {
+      pending = (async () => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 5000);
+        try {
+          const response = await fetch(`/api/jisho?keyword=${encodeURIComponent(reading)}`, {
+            signal: controller.signal,
+          });
+          if (!response.ok) return [];
+          return (await response.json()).data;
+        } catch {
+          return [];
+        } finally {
+          clearTimeout(timer);
+        }
+      })();
+      if (readingCache.size >= 128) readingCache.delete(readingCache.keys().next().value!);
+      readingCache.set(reading, pending);
+    }
+    return pending;
+  }));
+  return homophonesFromDictionary(vocab, responses.flatMap((data) => Array.isArray(data) ? data : []));
 }
 
 export function isShortSpokenVocabulary(vocab: SpokenVocabulary): boolean {
@@ -59,33 +117,27 @@ function normalizeSpokenAttempt(text: string, vocab: SpokenVocabulary): string {
 export function compareSpokenVocabulary(
   actual: string,
   vocab: SpokenVocabulary,
+  homophones: string[] = [],
 ) {
   return [
     { label: "Từ vựng", expected: vocab.word },
     { label: "Cách đọc", expected: vocab.reading || vocab.word },
-  ].map((row) => ({
-    ...row,
-    exact:
-      !!normalizeSpokenAttempt(actual, vocab) &&
-      (row.label === "Cách đọc"
-        ? row.expected.split(/[/／;；、\n]+/)
-        : [row.expected]
-      ).some(
-        (value) =>
-          normalizeSpokenJapanese(value) ===
-          normalizeSpokenAttempt(actual, vocab),
-      ),
-    characters: compareSpokenText(
-      normalizeSpokenAttempt(actual, vocab),
-      row.expected
-        .split(/[/／;；、\n]+/)
-        .find(
-          (value) =>
-            normalizeSpokenJapanese(value) ===
-            normalizeSpokenAttempt(actual, vocab),
-        ) || row.expected.split(/[/／;；、\n]+/)[0],
-    ),
-  }));
+  ].map((row) => {
+    const normalized = normalizeSpokenAttempt(actual, vocab);
+    const expected = row.label === "Cách đọc"
+      ? row.expected.split(/[/／;；、\n]+/) : [row.expected];
+    const literalMatch = expected.some((value) => normalizeSpokenJapanese(value) === normalized);
+    const phoneticMatch = row.label === "Cách đọc" && !literalMatch &&
+      homophones.some((word) => normalizeSpokenJapanese(word) === normalized);
+    return {
+      ...row,
+      exact: !!normalized && (literalMatch || phoneticMatch),
+      phoneticMatch,
+      characters: compareSpokenText(normalized,
+        expected.find((value) => normalizeSpokenJapanese(value) === normalized) || expected[0],
+      ).map((part) => phoneticMatch ? { ...part, matched: true } : part),
+    };
+  });
 }
 
 export function addReviewWord<T extends { id: string }>(

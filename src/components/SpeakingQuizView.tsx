@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Mic,
   MicOff,
@@ -30,6 +30,8 @@ import {
   compareSpokenVocabulary,
   addReviewWord,
   isShortSpokenVocabulary,
+  homophonesFromVocabulary,
+  loadSpokenHomophones,
 } from "@/lib/speaking-match";
 import { bindSpeakingShortcuts } from "@/lib/speaking-shortcuts";
 import { playSpeakingSample } from "@/lib/speaking-sample";
@@ -103,6 +105,12 @@ export function SpeakingQuizView({
   const customBg = useCustomBg();
   const item = queue[index];
   const questionKey = `${round}:${index}:${item?.id || "empty"}`;
+  const [dictionaryWords, setDictionaryWords] = useState<{ key: string; words: string[] }>({ key: "", words: [] });
+  const [lastAttempt, setLastAttempt] = useState<{ key: string; alternatives: string[] } | null>(null);
+  const homophones = useMemo(() => item ? [
+    ...homophonesFromVocabulary(item, vocabularies),
+    ...(dictionaryWords.key === questionKey ? dictionaryWords.words : []),
+  ] : [], [item, vocabularies, dictionaryWords, questionKey]);
   const reveal = !!outcome;
 
   const accept = useCallback(() => {
@@ -123,11 +131,13 @@ export function SpeakingQuizView({
     questionKey,
     enabled: isActive && visible && !finished && !outcome && !!item,
     evaluate: (alternatives) =>
-      item ? matchSpokenAnswer(alternatives, item) : null,
+      item ? matchSpokenAnswer(alternatives, item, homophones) : null,
     onMatch: accept,
     onAttempt: (attempt) => {
-      if (!attempt.matched && item)
+      if (!attempt.matched && item) {
+        setLastAttempt({ key: questionKey, alternatives: attempt.alternatives });
         setReview((prev) => addReviewWord(prev, item));
+      }
     },
   });
   const listening = [
@@ -196,6 +206,26 @@ export function SpeakingQuizView({
       speech.start();
     }
   }, [questionKey]);
+  useEffect(() => {
+    if (!item || !isActive || !visible || finished) return;
+    let cancelled = false;
+    void loadSpokenHomophones(item).then((words) => {
+      if (!cancelled) setDictionaryWords({ key: questionKey, words });
+    });
+    return () => { cancelled = true; };
+  }, [item, questionKey, isActive, visible, finished]);
+  // A dictionary reply may arrive after a final ASR result. Recheck only the
+  // current question, never a skipped answer, old round or a sample playback.
+  useEffect(() => {
+    if (!item || !isActive || !visible || finished || outcome || audioBusy || showMicrophoneSettings ||
+        lastAttempt?.key !== questionKey || settled.current) return;
+    if (matchSpokenAnswer(lastAttempt.alternatives, item, homophones)) {
+      if (speech.history.every((attempt) => !!matchSpokenAnswer(attempt.alternatives, item, homophones)))
+        setReview((prev) => prev.filter((word) => word.id !== item.id));
+      accept();
+    }
+  }, [homophones, lastAttempt, questionKey, item, isActive, visible, finished, outcome,
+      audioBusy, showMicrophoneSettings, speech.history, accept]);
   useEffect(() => {
     if (!isActive) {
       cancelSample.current?.();
@@ -269,6 +299,8 @@ export function SpeakingQuizView({
       canSpeak: () => !outcome && !!item && !settled.current && visible,
       canSkip: () => !outcome && !!item && !settled.current,
       canAdvance: () => !!outcome,
+      canSample: () => !!item && visible,
+      sample: () => sample(),
       startHeld: () => startListening(true),
       releaseHeld: speech.release,
       skip: () => skip(),
@@ -357,7 +389,7 @@ export function SpeakingQuizView({
     restart(scoped);
   };
   const comparisons = item
-    ? compareSpokenVocabulary(speech.transcript, item)
+    ? compareSpokenVocabulary(speech.transcript, item, homophones)
     : [];
   const statusText = (
     {
@@ -679,7 +711,7 @@ export function SpeakingQuizView({
                         onClick={() => sample()}
                       >
                         <Volume2 size={16} />
-                        Nghe mẫu
+                        Nghe mẫu <kbd className="text-xs opacity-60">`</kbd>
                       </button>
                       <button
                         type="button"
@@ -884,7 +916,7 @@ export function SpeakingQuizView({
                           onClick={() => sample()}
                         >
                           <Volume2 size={16} />
-                          Nghe mẫu
+                          Nghe mẫu <kbd className="text-xs opacity-60">`</kbd>
                         </button>
                       </div>
                       <button
@@ -920,7 +952,7 @@ export function SpeakingQuizView({
                             >
                               <p className="text-xs font-bold">
                                 {row.label}
-                                {row.exact ? " · Khớp toàn bộ" : ""}
+                                {row.phoneticMatch ? " · Cùng cách đọc, khác Kanji" : row.exact ? " · Khớp toàn bộ" : ""}
                               </p>
                               <p
                                 lang="ja"

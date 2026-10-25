@@ -64,6 +64,14 @@ Những ảnh này dùng recognition giả để chứng minh luồng giao diệ
 
 ## Tài liệu nền
 
+### Bổ sung đối chiếu đồng âm và phím nghe mẫu (26/10/2026)
+
+- Ngoài chữ và kana chính xác, chấp nhận Kanji đồng âm dựa trên cặp từ/cách đọc đã khai báo trong bộ từ đang tải hoặc từ điển Jisho: `明ける`, `開ける`, `空ける` cùng `あける`. Không suy từ chữ gần giống hay so khớp một phần.
+- Mỗi câu tải trước các từ đồng âm qua `/api/jisho` sẵn có (cache server 1 giờ); cache tối đa 128 cách đọc trong phiên trình duyệt, chia sẻ request đồng thời, timeout 5 giây. Không thêm lượt đọc Firestore, API key hoặc dịch vụ tính phí. Khi không tra được từ điển vẫn dùng đối chiếu chữ/kana và dữ liệu đã tải.
+- Kết quả từ điển về trễ chỉ đối chiếu lại lượt nhận cuối trong đúng câu/vòng hiện tại; không nhận lại câu đã bỏ qua hay đang phát mẫu. Máy vẫn hiển thị nguyên văn kết quả nhận dạng; phần đối chiếu phân biệt khớp chữ và khớp cách đọc.
+- Phím Backquote (`) nghe mẫu trước/sau đáp án; nhả chế độ giữ mic rồi dừng mic trong khi phát. Không kích hoạt lặp khi giữ phím, khi nhập liệu, trong hộp thoại hoặc cùng phím bổ trợ.
+- Kiểm thử tập trung: cặp đồng âm/không đồng âm, bảo toàn cặp chữ/cách đọc trong phản hồi từ điển, cache/lỗi mạng, phím tắt và TypeScript. Nhận dạng văn bản không đo cao độ/trọng âm.
+
 - https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition
 - https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition/interimResults
 
