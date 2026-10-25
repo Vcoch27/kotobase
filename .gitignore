@@ -54,6 +54,10 @@ android/.gradle_user_home/
 .agents/
 skills-lock.json
 /docs/runtime-architecture/
+/tmp/firebase-audit/
+/firebase-debug.log
+/firestore-debug.log
+/.firebase/
 *.pdf
 *.zip
 data/tiengnhatdongian-n3/

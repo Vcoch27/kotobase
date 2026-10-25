@@ -3,7 +3,8 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/session";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { getCachedFoldersRaw, getCachedAllVocabs } from "@/lib/cache";
+import { getCachedFoldersRaw } from "@/lib/cache";
+import { getVocabularyCatalog, createVocabularyWriteBatch } from "@/lib/vocabulary-index";
 import { uniqueVocabularyByWord } from "@/lib/vocabulary-view";
 import { FieldValue } from "firebase-admin/firestore";
 
@@ -147,11 +148,11 @@ export async function getFolders(includeCounts = true) {
       }
     }));
 
-    // Share the raw vocabulary cache with the root view; do not query count()
-    // for every folder or sum child document counts (which counts copies twice).
+    // Catalog shards contain only searchable summaries, never full documents.
+    // Do not query count() per folder or sum child document counts.
     if (includeCounts) {
       const visibleIds = new Set(visibleFolders.map(folder => folder.id));
-      const records = (await getCachedAllVocabs()).filter((record: any) => {
+      const records = (await getVocabularyCatalog()).filter((record: any) => {
         if (isAdmin || (currentUid && record.createdBy === currentUid)) return true;
         const ids: string[] = record.folderIds || [];
         return !ids.length || ids.some(id => visibleIds.has(id));
@@ -392,7 +393,7 @@ export async function deleteFolderAndVocabs(id: string) {
     // Xóa theo batch để tránh giới hạn 500 của Firestore
     const BATCH_SIZE = 400;
     for (let i = 0; i < allDocRefsToDelete.length; i += BATCH_SIZE) {
-      const batch = adminDb.batch();
+      const batch = createVocabularyWriteBatch();
       const chunk = allDocRefsToDelete.slice(i, i + BATCH_SIZE);
       chunk.forEach(ref => batch.delete(ref));
       await batch.commit();

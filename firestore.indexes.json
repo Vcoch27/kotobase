@@ -1,0 +1,25 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "grammars",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "folderIds", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" },
+        { "fieldPath": "__name__", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "sentences",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "folderIds", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" },
+        { "fieldPath": "__name__", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    { "collectionGroup": "vocabulary_catalog", "fieldPath": "entries", "indexes": [] }
+  ]
+}

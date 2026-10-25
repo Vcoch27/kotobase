@@ -1,6 +1,6 @@
 import { KanjiPageClient } from "@/components/KanjiPageClient";
 import { getCurrentUser } from "@/lib/session";
-import { getVocabularies } from "@/app/actions/vocabulary";
+import { getVocabularySummaries } from "@/app/actions/vocabulary";
 import { getFolders } from "@/app/actions/folder";
 import { fetchAllKanjiNotes } from "@/app/actions/kanji";
 
@@ -11,7 +11,7 @@ export default async function KanjiPage() {
   // Đọc dữ liệu phía server
   const [currentUser, vocabData, folderData, kanjiResult] = await Promise.all([
     getCurrentUser(),
-    getVocabularies("all"),
+    getVocabularySummaries("all"),
     getFolders(false),
     fetchAllKanjiNotes()
       .then((notes) => ({ notes, failed: false }))

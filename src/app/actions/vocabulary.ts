@@ -2,14 +2,15 @@
 
 import { adminDb } from "@/lib/firebase-admin";
 import { getCurrentUser } from "@/lib/session";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidateTag } from "next/cache";
 import {
   getCachedFoldersRaw,
-  getCachedAllVocabs,
   getCachedVocabsByKanji,
 } from "@/lib/cache";
 import { extractKanji } from "@/lib/kanji-parser";
 import { uniqueVocabularyByWord } from "@/lib/vocabulary-view";
+import { getVocabularyCatalog, getVocabularyRecords, createVocabularyWriteBatch } from "@/lib/vocabulary-index";
+import { paginateVocabularyIndex, VocabularyPageOptions } from "@/lib/vocabulary-pagination";
 
 export interface CreateVocabInput {
   word: string;
@@ -80,7 +81,9 @@ export async function createVocabulary(input: CreateVocabInput) {
   }
 
   try {
-    const docRef = await adminDb.collection("vocabularies").add({
+    const docRef = adminDb.collection("vocabularies").doc();
+    const batch = createVocabularyWriteBatch();
+    batch.set(docRef, {
       word: input.word.trim(),
       kanjiCharacters: extractKanji(input.word.trim()),
       meaning: input.meaning.trim(),
@@ -93,8 +96,9 @@ export async function createVocabulary(input: CreateVocabInput) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
+    await batch.commit();
 
-    revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
+    revalidateTag("vocabularies");
     return { success: true, data: { id: docRef.id } };
   } catch (error) {
     console.error("Lỗi khi thêm từ vựng:", error);
@@ -126,7 +130,7 @@ export async function createBulkVocabulary(jsonString: string, targetFolderIds?:
       return { success: false, error: "Dữ liệu JSON phải là một mảng." };
     }
 
-    const batch = adminDb.batch();
+    let batch = createVocabularyWriteBatch();
     const vocabRef = adminDb.collection("vocabularies");
     const baseTime = Date.now();
     
@@ -153,11 +157,15 @@ export async function createBulkVocabulary(jsonString: string, targetFolderIds?:
         updatedAt: itemTime,
       });
       count++;
+      if (count % 400 === 0) {
+        await batch.commit();
+        batch = createVocabularyWriteBatch();
+      }
     }
 
-    await batch.commit();
+    if (count % 400 !== 0) await batch.commit();
 
-    revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
+    revalidateTag("vocabularies");
     return { success: true, count };
   } catch (error) {
     console.error("Lỗi import hàng loạt:", error);
@@ -180,12 +188,14 @@ export async function assignVocabularyToFolder(vocabularyId: string, folderId: s
     const docRef = adminDb.collection("vocabularies").doc(vocabularyId);
     
     // Ghi đè toàn bộ thư mục cũ bằng thư mục mới (Move semantics)
-    await docRef.update({
+    const batch = createVocabularyWriteBatch();
+    batch.update(docRef, {
       folderIds: [folderId],
       updatedAt: new Date().toISOString()
     });
+    await batch.commit();
 
-    revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
+    revalidateTag("vocabularies");
     return { success: true };
   } catch (error) {
     console.error("Lỗi khi chuyển thư mục cho từ vựng:", error);
@@ -193,8 +203,7 @@ export async function assignVocabularyToFolder(vocabularyId: string, folderId: s
   }
 }
 
-export async function getVocabularies(folderId?: string | string[], searchQuery?: string, preserveFolderCopies = false) {
-  try {
+async function selectVocabularyIndex(folderId?: string | string[], preserveFolderCopies = false) {
     const currentUser = await getCurrentUser();
     const currentUserEmail = (currentUser?.email || "").trim().toLowerCase();
     const currentUid = currentUser?.uid;
@@ -299,18 +308,15 @@ export async function getVocabularies(folderId?: string | string[], searchQuery?
       }
     }
 
-    // 3. Lấy tất cả từ vựng từ collection
+    // 3. Read compact catalog shards, with no canonical collection scan.
     let snapshotDocs: any[] = [];
 
     if (inputFolderIds.length > 0) {
-      // Folder counts already use this complete cache. Filter it in memory
-      // rather than reading each descendant again from Firestore.
-      snapshotDocs = (await getCachedAllVocabs()).filter((doc: any) =>
+      snapshotDocs = (await getVocabularyCatalog()).filter((doc: any) =>
         (doc.folderIds || []).some((id: string) => targetFolderIds.has(id))
       );
     } else {
-      // Cache the complete raw collection so root winners include older-created documents.
-      snapshotDocs = await getCachedAllVocabs();
+      snapshotDocs = await getVocabularyCatalog();
     }
 
     let vocabs = snapshotDocs
@@ -344,32 +350,44 @@ export async function getVocabularies(folderId?: string | string[], searchQuery?
       vocabs = uniqueVocabularyByWord(vocabs);
     }
 
-    // 4. Lọc tìm kiếm nếu có
-    if (searchQuery && searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase();
-      vocabs = vocabs.filter((v: any) => 
-        (v.word && v.word.toLowerCase().includes(q)) ||
-        (v.meaning && v.meaning.toLowerCase().includes(q)) ||
-        (v.reading && v.reading.toLowerCase().includes(q)) ||
-        (v.sinoVietnamese && v.sinoVietnamese.toLowerCase().includes(q))
-      );
-    }
-
-    // 5. Sắp xếp mặc định theo đúng thứ tự thêm vào (Cũ trước -> Mới sau: dateA - dateB)
-    vocabs.sort((a: any, b: any) => {
-      const dateA = new Date(a.createdAt || 0).getTime();
-      const dateB = new Date(b.createdAt || 0).getTime();
-      return dateA - dateB;
-    });
-
     return vocabs;
+}
+
+function vocabularyReadError(error: any) {
+  console.error("Lỗi khi lấy danh sách từ vựng:", error.message);
+  return { error: error.code === 8 || /RESOURCE_EXHAUSTED|Quota exceeded/.test(error.message || "")
+    ? "QUOTA_EXCEEDED" : (error.message || "VOCABULARY_READ_FAILED") };
+}
+
+export async function getVocabularyPage(folderId?: string | string[], options: VocabularyPageOptions = {}) {
+  try {
+    const candidates = await selectVocabularyIndex(folderId);
+    const page = paginateVocabularyIndex(candidates, options);
+    const records = await getVocabularyRecords(page.entries);
+    const summaries = new Map(candidates.map(entry => [entry.id, entry]));
+    return { vocabularies: records.map(record => ({ ...record, folderVocabularies: summaries.get(record.id)?.folderVocabularies })),
+      totalCount: page.totalCount, nextCursor: page.nextCursor };
+  } catch (error: any) { return vocabularyReadError(error); }
+}
+
+/** Explicit full-deck download for offline/study, never used by initial browsing. */
+export async function getVocabularies(folderId?: string | string[], searchQuery?: string, preserveFolderCopies = false) {
+  try {
+    const candidates = await selectVocabularyIndex(folderId, preserveFolderCopies);
+    const summaries = new Map(candidates.map(entry => [entry.id, entry]));
+    const filtered = candidates.filter(entry => !searchQuery?.trim() || [entry.word, entry.meaning, entry.reading, entry.sinoVietnamese]
+      .some(value => value?.toLowerCase().includes(searchQuery.trim().toLowerCase())));
+    filtered.sort((a, b) => (Date.parse(a.createdAt || "") || 0) - (Date.parse(b.createdAt || "") || 0) || a.id.localeCompare(b.id));
+    return (await getVocabularyRecords(filtered)).map(record => ({ ...record, folderVocabularies: summaries.get(record.id)?.folderVocabularies }));
   } catch (error: any) {
-    console.error("Lỗi khi lấy danh sách từ vựng:", error);
-    if (error.message?.includes("RESOURCE_EXHAUSTED") || error.message?.includes("Quota exceeded")) {
-      return { error: "QUOTA_EXCEEDED" };
-    }
-    return [];
+    return vocabularyReadError(error);
   }
+}
+
+/** Kanji lists only need searchable summaries, not every full vocabulary document. */
+export async function getVocabularySummaries(folderId?: string | string[]) {
+  try { return await selectVocabularyIndex(folderId); }
+  catch (error: any) { return vocabularyReadError(error); }
 }
 
 export async function deleteVocabulary(id: string) {
@@ -400,8 +418,10 @@ export async function deleteVocabulary(id: string) {
       }
     }
 
-    await adminDb.collection("vocabularies").doc(id).delete();
-    revalidatePath("/"); revalidateTag("folders"); revalidateTag("vocabularies");
+    const batch = createVocabularyWriteBatch();
+    batch.delete(adminDb.collection("vocabularies").doc(id));
+    await batch.commit();
+    revalidateTag("vocabularies");
     return { success: true };
   } catch (error) {
     console.error("Lỗi khi xóa từ vựng:", error);
@@ -444,7 +464,7 @@ export async function deleteBulkVocabulary(ids: string[]) {
 
     for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
       const chunk = ids.slice(i, i + CHUNK_SIZE);
-      const batch = adminDb.batch();
+      const batch = createVocabularyWriteBatch();
 
       const docs = await Promise.all(
         chunk.map(id => adminDb.collection("vocabularies").doc(id).get())
@@ -474,8 +494,6 @@ export async function deleteBulkVocabulary(ids: string[]) {
       await batch.commit();
     }
 
-    revalidatePath("/");
-    revalidateTag("folders");
     revalidateTag("vocabularies");
     return { success: true, count: totalDeleted };
   } catch (error: any) {
@@ -508,7 +526,7 @@ export async function moveBulkVocabulary(vocabularyIds: string[], targetFolderId
 
     for (let i = 0; i < vocabularyIds.length; i += CHUNK_SIZE) {
       const chunk = vocabularyIds.slice(i, i + CHUNK_SIZE);
-      const batch = adminDb.batch();
+      const batch = createVocabularyWriteBatch();
 
       for (const id of chunk) {
         const docRef = adminDb.collection("vocabularies").doc(id);
@@ -522,8 +540,6 @@ export async function moveBulkVocabulary(vocabularyIds: string[], targetFolderId
       await batch.commit();
     }
 
-    revalidatePath("/");
-    revalidateTag("folders");
     revalidateTag("vocabularies");
     return { success: true, count: totalMoved };
   } catch (error: any) {
@@ -556,7 +572,7 @@ export async function copyBulkVocabulary(vocabularyIds: string[], targetFolderId
 
     for (let i = 0; i < vocabularyIds.length; i += CHUNK_SIZE) {
       const chunk = vocabularyIds.slice(i, i + CHUNK_SIZE);
-      const batch = adminDb.batch();
+      const batch = createVocabularyWriteBatch();
 
       const docs = await Promise.all(
         chunk.map(id => adminDb.collection("vocabularies").doc(id).get())
@@ -588,8 +604,6 @@ export async function copyBulkVocabulary(vocabularyIds: string[], targetFolderId
       await batch.commit();
     }
 
-    revalidatePath("/");
-    revalidateTag("folders");
     revalidateTag("vocabularies");
     return { success: true, count: totalCopied };
   } catch (error: any) {
@@ -640,7 +654,9 @@ export async function updateVocabulary(id: string, input: Partial<CreateVocabInp
     if (input.note !== undefined) updateData.note = input.note?.trim() || null;
     if (input.folderIds !== undefined) updateData.folderIds = input.folderIds;
 
-    await adminDb.collection("vocabularies").doc(id).update(updateData);
+    const batch = createVocabularyWriteBatch();
+    batch.update(adminDb.collection("vocabularies").doc(id), updateData);
+    await batch.commit();
     revalidateTag("vocabularies");
     return { success: true, updatedAt: updateData.updatedAt };
   } catch (error) {

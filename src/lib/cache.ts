@@ -4,7 +4,7 @@ import { adminDb } from './firebase-admin';
 // ==========================================
 // FOLDERS CACHE
 // ==========================================
-export const getCachedFoldersRaw = unstable_cache(
+const readCachedFoldersRaw = unstable_cache(
   async () => {
     const snapshot = await adminDb.collection("folders").orderBy("name", "asc").get();
     return snapshot.docs.map(doc => ({
@@ -19,8 +19,14 @@ export const getCachedFoldersRaw = unstable_cache(
     }));
   },
   ['folders-raw'],
-  { tags: ['folders'], revalidate: 3600 }
+  { tags: ['folders'], revalidate: 86400 }
 );
+
+let pendingFolders: ReturnType<typeof readCachedFoldersRaw> | null = null;
+export const getCachedFoldersRaw = () => {
+  if (!pendingFolders) pendingFolders = readCachedFoldersRaw().finally(() => { pendingFolders = null; });
+  return pendingFolders;
+};
 
 export const getCachedFolderVocabCount = async (folderId: string) => {
   return unstable_cache(
@@ -50,26 +56,6 @@ export const getCachedVocabsByFolderId = async (folderId: string) => {
     [`vocabs-by-folder-${folderId}`],
     { tags: ['vocabularies'], revalidate: 3600 }
   )();
-};
-
-const readCachedAllVocabs = unstable_cache(
-    async () => {
-      const snap = await adminDb.collection("vocabularies")
-        .get();
-      return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    },
-    ['vocabs-all-raw-v1'],
-    { tags: ['vocabularies'], revalidate: 3600 }
-  );
-
-// The dashboard fetches folders and vocabulary concurrently. Coalesce their
-// shared cold-cache read so it does not scan the same collection twice.
-let pendingAllVocabs: ReturnType<typeof readCachedAllVocabs> | null = null;
-export const getCachedAllVocabs = () => {
-  if (!pendingAllVocabs) {
-    pendingAllVocabs = readCachedAllVocabs().finally(() => { pendingAllVocabs = null; });
-  }
-  return pendingAllVocabs;
 };
 
 // ==========================================

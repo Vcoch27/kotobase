@@ -14,8 +14,8 @@ import { GeminiSettingsModal } from "./GeminiSettingsModal";
 import { BgSettingsModal } from "./BgSettingsModal";
 import { useCustomBg } from "@/hooks/useCustomBg";
 import { JishoSearchResults } from "./JishoSearchResults";
-import { getVocabularies } from "@/app/actions/vocabulary";
-import { getVocabularyView, getVocabularyScope, filterVocabularyScope } from "@/lib/vocabulary-view";
+import { getVocabularyPage } from "@/app/actions/vocabulary";
+import { getVocabularyView } from "@/lib/vocabulary-view";
 import { getFolders, createFolder } from "@/app/actions/folder";
 import { 
   LayoutGrid, Eye, Search, FolderPlus, Layers, Settings2, BrainCircuit, 
@@ -408,146 +408,122 @@ export function Dashboard({ currentUser }: DashboardProps) {
   // Bộ nhớ đệm (Cache) siêu tiết kiệm Reads
   const vocabCache = React.useRef<Record<string, any[]>>({});
   const foldersCache = React.useRef<any[] | null>(null);
+  const pageCache = React.useRef<Record<string, { totalCount: number; nextCursor: string | null }>>({});
+  const fetchRequest = React.useRef(0);
+  const pagingRequest = React.useRef<number | null>(null);
+  const [totalVocabularyCount, setTotalVocabularyCount] = useState(0);
+  const [nextVocabularyCursor, setNextVocabularyCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [vocabularyLoadError, setVocabularyLoadError] = useState<string | null>(null);
   
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
 
   // Xác định quyền: chỉ user đã đăng nhập Google mới được tạo/sửa/xóa
   const isGoogleUser = !!currentUser?.uid;
 
+  const browseCacheKey = JSON.stringify([selectedFolderIds.slice().sort(), debouncedSearchQuery.trim(), sortOrder]);
+
   const fetchData = async (isBackground = false) => {
-    if (isBackground) vocabCache.current = {};
-    if (!isBackground) {
-      setLoading(true);
-    }
+    const request = ++fetchRequest.current;
+    pagingRequest.current = null;
+    if (isBackground) { vocabCache.current = {}; pageCache.current = {}; }
+    setLoading(true);
+    setLoadingMore(false);
     setQuotaExceeded(false);
-
-    // Hàm phụ khôi phục thư mục offline/cache
-    const getFallbackFolders = async (): Promise<any[]> => {
-      try {
-        const offlineF = await getOfflineFolders();
-        if (Array.isArray(offlineF) && offlineF.length > 0) return offlineF;
-      } catch (e) {}
-      if (typeof window !== "undefined") {
-        try {
-          const saved = localStorage.getItem("kotobase_cached_folders");
-          if (saved) return JSON.parse(saved);
-        } catch (e) {}
-      }
-      return [];
-    };
-
-    const cacheKey = selectedFolderIds.slice().sort().join(",") || "all";
-
+    setVocabularyLoadError(null);
     try {
-      // 1. Nếu thiết bị mất mạng (Offline), ưu tiên đọc ngay từ IndexedDB
-      if (typeof window !== "undefined" && !navigator.onLine) {
-        const [offlineVocabs, fallbackFolders] = await Promise.all([
-          getOfflineVocabularies(selectedFolderIds),
-          getFallbackFolders()
+      if (typeof window !== "undefined" && !navigator.onLine) throw new Error("OFFLINE");
+      let data = vocabCache.current[browseCacheKey];
+      let page = pageCache.current[browseCacheKey];
+      let folderData = foldersCache.current;
+      if (!data || !page || !folderData) {
+        const [result, folderResult] = await Promise.all([
+          getVocabularyPage(selectedFolderIds, { search: debouncedSearchQuery, sort: sortOrder }),
+          !isBackground && folderData ? Promise.resolve(folderData) : getFolders(),
         ]);
-
-        if (fallbackFolders.length > 0) {
-          setFolders(fallbackFolders);
-          foldersCache.current = fallbackFolders;
-        }
-
-        setVocabularies(offlineVocabs || []);
-        setIsOfflineMode(true);
-        if (offlineVocabs && offlineVocabs.length > 0) {
-          toast(`Đang học Offline (${offlineVocabs.length} từ vựng)`, { icon: "📶", id: "offline-status" });
-        } else if (!selectedFolderIds.includes("all")) {
-          toast("Thư mục này chưa có dữ liệu lưu offline trên máy.", { icon: "ℹ️", id: "offline-empty" });
-        }
-        return;
+        if ("error" in result) throw new Error(result.error);
+        if (!Array.isArray(folderResult)) throw new Error((folderResult as any).error || "FOLDERS_READ_FAILED");
+        data = result.vocabularies;
+        page = { totalCount: result.totalCount, nextCursor: result.nextCursor };
+        folderData = folderResult;
+        if (request !== fetchRequest.current) return;
+        vocabCache.current[browseCacheKey] = data;
+        pageCache.current[browseCacheKey] = page;
+        foldersCache.current = folderData;
+        saveVocabulariesOffline(data).catch(() => {});
+        saveFoldersOffline(folderData).catch(() => {});
+        try { localStorage.setItem("kotobase_cached_folders", JSON.stringify(folderData)); } catch {}
       }
-
-      let vocabData: any[];
-      let folderData: any[];
-
-      // A complete ancestor/root cache also contains every original leaf copy.
-      if (!isBackground && !vocabCache.current[cacheKey] && foldersCache.current) {
-        const scope = getVocabularyScope(selectedFolderIds, foldersCache.current);
-        for (const [key, records] of Object.entries(vocabCache.current)) {
-          const cachedScope = getVocabularyScope(key.split(","), foldersCache.current);
-          if (!cachedScope || (scope && Array.from(scope).every(id => cachedScope.has(id)))) {
-            vocabCache.current[cacheKey] = filterVocabularyScope(records, scope);
-            break;
-          }
-        }
-      }
-
-      // Kiểm tra xem trong cache đã có folder này chưa
-      if (!isBackground && vocabCache.current[cacheKey] && foldersCache.current) {
-        vocabData = vocabCache.current[cacheKey];
-        folderData = foldersCache.current;
-      } else {
-        // Chỉ tải mới từ Firebase khi chưa có cache hoặc vừa có thay đổi dữ liệu (isBackground)
-        const [vData, fData] = await Promise.all([
-          getVocabularies(selectedFolderIds.length === 1 ? selectedFolderIds[0] : selectedFolderIds, undefined, true),
-          getFolders(),
-        ]);
-        
-        if (vData && (vData as any).error === "QUOTA_EXCEEDED") throw new Error("QUOTA_EXCEEDED");
-        if (fData && (fData as any).error === "QUOTA_EXCEEDED") throw new Error("QUOTA_EXCEEDED");
-
-        vocabData = vData as any[];
-        folderData = fData as any[];
-        
-        // Lưu lại vào Cache RAM
-        vocabCache.current[cacheKey] = Array.isArray(vocabData) ? vocabData : [];
-        foldersCache.current = Array.isArray(folderData) ? folderData : [];
-
-        // Tự động lưu bản sao vào IndexedDB và localStorage để sẵn sàng cho lúc mất mạng (Background)
-        if (Array.isArray(vocabData) && vocabData.length > 0) {
-          saveVocabulariesOffline(vocabData).catch(() => {});
-        }
-        if (Array.isArray(folderData) && folderData.length > 0) {
-          saveFoldersOffline(folderData).catch(() => {});
-          try {
-            localStorage.setItem("kotobase_cached_folders", JSON.stringify(folderData));
-          } catch (e) {}
-        }
-      }
-
-      setVocabularies(Array.isArray(vocabData) ? vocabData : []);
-      setFolders(Array.isArray(folderData) ? folderData : []);
+      if (request !== fetchRequest.current) return;
+      setVocabularies(data);
+      setFolders(folderData);
+      setTotalVocabularyCount(page.totalCount);
+      setNextVocabularyCursor(page.nextCursor);
       setIsOfflineMode(false);
     } catch (error: any) {
-      console.error("Lỗi khi tải dữ liệu:", error);
-      
-      // Fallback: Khi có lỗi (hết Quota Firebase hoặc rớt mạng đột ngột), đọc ngay từ IndexedDB
-      try {
-        const [offlineVocabs, fallbackFolders] = await Promise.all([
-          getOfflineVocabularies(selectedFolderIds),
-          getFallbackFolders()
-        ]);
-
-        if (fallbackFolders.length > 0) {
-          setFolders(fallbackFolders);
-          foldersCache.current = fallbackFolders;
-        }
-
-        setVocabularies(offlineVocabs || []);
-        setIsOfflineMode(true);
-        if (offlineVocabs && offlineVocabs.length > 0) {
-          toast.success(`Đã tự động chuyển sang ${offlineVocabs.length} từ vựng Offline trên máy!`, { id: "offline-status" });
-        }
-        return;
-      } catch (offlineErr) {
-        console.warn("Lỗi đọc offline fallback:", offlineErr);
-      }
-
-      if (error.message === "QUOTA_EXCEEDED") {
-        setQuotaExceeded(true);
-      } else {
-        toast.error("Lỗi tải dữ liệu, vui lòng thử lại sau.");
-      }
-      setVocabularies([]);
+      if (request !== fetchRequest.current) return;
+      const [offline, offlineFolders] = await Promise.all([
+        getOfflineVocabularies(selectedFolderIds), getOfflineFolders(),
+      ]);
+      if (request !== fetchRequest.current) return;
+      const fallbackFolders = offlineFolders.length ? offlineFolders : foldersCache.current || folders;
+      setFolders(fallbackFolders);
+      setVocabularies(offline);
+      setNextVocabularyCursor(null);
+      setTotalVocabularyCount(getVocabularyView(offline, selectedFolderIds, fallbackFolders).length);
+      setIsOfflineMode(true);
+      if (!offline.length) {
+        if (error.message === "QUOTA_EXCEEDED") setQuotaExceeded(true);
+        else if (error.message?.startsWith("VOCABULARY_INDEX_")) setVocabularyLoadError("Chỉ mục từ vựng chưa sẵn sàng. Vui lòng hoàn tất khởi tạo chỉ mục trước khi sử dụng bản này.");
+        else if (error.message !== "OFFLINE") setVocabularyLoadError("Không tải được từ vựng. Vui lòng thử lại.");
+      } else toast("Đang dùng các từ vựng đã lưu trên máy.", { icon: "📶", id: "offline-status" });
     } finally {
-      if (!isBackground) {
-        setLoading(false);
-      }
+      if (request === fetchRequest.current) setLoading(false);
     }
+  };
+
+  const loadMoreVocabulary = async (all = false): Promise<boolean> => {
+    if (pagingRequest.current !== null || !nextVocabularyCursor) return !nextVocabularyCursor;
+    const request = fetchRequest.current;
+    pagingRequest.current = request;
+    setLoadingMore(true);
+    let cursor: string | null = nextVocabularyCursor;
+    let records = vocabularies;
+    try {
+      do {
+        const result = await getVocabularyPage(selectedFolderIds, { cursor, search: debouncedSearchQuery, sort: sortOrder });
+        if ("error" in result) throw new Error(result.error);
+        if (request !== fetchRequest.current) return false;
+        records = Array.from(new Map([...records, ...result.vocabularies].map(record => [record.id, record])).values());
+        cursor = result.nextCursor;
+        setVocabularies(records);
+        setTotalVocabularyCount(result.totalCount);
+        setNextVocabularyCursor(cursor);
+        vocabCache.current[browseCacheKey] = records;
+        pageCache.current[browseCacheKey] = { totalCount: result.totalCount, nextCursor: cursor };
+        saveVocabulariesOffline(result.vocabularies).catch(() => {});
+      } while (all && cursor);
+      return true;
+    } catch (error: any) {
+      if (request === fetchRequest.current) toast.error(error.message === "VOCABULARY_CURSOR_EXPIRED"
+        ? "Dữ liệu đã thay đổi. Vui lòng tải lại danh sách."
+        : "Chưa tải được trang tiếp theo. Các từ đã tải vẫn được giữ lại.");
+      return false;
+    } finally {
+      if (request === fetchRequest.current) { pagingRequest.current = null; setLoadingMore(false); }
+    }
+  };
+
+  const changeStudyMode = async (mode: typeof viewMode, ids?: string[]) => {
+    if (mode === "quiz" && !isGoogleUser) {
+      toast.error("Vui lòng đăng nhập Google để sử dụng chế độ Quiz phản xạ!", { icon: "🔒" });
+      return;
+    }
+    if (mode !== "overview" && !ids?.length && !selectedVocabIds.length && nextVocabularyCursor) {
+      if (!(await loadMoreVocabulary(true))) return;
+    }
+    if (ids) setSelectedVocabIds(ids);
+    setViewMode(mode);
   };
 
   // Khôi phục selectedFolderIds & sortOrder từ localStorage ở Client
@@ -575,8 +551,10 @@ export function Dashboard({ currentUser }: DashboardProps) {
 
   useEffect(() => {
     if (!mounted) return;
+    setViewMode("overview");
+    setSelectedVocabIds([]);
     fetchData();
-  }, [selectedFolderIds, mounted]); // ĐÃ BỎ debouncedSearchQuery khỏi đây!
+  }, [selectedFolderIds, mounted, debouncedSearchQuery, sortOrder]);
 
   // Client-side Filtering & Sorting cực nhanh và 0 tốn read của Firebase
   const filteredVocabularies = React.useMemo(() => {
@@ -619,6 +597,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const refreshFoldersOnly = async () => {
     try {
       vocabCache.current = {};
+      pageCache.current = {};
       const fData = await getFolders();
       if (Array.isArray(fData)) {
         setFolders(fData);
@@ -1399,6 +1378,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
             <div className="flex items-center gap-2 flex-wrap shrink-0">
               <OfflineSyncButton
                 currentFolderId={selectedFolderId}
+                selectedFolderIds={selectedFolderIds}
                 currentFolderName={
                   selectedFolderIds.length > 1 && !selectedFolderIds.includes('all')
                     ? `Gộp ${selectedFolderIds.length} thư mục`
@@ -1409,7 +1389,6 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 currentVocabs={vocabularies}
                 folders={folders}
                 isOnline={isOnline}
-                onOfflineDataChanged={() => fetchData(true)}
                 onNavigateToFolder={(folderId) => {
                   handleSelectFolder(folderId);
                 }}
@@ -1487,7 +1466,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                           toast.error("Vui lòng đăng nhập Google để sử dụng chế độ Quiz phản xạ!", { icon: "🔒" });
                           return;
                         }
-                        setViewMode(tab.id as typeof viewMode);
+                        void changeStudyMode(tab.id as typeof viewMode);
                       }}
                       className={cn(
                         "relative flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-colors duration-150",
@@ -1533,7 +1512,9 @@ export function Dashboard({ currentUser }: DashboardProps) {
           })()}
 
           <div className={cn(selectedVocabIds.length > 0 ? "pb-36 md:pb-10" : "pb-24 md:pb-10", isStudyFullscreen && "!p-0 !pb-0")}>
-            {quotaExceeded ? (
+            {vocabularyLoadError ? (
+              <div className="my-6 rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800">{vocabularyLoadError}</div>
+            ) : quotaExceeded ? (
               <div className="p-8 my-8 text-center bg-rose-50 dark:bg-rose-900/10 rounded-2xl border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400">
                 <BrainCircuit className="w-12 h-12 mx-auto mb-4 text-rose-500 opacity-80" />
                 <h3 className="text-xl font-bold mb-2">Đã hết hạn mức Firebase (Quota Exceeded)</h3>
@@ -1557,6 +1538,15 @@ export function Dashboard({ currentUser }: DashboardProps) {
               </div>
             ) : (
               <>
+                {nextVocabularyCursor && !isOfflineMode && (
+                  <div className="my-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 text-sm dark:border-indigo-900 dark:bg-indigo-950/30">
+                    <span>Đã tải {vocabularies.length} / {totalVocabularyCount} từ. Chọn chế độ học để tải cả bộ.</span>
+                    <div className="flex gap-2">
+                      <button disabled={loadingMore} onClick={() => { void loadMoreVocabulary(); }} className="rounded-lg bg-indigo-600 px-3 py-2 text-white disabled:opacity-50">{loadingMore ? "Đang tải…" : "Tải thêm 40 từ"}</button>
+                      <button disabled={loadingMore} onClick={() => { void loadMoreVocabulary(true); }} className="rounded-lg border border-indigo-200 px-3 py-2 disabled:opacity-50">Tải toàn bộ</button>
+                    </div>
+                  </div>
+                )}
                 <div className={viewMode === "overview" ? "block" : "hidden"}>
                   <OverviewView 
                     vocabularies={filteredVocabularies} 
@@ -1566,14 +1556,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     currentUser={currentUser}
                     selectedVocabIds={selectedVocabIds}
                     onSelectionChange={setSelectedVocabIds}
-                    onNavigateToStudyMode={(mode, ids) => {
-                      if (mode === "quiz" && !isGoogleUser) {
-                        toast.error("Vui lòng đăng nhập Google để sử dụng chế độ Quiz phản xạ!", { icon: "🔒" });
-                        return;
-                      }
-                      if (ids) setSelectedVocabIds(ids);
-                      setViewMode(mode);
-                    }}
+                    onNavigateToStudyMode={(mode, ids) => { void changeStudyMode(mode, ids); }}
                     isActive={viewMode === "overview"}
                     folderKey={(selectedFolderIds || []).slice().sort().join(",") || "all"}
                     searchQuery={debouncedSearchQuery}

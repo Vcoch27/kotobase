@@ -12,9 +12,11 @@ import {
   getOfflineStorageStats, DownloadedDeckMeta 
 } from "@/lib/offline-storage";
 import { getVocabularies } from "@/app/actions/vocabulary";
+import { getVocabularyView } from "@/lib/vocabulary-view";
 
 interface OfflineSyncButtonProps {
   currentFolderId: string;
+  selectedFolderIds?: string[];
   currentFolderName: string;
   currentVocabs: any[];
   folders: any[];
@@ -25,6 +27,7 @@ interface OfflineSyncButtonProps {
 
 export function OfflineSyncButton({
   currentFolderId,
+  selectedFolderIds,
   currentFolderName,
   currentVocabs,
   folders,
@@ -65,15 +68,11 @@ export function OfflineSyncButton({
     const toastId = toast.loading(`Đang tải bộ từ "${currentFolderName}" về máy...`);
 
     try {
-      let vocabsToSave = currentVocabs;
-      
-      // Nếu là all hoặc chưa có đủ data, fetch trực tiếp
-      if (!vocabsToSave || vocabsToSave.length === 0) {
-        const res = await getVocabularies(currentFolderId, undefined, true);
-        if (Array.isArray(res)) {
-          vocabsToSave = res;
-        }
-      }
+      // Browsing only has one page. Explicit offline download fetches every
+      // original copy, including copies hidden by the parent unique view.
+      const res = await getVocabularies(selectedFolderIds || currentFolderId, undefined, true);
+      if (!Array.isArray(res)) throw new Error(res.error);
+      const vocabsToSave = res;
 
       if (!vocabsToSave || vocabsToSave.length === 0) {
         toast.dismiss(toastId);
@@ -89,16 +88,17 @@ export function OfflineSyncButton({
       }
 
       // Đánh dấu đã tải
+      const visibleCount = getVocabularyView(vocabsToSave, selectedFolderIds || currentFolderId, folders).length;
       await markDeckDownloaded({
         folderId: currentFolderId,
         folderName: currentFolderName,
-        count: vocabsToSave.length,
+        count: visibleCount,
         downloadedAt: Date.now(),
       });
 
       await refreshDecksInfo();
       toast.dismiss(toastId);
-      toast.success(`Đã lưu thành công ${vocabsToSave.length} từ vựng về máy để học Offline!`);
+      toast.success(`Đã lưu thành công ${visibleCount} từ vựng về máy để học Offline!`);
       if (onOfflineDataChanged) onOfflineDataChanged();
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("kotobase_offline_data_changed"));

@@ -16,6 +16,8 @@ function load(path, dependencies = {}) {
   return context.exports;
 }
 const view = load('src/lib/vocabulary-view.ts');
+const schema = load('src/lib/vocabulary-index-schema.ts');
+const pagination = load('src/lib/vocabulary-pagination.ts', { './vocabulary-index-schema': schema });
 const folders = [
   { id: 'parent', parentId: null, isPublic: true },
   { id: 'a', parentId: 'parent', isPublic: true },
@@ -68,10 +70,11 @@ function actions(extra = []) {
   const api = load('src/app/actions/vocabulary.ts', {
     '@/lib/firebase-admin': {}, '@/lib/session': { getCurrentUser: async () => null },
     'next/cache': {}, '@/lib/kanji-parser': {}, '@/lib/vocabulary-view': view,
-    '@/lib/cache': {
-      getCachedFoldersRaw: async () => folders,
-      getCachedAllVocabs: async () => { calls.push('all'); return raw; },
-      getCachedVocabsByFolderId: async id => { calls.push(id); return raw.filter(v => v.folderIds.includes(id)); },
+    '@/lib/cache': { getCachedFoldersRaw: async () => folders },
+    '@/lib/vocabulary-pagination': pagination,
+    '@/lib/vocabulary-index': {
+      getVocabularyCatalog: async () => { calls.push('catalog'); return raw; },
+      getVocabularyRecords: async entries => entries.map(entry => raw.find(v => v.id === entry.id)),
     },
   });
   return { api, calls };
@@ -79,7 +82,7 @@ function actions(extra = []) {
 test('server filters permissions before selecting winners, without per-word reads', async () => {
   const { api, calls } = actions();
   assert.deepEqual(ids(await api.getVocabularies('all')), ['loose', 'new', 'other']);
-  assert.deepEqual(calls, ['all']);
+  assert.deepEqual(calls, ['catalog']);
 });
 test('search cannot resurrect an outdated copy; raw mode preserves copies for offline', async () => {
   const { api } = actions();
@@ -124,9 +127,9 @@ test('folder action builds word membership from shared cache, excluding hidden c
   const api = load('src/app/actions/folder.ts', {
     '@/lib/firebase-admin': {}, '@/lib/session': { getCurrentUser: async () => null },
     'next/cache': {}, 'firebase-admin/firestore': {}, '@/lib/vocabulary-view': view,
-    '@/lib/cache': {
-      getCachedFoldersRaw: async () => folders,
-      getCachedAllVocabs: async () => { reads++; return [...records, { id: 'secret', word: 'secret', folderIds: ['private'] }]; },
+    '@/lib/cache': { getCachedFoldersRaw: async () => folders },
+    '@/lib/vocabulary-index': {
+      getVocabularyCatalog: async () => { reads++; return [...records, { id: 'secret', word: 'secret', folderIds: ['private'] }]; },
     },
   });
   const result = await api.getFolders();
@@ -139,16 +142,56 @@ test('folder action builds word membership from shared cache, excluding hidden c
   assert.equal(reads, 1); // Name-only callers do not read vocabulary.
 });
 
-test('concurrent folder-count and vocabulary loads share one cold Firestore read', async () => {
+test('browse reads only one page of full records and search reaches words beyond it', async () => {
+  const extra = Array.from({ length: 150 }, (_, i) => ({ id: `extra-${i}`, word: `word-${i}`, folderIds: ['a'] }));
+  const { api } = actions(extra);
+  const first = await api.getVocabularyPage('all');
+  assert.equal(first.vocabularies.length, 40);
+  assert.equal(first.totalCount, 153);
+  assert.ok(first.nextCursor);
+  const second = await api.getVocabularyPage('all', { cursor: first.nextCursor });
+  assert.equal(second.vocabularies.some(v => first.vocabularies.some(previous => previous.id === v.id)), false);
+  const search = await api.getVocabularyPage('all', { search: 'word-149' });
+  assert.deepEqual(ids(search.vocabularies), ['extra-149']);
+  assert.equal(search.nextCursor, null);
+});
+
+test('cursor sorting is stable and invalidated/deleted cursors do not restart silently', () => {
+  const entries = [{ id: 'b', word: 'B' }, { id: 'a', word: 'A' }];
+  const page = pagination.paginateVocabularyIndex(entries, { limit: 1, sort: 'alphabetical' });
+  assert.equal(page.entries[0].id, 'a');
+  assert.equal(page.nextCursor, 'a');
+  assert.throws(() => pagination.paginateVocabularyIndex(entries, { cursor: 'deleted' }), /CURSOR_EXPIRED/);
+  assert.equal(pagination.paginateVocabularyIndex(entries, { limit: -5 }).entries.length, 1);
+});
+
+test('parallel catalog callers read only 33 small documents, never scan vocabularies', async () => {
   let reads = 0;
-  const cache = load('src/lib/cache.ts', {
+  const index = load('src/lib/vocabulary-index.ts', {
     'next/cache': { unstable_cache: fn => fn },
-    './firebase-admin': { adminDb: { collection: () => ({ get: async () => {
-      reads++;
-      return { docs: [{ id: 'copy', data: () => ({ word: '強み' }) }] };
-    } }) } },
+    'firebase-admin/firestore': {}, './vocabulary-index-schema': schema,
+    './firebase-admin': { adminDb: {
+      doc: () => ({ get: async () => { reads++; return { data: () => ({ ready: true, version: 1 }) }; } }),
+      collection: name => {
+        assert.equal(name, 'vocabulary_catalog');
+        return { doc: () => ({ get: async () => { reads++; return { exists: true, data: () => ({ entries: {} }) }; } }) };
+      },
+    } },
   });
-  const [a, b] = await Promise.all([cache.getCachedAllVocabs(), cache.getCachedAllVocabs()]);
+  await Promise.all([index.getVocabularyCatalog(), index.getVocabularyCatalog()]);
+  assert.equal(reads, 33);
+});
+
+test('an uninitialized catalog fails after one metadata read without a fallback scan', async () => {
+  let reads = 0;
+  const index = load('src/lib/vocabulary-index.ts', {
+    'next/cache': { unstable_cache: fn => fn },
+    'firebase-admin/firestore': {}, './vocabulary-index-schema': schema,
+    './firebase-admin': { adminDb: {
+      doc: () => ({ get: async () => { reads++; return { data: () => undefined }; } }),
+      collection: () => { throw new Error('An uninitialized index must not scan any collection'); },
+    } },
+  });
+  await assert.rejects(index.getVocabularyCatalog(), /INDEX_NOT_READY/);
   assert.equal(reads, 1);
-  assert.equal(a, b);
 });
