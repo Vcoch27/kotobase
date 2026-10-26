@@ -1,4 +1,4 @@
-// Service Worker KotoBase PWA - v3
+// Service Worker KotoBase PWA - v4 (Web Push; reuse the existing offline cache).
 const CACHE_NAME = "kotobase-cache-v3";
 
 // Các route HTML cần pre-cache (app shell)
@@ -63,6 +63,7 @@ self.addEventListener("fetch", (event) => {
     url.hostname.includes("firebase") ||
     url.hostname.includes("googleapis") ||
     url.hostname.includes("firebaseio") ||
+    url.pathname === "/api/push" ||
     url.pathname.startsWith("/api/auth") ||
     url.pathname.startsWith("/_next/image")
   ) {
@@ -122,4 +123,44 @@ self.addEventListener("fetch", (event) => {
         });
       })
   );
+});
+
+// A push must always produce a visible notification, including while the app is open.
+// Safari can revoke permission for silent push; never fetch Firestore in this handler.
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try { payload = event.data?.json() || {}; } catch { /* Show a safe fallback. */ }
+  const title = typeof payload.title === "string" ? payload.title.slice(0, 100) : "KotoBase";
+  const body = typeof payload.body === "string" ? payload.body.slice(0, 300) : "Có cập nhật mới trong KotoBase.";
+  const id = typeof payload.id === "string" ? payload.id.slice(0, 160) : "update";
+  event.waitUntil(self.registration.showNotification(title || "KotoBase", {
+    body, icon: "/logo.png", badge: "/logo.png", tag: `kotobase-${id}`,
+    data: { url: pushTarget(payload.url) },
+  }));
+});
+
+function pushTarget(value) {
+  if (typeof value !== "string" || (!value.startsWith("/") && !value.startsWith(self.location.origin + "/")) || value.startsWith("//") || /[\\\u0000-\u0020]/.test(value))
+    return self.location.origin + "/";
+  try {
+    const url = new URL(value, self.location.origin);
+    return url.origin === self.location.origin ? url.href : self.location.origin + "/";
+  } catch { return self.location.origin + "/"; }
+}
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = pushTarget(event.notification.data?.url);
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of windows) {
+      if (new URL(client.url).origin === self.location.origin && "focus" in client) {
+        try {
+          const navigated = await client.navigate(url);
+          if (navigated) return navigated.focus();
+        } catch { /* A closing tab must not prevent opening the notification. */ }
+      }
+    }
+    return self.clients.openWindow(url);
+  })());
 });

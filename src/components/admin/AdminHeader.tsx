@@ -78,6 +78,7 @@ export function AdminHeader({ currentUser, activeTab = "users", onTabChange }: A
 
         {/* Right Actions: Back to App, Theme Toggle, Profile */}
         <div className="flex items-center gap-2.5 shrink-0">
+          <Link href="/admin/push" title="Gửi thông báo đến điện thoại" className="hidden rounded-xl bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-300 md:block">Thông báo</Link>
           {/* Back to App Link */}
           <Link
             href="/"
@@ -128,6 +129,7 @@ export function AdminHeader({ currentUser, activeTab = "users", onTabChange }: A
           )}
         </div>
       </div>
+      <Link href="/admin/push" className="mx-4 mb-3 block rounded-xl bg-indigo-50 px-3 py-2 text-center text-xs font-bold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 md:hidden">Gửi thông báo đến điện thoại →</Link>
     </header>
   );
 }

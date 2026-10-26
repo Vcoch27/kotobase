@@ -17,6 +17,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { PushNotificationSettings } from "./PushNotificationSettings";
 import type { SystemNotificationItem, NotificationType } from "@/app/actions/notification";
 
 interface NotificationDrawerProps {
@@ -137,8 +138,11 @@ export function NotificationDrawer({
 
       {/* Drawer Container toàn chiều cao */}
       <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label="Thông báo và cập nhật"
         className={cn(
-          "relative w-full max-w-md sm:max-w-lg h-screen bg-white dark:bg-slate-900",
+          "relative w-full max-w-md sm:max-w-lg h-[100dvh] bg-white dark:bg-slate-900",
           "border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col z-10",
           "animate-slideInRight duration-200 ease-out"
         )}
@@ -187,6 +191,10 @@ export function NotificationDrawer({
           </div>
         </div>
 
+        {/* Device opt-in belongs beside updates; the list remains scrollable on phones. */}
+        <div className="flex-1 overflow-y-auto">
+        <div className="p-3 sm:p-4"><PushNotificationSettings /></div>
+
         {/* Chưa đăng nhập -> Banner nhắc nhở */}
         {!isLoggedIn && (
           <div className="m-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-500/30 flex items-center justify-between gap-3 text-xs shrink-0">
@@ -210,7 +218,7 @@ export function NotificationDrawer({
         )}
 
         {/* Danh sách thông báo (Cuộn được, nền sáng/tối rõ ràng) */}
-        <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80 p-3 sm:p-4 space-y-2.5 bg-slate-50/50 dark:bg-slate-950/40">
+        <div className="divide-y divide-slate-100 dark:divide-slate-800/80 p-3 sm:p-4 space-y-2.5 bg-slate-50/50 dark:bg-slate-950/40">
           {notifications.length === 0 ? (
             <div className="py-20 text-center text-slate-400 dark:text-slate-500">
               <Bell className="w-10 h-10 mx-auto mb-2 opacity-30" />
@@ -324,6 +332,7 @@ export function NotificationDrawer({
         </div>
 
         {/* Footer */}
+        </div>
         <div className="p-3.5 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900 shrink-0">
           KotoBase • Nền tảng học tiếng Nhật thông minh
         </div>

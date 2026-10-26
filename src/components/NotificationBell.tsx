@@ -55,6 +55,12 @@ export function NotificationBell({
 
   useEffect(() => {
     setMounted(true);
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("notifications") === "1") {
+      setIsDrawerOpen(true);
+      url.searchParams.delete("notifications");
+      window.history.replaceState(window.history.state, "", url);
+    }
   }, []);
 
   // Khởi tạo: Lấy thông báo và danh sách đã đọc
