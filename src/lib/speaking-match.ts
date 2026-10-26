@@ -3,6 +3,7 @@ export interface SpokenVocabulary {
   word: string;
   reading?: string | null;
 }
+export type SpokenMatchMode = "strict" | "flexible";
 
 export function normalizeSpokenJapanese(text: string): string {
   return text
@@ -17,7 +18,7 @@ export function normalizeSpokenJapanese(text: string): string {
 export function spokenAnswers(vocab: SpokenVocabulary): string[] {
   return Array.from(
     new Set(
-      [vocab.word, ...(vocab.reading || "").split(/[/／;；、\n]+/)]
+      [...vocab.word.split(/[/／;；、\n]+/), ...(vocab.reading || "").split(/[/／;；、\n]+/)]
         .map((value) => value.trim())
         .filter((value) => /[\u3040-\u30ff\u3400-\u9fff]/u.test(value))
         .filter((value) => !/[()（）]/.test(value))
@@ -31,13 +32,68 @@ export function matchSpokenAnswer(
   alternatives: string[],
   vocab: SpokenVocabulary,
   homophones: string[] = [],
+  mode: SpokenMatchMode = "strict",
 ): string | null {
   const answers = [...spokenAnswers(vocab), ...homophones.map(normalizeSpokenJapanese)];
-  return (
-    alternatives.find((text) =>
-      answers.includes(normalizeSpokenAttempt(text, vocab)),
-    ) ?? null
-  );
+  // Prefer the literal result if any hypothesis is exact, before looser forms.
+  const exact = alternatives.find((text) => answers.includes(normalizeSpokenAttempt(text, vocab)));
+  if (exact || mode === "strict") return exact ?? null;
+  return alternatives.find((text) => flexibleMatch(text, answers)) ?? null;
+}
+
+/** Normalize alternative spellings of the SAME long vowel; never delete a mora. */
+export function normalizeSpokenReading(text: string): string {
+  const groups = [
+    ["あかがさざただなはばぱまやらわぁゃ", "あ"],
+    ["いきぎしじちぢにひびぴみりぃ", "い"],
+    ["うくぐすずつづぬふぶぷむゆるぅゅゔ", "う"],
+    ["えけげせぜてでねへべぺめれぇ", "え"],
+    ["おこごそぞとどのほぼぽもよろをぉょ", "お"],
+  ];
+  const expanded: string[] = [];
+  for (const ch of normalizeSpokenJapanese(text)) {
+    if (ch !== "ー") expanded.push(ch);
+    else expanded.push(groups.find(([kana]) => kana.includes(expanded.at(-1) || "\0"))?.[1] || ch);
+  }
+  return expanded.join("")
+    .replace(/([おこごそぞとどのほぼぽもよろをょ])う/g, "$1お")
+    .replace(/([えけげせぜてでねへべぺめれ])い/g, "$1え");
+}
+
+function naturalSpokenCores(text: string): string[] {
+  let core = normalizeSpokenJapanese(text);
+  const suffix = /(?:と言います|といいます|ですよ|ですね|です)$/;
+  const original = core;
+  // Only explicit carrier phrases, not arbitrary words inside a sentence.
+  for (let i = 0; i < 2; i++) core = core.replace(/^(?:えっと|えーと|ええと|あのー|あの)(?=.+)/, "");
+  core = core.replace(/^(?:答えは|こたえは|読み方は|よみかたは)(?=.+)/, "");
+  return [original, original.replace(suffix, ""), core, core.replace(suffix, "")];
+}
+
+function flexibleMatch(text: string, answers: string[]): boolean {
+  if (!text.trim() || text.length > 240) return false;
+  const matches = (value: string) => {
+    const candidates = naturalSpokenCores(value);
+    return candidates.some((candidate) => !!candidate && answers.some((answer) =>
+      candidate === answer || (/^[ぁ-ゖー]+$/.test(candidate) && /^[ぁ-ゖー]+$/.test(answer) &&
+        normalizeSpokenReading(candidate) === normalizeSpokenReading(answer)),
+    ));
+  };
+  if (matches(text)) return true;
+  // Paused repetitions are okay only when every complete part is the answer.
+  // Never cherry-pick a correct word out of an otherwise unrelated sentence.
+  const parts = text.trim().split(/[\s、,。.!！?？]+/u).filter(Boolean);
+  return parts.length >= 2 && parts.length <= 3 && parts.every(matches);
+}
+
+export function spokenMatchExplanation(
+  text: string, vocab: SpokenVocabulary, homophones: string[] = [], mode: SpokenMatchMode = "strict",
+): string | null {
+  if (!matchSpokenAnswer([text], vocab, homophones, mode)) return null;
+  if (spokenAnswers(vocab).includes(normalizeSpokenAttempt(text, vocab))) return "Khớp từ vựng hoặc cách đọc.";
+  if (homophones.some((word) => normalizeSpokenJapanese(word) === normalizeSpokenAttempt(text, vocab)))
+    return "Cùng cách đọc; máy chọn Kanji khác vẫn được chấp nhận.";
+  return "Khớp ở chế độ Linh hoạt: bỏ từ đệm/đuôi câu, từ lặp hoặc cách ghi âm dài tương đương.";
 }
 
 /** Only paired, exact kana readings establish equivalence; never fuzzy Kanji. */
@@ -50,7 +106,7 @@ export function homophonesFromVocabulary(
   return Array.from(new Set(candidates.filter((candidate) =>
     spokenAnswers({ word: "", reading: candidate.reading })
       .some((reading) => readings.includes(reading)),
-  ).map((candidate) => candidate.word).filter(Boolean)));
+  ).flatMap((candidate) => candidate.word.split(/[/／;；、\n]+/)).map((word) => word.trim()).filter(Boolean)));
 }
 
 export function homophonesFromDictionary(vocab: SpokenVocabulary, data: unknown): string[] {
@@ -118,17 +174,18 @@ export function compareSpokenVocabulary(
   actual: string,
   vocab: SpokenVocabulary,
   homophones: string[] = [],
+  mode: SpokenMatchMode = "strict",
 ) {
   return [
     { label: "Từ vựng", expected: vocab.word },
     { label: "Cách đọc", expected: vocab.reading || vocab.word },
   ].map((row) => {
     const normalized = normalizeSpokenAttempt(actual, vocab);
-    const expected = row.label === "Cách đọc"
-      ? row.expected.split(/[/／;；、\n]+/) : [row.expected];
+    const expected = row.expected.split(/[/／;；、\n]+/);
     const literalMatch = expected.some((value) => normalizeSpokenJapanese(value) === normalized);
     const phoneticMatch = row.label === "Cách đọc" && !literalMatch &&
-      homophones.some((word) => normalizeSpokenJapanese(word) === normalized);
+      (homophones.some((word) => normalizeSpokenJapanese(word) === normalized) ||
+        (mode === "flexible" && !!matchSpokenAnswer([actual], vocab, homophones, mode)));
     return {
       ...row,
       exact: !!normalized && (literalMatch || phoneticMatch),

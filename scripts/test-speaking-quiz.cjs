@@ -69,6 +69,44 @@ test("explicit reading variants and alternate recognition hypotheses", () => {
     null,
   );
 });
+
+test("flexible grading accepts polite endings, bounded fillers and paused repetitions", () => {
+  for (const text of ["つよみです", "えっと、強みです", "答えはつよみですよ", "強みと言います", "強み、つよみ。", "つよみ つよみ つよみ"])
+    assert.equal(match.matchSpokenAnswer([text], vocab, [], "flexible"), text);
+  assert.equal(match.matchSpokenAnswer(["つよみです"], vocab, [], "strict"), null);
+  assert.equal(match.matchSpokenAnswer(["あの人です"], { word: "あの人", reading: "あのひと" }, [], "flexible"), "あの人です");
+  for (const text of ["私の強み", "弱み、強み", "つよみじゃないです", "強みがあります", "つよに", "つよ", "tsuyomi"])
+    assert.equal(match.matchSpokenAnswer([text], vocab, [], "flexible"), null);
+});
+
+test("flexible grading equates long-vowel spelling while preserving mora, small kana and voicing", () => {
+  for (const [text, reading] of [["こおひい", "コーヒー"], ["せんせー", "せんせい"], ["こーぎょー", "こうぎょう"], ["スーパー", "すうぱあ"]])
+    assert.equal(match.matchSpokenAnswer([text], { word: "例", reading }, [], "flexible"), text);
+  for (const [text, reading] of [["おばさん", "おばあさん"], ["こと", "コート"], ["びよういん", "びょういん"], ["さか", "さっか"], ["かく", "がく"], ["つよに", "つよみ"]])
+    assert.equal(match.matchSpokenAnswer([text], { word: "例", reading }, [], "flexible"), null);
+});
+
+test("word variants match separately and flexible homophone carriers explain acceptance", () => {
+  const variant = { word: "暖める／温める", reading: "あたためる" };
+  for (const text of ["暖める", "温める"])
+    assert.equal(match.matchSpokenAnswer([text], variant), text);
+  const homophone = { word: "明ける", reading: "あける" };
+  assert.equal(match.matchSpokenAnswer(["開けるです"], homophone, ["開ける"], "flexible"), "開けるです");
+  assert.equal(match.matchSpokenAnswer(["開けるです"], homophone, ["開ける"], "strict"), null);
+  assert.ok(match.spokenMatchExplanation("つよみです", vocab, [], "flexible").includes("Linh hoạt"));
+  assert.equal(match.compareSpokenVocabulary("つよみです", vocab, [], "flexible")[1].exact, true);
+});
+
+test("exact hypotheses take precedence and the tenth recognition alternative can pass", () => {
+  assert.equal(match.matchSpokenAnswer(["つよみです", "強み"], vocab, [], "flexible"), "強み");
+  const h = harness();
+  h.session.setContext("question-1", true);
+  h.session.start();
+  const r = h.current();
+  r.onstart();
+  h.result(r, [...Array(9).fill("別の言葉"), "つよみ"]);
+  assert.equal(h.passed.length, 1);
+});
 test("diff explains normalized text and stays bounded for long transcripts", () => {
   const diff = match.compareSpokenText("ツヨニ", "つよみ");
   assert.equal(diff.map((x) => x.text).join(""), "つよに");
@@ -165,7 +203,7 @@ test("explicit start only; Japanese settings and real start/speech events drive 
   const r = h.current();
   assert.equal(r.lang, "ja-JP");
   assert.equal(r.interimResults, true);
-  assert.equal(r.maxAlternatives, 5);
+  assert.equal(r.maxAlternatives, 10);
   assert.equal(h.state().status, "starting");
   r.onstart();
   assert.equal(h.state().status, "listening");

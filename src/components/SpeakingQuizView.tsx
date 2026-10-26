@@ -32,6 +32,8 @@ import {
   isShortSpokenVocabulary,
   homophonesFromVocabulary,
   loadSpokenHomophones,
+  spokenMatchExplanation,
+  type SpokenMatchMode,
 } from "@/lib/speaking-match";
 import { bindSpeakingShortcuts } from "@/lib/speaking-shortcuts";
 import { playSpeakingSample } from "@/lib/speaking-sample";
@@ -84,6 +86,8 @@ export function SpeakingQuizView({
   const [index, setIndex] = useState(0);
   const [round, setRound] = useState(0);
   const [mode, setMode] = useState<PromptMode>("word");
+  const [gradingMode, setGradingMode] = useState<SpokenMatchMode>("flexible");
+  const [acceptedText, setAcceptedText] = useState<{ key: string; text: string } | null>(null);
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [finished, setFinished] = useState(false);
   const [correct, setCorrect] = useState<string[]>([]);
@@ -131,8 +135,8 @@ export function SpeakingQuizView({
     questionKey,
     enabled: isActive && visible && !finished && !outcome && !!item,
     evaluate: (alternatives) =>
-      item ? matchSpokenAnswer(alternatives, item, homophones) : null,
-    onMatch: accept,
+      item ? matchSpokenAnswer(alternatives, item, homophones, gradingMode) : null,
+    onMatch: (text) => { setAcceptedText({ key: questionKey, text }); accept(); },
     onAttempt: (attempt) => {
       if (!attempt.matched && item) {
         setLastAttempt({ key: questionKey, alternatives: attempt.alternatives });
@@ -151,6 +155,8 @@ export function SpeakingQuizView({
     try {
       const savedMode = localStorage.getItem("kotobase_speaking_mode");
       if (savedMode === "word" || savedMode === "meaning") setMode(savedMode);
+      const savedGrading = localStorage.getItem("kotobase_speaking_grading");
+      if (savedGrading === "strict" || savedGrading === "flexible") setGradingMode(savedGrading);
       const value = Number(localStorage.getItem("kotobase_quiz_delay"));
       if (value >= 1 && value <= 10) setDelay(value);
     } catch {
@@ -219,13 +225,15 @@ export function SpeakingQuizView({
   useEffect(() => {
     if (!item || !isActive || !visible || finished || outcome || audioBusy || showMicrophoneSettings ||
         lastAttempt?.key !== questionKey || settled.current) return;
-    if (matchSpokenAnswer(lastAttempt.alternatives, item, homophones)) {
-      if (speech.history.every((attempt) => !!matchSpokenAnswer(attempt.alternatives, item, homophones)))
+    const matched = matchSpokenAnswer(lastAttempt.alternatives, item, homophones, gradingMode);
+    if (matched) {
+      if (speech.history.every((attempt) => !!matchSpokenAnswer(attempt.alternatives, item, homophones, gradingMode)))
         setReview((prev) => prev.filter((word) => word.id !== item.id));
+      setAcceptedText({ key: questionKey, text: matched });
       accept();
     }
   }, [homophones, lastAttempt, questionKey, item, isActive, visible, finished, outcome,
-      audioBusy, showMicrophoneSettings, speech.history, accept]);
+      audioBusy, showMicrophoneSettings, speech.history, accept, gradingMode]);
   useEffect(() => {
     if (!isActive) {
       cancelSample.current?.();
@@ -388,8 +396,11 @@ export function SpeakingQuizView({
     save("kotobase_speaking_mode", value);
     restart(scoped);
   };
+  const heardText = acceptedText?.key === questionKey ? acceptedText.text : speech.transcript;
+  const matchExplanation = item && outcome === "correct"
+    ? spokenMatchExplanation(heardText, item, homophones, gradingMode) : null;
   const comparisons = item
-    ? compareSpokenVocabulary(speech.transcript, item, homophones)
+    ? compareSpokenVocabulary(heardText, item, homophones, gradingMode)
     : [];
   const statusText = (
     {
@@ -520,6 +531,27 @@ export function SpeakingQuizView({
                 ))}
               </select>
             </label>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+            <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
+              Đối chiếu
+              <select aria-label="Độ linh hoạt khi nhận đáp án" value={gradingMode} disabled={!!outcome || finished}
+                onChange={(event) => {
+                  const value = event.target.value as SpokenMatchMode;
+                  speech.pause("Đã đổi cách đối chiếu. Bấm tiếp tục để thử lại câu này.");
+                  setGradingMode(value);
+                  save("kotobase_speaking_grading", value);
+                  setRound((value) => value + 1);
+                }}
+                className="rounded-lg border border-slate-200 bg-transparent p-2 disabled:opacity-50 dark:border-slate-600">
+                <option value="flexible">Linh hoạt (khuyên dùng)</option>
+                <option value="strict">Chặt chẽ</option>
+              </select>
+            </label>
+            <p className="flex-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+              {gradingMode === "flexible" ? "Chấp nhận từ đệm, đuôi です, từ lặp có ngắt và cách ghi âm dài tương đương. Vẫn phân biệt âm ngắn/dài, âm ngắt và âm đục."
+                : "Khớp toàn bộ từ/cách đọc hoặc từ đồng âm đã đối chiếu. Từ ngắn có thể thêm です."}
+            </p>
           </div>
         </div>
 
@@ -678,16 +710,17 @@ export function SpeakingQuizView({
                           ? "Đã nhận đúng từ!"
                           : "Đã bỏ qua · cùng xem lại đáp án"}
                       </span>
-                      {speech.transcript && (
+                      {heardText && (
                         <span
                           lang="ja"
                           translate="no"
                           className="notranslate break-all text-sm"
                         >
-                          Máy nghe: {speech.transcript}
+                          Máy nghe: {heardText}
                         </span>
                       )}
                     </div>
+                    {matchExplanation && <p role="status" className="text-xs leading-relaxed text-emerald-700 dark:text-emerald-300">{matchExplanation}</p>}
                     {item.example && (
                       <div className="rounded-xl border border-slate-200/80 bg-white/70 p-4 dark:border-slate-700 dark:bg-slate-900/70">
                         <p className="mb-2 text-xs font-bold uppercase text-slate-500">
@@ -889,10 +922,18 @@ export function SpeakingQuizView({
                           !speech.interim &&
                           !speech.languageMismatch && (
                             <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
-                              Chưa khớp toàn bộ từ. Cứ nói lại, bạn không cần
-                              bấm kết thúc.
+                              Máy chưa nhận được một cách đọc phù hợp. Đây là kết quả nhận dạng,
+                              chưa kết luận bạn phát âm sai. Bạn có thể nói lại ngay.
                             </p>
                           )}
+                        {!!speech.history[0]?.alternatives.slice(1).length && (
+                          <details className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                            <summary className="cursor-pointer">Các kết quả máy còn cân nhắc ({speech.history[0].alternatives.length})</summary>
+                            <p lang="ja" translate="no" className="notranslate mt-2 break-words leading-relaxed">
+                              {speech.history[0].alternatives.join(" · ")}
+                            </p>
+                          </details>
+                        )}
                       </div>
                     </div>
                     <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
@@ -952,7 +993,7 @@ export function SpeakingQuizView({
                             >
                               <p className="text-xs font-bold">
                                 {row.label}
-                                {row.phoneticMatch ? " · Cùng cách đọc, khác Kanji" : row.exact ? " · Khớp toàn bộ" : ""}
+                                {row.phoneticMatch ? " · Khớp theo cách đọc" : row.exact ? " · Khớp toàn bộ" : ""}
                               </p>
                               <p
                                 lang="ja"

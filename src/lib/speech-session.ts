@@ -232,7 +232,7 @@ export class SpeechSession {
     recognition.lang = "ja-JP";
     recognition.continuous = this.handsFree;
     recognition.interimResults = true;
-    recognition.maxAlternatives = 5;
+    recognition.maxAlternatives = 10;
     this.update({
       status: "starting",
       message:
@@ -279,7 +279,7 @@ export class SpeechSession {
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
         const alternatives = Array.from(
-          { length: Math.min(5, result.length) },
+          { length: Math.min(10, result.length) },
           (_, n) => result[n].transcript.trim(),
         ).filter(Boolean);
         const text = alternatives[0] || "";

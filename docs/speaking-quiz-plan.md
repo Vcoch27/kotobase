@@ -64,6 +64,17 @@ Những ảnh này dùng recognition giả để chứng minh luồng giao diệ
 
 ## Tài liệu nền
 
+### Đối chiếu Linh hoạt (26/10/2026)
+
+- UI mặc định Linh hoạt, có thể chọn Chặt chẽ và lưu lựa chọn trên thiết bị. Đổi chế độ dừng micro, tạo lượt mới của câu hiện tại để kết quả/timer cũ không tự chấm dưới quy tắc mới.
+- Linh hoạt chấp nhận một từ hoàn chỉnh cùng từ đệm giới hạn (`えっと`, `あの`), đuôi `です`/`ですね`/`ですよ`/`と言います`, câu dẫn `答えは`/`読み方は`, hoặc 2–3 lần lặp có khoảng trắng/dấu ngắt khi mọi phần đều là đáp án. Không lấy một từ nằm trong câu tùy ý hoặc câu phủ định để tính đúng.
+- Quy đổi cách ghi cùng âm dài (`せんせい` ↔ `せんせー`, `コーヒー` ↔ `こおひい`) và giữ đủ mora. Không xóa âm dài, `っ`, kana nhỏ hay dấu đục; không chấm đúng chỉ vì Levenshtein gần nhau.
+- Tách các biến thể chữ đã khai báo bằng `/`/`／` (ví dụ `暖める／温める`) để chấp nhận riêng từng từ. Tiếp tục dùng cặp từ/cách đọc từ dữ liệu sẵn có và từ điển cho Kanji đồng âm.
+- Xin tối đa 10 giả thuyết từ trình duyệt, xét từng phương án, ưu tiên khớp trực tiếp. Trình duyệt có thể trả ít hơn; không suy diễn chất lượng phát âm từ điểm confidence. Phương án phụ được hiển thị khi dịch vụ có trả về.
+- Giữ nguyên văn bản máy nhận và hiển thị lý do khớp. Kết quả từ điển về trễ dùng đúng phương án đã khớp trong câu hiện tại. Khi chưa khớp, giao diện nói rõ đây là kết quả ASR, không kết luận người học phát âm sai.
+- 43 kiểm thử speaking qua, gồm đuôi/từ đệm, cách ghi âm dài, biến thể từ, giả thuyết thứ 10 và các cặp cần phân biệt. UI mô phỏng xác nhận cùng `はんせいです` bị từ chối trong Chặt chẽ và được nhận trong Linh hoạt; đổi chế độ không tự chấm kết quả cũ. Ảnh: `docs/previews/speaking-quiz/flexible-grading.png`.
+- Đây là nâng cấp đối chiếu/khai thác kết quả ASR; chưa thay mô hình nhận âm của trình duyệt, không chỉnh lọc mic khi chưa có bằng chứng âm bị cắt. Không thêm API trả phí, lưu âm thanh hoặc truy vấn Firestore.
+
 ### Bổ sung đối chiếu đồng âm và phím nghe mẫu (26/10/2026)
 
 - Ngoài chữ và kana chính xác, chấp nhận Kanji đồng âm dựa trên cặp từ/cách đọc đã khai báo trong bộ từ đang tải hoặc từ điển Jisho: `明ける`, `開ける`, `空ける` cùng `あける`. Không suy từ chữ gần giống hay so khớp một phần.
