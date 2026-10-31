@@ -22,6 +22,13 @@ const pool = [target,
   { id: "coffee", word: "コーヒー", reading: "コーヒー", meaning: "Cà phê" },
   { id: "weak", word: "弱み", reading: "よわみ", meaning: "Điểm yếu" },
 ];
+test("example prompts use Japanese only and never fall back to the isolated word", () => {
+  assert.equal(quiz.listeningExampleText("VD: 私の強みは語学です。(Điểm mạnh là ngoại ngữ)"), "私の強みは語学です。");
+  assert.equal(quiz.listeningExampleText("Ghi chú\n反省しています。\nTôi đang kiểm điểm"), "反省しています。");
+  assert.equal(quiz.listeningExampleText("コーヒーを飲む（Uống cà phê）"), "コーヒーを飲む");
+  assert.equal(quiz.listeningExampleText("Không có câu tiếng Nhật"), "");
+  assert.equal(quiz.listeningExampleText(null), "");
+});
 test("dictation accepts Japanese word/reading/width but not fuzzy, romaji or polite extensions", () => {
   for (const value of ["強み", "つよみ", "ツヨミ", " つよみ。 "]) assert.equal(quiz.matchListeningText(value, target, pool), true);
   for (const value of ["", "tsuyomi", "つよ", "つよに", "つよみです", "私の強み"]) assert.equal(quiz.matchListeningText(value, target, pool), false);

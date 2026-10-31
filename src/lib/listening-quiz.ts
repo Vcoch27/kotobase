@@ -1,5 +1,13 @@
 import { normalizeSpokenJapanese, spokenAnswers } from "./speaking-match";
 
+/** Use only the Japanese sentence, excluding a following Vietnamese translation. */
+export function listeningExampleText(example?: string | null): string {
+  const line = (example || "").split(/\r?\n/).find((value) => /[\u3040-\u30ff\u3400-\u9fff]/.test(value));
+  if (!line) return "";
+  const sentence = line.slice(line.search(/[\u3040-\u30ff\u3400-\u9fff]/)).split(/[（(]/)[0];
+  return (sentence.match(/^.*?[。！？!?]/)?.[0] || sentence).trim();
+}
+
 export interface ListeningWord {
   id: string;
   word: string;

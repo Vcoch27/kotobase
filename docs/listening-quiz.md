@@ -1,5 +1,11 @@
 # Quiz Nghe & hiểu
 
+## Luồng nghe ví dụ
+
+Trước khi bắt đầu có hai lựa chọn: nghe từ → gõ → chọn nghĩa (luồng cũ) và nghe ví dụ → chọn nghĩa → gõ từ → xem kết quả. Luồng ví dụ chỉ lấy các từ trong phạm vi có câu ví dụ tiếng Nhật; không đọc thêm Firestore hoặc tạo câu bằng AI. Phát phần câu Nhật, bỏ bản dịch kèm theo. Chờ phát xong mới chọn nghĩa bằng chuột/1–4; giữ kín đúng/sai và chữ Nhật đến khi gõ kana/Kanji rồi Enter. Kết quả chấm riêng cả hai bước, dùng cùng countdown và lượt luyện lại. Bộ không đủ nghĩa phân biệt vẫn dùng tự ghi nghĩa và ghi nhận chưa kiểm chứng. Muốn đổi luồng giữa phiên, bấm làm lại bộ rồi chọn luồng.
+
+Đã kiểm tra trên fixture localhost: 1/4 từ có ví dụ, phát `私の強みは語学です。`, chọn nghĩa không lộ đáp án, gõ `つよみ` rồi Enter cho kết quả đúng hai bước. Âm thanh fixture là giả lập; không xác nhận chất lượng giọng TTS thực tế.
+
 ## Luồng học
 
 Phần Nghe được chuyển từ Flashcard sang Quiz. Flashcard còn Bình thường, Tiến độ và Anki; nút **Nghe → Quiz** mang đúng ID các từ trong phạm vi đang học sang **Quiz → Nghe & hiểu**. Vẫn giữ điều kiện đăng nhập Google của Quiz và cơ chế tải đầy đủ phạm vi học hiện có.
