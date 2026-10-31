@@ -1,17 +1,22 @@
 "use client";
 
-import { useEffect, useState, ComponentProps } from "react";
+import { useCallback, useEffect, useState, ComponentProps } from "react";
 import { Headphones, Keyboard, Mic } from "lucide-react";
 import { TypingQuizView } from "./TypingQuizView";
 import { SpeakingQuizView } from "./SpeakingQuizView";
 import { ListeningQuizView } from "./ListeningQuizView";
 
-export function QuizView({ requestedListening, ...props }: ComponentProps<typeof TypingQuizView> & { requestedListening?: number }) {
+export function QuizView({ requestedListening, onFullscreenChange, ...props }: ComponentProps<typeof TypingQuizView> & { requestedListening?: number }) {
   const [mode, setMode] = useState<"typing" | "speaking" | "listening">("typing");
+  const [fullscreen, setFullscreen] = useState(false);
+  const handleFullscreenChange = useCallback((value: boolean) => {
+    setFullscreen(value);
+    onFullscreenChange?.(value);
+  }, [onFullscreenChange]);
   useEffect(() => { if (requestedListening) setMode("listening"); }, [requestedListening]);
   return (
     <div className="space-y-4">
-      <div
+      {!fullscreen && <div
         className="mx-auto flex w-fit max-w-full flex-wrap justify-center gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900"
         role="group"
         aria-label="Cách trả lời Quiz"
@@ -34,13 +39,13 @@ export function QuizView({ requestedListening, ...props }: ComponentProps<typeof
             {label}
           </button>
         ))}
-      </div>
+      </div>}
       {mode === "typing" ? (
-        <TypingQuizView {...props} />
+        <TypingQuizView {...props} onFullscreenChange={handleFullscreenChange} />
       ) : mode === "speaking" ? (
-        <SpeakingQuizView {...props} />
+        <SpeakingQuizView {...props} onFullscreenChange={handleFullscreenChange} />
       ) : (
-        <ListeningQuizView key={requestedListening || "listening"} {...props} />
+        <ListeningQuizView key={requestedListening || "listening"} {...props} onFullscreenChange={handleFullscreenChange} />
       )}
     </div>
   );

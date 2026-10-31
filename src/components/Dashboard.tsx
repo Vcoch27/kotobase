@@ -1710,10 +1710,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
         )}
       </main>
 
-      <footer className={cn(
-        "relative z-10 w-full border-t border-slate-200/70 bg-white/70 px-4 py-4 text-[11px] text-slate-500 dark:border-slate-800/70 dark:bg-slate-950/70 dark:text-slate-400 hidden md:block",
-        isStudyFullscreen && "hidden"
-      )}>
+      {!isStudyFullscreen && <footer className="relative z-10 w-full border-t border-slate-200/70 bg-white/70 px-4 py-4 text-[11px] text-slate-500 dark:border-slate-800/70 dark:bg-slate-950/70 dark:text-slate-400 hidden md:block">
         <div className="mx-auto flex max-w-screen-2xl flex-wrap items-center justify-center gap-x-4 gap-y-2 text-center sm:justify-between">
           <span>© {new Date().getFullYear()} Nguyễn Văn Hoàng · KotoBase</span>
           <nav aria-label="Liên hệ và mạng xã hội" className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
@@ -1722,7 +1719,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
             <a href="mailto:vanhoang.vcoch27@gmail.com" className="hover:text-indigo-600 hover:underline focus-visible:rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500">Email</a>
           </nav>
         </div>
-      </footer>
+      </footer>}
 
       {/* Modal Tạo Thư Mục */}
       {showFolderModal && (
