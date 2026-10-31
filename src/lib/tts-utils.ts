@@ -133,7 +133,22 @@ export const saveTTSSettings = (settings: TTSSettings) => {
   }
 };
 
+let audioRequestId = 0;
+let pendingVoiceListener: (() => void) | null = null;
+let pendingVoiceTimer: ReturnType<typeof setTimeout> | undefined;
+export interface TTSPlaybackCallbacks {
+  rate?: number;
+  onStart?(): void;
+  onEnd?(): void;
+  onError?(message: string): void;
+}
+interface PlaybackContext extends TTSPlaybackCallbacks { active(): boolean }
+
 const stopCurrentAudio = () => {
+  clearTimeout(pendingVoiceTimer);
+  if (pendingVoiceListener && typeof window !== 'undefined')
+    window.speechSynthesis?.removeEventListener('voiceschanged', pendingVoiceListener);
+  pendingVoiceListener = null;
   if (currentPlayingAudio) {
     currentPlayingAudio.pause();
     currentPlayingAudio.currentTime = 0;
@@ -142,6 +157,30 @@ const stopCurrentAudio = () => {
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
     window.speechSynthesis.cancel();
   }
+};
+
+/** Also invalidate pending network/voice replies so an old question cannot speak later. */
+export const stopVocabularyAudio = () => {
+  audioRequestId++;
+  stopCurrentAudio();
+};
+
+const startHTMLAudio = async (url: string, volume: number, context: PlaybackContext) => {
+  if (!context.active()) return false;
+  const audio = new Audio(url);
+  let began = false;
+  audio.volume = Math.max(0, Math.min(1, volume));
+  audio.playbackRate = context.rate || 1;
+  audio.onended = () => { if (context.active()) context.onEnd?.(); };
+  // A pre-start error lets the existing provider fallback run. A later error
+  // belongs to this playing prompt and must be reported to the quiz.
+  audio.onerror = () => { if (began && context.active()) context.onError?.('Không phát được âm thanh. Hãy thử nghe lại.'); };
+  currentPlayingAudio = audio;
+  await audio.play();
+  if (!context.active()) { audio.pause(); return false; }
+  began = true;
+  context.onStart?.();
+  return true;
 };
 
 export async function fetchKotoBaseTTS(
@@ -178,8 +217,9 @@ export async function fetchKotoBaseTTS(
   }
 }
 
-const playKotobaseAI = async (text: string, settings?: TTSSettings): Promise<boolean> => {
+const playKotobaseAI = async (text: string, settings: TTSSettings | undefined, context: PlaybackContext): Promise<boolean> => {
   try {
+    if (!context.active()) return false;
     stopCurrentAudio();
     const voiceName = settings?.kotobaseVoiceName || "JVNV-F1 - Giọng nữ 1 (Chuẩn, trong trẻo, tự nhiên)";
     const speed = settings?.kotobaseSpeed ?? 1.0;
@@ -218,12 +258,8 @@ const playKotobaseAI = async (text: string, settings?: TTSSettings): Promise<boo
     }
 
     if (audioUrl) {
-      const audio = new Audio(audioUrl);
       const volume = settings?.volume ?? getWebVolume();
-      audio.volume = Math.max(0, Math.min(1, volume));
-      currentPlayingAudio = audio;
-      await audio.play();
-      return true;
+      return await startHTMLAudio(audioUrl, volume, context);
     }
   } catch (error) {
     console.warn('KotoBase AI failed:', error);
@@ -231,8 +267,9 @@ const playKotobaseAI = async (text: string, settings?: TTSSettings): Promise<boo
   return false;
 };
 
-const playVoicevox = async (text: string): Promise<boolean> => {
+const playVoicevox = async (text: string, context: PlaybackContext): Promise<boolean> => {
   try {
+    if (!context.active()) return false;
     stopCurrentAudio();
     const cacheKey = `voicevox:${text}`;
     let audioUrl = audioBlobCache.get(cacheKey);
@@ -250,12 +287,8 @@ const playVoicevox = async (text: string): Promise<boolean> => {
     }
 
     if (audioUrl) {
-      const audio = new Audio(audioUrl);
       const volume = getWebVolume();
-      audio.volume = Math.max(0, Math.min(1, volume));
-      currentPlayingAudio = audio;
-      await audio.play();
-      return true;
+      return await startHTMLAudio(audioUrl, volume, context);
     }
   } catch (error) {
     console.warn('Voicevox failed:', error);
@@ -263,45 +296,66 @@ const playVoicevox = async (text: string): Promise<boolean> => {
   return false;
 };
 
-const playBrowserTTS = (text: string) => {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+const playBrowserTTS = (text: string, context: PlaybackContext) => {
+  if (!context.active()) return;
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    context.onError?.('Thiết bị chưa hỗ trợ phát giọng Nhật.');
+    return;
+  }
   stopCurrentAudio();
 
   const speak = () => {
+    if (!context.active()) return;
+    clearTimeout(pendingVoiceTimer);
+    if (pendingVoiceListener) window.speechSynthesis.removeEventListener('voiceschanged', pendingVoiceListener);
+    pendingVoiceListener = null;
+    try {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'ja-JP';
-    utterance.rate = 0.85;
+    utterance.rate = 0.85 * (context.rate || 1);
     const vol = getWebVolume();
     utterance.volume = Math.max(0, Math.min(1, vol));
     const voices = window.speechSynthesis.getVoices();
     const jaVoice = voices.find((v) => v.lang.includes('ja') || v.lang.includes('JP'));
     if (jaVoice) {
       utterance.voice = jaVoice;
+    } else if (context.onError) {
+      context.onError('Thiết bị chưa có giọng Nhật. Chọn giọng KotoBase AI trong cài đặt phát âm hoặc cài giọng Nhật trên thiết bị.');
+      return;
     }
+    utterance.onstart = () => { if (context.active()) context.onStart?.(); };
+    utterance.onend = () => { if (context.active()) context.onEnd?.(); };
+    utterance.onerror = () => { if (context.active()) context.onError?.('Giọng đọc bị gián đoạn. Bấm nghe lại để tiếp tục.'); };
     window.speechSynthesis.speak(utterance);
+    } catch { if (context.active()) context.onError?.('Không khởi tạo được giọng Nhật. Hãy thử nghe lại.'); }
   };
 
-  if (window.speechSynthesis.getVoices().length === 0) {
-    window.speechSynthesis.onvoiceschanged = () => {
-      speak();
-      window.speechSynthesis.onvoiceschanged = null;
+  const available = window.speechSynthesis.getVoices();
+  if (!available.length || (context.onError && !available.some((voice) => voice.lang.toLowerCase().startsWith('ja')))) {
+    const ready = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.some((voice) => voice.lang.toLowerCase().startsWith('ja')) || (!context.onError && voices.length)) speak();
     };
-    setTimeout(() => {
-      if (window.speechSynthesis.getVoices().length === 0) speak();
-    }, 500);
+    pendingVoiceListener = ready;
+    window.speechSynthesis.addEventListener('voiceschanged', ready);
+    pendingVoiceTimer = setTimeout(speak, 700);
   } else {
     speak();
   }
 };
 
-export const playAudio = async (text: string, tempSettings?: TTSSettings) => {
+export const playAudio = async (text: string, tempSettings?: TTSSettings, callbacks: TTSPlaybackCallbacks = {}) => {
   if (!text || !text.trim()) return;
   const cleanText = text.trim();
+  const requestId = ++audioRequestId;
+  stopCurrentAudio();
+  const context: PlaybackContext = { ...callbacks, rate: Math.max(0.5, Math.min(1.5, callbacks.rate || 1)), active: () => requestId === audioRequestId };
   const settings = tempSettings || loadTTSSettings();
 
   // 0. Nếu chọn KotoBase AI
   if (settings.provider === 'kotobase-ai') {
-    const aiSuccess = await playKotobaseAI(cleanText, settings);
+    const aiSuccess = await playKotobaseAI(cleanText, settings, context);
+    if (!context.active()) return;
     if (aiSuccess) return;
     toast.error('KotoBase AI đang khởi động hoặc quá tải, thử lại sau nhé...', { id: 'tts-ai-fail' });
   }
@@ -336,6 +390,7 @@ export const playAudio = async (text: string, tempSettings?: TTSSettings) => {
           }
         );
 
+        if (!context.active()) return;
         if (res.ok) {
           const blob = await res.blob();
           const url = URL.createObjectURL(blob);
@@ -346,15 +401,14 @@ export const playAudio = async (text: string, tempSettings?: TTSSettings) => {
         }
       }
 
+      if (!context.active()) return;
       if (audioUrl) {
-        const audio = new Audio(audioUrl);
         const volume = settings?.volume ?? getWebVolume();
-        audio.volume = Math.max(0, Math.min(1, volume));
-        currentPlayingAudio = audio;
-        await audio.play();
+        await startHTMLAudio(audioUrl, volume, context);
         return;
       }
     } catch (e) {
+      if (!context.active()) return;
       console.warn('ElevenLabs failed:', e);
       toast.error('ElevenLabs lỗi mạng. Chuyển sang dự phòng...', { id: 'tts-el-fail' });
     }
@@ -362,26 +416,29 @@ export const playAudio = async (text: string, tempSettings?: TTSSettings) => {
 
   // 2. Nếu chọn Voicevox
   if (settings.provider === 'voicevox') {
-    const voicevoxSuccess = await playVoicevox(cleanText);
+    const voicevoxSuccess = await playVoicevox(cleanText, context);
+    if (!context.active()) return;
     if (voicevoxSuccess) return;
     toast.error('Voicevox Server lỗi, chuyển thiết bị...', { id: 'tts-vv-fail' });
   }
 
   // 3. Nếu chọn Trình duyệt (Browser)
   if (settings.provider === 'browser') {
-    playBrowserTTS(cleanText);
+    playBrowserTTS(cleanText, context);
     return;
   }
 
   // Fallback chuỗi
   if (settings.provider !== 'kotobase-ai') {
-    const fallbackKotoBase = await playKotobaseAI(cleanText, settings);
+    const fallbackKotoBase = await playKotobaseAI(cleanText, settings, context);
+    if (!context.active()) return;
     if (fallbackKotoBase) return;
   }
   
-  const fallbackVoicevox = await playVoicevox(cleanText);
+  const fallbackVoicevox = await playVoicevox(cleanText, context);
+  if (!context.active()) return;
   if (fallbackVoicevox) return;
 
   toast('Phát âm thiết bị.', { id: 'tts-browser-fallback', icon: '💻' });
-  playBrowserTTS(cleanText);
+  playBrowserTTS(cleanText, context);
 };

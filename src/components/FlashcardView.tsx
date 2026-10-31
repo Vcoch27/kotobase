@@ -53,9 +53,10 @@ interface FlashcardViewProps {
   folders?: any[];
   selectedFolderId?: string;
   onVocabularyUpdated?: (updatedVocab: any) => void;
+  onOpenListeningQuiz?: (ids: string[]) => void;
 }
 
-type StudyMode = "normal" | "progress" | "anki" | "listening";
+type StudyMode = "normal" | "progress" | "anki";
 
 // Fisher-Yates Shuffle
 const shuffleArray = <T,>(array: T[]): T[] => {
@@ -76,6 +77,7 @@ export function FlashcardView({
   folders = [],
   selectedFolderId,
   onVocabularyUpdated,
+  onOpenListeningQuiz,
 }: FlashcardViewProps) {
   const customBg = useCustomBg();
   const getScopedFromSelection = useCallback((all: VocabularyData[], selIds: string[]) => {
@@ -304,10 +306,6 @@ export function FlashcardView({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVocabIdsStr]);
-
-  // Listening mode states
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const autoPlayedRef = useRef<Set<number>>(new Set()); // Track which card indexes have been auto-played
 
   // Chế độ phát âm khi bấm phím V hoặc nút Loa: "both" (Cả 2), "word" (Chỉ từ vựng), "example" (Chỉ câu ví dụ)
   const [audioMode, setAudioMode] = useState<"both" | "word" | "example">("both");
@@ -562,34 +560,6 @@ export function FlashcardView({
     }
   }, [scopedVocabs, mode]);
 
-  // Auto-play audio khi ở chế độ Nghe & chuyển sang thẻ mới
-  useEffect(() => {
-    if (!isActive) return;
-    if (mode !== "listening") return;
-    if (isFinished || deck.length === 0) return;
-    const currentVocab = deck[currentIndex];
-    if (!currentVocab) return;
-    // Chỉ auto-play nếu thẻ này chưa được play lần nào trong session hiện tại
-    if (autoPlayedRef.current.has(currentIndex)) return;
-    
-    autoPlayedRef.current.add(currentIndex);
-    setIsPlayingAudio(true);
-    const textToPlay = getAudioTextToPlay(currentVocab);
-    // Thêm delay nhỏ để animation thẻ mới có thời gian load
-    const timer = setTimeout(() => {
-      playAudio(textToPlay);
-      // Reset trạng thái playing sau 3 giây (ước lượng)
-      setTimeout(() => setIsPlayingAudio(false), 3000);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [isActive, mode, currentIndex, deck, isFinished, getAudioTextToPlay]);
-
-  // Reset autoPlayed ref khi đổi mode hoặc restart
-  useEffect(() => {
-    autoPlayedRef.current = new Set();
-    setIsPlayingAudio(false);
-  }, [mode, deck]);
-
   // Actions
   const flipCard = useCallback(() => {
     setIsFlipped((prev) => {
@@ -840,11 +810,11 @@ export function FlashcardView({
     if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > threshold) {
       if (deltaX > 0) {
         // Swipe Left (Sang trái) -> Tiếp theo
-        if (mode === "normal" || mode === "listening") handleNext();
+        if (mode === "normal") handleNext();
         else if (mode === "progress") handleProgress(false);
       } else {
         // Swipe Right (Sang phải) -> Quay lại
-        if (mode === "normal" || mode === "listening") handlePrev();
+        if (mode === "normal") handlePrev();
         else if (mode === "progress") handleProgress(true);
       }
     }
@@ -875,13 +845,11 @@ export function FlashcardView({
           e.preventDefault();
           if (mode === "normal") handleNext();
           else if (mode === "progress") handleProgress(true);
-          else if (mode === "listening" && isFlipped) handleNext();
           break;
         case "ArrowLeft":
           e.preventDefault();
           if (mode === "normal") handlePrev();
           else if (mode === "progress") handleProgress(false);
-          else if (mode === "listening" && !isFlipped) flipCard();
           break;
         case "h":
         case "H":
@@ -911,13 +879,7 @@ export function FlashcardView({
           if (!card) break;
           
           const textToPlayKey = getAudioTextToPlay(card);
-          if (mode === "listening") {
-            setIsPlayingAudio(true);
-            playAudio(textToPlayKey);
-            setTimeout(() => setIsPlayingAudio(false), 3000);
-          } else {
-            playAudio(textToPlayKey);
-          }
+          playAudio(textToPlayKey);
           break;
         case "a":
         case "A": {
@@ -1250,16 +1212,12 @@ export function FlashcardView({
           >
             <BrainCircuit className="w-3.5 h-3.5 flex-shrink-0" /> Anki (SRS)
           </button>
-          <button
-            onClick={() => setMode("listening")}
-            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex-shrink-0 ${
-              mode === "listening"
-                ? "bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400 shadow border border-violet-200 dark:border-violet-500/20"
-                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-            }`}
-          >
-            <Headphones className="w-3.5 h-3.5 flex-shrink-0" /> Nghe
-          </button>
+          {onOpenListeningQuiz && <button
+            type="button"
+            onClick={() => onOpenListeningQuiz(scopedVocabs.map((word) => word.id))}
+            title="Chuyển sang Quiz: nghe, gõ tiếng Nhật và chọn nghĩa"
+            className="flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-bold text-violet-600 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-950"
+          ><Headphones className="h-3.5 w-3.5" />Nghe → Quiz</button>}
         </div>
 
         {/* Action & Audio mode buttons */}
@@ -1697,59 +1655,7 @@ export function FlashcardView({
           }}
         >
           {/* Front */}
-          {mode === "listening" ? (
-            /* Listening Mode Front: Chỉ hiện âm thanh */
-            <div 
-              className={`absolute inset-0 w-full h-full backface-hidden study-card bg-gradient-to-br from-violet-50 to-slate-50 dark:from-violet-950/40 dark:to-slate-950 border border-violet-200 dark:border-violet-700/40 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center ${
-                isFlipped ? "pointer-events-none select-none" : "pointer-events-auto"
-              }`}
-              style={{ 
-                backfaceVisibility: 'hidden', 
-                WebkitBackfaceVisibility: 'hidden',
-                transform: 'rotateY(0deg) translateZ(1px)',
-                WebkitTransform: 'rotateY(0deg) translateZ(1px)'
-              }}
-            >
-              <StudyCardArtwork side="front" customFrontUrl={customBg.cardFront?.dataUrl} customBackUrl={customBg.cardBack?.dataUrl} cardWash={customBg.washSettings?.cardWash} />
-              <span className="absolute top-3 left-3 sm:top-6 sm:left-6 text-[10px] sm:text-xs font-bold text-violet-400 dark:text-violet-500 uppercase tracking-wider flex items-center gap-1">
-                <Headphones className="w-3 h-3 sm:w-4 sm:h-4" /> Chế độ Nghe — Bấm để lật
-              </span>
-              
-              {/* Vòng sóng âm thanh pulsing */}
-              <div className="relative flex items-center justify-center mb-4 sm:mb-6">
-                {/* Pulse rings - chỉ animate khi đang ở mặt trước để tránh tách GPU layer khi lật */}
-                {!isFlipped && isPlayingAudio && (
-                  <>
-                    <div className="absolute w-28 h-28 sm:w-32 sm:h-32 rounded-full border-2 border-violet-400/30 dark:border-violet-500/20 animate-ping" style={{ animationDuration: '1.2s' }}></div>
-                    <div className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-violet-400/40 dark:border-violet-500/30 animate-ping" style={{ animationDuration: '1.5s' }}></div>
-                  </>
-                )}
-                
-                {/* Nút play trung tâm */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const textToPlay = getAudioTextToPlay(currentVocab);
-                    setIsPlayingAudio(true);
-                    playAudio(textToPlay);
-                    setTimeout(() => setIsPlayingAudio(false), 3000);
-                  }}
-                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95 ${
-                    isPlayingAudio
-                      ? 'bg-violet-500 dark:bg-violet-600 shadow-violet-500/40 scale-110'
-                      : 'bg-white dark:bg-slate-800 border-2 border-violet-300 dark:border-violet-600 hover:border-violet-500 hover:scale-105 shadow-violet-200 dark:shadow-violet-900/50'
-                  }`}
-                  title={`Phát âm (${audioMode === "both" ? "Từ & Câu" : audioMode === "word" ? "Chỉ từ" : "Chỉ câu"})`}
-                >
-                  <Volume2 className={`w-7 h-7 sm:w-8 sm:h-8 ${isPlayingAudio ? 'text-white' : 'text-violet-500 dark:text-violet-400'}`} />
-                </button>
-              </div>
-
-              <p className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 max-w-xs px-2 text-center">
-                {isPlayingAudio ? "Đang phát âm thanh..." : "Nhấn nút để nghe lại • Bấm thẻ để xem đáp án"}
-              </p>
-            </div>
-          ) : (
+          {((
             /* Normal / Progress / Anki Front: Hiển thị từ vựng */
             <div 
               className={`absolute inset-0 w-full h-full backface-hidden study-card bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-700/80 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-8 text-center overflow-y-auto ${
@@ -1850,7 +1756,7 @@ export function FlashcardView({
                 )
               )}
             </div>
-          )}
+          ))}
 
           {/* Back */}
           <div 
@@ -1895,36 +1801,7 @@ export function FlashcardView({
             </button>
             
             {/* Nếu là chế độ Nghe (Listening Mode): Cần hiển thị đầy đủ Từ vựng gốc + Hán Việt vì mặt trước chưa có */}
-            {mode === "listening" ? (
-              <>
-                {/* Từ vựng gốc (Kanji) */}
-                <div 
-                  className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-wide mb-1" 
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <ClickableKanjiString text={currentVocab.word} />
-                </div>
-
-                {/* Âm Hán Việt */}
-                {currentVocab.sinoVietnamese && showSino && (
-                  <div className="text-xs sm:text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] mb-2 animate-fadeIn">
-                    {currentVocab.sinoVietnamese}
-                  </div>
-                )}
-
-                {/* Cách đọc Hiragana/Katakana */}
-                {currentVocab.reading && currentVocab.reading !== currentVocab.word && (
-                  <div className="text-base sm:text-lg md:text-xl font-bold text-amber-600 dark:text-amber-400 mb-2">
-                    {currentVocab.reading}
-                  </div>
-                )}
-                
-                {/* Nghĩa */}
-                <div className="text-xl sm:text-2xl md:text-4xl font-black text-emerald-600 dark:text-emerald-400 mb-3 sm:mb-5 leading-tight flex flex-col items-center text-center w-full">
-                  <MeaningText text={currentVocab.meaning} size="lg" align="center" />
-                </div>
-              </>
-            ) : (
+            {((
               /* Các chế độ thông thường (Mặt trước đã có chữ gốc) */
               <>
                 {currentVocab.reading && (
@@ -1937,7 +1814,7 @@ export function FlashcardView({
                   <MeaningText text={currentVocab.meaning} size="lg" align="center" />
                 </div>
               </>
-            )}
+            ))}
 
 
             {/* Ví dụ minh họa */}
@@ -1988,34 +1865,7 @@ export function FlashcardView({
               )
             })()}
           </div>
-        ) : mode === "listening" ? (
-          /* Listening Mode controls */
-          <div className="flex items-center gap-4">
-            {!isFlipped ? (
-              <button
-                onClick={flipCard}
-                className="flex items-center gap-2 px-8 py-3 rounded-2xl font-bold transition-all text-white bg-violet-500 hover:bg-violet-600 shadow-lg shadow-violet-500/20 active:scale-95"
-              >
-                <Rotate3D className="w-5 h-5" /> Lật xem đáp án (Space)
-              </button>
-            ) : (
-              <>
-                <button
-                  onClick={flipCard}
-                  className="flex items-center gap-2 px-4 py-3 rounded-2xl font-bold transition-all text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 shadow-sm"
-                >
-                  <Rotate3D className="w-5 h-5" /> Xem lại âm thanh
-                </button>
-                <button
-                  onClick={handleNext}
-                  className="flex items-center gap-2 px-8 py-3 rounded-2xl font-bold transition-all text-white bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95"
-                >
-                  Tiếp theo <ArrowRight className="w-5 h-5" />
-                </button>
-              </>
-            )}
-          </div>
-        ) : mode === "normal" ? (
+        ) : (mode === "normal" ? (
           <>
             <button 
               onClick={handlePrev} 
@@ -2046,7 +1896,7 @@ export function FlashcardView({
               <Check className="w-6 h-6" /> Đã thuộc (Right)
             </button>
           </>
-        )}
+        ))}
       </div>
         </>
       ) : null}

@@ -65,6 +65,7 @@ interface DashboardProps {
 
 export function Dashboard({ currentUser }: DashboardProps) {
   const [viewMode, setViewMode] = useState<"overview" | "focus" | "flashcard" | "quiz">("overview");
+  const [requestedListening, setRequestedListening] = useState(0);
   
   // Trạng thái thu gọn / mở rộng cây thư mục (Persist localStorage)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
@@ -1497,7 +1498,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
               { id: "overview",  icon: <LayoutGrid className="w-3.5 h-3.5" />,   label: "Tổng quan",        color: "text-amber-500" },
               { id: "focus",     icon: <Eye className="w-3.5 h-3.5" />,          label: "Ôn tập",           color: "text-indigo-500" },
               { id: "flashcard", icon: <Layers className="w-3.5 h-3.5" />,       label: "Flashcard",        color: "text-emerald-500" },
-              { id: "quiz",      icon: <BrainCircuit className="w-3.5 h-3.5" />, label: "Quiz (Gõ / Nói)",   color: "text-purple-500" },
+              { id: "quiz",      icon: <BrainCircuit className="w-3.5 h-3.5" />, label: "Quiz",   color: "text-purple-500" },
             ] as const;
 
             return (
@@ -1627,6 +1628,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                 <div className={viewMode === "quiz" ? "block" : "hidden"}>
                   {isGoogleUser ? (
                     <QuizView
+                      requestedListening={requestedListening}
                       vocabularies={filteredVocabularies}
                       selectedVocabIds={selectedVocabIds}
                       isActive={viewMode === "quiz"}
@@ -1671,6 +1673,14 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     folders={folders}
                     selectedFolderId={selectedFolderId}
                     onVocabularyUpdated={handleVocabularyUpdated}
+                    onOpenListeningQuiz={(ids) => {
+                      if (!isGoogleUser) {
+                        toast.error("Đăng nhập Google để luyện Nghe & hiểu trong Quiz.", { icon: "🔒" });
+                        return;
+                      }
+                      setRequestedListening((value) => value + 1);
+                      void changeStudyMode("quiz", ids);
+                    }}
                   />
                 </div>
               </>

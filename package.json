@@ -9,6 +9,7 @@
     "lint": "next lint",
     "test:vocabulary": "node --test scripts/test-vocabulary-view.cjs",
     "test:speaking": "node --test scripts/test-speaking-quiz.cjs",
+    "test:listening": "node --test scripts/test-listening-quiz.cjs",
     "test:microphone": "node --test scripts/test-microphone.cjs",
     "test:push": "node --test scripts/test-push.cjs",
     "push:setup": "node scripts/setup-push.cjs",
