@@ -7,8 +7,8 @@ const fixture = path.join(__dirname, "fixtures/listening-quiz-preview.tsx");
 const file = path.join(route, "page.tsx");
 const port = Number(process.env.LISTENING_QUIZ_PREVIEW_PORT || 3134);
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw Error("Invalid port");
-if (fs.existsSync(route)) throw Error("Preview route already exists; refusing to overwrite");
-fs.mkdirSync(route); fs.copyFileSync(fixture, file);
+if (fs.existsSync(route) && fs.readdirSync(route).length) throw Error("Preview route already contains files; refusing to overwrite");
+fs.mkdirSync(route, { recursive: true }); fs.copyFileSync(fixture, file);
 const child = spawn(process.execPath, ["node_modules/next/dist/bin/next", "dev", "-p", String(port), "-H", "127.0.0.1"], {
   cwd: root, stdio: "inherit", env: { ...process.env, APP_ACCESS_PASSWORD: "", FIRESTORE_EMULATOR_HOST: "127.0.0.1:9" },
 });

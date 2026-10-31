@@ -16,7 +16,6 @@ export interface ListeningResult {
   selectedMeaning: string;
   dictationCorrect: boolean;
   meaningCorrect: boolean | null;
-  confident: boolean;
   mastered: boolean;
   skipped: boolean;
 }
@@ -77,15 +76,15 @@ export function buildMeaningQuestion(word: ListeningWord, pool: ListeningWord[],
 
 export function gradeListeningAttempt(input: {
   word: ListeningWord; pool: ListeningWord[]; question: MeaningQuestion;
-  typed: string; meaningId: string | null; confident: boolean; skipped?: boolean; freeMeaning?: string;
+  typed: string; meaningId: string | null; skipped?: boolean; freeMeaning?: string;
 }): ListeningResult {
   const dictationCorrect = !input.skipped && matchListeningText(input.typed, input.word, input.pool);
   const meaningCorrect = input.skipped ? false : input.question.correctId === null ? null : input.meaningId === input.question.correctId;
   return {
     word: input.word, typed: input.typed,
     selectedMeaning: input.question.choices.find((choice) => choice.id === input.meaningId)?.label || input.freeMeaning || "",
-    dictationCorrect, meaningCorrect, confident: input.confident,
-    mastered: dictationCorrect && meaningCorrect === true && input.confident && !input.skipped,
+    dictationCorrect, meaningCorrect,
+    mastered: dictationCorrect && meaningCorrect === true && !input.skipped,
     skipped: !!input.skipped,
   };
 }
@@ -96,6 +95,5 @@ export function listeningReviewReason(result: ListeningResult): string {
   if (!result.dictationCorrect) return "Cần luyện nghe/gõ";
   if (result.meaningCorrect === null) return "Nghĩa chưa được kiểm chứng";
   if (!result.meaningCorrect) return "Cần nhớ lại nghĩa";
-  if (!result.confident) return "Chọn đúng nhưng còn phân vân";
-  return "Đúng cả hai bước và tự tin";
+  return "Đúng cả hai bước";
 }

@@ -17,6 +17,7 @@ export default function ListeningQuizPreview() {
   const [selected, setSelected] = useState<string[]>([]);
   const [single, setSingle] = useState(false);
   const [lastText, setLastText] = useState("");
+  const [plays, setPlays] = useState(0);
   const last = useRef<SpeechSynthesisUtterance | null>(null);
   const holdAudio = useRef(false);
   const denyAudio = useRef(false);
@@ -28,7 +29,7 @@ export default function ListeningQuizPreview() {
     const previousVolume = localStorage.getItem("kotobase_web_volume");
     const previousSfx = localStorage.getItem("kotobase_sfx_volume");
     localStorage.setItem("koto_tts_settings", JSON.stringify({ provider: "browser" }));
-    localStorage.setItem("kotobase_quiz_delay", "10");
+    localStorage.setItem("kotobase_quiz_delay", "8");
     localStorage.setItem("kotobase_web_volume", "1");
     localStorage.setItem("kotobase_sfx_volume", "0");
     let timer: ReturnType<typeof setTimeout>;
@@ -37,7 +38,7 @@ export default function ListeningQuizPreview() {
       getVoices: () => [{ lang: "ja-JP" }], addEventListener() {}, removeEventListener() {},
       cancel() { clearTimeout(timer); last.current = null; },
       speak(utterance: SpeechSynthesisUtterance) {
-        last.current = utterance; setLastText(utterance.text);
+        last.current = utterance; setLastText(utterance.text); setPlays((value) => value + 1);
         if (denyAudio.current) { utterance.onerror?.({} as SpeechSynthesisErrorEvent); return; }
         utterance.onstart?.({} as SpeechSynthesisEvent);
         if (!holdAudio.current) timer = setTimeout(() => utterance.onend?.({} as SpeechSynthesisEvent), 300);
@@ -69,6 +70,6 @@ export default function ListeningQuizPreview() {
     </div>
     {ready && (view === "quiz" ? <QuizView key={single ? "single" : "all"} vocabularies={source} selectedVocabIds={selected} requestedListening={request} isActive={active} />
       : <FlashcardView vocabularies={source} selectedVocabIds={selected} onOpenListeningQuiz={(ids) => { setSelected(ids); setRequest((value) => value + 1); setView("quiz"); }} isActive={active} />)}
-    <p className="mx-auto mt-5 max-w-4xl text-xs">QA đã phát (chỉ mô phỏng): {lastText} · Scope: {selected.join(",") || "all"}</p>
+    <p className="mx-auto mt-5 max-w-4xl text-xs">QA đã phát (chỉ mô phỏng): {lastText} · Lượt phát: {plays} · Scope: {selected.join(",") || "all"}</p>
   </main>;
 }

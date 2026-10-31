@@ -45,22 +45,20 @@ test("meaning choices hide reading tips and duplicate/synonymous/homophone meani
 test("small or empty-meaning decks never manufacture distractors or claim verified comprehension", () => {
   const question = quiz.buildMeaningQuestion(target, [target]);
   assert.equal(question.correctId, null); assert.equal(question.choices.length, 0);
-  const result = quiz.gradeListeningAttempt({ word: target, pool: [target], question, typed: "つよみ", meaningId: null, confident: true, freeMeaning: "Điểm mạnh" });
+  const result = quiz.gradeListeningAttempt({ word: target, pool: [target], question, typed: "つよみ", meaningId: null, freeMeaning: "Điểm mạnh" });
   assert.equal(result.dictationCorrect, true); assert.equal(result.meaningCorrect, null); assert.equal(result.mastered, false);
   assert.equal(quiz.buildMeaningQuestion({ ...target, meaning: "<<hint>>" }, pool).correctId, null);
   assert.equal(quiz.cleanListeningMeaning("Cà phê <<こーひー>>"), "Cà phê");
 });
-test("both independent answers and confidence are required; unknown/skip retain truthful per-step grades", () => {
+test("both independent answers are sufficient without confidence; unknown/skip retain truthful per-step grades", () => {
   const question = quiz.buildMeaningQuestion(target, pool, () => 0.3);
-  const base = { word: target, pool, question, typed: "つよみ", meaningId: question.correctId, confident: true };
+  const base = { word: target, pool, question, typed: "つよみ", meaningId: question.correctId };
   assert.equal(quiz.gradeListeningAttempt(base).mastered, true);
-  const uncertain = quiz.gradeListeningAttempt({ ...base, confident: false });
-  assert.equal(uncertain.meaningCorrect, true); assert.equal(uncertain.mastered, false);
-  assert.match(quiz.listeningReviewReason(uncertain), /phân vân/);
+  assert.equal(quiz.listeningReviewReason(quiz.gradeListeningAttempt(base)), "Đúng cả hai bước");
   const wrongTyping = quiz.gradeListeningAttempt({ ...base, typed: "つよに" });
   assert.equal(wrongTyping.meaningCorrect, true); assert.equal(wrongTyping.dictationCorrect, false);
   assert.match(quiz.listeningReviewReason(wrongTyping), /nghe\/gõ/);
-  const unknownMeaning = quiz.gradeListeningAttempt({ ...base, meaningId: null, confident: false });
+  const unknownMeaning = quiz.gradeListeningAttempt({ ...base, meaningId: null });
   assert.equal(unknownMeaning.dictationCorrect, true); assert.equal(unknownMeaning.meaningCorrect, false); assert.equal(unknownMeaning.mastered, false);
   const skipped = quiz.gradeListeningAttempt({ ...base, skipped: true });
   assert.equal(skipped.mastered, false); assert.equal(skipped.dictationCorrect, false);
@@ -71,6 +69,66 @@ test("distractor creation is bounded, immutable and not tied to the correct opti
   const second = quiz.buildMeaningQuestion(target, pool, () => 0.99);
   assert.notEqual(first.choices.findIndex((choice) => choice.id === first.correctId), second.choices.findIndex((choice) => choice.id === second.correctId));
   assert.equal(JSON.stringify(pool), original);
+});
+
+function shortcutHarness() {
+  const listeners = new Map(), calls = [];
+  let stage = "dictation", composing = false;
+  const target = {
+    addEventListener(name, callback, capture) { assert.equal(capture, true); listeners.set(name, callback); },
+    removeEventListener(name, callback, capture) { assert.equal(capture, true); listeners.delete(name); },
+  };
+  const { bindListeningShortcuts } = load("src/lib/listening-shortcuts.ts");
+  const cleanup = bindListeningShortcuts(target, {
+    stage: () => stage, composing: () => composing,
+    replay: () => calls.push("replay"), skip: () => calls.push("skip"), commit: () => calls.push("commit"),
+    advance: () => calls.push("advance"), choose: (position) => calls.push(`choose-${position}`),
+  });
+  function key(props = {}, { editable = false, own = true, dialog = false } = {}) {
+    const event = { key: "`", code: "Backquote", preventDefault() { this.prevented = true; }, stopPropagation() { this.stopped = true; },
+      target: { id: "listening-dictation", closest(selector) {
+        if (selector === '[role="dialog"]') return dialog;
+        if (selector === '[data-listening-quiz]') return own;
+        if (selector.startsWith("input,")) return editable;
+        return false;
+      } }, ...props };
+    listeners.get("keydown")?.(event);
+    return event;
+  }
+  return { key, calls, cleanup, listeners, setStage(value) { stage = value; }, compose(value) { composing = value; } };
+}
+test("Backquote is captured inside the answer input even when IME marks the key composing", () => {
+  const h = shortcutHarness(); h.compose(true);
+  const event = h.key({ isComposing: true, keyCode: 229 }, { editable: true });
+  assert.equal(event.prevented, true); assert.equal(event.stopped, true);
+  assert.deepEqual(h.calls, ["replay"]);
+  h.key({ repeat: true }, { editable: true });
+  assert.equal(h.calls.length, 1);
+  h.cleanup(); assert.equal(h.listeners.size, 0);
+});
+test("replay preserves unrelated fields, dialogs and modified shortcuts", () => {
+  const h = shortcutHarness();
+  assert.equal(h.key({}, { editable: true, own: false }).prevented, undefined);
+  h.key({}, { dialog: true }); h.key({ ctrlKey: true }); h.key({ shiftKey: true });
+  assert.equal(h.calls.length, 0); h.cleanup();
+});
+test("keys 1-4 submit the matching meaning immediately, including from a focused option", () => {
+  const h = shortcutHarness(); h.setStage("meaning");
+  for (const key of ["1", "2", "3", "4"]) assert.equal(h.key({ key, code: `Digit${key}` }).prevented, true);
+  assert.deepEqual(h.calls, ["choose-0", "choose-1", "choose-2", "choose-3"]);
+  h.key({ key: "4", code: "Digit4", repeat: true });
+  h.compose(true); h.key({ key: "1", code: "Digit1" });
+  assert.equal(h.calls.length, 4); h.cleanup();
+});
+test("IME Enter never submits; dictation Enter, skip and result Enter keep their own stages", () => {
+  const h = shortcutHarness();
+  h.key({ key: "Enter", code: "Enter", keyCode: 229 }, { editable: true });
+  assert.equal(h.calls.length, 0);
+  h.key({ key: "Enter", code: "Enter" }, { editable: true });
+  h.key({ key: "Tab", code: "Tab", shiftKey: true });
+  h.key({ key: "Tab", code: "Tab" });
+  h.setStage("result"); h.key({ key: "Enter", code: "Enter" });
+  assert.deepEqual(h.calls, ["commit", "skip", "advance"]); h.cleanup();
 });
 
 function audioHarness() {
