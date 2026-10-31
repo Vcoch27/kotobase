@@ -28,8 +28,10 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   FileText,
-  Grid3X3
+  Grid3X3,
+  Bell
 } from "lucide-react";
+import { useSfxVolume, audioFX } from "@/lib/audio-fx";
 import { isAdminEmail } from "@/lib/admin-shared";
 import { useWebVolume } from "@/lib/tts-utils";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
@@ -244,6 +246,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const [showBgSettingsModal, setShowBgSettingsModal] = useState(false);
   const customBg = useCustomBg();
   const [webVolume, setWebVolume] = useWebVolume();
+  const [sfxVolume, setSfxVolume] = useSfxVolume();
   const [quizDelay, setQuizDelay] = useState<number>(5);
 
   useEffect(() => {
@@ -907,7 +910,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                       <ImageIcon className="w-4 h-4 text-indigo-500" />
                       Tuỳ chỉnh ảnh nền
                     </button>
-                    {/* Quick Volume Slider */}
+                    {/* 1. Âm lượng đọc từ vựng (TTS) */}
                     <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
                         <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
@@ -918,7 +921,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                           ) : (
                             <Volume2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                           )}
-                          Âm lượng web
+                          Âm lượng đọc từ vựng
                         </span>
                         <div className="flex items-center gap-1">
                           <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-[11px] bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200/80 dark:border-slate-700 shadow-xs">
@@ -933,7 +936,42 @@ export function Dashboard({ currentUser }: DashboardProps) {
                         value={Math.round(webVolume * 100)}
                         onChange={(e) => setWebVolume(Number(e.target.value) / 100)}
                         className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                        title={`Âm lượng: ${Math.round(webVolume * 100)}%`}
+                        title={`Âm lượng đọc từ vựng: ${Math.round(webVolume * 100)}%`}
+                      />
+                    </div>
+
+                    {/* 2. Âm lượng hiệu ứng Quiz (Ting ting / Đúng - Sai) */}
+                    <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-amber-50/40 dark:bg-amber-950/20 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                          <Bell className="w-3.5 h-3.5 text-amber-500" />
+                          Hiệu ứng Quiz (Ting ting)
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => audioFX.playCorrect()}
+                            className="text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/40 dark:hover:bg-amber-800/60 px-1.5 py-0.5 rounded transition-colors"
+                            title="Bấm để nghe thử tiếng Ting ting"
+                          >
+                            Thử âm
+                          </button>
+                          <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-[11px] bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-amber-200/80 dark:border-amber-800/60 shadow-xs">
+                            {Math.round(sfxVolume * 100)}%
+                          </span>
+                        </div>
+                      </div>
+                      <input 
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={Math.round(sfxVolume * 100)}
+                        onChange={(e) => {
+                          const val = Number(e.target.value) / 100;
+                          setSfxVolume(val);
+                        }}
+                        className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                        title={`Âm lượng hiệu ứng Quiz: ${Math.round(sfxVolume * 100)}%`}
                       />
                     </div>
 

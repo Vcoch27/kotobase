@@ -163,7 +163,7 @@ export function KanjiPageClient({ vocabularies, folders, initialKanjiNotes, note
                           ) : (
                             <Volume2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                           )}
-                          Âm lượng web
+                          Âm lượng đọc từ vựng
                         </span>
                         <div className="flex items-center gap-1">
                           <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-[11px] bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200/80 dark:border-slate-700 shadow-xs">
@@ -178,7 +178,7 @@ export function KanjiPageClient({ vocabularies, folders, initialKanjiNotes, note
                         value={Math.round(webVolume * 100)}
                         onChange={(e) => setWebVolume(Number(e.target.value) / 100)}
                         className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-600"
-                        title={`Âm lượng: ${Math.round(webVolume * 100)}%`}
+                        title={`Âm lượng đọc từ vựng: ${Math.round(webVolume * 100)}%`}
                       />
                     </div>
                     {currentUser && (

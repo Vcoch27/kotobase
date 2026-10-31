@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { 
   X, Save, Volume2, Volume1, VolumeX, Key, Info, Check, Monitor, Sparkles, 
-  User, Smile, Gauge, Sliders, RotateCcw 
+  User, Smile, Gauge, Sliders, RotateCcw,
+  Bell
 } from "lucide-react";
+import { useSfxVolume, setSfxVolume, audioFX } from "@/lib/audio-fx";
 import { 
   TTSSettings, loadTTSSettings, saveTTSSettings, setWebVolume,
   DEFAULT_TTS_SETTINGS, playAudio,
@@ -18,6 +20,7 @@ interface TTSSettingsModalProps {
 export function TTSSettingsModal({ onClose }: TTSSettingsModalProps) {
   const [settings, setSettings] = useState<TTSSettings>(DEFAULT_TTS_SETTINGS);
   const [isTesting, setIsTesting] = useState(false);
+  const [sfxVolume, setSfxVol] = useSfxVolume();
 
   useEffect(() => {
     setSettings(loadTTSSettings());
@@ -78,10 +81,10 @@ export function TTSSettingsModal({ onClose }: TTSSettingsModalProps) {
                 )}
                 <div>
                   <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 block">
-                    Âm lượng trang web (Master Volume)
+                    Âm lượng đọc từ vựng (Giọng đọc TTS)
                   </span>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Áp dụng cho phát âm từ vựng, mẫu câu và hiệu ứng quiz
+                    Áp dụng cho phát âm từ vựng, kanji, ví dụ và câu giao tiếp
                   </span>
                 </div>
               </div>
@@ -162,6 +165,119 @@ export function TTSSettingsModal({ onClose }: TTSSettingsModalProps) {
             </div>
           </div>
           
+          {/* 2. Quiz SFX Volume Control (Ting ting / Buzzer) */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/60 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {sfxVolume === 0 ? (
+                  <VolumeX className="w-5 h-5 text-rose-500" />
+                ) : (
+                  <Bell className="w-5 h-5 text-amber-500" />
+                )}
+                <div>
+                  <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 block">
+                    Âm lượng hiệu ứng Quiz (SFX Ting ting / Ùm ùm)
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Phản hồi âm thanh khi trả lời đúng (Ting ting) hoặc sai (Buzzer) trong Quiz
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm font-mono font-bold text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-amber-500/20 shadow-xs">
+                  {Math.round(sfxVolume * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextVol = sfxVolume > 0 ? 0 : 0.35;
+                    setSfxVol(nextVol);
+                  }}
+                  className={`p-2 rounded-xl border text-xs font-semibold transition-all ${
+                    sfxVolume === 0
+                      ? 'bg-rose-100 text-rose-600 border-rose-200 dark:bg-rose-950/40 dark:border-rose-800 shadow-xs'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:text-amber-600 hover:border-amber-300'
+                  }`}
+                  title={sfxVolume === 0 ? 'Bật hiệu ứng âm thanh' : 'Tắt hiệu ứng Quiz'}
+                >
+                  {sfxVolume === 0 ? <VolumeX className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Slider */}
+            <div className="space-y-1 pt-1">
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value={Math.round(sfxVolume * 100)}
+                onChange={(e) => {
+                  const val = Number(e.target.value) / 100;
+                  setSfxVol(val);
+                }}
+                className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+              />
+              <div className="flex justify-between text-[10px] text-slate-400 font-medium">
+                <span>0% (Tắt hiệu ứng)</span>
+                <span>35% (Khuyên dùng)</span>
+                <span>100% (Tối đa)</span>
+              </div>
+            </div>
+
+            {/* Quick Presets & Test Buttons */}
+            <div className="flex items-center justify-between gap-2 flex-wrap pt-1 border-t border-amber-100/60 dark:border-amber-800/40">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mr-1">Mức nhanh:</span>
+                {[
+                  { label: 'Tắt', val: 0 },
+                  { label: '20%', val: 0.2 },
+                  { label: '35% (chuẩn)', val: 0.35 },
+                  { label: '50%', val: 0.5 },
+                  { label: '75%', val: 0.75 },
+                ].map((preset) => {
+                  const isCurrent = Math.round(sfxVolume * 100) === Math.round(preset.val * 100);
+                  return (
+                    <button
+                      key={preset.val}
+                      type="button"
+                      onClick={() => setSfxVol(preset.val)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                        isCurrent
+                          ? 'bg-amber-500 text-white shadow-xs'
+                          : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-amber-400 hover:text-amber-600'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Nghe thử */}
+              <div className="flex items-center gap-1.5 ml-auto">
+                <button
+                  type="button"
+                  onClick={() => audioFX.playCorrect()}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors"
+                  title="Thử tiếng Ting ting khi làm đúng"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Thử Ting ting</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => audioFX.playWrong()}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 transition-colors"
+                  title="Thử tiếng Buzzer khi làm sai"
+                >
+                  <span>Thử Buzzer</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Provider Selection */}
           <div className="space-y-3">
             <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
