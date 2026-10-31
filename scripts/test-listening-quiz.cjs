@@ -71,6 +71,13 @@ test("distractor creation is bounded, immutable and not tied to the correct opti
   assert.equal(JSON.stringify(pool), original);
 });
 
+test("dictation removes replay characters from typed, pasted and IME text", () => {
+  const { sanitizeListeningDictation } = load("src/lib/listening-shortcuts.ts");
+  for (const [value, expected] of [["`", ""], ["｀", ""], ["‘’", ""], ["つ`よ｀み‘’", "つよみ"], ["強み", "強み"], ["コーヒー", "コーヒー"]]) {
+    assert.equal(sanitizeListeningDictation(value), expected);
+  }
+});
+
 function shortcutHarness() {
   const listeners = new Map(), calls = [];
   let stage = "dictation", composing = false;

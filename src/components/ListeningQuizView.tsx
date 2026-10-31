@@ -9,7 +9,7 @@ import { useCustomBg } from "@/hooks/useCustomBg";
 import { audioFX } from "@/lib/audio-fx";
 import { playAudio, stopVocabularyAudio, getWebVolume } from "@/lib/tts-utils";
 import { ListeningAudioPlayer, type ListeningAudioState } from "@/lib/listening-audio";
-import { bindListeningShortcuts } from "@/lib/listening-shortcuts";
+import { bindListeningShortcuts, sanitizeListeningDictation } from "@/lib/listening-shortcuts";
 import {
   buildMeaningQuestion, gradeListeningAttempt, listeningReviewReason, shuffleListening,
   type ListeningWord, type ListeningResult,
@@ -213,7 +213,7 @@ export function ListeningQuizView({ vocabularies, selectedVocabIds = [], isActiv
               <h2 className="text-xl font-bold">Bạn vừa nghe từ gì?</h2>
               <p className="mt-2 text-sm text-slate-500">Gõ kana hoặc Kanji. Kết quả chưa được bật mí ở bước này.</p>
               <label htmlFor="listening-dictation" className="mt-6 block text-xs font-bold text-slate-500">Tiếng Nhật bạn nghe được</label>
-              <input id="listening-dictation" ref={input} value={typed} onChange={(event) => setTyped(event.target.value)} onCompositionStart={() => { composing.current = true; }} onCompositionEnd={() => { composing.current = false; }} lang="ja" translate="no" autoComplete="off" autoCorrect="off" spellCheck={false} disabled={!audio.hasHeard} className="notranslate mt-2 min-h-14 w-full rounded-xl border-2 border-slate-200 bg-white/80 px-4 py-3 text-2xl outline-none focus:border-violet-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900/80" placeholder={audio.hasHeard ? "Nhập tiếng Nhật…" : "Nghe xong để bắt đầu gõ…"} />
+              <input id="listening-dictation" ref={input} value={typed} onChange={(event) => setTyped(sanitizeListeningDictation(event.target.value))} onCompositionStart={() => { composing.current = true; }} onCompositionEnd={(event) => { composing.current = false; setTyped(sanitizeListeningDictation(event.currentTarget.value)); }} lang="ja" translate="no" autoComplete="off" autoCorrect="off" spellCheck={false} disabled={!audio.hasHeard} className="notranslate mt-2 min-h-14 w-full rounded-xl border-2 border-slate-200 bg-white/80 px-4 py-3 text-2xl outline-none focus:border-violet-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900/80" placeholder={audio.hasHeard ? "Nhập tiếng Nhật…" : "Nghe xong để bắt đầu gõ…"} />
               <button type="button" className={`${primary} mt-4`} disabled={!audio.hasHeard || !typed.trim()} onClick={() => commitDictation()}>Sang nghĩa<ArrowRight size={16} /><kbd>Enter</kbd></button>
             </> : stage === "meaning" ? <>
               <h2 className="text-xl font-bold">Từ bạn nghe có nghĩa gì?</h2>

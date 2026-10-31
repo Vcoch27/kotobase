@@ -1,3 +1,8 @@
+/** Replay keys are never part of a Japanese dictation answer, including IME full-width output. */
+export function sanitizeListeningDictation(value: string): string {
+  return value.replace(/[`｀‘’]/g, "");
+}
+
 interface ListeningShortcutActions {
   stage(): "dictation" | "meaning" | "result";
   composing(): boolean;
