@@ -97,11 +97,13 @@ export interface ParsedVocabAI {
 
 /**
  * Gọi Gemini API trích xuất danh sách từ vựng có cấu trúc từ văn bản thô
+ * Cho phép truyền customPromptTemplate tùy chỉnh từ Admin
  */
 export async function generateVocabulariesFromRawText(
   rawText: string,
   apiKey: string,
-  model = "gemini-3.6-flash"
+  model = "gemini-3.6-flash",
+  customPromptTemplate?: string
 ): Promise<{ success: boolean; data?: ParsedVocabAI[]; error?: string }> {
   if (!apiKey || !apiKey.trim()) {
     return { success: false, error: "Chưa cấu hình Gemini API Key. Vui lòng vào Cài đặt Gemini AI để thêm API Key." };
@@ -114,7 +116,15 @@ export async function generateVocabulariesFromRawText(
   const modelId = model.trim() || "gemini-3.6-flash";
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey.trim()}`;
 
-  const prompt = `Bạn là một chuyên gia ngôn ngữ tiếng Nhật và từ điển học. 
+  let prompt = "";
+  if (customPromptTemplate && customPromptTemplate.trim()) {
+    if (customPromptTemplate.includes("{{RAW_TEXT}}")) {
+      prompt = customPromptTemplate.replace("{{RAW_TEXT}}", rawText.trim());
+    } else {
+      prompt = `${customPromptTemplate.trim()}\n\nVăn bản đầu vào từ người dùng:\n"""\n${rawText.trim()}\n"""`;
+    }
+  } else {
+    prompt = `Bạn là một chuyên gia ngôn ngữ tiếng Nhật và từ điển học. 
 Nhiệm vụ của bạn là phân tích văn bản/danh sách từ vựng thô dưới đây và trích xuất thành danh sách các từ vựng tiếng Nhật chuẩn xác.
 
 Yêu cầu cho từng từ vựng:
@@ -128,6 +138,7 @@ Văn bản đầu vào từ người dùng:
 """
 ${rawText}
 """`;
+  }
 
   const payload = {
     contents: [

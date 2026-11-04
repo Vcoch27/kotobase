@@ -1845,6 +1845,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
               <BulkImport 
                 folders={folders} 
                 currentFolderId={selectedFolderId} 
+                isAdmin={isAdminEmail(currentUser?.email)} 
                 onSuccess={() => {
                   fetchData(true);
                   setShowBulkImportModal(false);

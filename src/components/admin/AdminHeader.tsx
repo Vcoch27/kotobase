@@ -3,12 +3,12 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { AppLogo } from "@/components/AppLogo";
-import { ShieldCheck, Moon, Sun, ArrowLeft, Users, BarChart3, ExternalLink, User } from "lucide-react";
+import { ShieldCheck, Moon, Sun, ArrowLeft, Users, Sparkles, Bell, User } from "lucide-react";
 import { type UserSession } from "@/lib/auth-utils";
 
 interface AdminHeaderProps {
   currentUser?: UserSession | null;
-  activeTab?: string;
+  activeTab?: "users" | "prompts" | "push" | string;
   onTabChange?: (tab: string) => void;
 }
 
@@ -37,6 +37,12 @@ export function AdminHeader({ currentUser, activeTab = "users", onTabChange }: A
     }
   };
 
+  const navItems = [
+    { id: "users", href: "/admin", label: "Quản lý Người dùng", icon: Users },
+    { id: "prompts", href: "/admin/prompts", label: "Quản lý Prompt", icon: Sparkles },
+    { id: "push", href: "/admin/push", label: "Thông báo Push", icon: Bell },
+  ];
+
   return (
     <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 transition-colors shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
@@ -58,27 +64,33 @@ export function AdminHeader({ currentUser, activeTab = "users", onTabChange }: A
           </Link>
 
           {/* Vertical Separator */}
-          <div className="hidden md:block w-px h-6 bg-slate-200 dark:border-slate-800" />
+          <div className="hidden md:block w-px h-6 bg-slate-200 dark:bg-slate-800" />
 
-          {/* Navigation Tabs */}
+          {/* Navigation Tabs (Desktop) */}
           <nav className="hidden md:flex items-center gap-1">
-            <button
-              onClick={() => onTabChange?.("users")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                activeTab === "users"
-                  ? "bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 shadow-xs"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60"
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              <span>Quản lý Người dùng</span>
-            </button>
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    isActive
+                      ? "bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 shadow-xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60"
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
           </nav>
         </div>
 
         {/* Right Actions: Back to App, Theme Toggle, Profile */}
         <div className="flex items-center gap-2.5 shrink-0">
-          <Link href="/admin/push" title="Gửi thông báo đến điện thoại" className="hidden rounded-xl bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-300 md:block">Thông báo</Link>
           {/* Back to App Link */}
           <Link
             href="/"
@@ -129,7 +141,28 @@ export function AdminHeader({ currentUser, activeTab = "users", onTabChange }: A
           )}
         </div>
       </div>
-      <Link href="/admin/push" className="mx-4 mb-3 block rounded-xl bg-indigo-50 px-3 py-2 text-center text-xs font-bold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 md:hidden">Gửi thông báo đến điện thoại →</Link>
+
+      {/* Navigation Tabs (Mobile Strip) */}
+      <div className="flex md:hidden items-center justify-around px-3 py-1.5 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <Link
+              key={item.id}
+              href={item.href}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                isActive
+                  ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-300 shadow-2xs border border-slate-200/60 dark:border-slate-700"
+                  : "text-slate-600 dark:text-slate-400"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{item.id === "users" ? "Người dùng" : item.id === "prompts" ? "Prompt AI" : "Push"}</span>
+            </Link>
+          );
+        })}
+      </div>
     </header>
   );
 }
