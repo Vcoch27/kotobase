@@ -39,7 +39,7 @@ interface ParsedVocabItem {
 
 export function BulkImport({ folders, currentFolderId, isAdmin = false, onSuccess, onOpenGeminiSettings }: BulkImportProps) {
   const [step, setStep] = useState<"input" | "preview">("input");
-  const [inputMode, setInputMode] = useState<"ai" | "json">("ai");
+  const [inputMode, setInputMode] = useState<"ai" | "json">("json");
   const [rawText, setRawText] = useState("");
   const [jsonText, setJsonText] = useState("");
   const [previewList, setPreviewList] = useState<ParsedVocabItem[]>([]);
@@ -218,7 +218,7 @@ export function BulkImport({ folders, currentFolderId, isAdmin = false, onSucces
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-slate-500 dark:text-slate-400">
             {step === "input" 
-              ? "Dán danh sách từ vựng thô để AI tự động phân tích hoặc dán JSON có sẵn." 
+              ? "Dán mã JSON từ vựng (từ ChatGPT/Claude) hoặc chuyển sang AI để tự động phân tích." 
               : `Xem trước ${previewList.length} từ vựng chuẩn bị thêm`}
           </span>
           {hasApiKey && (
@@ -244,22 +244,6 @@ export function BulkImport({ folders, currentFolderId, isAdmin = false, onSucces
             <button
               type="button"
               onClick={() => {
-                setInputMode("ai");
-                setMessage(null);
-              }}
-              className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-bold transition-all flex-1 sm:flex-initial ${
-                inputMode === "ai"
-                  ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
-                  : "text-slate-500 dark:text-slate-400 hover:text-slate-800"
-              }`}
-            >
-              <Bot className="w-3.5 h-3.5 shrink-0" />
-              <span>🤖 Tự động bằng Gemini AI</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
                 setInputMode("json");
                 setMessage(null);
               }}
@@ -271,6 +255,22 @@ export function BulkImport({ folders, currentFolderId, isAdmin = false, onSucces
             >
               <FileCode className="w-3.5 h-3.5 shrink-0" />
               <span>📋 Dán JSON thủ công</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setInputMode("ai");
+                setMessage(null);
+              }}
+              className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-bold transition-all flex-1 sm:flex-initial ${
+                inputMode === "ai"
+                  ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-800"
+              }`}
+            >
+              <Bot className="w-3.5 h-3.5 shrink-0" />
+              <span>🤖 Tự động bằng Gemini AI</span>
             </button>
           </div>
 
