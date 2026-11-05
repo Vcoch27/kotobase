@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { ClickableKanjiString } from "./ClickableKanjiString";
 import { 
-  RotateCcw, Shuffle, ArrowLeft, ArrowRight, X, Check, 
+  RotateCcw, Shuffle, ArrowLeft, ArrowRight, ArrowLeftRight, X, Check, 
   Rotate3D, GraduationCap, LayoutList, RefreshCcw, BrainCircuit, Undo2, Eye, EyeOff, Volume2, Headphones, Maximize, Minimize,
   Sparkles, Play, Pause, SlidersHorizontal, Timer,
   Pencil
@@ -100,6 +100,32 @@ export function FlashcardView({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showSino, setShowSino] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [cardDirection, setCardDirection] = useState<"ja_vi" | "vi_ja">(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("kotobase_flashcard_direction");
+        if (saved === "vi_ja" || saved === "ja_vi") return saved;
+      } catch {}
+    }
+    return "ja_vi";
+  });
+
+  const toggleCardDirection = useCallback(() => {
+    setCardDirection((prev) => {
+      const next = prev === "ja_vi" ? "vi_ja" : "ja_vi";
+      try {
+        localStorage.setItem("kotobase_flashcard_direction", next);
+      } catch {}
+      setIsFlipped(false);
+      isFlippedRef.current = false;
+      toast(next === "ja_vi" ? "Hướng thẻ: Nhật ➔ Việt" : "Hướng thẻ: Việt ➔ Nhật (Nghĩa mặt trước)", {
+        id: "direction-toast",
+        icon: "🔄",
+        duration: 1800,
+      });
+      return next;
+    });
+  }, []);
 
   // Kiểm tra quyền chỉnh sửa từ vựng: Admin, hoặc Chủ sở hữu, hoặc Đồng tác giả của thư mục
   const canEditCurrentVocab = useMemo(() => {
@@ -787,7 +813,8 @@ export function FlashcardView({
     autoPlaySound,
     flipCard,
     handleNext,
-    getAudioTextToPlay
+    getAudioTextToPlay,
+    cardDirection
   ]);
 
   // Swipe Handlers
@@ -966,7 +993,7 @@ export function FlashcardView({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isActive, isFinished, deck, currentIndex, mode, handleNext, handlePrev, handleProgress, handleAnkiRate, handleUndo, flipCard, isFlipped, getAudioTextToPlay, kanjiNotesMap, toggleMnemonic, toggleAutoPlay]);
+  }, [isActive, isFinished, deck, currentIndex, mode, handleNext, handlePrev, handleProgress, handleAnkiRate, handleUndo, flipCard, isFlipped, getAudioTextToPlay, kanjiNotesMap, toggleMnemonic, toggleAutoPlay, toggleCardDirection]);
 
   // Restart Logic
   const restartAll = () => {
@@ -1354,7 +1381,7 @@ export function FlashcardView({
                       <div>
                         <div className="flex items-center justify-between mb-1 text-xs">
                           <span className="font-semibold text-slate-600 dark:text-slate-300">
-                            Mặt trước (Từ vựng)
+                            {cardDirection === "vi_ja" ? "Mặt trước (Nghĩa tiếng Việt)" : "Mặt trước (Từ vựng)"}
                           </span>
                           <span className="font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/40">
                             {autoPlayFrontSec}s
@@ -1409,7 +1436,7 @@ export function FlashcardView({
                       <div>
                         <div className="flex items-center justify-between mb-1 text-xs">
                           <span className="font-semibold text-slate-600 dark:text-slate-300">
-                            Mặt sau (Nghĩa & Ví dụ)
+                            {cardDirection === "vi_ja" ? "Mặt sau (Từ vựng & Ví dụ)" : "Mặt sau (Nghĩa & Ví dụ)"}
                           </span>
                           <span className="font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/40">
                             {autoPlayBackSec}s
@@ -1685,75 +1712,95 @@ export function FlashcardView({
                 <Rotate3D className="w-3 h-3 sm:w-4 sm:h-4" /> Bấm để lật
               </span>
 
-
-              <div className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-wide" onClick={(e) => e.stopPropagation()}>
-                <ClickableKanjiString text={currentVocab.word} />
-              </div>
-              {currentVocab.sinoVietnamese && showSino && (
-                <div className="mt-3 sm:mt-5 text-xs sm:text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] animate-fadeIn">
-                  {currentVocab.sinoVietnamese}
-                </div>
-              )}
-
-              {/* Mẹo nhớ Hán tự (Mnemonic) - Hỗ trợ hiển thị 1 hoặc nhiều Hán tự */}
-              {availableMnemonics.length > 0 && (
-                showMnemonic ? (
-                  <div 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Nếu người dùng đang bôi đen chọn chữ để sao chép, không ẩn
-                      const selection = window.getSelection();
-                      if (selection && selection.toString().trim().length > 0) return;
-                      toggleMnemonic();
-                    }} 
-                    title="Bấm vào để ẩn mẹo nhớ (hoặc phím M)"
-                    className="mt-2 sm:mt-5 w-full max-w-xl mx-auto bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200/90 dark:border-amber-500/25 hover:border-amber-300 dark:hover:border-amber-500/40 rounded-2xl p-3 sm:p-5 text-left shadow-sm hover:shadow-md animate-fadeIn transition-all select-text cursor-pointer group"
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3 pb-1.5 sm:pb-2 border-b border-amber-200/70 dark:border-amber-500/20">
-                      <span className="text-xs sm:text-sm font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5 uppercase tracking-wider">
-                        <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-                        Mẹo nhớ Hán tự ({availableMnemonics.length})
-                      </span>
-                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
-                        Bấm để ẩn [M]
-                      </span>
-                    </div>
-
-                    <div className="space-y-2 sm:space-y-3 max-h-[180px] sm:max-h-[280px] overflow-y-auto pr-1 [scrollbar-width:thin]">
-                      {availableMnemonics.map(({ char, hanviet, mnemonic }) => (
-                        <div key={char} className="flex items-start gap-2.5 sm:gap-3 text-sm sm:text-base leading-relaxed">
-                          <div className="shrink-0 flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-amber-200 dark:border-slate-700 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl shadow-xs">
-                            <span className="font-black text-amber-600 dark:text-amber-400 text-lg sm:text-2xl font-japanese">
-                              {char}
-                            </span>
-                            {hanviet && (
-                              <span className="text-[10px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
-                                {hanviet}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex-1 text-slate-800 dark:text-slate-100 pt-0.5 text-sm sm:text-lg font-medium leading-relaxed">
-                            <HighlightMnemonic text={mnemonic} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+              {cardDirection === "ja_vi" ? (
+                /* HƯỚNG 1: NHẬT ➔ VIỆT (Mặt trước hiển thị từ vựng tiếng Nhật) */
+                <>
+                  <div className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-wide" onClick={(e) => e.stopPropagation()}>
+                    <ClickableKanjiString text={currentVocab.word} />
                   </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleMnemonic();
-                    }}
-                    className="mt-2 sm:mt-4 inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs sm:text-sm font-semibold text-amber-700 dark:text-amber-300 bg-amber-50/90 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 border border-amber-200/80 dark:border-amber-500/30 transition-all active:scale-95 shadow-xs"
-                    title="Bấm để xem câu chuyện mẹo nhớ Hán tự (Phím M)"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Mẹo nhớ ({availableMnemonics.length})</span>
-                    <kbd className="text-[11px] opacity-70 bg-amber-200/50 dark:bg-amber-500/30 px-1.5 rounded font-sans">M</kbd>
-                  </button>
-                )
+                  {currentVocab.sinoVietnamese && showSino && (
+                    <div className="mt-3 sm:mt-5 text-xs sm:text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] animate-fadeIn">
+                      {currentVocab.sinoVietnamese}
+                    </div>
+                  )}
+
+                  {/* Mẹo nhớ Hán tự (Mnemonic) - Hỗ trợ hiển thị 1 hoặc nhiều Hán tự */}
+                  {availableMnemonics.length > 0 && (
+                    showMnemonic ? (
+                      <div 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const selection = window.getSelection();
+                          if (selection && selection.toString().trim().length > 0) return;
+                          toggleMnemonic();
+                        }} 
+                        title="Bấm vào để ẩn mẹo nhớ (hoặc phím M)"
+                        className="mt-2 sm:mt-5 w-full max-w-xl mx-auto bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200/90 dark:border-amber-500/25 hover:border-amber-300 dark:hover:border-amber-500/40 rounded-2xl p-3 sm:p-5 text-left shadow-sm hover:shadow-md animate-fadeIn transition-all select-text cursor-pointer group"
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3 pb-1.5 sm:pb-2 border-b border-amber-200/70 dark:border-amber-500/20">
+                          <span className="text-xs sm:text-sm font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5 uppercase tracking-wider">
+                            <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+                            Mẹo nhớ Hán tự ({availableMnemonics.length})
+                          </span>
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                            Bấm để ẩn [M]
+                          </span>
+                        </div>
+
+                        <div className="space-y-2 sm:space-y-3 max-h-[180px] sm:max-h-[280px] overflow-y-auto pr-1 [scrollbar-width:thin]">
+                          {availableMnemonics.map(({ char, hanviet, mnemonic }) => (
+                            <div key={char} className="flex items-start gap-2.5 sm:gap-3 text-sm sm:text-base leading-relaxed">
+                              <div className="shrink-0 flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-amber-200 dark:border-slate-700 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl shadow-xs">
+                                <span className="font-black text-amber-600 dark:text-amber-400 text-lg sm:text-2xl font-japanese">
+                                  {char}
+                                </span>
+                                {hanviet && (
+                                  <span className="text-[10px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
+                                    {hanviet}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex-1 text-slate-800 dark:text-slate-100 pt-0.5 text-sm sm:text-lg font-medium leading-relaxed">
+                                <HighlightMnemonic text={mnemonic} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleMnemonic();
+                        }}
+                        className="mt-2 sm:mt-4 inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs sm:text-sm font-semibold text-amber-700 dark:text-amber-300 bg-amber-50/90 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 border border-amber-200/80 dark:border-amber-500/30 transition-all active:scale-95 shadow-xs"
+                        title="Bấm để xem câu chuyện mẹo nhớ Hán tự (Phím M)"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Mẹo nhớ ({availableMnemonics.length})</span>
+                        <kbd className="text-[11px] opacity-70 bg-amber-200/50 dark:bg-amber-500/30 px-1.5 rounded font-sans">M</kbd>
+                      </button>
+                    )
+                  )}
+                </>
+              ) : (
+                /* HƯỚNG 2: VIỆT ➔ NHẬT (Mặt trước hiển thị Nghĩa tiếng Việt) */
+                <div className="flex flex-col items-center justify-center w-full max-w-xl animate-fadeIn">
+                  <span className="mb-3 sm:mb-4 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/60 text-[11px] sm:text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider shadow-2xs">
+                    Nghĩa tiếng Việt
+                  </span>
+
+                  <div className="text-2xl sm:text-3xl md:text-5xl font-black text-slate-900 dark:text-white mb-2 sm:mb-4 leading-tight flex flex-col items-center text-center w-full">
+                    <MeaningText text={currentVocab.meaning} size="lg" align="center" />
+                  </div>
+
+                  {currentVocab.sinoVietnamese && showSino && (
+                    <div className="mt-3 sm:mt-5 text-xs sm:text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] animate-fadeIn">
+                      Gợi ý âm Hán: <span className="font-bold text-slate-700 dark:text-slate-300">{currentVocab.sinoVietnamese}</span>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           ))}
@@ -1800,9 +1847,8 @@ export function FlashcardView({
               <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
             
-            {/* Nếu là chế độ Nghe (Listening Mode): Cần hiển thị đầy đủ Từ vựng gốc + Hán Việt vì mặt trước chưa có */}
-            {((
-              /* Các chế độ thông thường (Mặt trước đã có chữ gốc) */
+            {cardDirection === "ja_vi" ? (
+              /* HƯỚNG 1: NHẬT ➔ VIỆT (Mặt sau hiển thị cách đọc, nghĩa, Hán Việt nhỏ, ví dụ) */
               <>
                 {currentVocab.reading && (
                   <div className="text-lg sm:text-xl md:text-2xl font-bold text-amber-600 dark:text-amber-400 mb-1 sm:mb-2">
@@ -1810,11 +1856,107 @@ export function FlashcardView({
                   </div>
                 )}
                 
-                <div className="text-2xl sm:text-3xl md:text-5xl font-black text-slate-900 dark:text-white mb-3 sm:mb-6 leading-tight flex flex-col items-center text-center w-full">
+                <div className="text-2xl sm:text-3xl md:text-5xl font-black text-slate-900 dark:text-white mb-2 sm:mb-4 leading-tight flex flex-col items-center text-center w-full">
                   <MeaningText text={currentVocab.meaning} size="lg" align="center" />
                 </div>
+
+                {/* Hán Việt hiển thị bé bé ở mặt sau nếu có */}
+                {currentVocab.sinoVietnamese && (
+                  <div className="mt-1 mb-3 sm:mb-4 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 border border-slate-200/80 dark:border-slate-700/60 uppercase tracking-wider animate-fadeIn">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal lowercase">hán việt:</span>
+                    <span className="font-bold text-indigo-600 dark:text-indigo-400">{currentVocab.sinoVietnamese}</span>
+                  </div>
+                )}
               </>
-            ))}
+            ) : (
+              /* HƯỚNG 2: VIỆT ➔ NHẬT (Mặt sau hiển thị ĐẦY ĐỦ: Word tiếng Nhật to rõ, Cách đọc Kana, Hán Việt nhỏ, Nghĩa nhỏ, Mẹo nhớ nếu có) */
+              <>
+                {/* Từ vựng tiếng Nhật gốc to rõ */}
+                <div className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-wide mb-1 sm:mb-2" onClick={(e) => e.stopPropagation()}>
+                  <ClickableKanjiString text={currentVocab.word} />
+                </div>
+
+                {/* Cách đọc Kana */}
+                {currentVocab.reading && (
+                  <div className="text-lg sm:text-xl md:text-2xl font-bold text-amber-600 dark:text-amber-400 mb-1 sm:mb-2">
+                    {currentVocab.reading}
+                  </div>
+                )}
+
+                {/* Hán Việt nhỏ bé */}
+                {currentVocab.sinoVietnamese && (
+                  <div className="mb-2 sm:mb-3 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 border border-slate-200/80 dark:border-slate-700/60 uppercase tracking-wider animate-fadeIn">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal lowercase">hán việt:</span>
+                    <span className="font-bold text-indigo-600 dark:text-indigo-400">{currentVocab.sinoVietnamese}</span>
+                  </div>
+                )}
+
+                {/* Nhắc lại nghĩa tiếng Việt (kích thước vừa phải để đối chiếu) */}
+                <div className="text-sm sm:text-base font-semibold text-slate-600 dark:text-slate-300 mb-2 sm:mb-3 max-w-lg">
+                  <MeaningText text={currentVocab.meaning} size="sm" align="center" />
+                </div>
+
+                {/* Mẹo nhớ Hán tự (Mnemonic) ở mặt sau */}
+                {availableMnemonics.length > 0 && (
+                  showMnemonic ? (
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const selection = window.getSelection();
+                        if (selection && selection.toString().trim().length > 0) return;
+                        toggleMnemonic();
+                      }} 
+                      title="Bấm vào để ẩn mẹo nhớ (hoặc phím M)"
+                      className="my-2 w-full max-w-xl mx-auto bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200/90 dark:border-amber-500/25 hover:border-amber-300 dark:hover:border-amber-500/40 rounded-2xl p-3 sm:p-4 text-left shadow-sm hover:shadow-md animate-fadeIn transition-all select-text cursor-pointer group"
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-2 pb-1 border-b border-amber-200/70 dark:border-amber-500/20">
+                        <span className="text-xs sm:text-sm font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5 uppercase tracking-wider">
+                          <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+                          Mẹo nhớ Hán tự ({availableMnemonics.length})
+                        </span>
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                          Bấm để ẩn [M]
+                        </span>
+                      </div>
+
+                      <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1 [scrollbar-width:thin]">
+                        {availableMnemonics.map(({ char, hanviet, mnemonic }) => (
+                          <div key={char} className="flex items-start gap-2.5 text-xs sm:text-sm leading-relaxed">
+                            <div className="shrink-0 flex items-center gap-1 bg-white dark:bg-slate-800 border border-amber-200 dark:border-slate-700 px-2 py-0.5 rounded-lg shadow-xs">
+                              <span className="font-black text-amber-600 dark:text-amber-400 text-base font-japanese">
+                                {char}
+                              </span>
+                              {hanviet && (
+                                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
+                                  {hanviet}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex-1 text-slate-800 dark:text-slate-100 pt-0.5 font-medium leading-relaxed">
+                              <HighlightMnemonic text={mnemonic} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleMnemonic();
+                      }}
+                      className="my-1.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50/90 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 border border-amber-200/80 dark:border-amber-500/30 transition-all active:scale-95 shadow-xs"
+                      title="Bấm để xem câu chuyện mẹo nhớ Hán tự (Phím M)"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Mẹo nhớ ({availableMnemonics.length})</span>
+                      <kbd className="text-[10px] opacity-70 bg-amber-200/50 dark:bg-amber-500/30 px-1 rounded font-sans">M</kbd>
+                    </button>
+                  )
+                )}
+              </>
+            )}
 
 
             {/* Ví dụ minh họa */}
