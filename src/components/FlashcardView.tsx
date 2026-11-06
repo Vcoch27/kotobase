@@ -1762,10 +1762,6 @@ export function FlashcardView({
               ) : (
                 /* HƯỚNG 2: VIỆT ➔ NHẬT (Mặt trước hiển thị Nghĩa tiếng Việt) */
                 <div className="flex flex-col items-center justify-center w-full max-w-xl animate-fadeIn">
-                  <span className="mb-3 sm:mb-4 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/60 text-[11px] sm:text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider shadow-2xs">
-                    Nghĩa tiếng Việt
-                  </span>
-
                   <div className="text-2xl sm:text-3xl md:text-5xl font-black text-slate-900 dark:text-white mb-2 sm:mb-4 leading-tight flex flex-col items-center text-center w-full">
                     <MeaningText text={parseMeaning(currentVocab.meaning).cleanMeaning} size="lg" align="center" />
                   </div>
