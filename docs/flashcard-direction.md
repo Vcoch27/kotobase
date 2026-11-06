@@ -1,6 +1,6 @@
 # Đổi hướng Flashcard
 
-Vị trí: Flashcard → hàng Hướng học ngay dưới Bình thường / Tiến độ / Anki và trên hàng Phát âm.
+Vị trí: Flashcard → icon ⇄ đầu hàng công cụ, ngay bên trái bộ chọn nội dung âm thanh. Bỏ hàng Hướng học riêng để tiết kiệm diện tích. Tooltip ghi hướng hiện tại; nền tím nhạt là Việt → Nhật. Menu loa chọn Từ vựng / Ví dụ / Từ & câu, vẫn dùng A để chuyển và V để phát.
 
 - Nhật → Việt: xem từ Nhật trước, lật để xem cách đọc, nghĩa, Hán Việt và ví dụ.
 - Việt → Nhật: xem nghĩa Việt trước (không hiện mẹo cách đọc); lật để xem từ Nhật, cách đọc, Hán Việt, nghĩa và ví dụ.
