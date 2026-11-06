@@ -19,7 +19,7 @@ import { useCustomBg } from "@/hooks/useCustomBg";
 import { StudyScopeSelector } from "./StudyScopeSelector";
 import { extractKanji } from "@/lib/kanji-parser";
 import { HighlightMnemonic } from "./HighlightMnemonic";
-import { MeaningText } from "./MeaningText";
+import { MeaningText, parseMeaning } from "./MeaningText";
 import { VocabularyEditModal } from "./VocabularyEditModal";
 import { canUserManageFolder } from "@/lib/folder-utils";
 // Fetch mẹo nhớ Hán tự qua API Route (tránh dùng Server Action vì Next.js serialize response đặc biệt không phải JSON thuần)
@@ -110,22 +110,15 @@ export function FlashcardView({
     return "ja_vi";
   });
 
-  const toggleCardDirection = useCallback(() => {
-    setCardDirection((prev) => {
-      const next = prev === "ja_vi" ? "vi_ja" : "ja_vi";
-      try {
-        localStorage.setItem("kotobase_flashcard_direction", next);
-      } catch {}
-      setIsFlipped(false);
-      isFlippedRef.current = false;
-      toast(next === "ja_vi" ? "Hướng thẻ: Nhật ➔ Việt" : "Hướng thẻ: Việt ➔ Nhật (Nghĩa mặt trước)", {
-        id: "direction-toast",
-        icon: "🔄",
-        duration: 1800,
-      });
-      return next;
-    });
+  const changeCardDirection = useCallback((next: "ja_vi" | "vi_ja") => {
+    setCardDirection(next);
+    setIsFlipped(false);
+    isFlippedRef.current = false;
+    try { localStorage.setItem("kotobase_flashcard_direction", next); } catch {}
   }, []);
+  const toggleCardDirection = useCallback(() => {
+    changeCardDirection(cardDirection === "ja_vi" ? "vi_ja" : "ja_vi");
+  }, [cardDirection, changeCardDirection]);
 
   // Kiểm tra quyền chỉnh sửa từ vựng: Admin, hoặc Chủ sở hữu, hoặc Đồng tác giả của thư mục
   const canEditCurrentVocab = useMemo(() => {
@@ -853,6 +846,8 @@ export function FlashcardView({
   useEffect(() => {
     if (!isActive) return;
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing ||
+          (e.target instanceof HTMLElement && e.target.closest('[role="dialog"],select,[contenteditable="true"]'))) return;
       // Ignore if typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
@@ -861,6 +856,11 @@ export function FlashcardView({
       if (isFinished || deck.length === 0) return;
 
       switch (e.key) {
+        case "d":
+        case "D":
+          e.preventDefault();
+          if (!e.repeat) toggleCardDirection();
+          break;
         case " ":
         case "Spacebar":
         case "ArrowUp":
@@ -1245,6 +1245,24 @@ export function FlashcardView({
             title="Chuyển sang Quiz: nghe, gõ tiếng Nhật và chọn nghĩa"
             className="flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-bold text-violet-600 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-950"
           ><Headphones className="h-3.5 w-3.5" />Nghe → Quiz</button>}
+        </div>
+
+        <div className="space-y-2 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 dark:border-indigo-900/60 dark:bg-indigo-950/30">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Hướng học <kbd className="ml-1 rounded border border-slate-200 px-1 text-[10px] dark:border-slate-600">D</kbd></span>
+            <div role="group" aria-label="Hướng học Flashcard" className="flex flex-wrap gap-1 rounded-lg bg-white p-1 dark:bg-slate-900">
+              {([['ja_vi', 'Nhật → Việt'], ['vi_ja', 'Việt → Nhật']] as const).map(([value, label]) => (
+                <button key={value} type="button" aria-pressed={cardDirection === value}
+                  onClick={() => changeCardDirection(value)}
+                  className={`min-h-10 rounded-lg px-3 py-2 text-xs font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500 ${cardDirection === value ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400" aria-live="polite">
+            {cardDirection === 'ja_vi' ? 'Mặt trước: từ tiếng Nhật · Lật thẻ: cách đọc, nghĩa và ví dụ.' : 'Mặt trước: nghĩa tiếng Việt · Lật thẻ: từ tiếng Nhật, cách đọc, Hán Việt và ví dụ.'}
+          </p>
         </div>
 
         {/* Action & Audio mode buttons */}
@@ -1792,7 +1810,7 @@ export function FlashcardView({
                   </span>
 
                   <div className="text-2xl sm:text-3xl md:text-5xl font-black text-slate-900 dark:text-white mb-2 sm:mb-4 leading-tight flex flex-col items-center text-center w-full">
-                    <MeaningText text={currentVocab.meaning} size="lg" align="center" />
+                    <MeaningText text={parseMeaning(currentVocab.meaning).cleanMeaning} size="lg" align="center" />
                   </div>
 
                   {currentVocab.sinoVietnamese && showSino && (
