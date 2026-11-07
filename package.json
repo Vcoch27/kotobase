@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:vocabulary": "node --test scripts/test-vocabulary-view.cjs",
+    "test:vocabulary": "node --test scripts/test-vocabulary-view.cjs scripts/test-vocabulary-edit.cjs",
     "test:speaking": "node --test scripts/test-speaking-quiz.cjs",
     "test:listening": "node --test scripts/test-listening-quiz.cjs",
     "test:microphone": "node --test scripts/test-microphone.cjs",

@@ -59,6 +59,7 @@ interface OverviewViewProps {
   vocabularies: VocabularyData[];
   folders: any[];
   onRefresh?: () => void;
+  onVocabularyUpdated?: (vocabulary: VocabularyData) => void;
   onFoldersUpdated?: () => void;
   selectedVocabIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
@@ -75,6 +76,7 @@ export function OverviewView({
   vocabularies,
   folders,
   onRefresh,
+  onVocabularyUpdated,
   onFoldersUpdated,
   selectedVocabIds,
   onSelectionChange,
@@ -1558,9 +1560,12 @@ export function OverviewView({
           vocabulary={editingVocab}
           folders={folders}
           onClose={() => setEditingVocab(null)}
-          onSuccess={() => {
+          onSuccess={(updatedData) => {
+            if (updatedData) {
+              setLocalVocabs(previous => previous.map(word => word.id === updatedData.id ? { ...word, ...updatedData } : word));
+              onVocabularyUpdated?.(updatedData);
+            }
             setEditingVocab(null);
-            if (onRefresh) onRefresh();
           }}
         />
       )}

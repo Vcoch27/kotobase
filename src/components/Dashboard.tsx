@@ -1601,6 +1601,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     vocabularies={filteredVocabularies} 
                     folders={folders} 
                     onRefresh={() => fetchData(true)} 
+                    onVocabularyUpdated={handleVocabularyUpdated}
                     onFoldersUpdated={refreshFoldersOnly}
                     currentUser={currentUser}
                     selectedVocabIds={selectedVocabIds}
