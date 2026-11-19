@@ -1,0 +1,28 @@
+[
+  {
+    "id": "n3-example-1",
+    "group": "N3-NEW",
+    "groupLabel": "N3 · Bài nghe mới",
+    "title": "Bài 1 · Chủ đề của bài",
+    "filename": "n3-example-1.mp3",
+    "audio": "/choukai/n3-example-1.mp3",
+    "source": "https://example.com/script-goc",
+    "note": "Ghi chú tùy chọn về nội dung hoặc chất lượng bản chép lời.",
+    "cues": [
+      {
+        "start": 0.42,
+        "end": 3.65,
+        "speaker": "Người dẫn",
+        "ja": "今日(きょう)の話(はなし)を始(はじ)めましょう。",
+        "vi": "Chúng ta hãy bắt đầu câu chuyện hôm nay."
+      },
+      {
+        "start": 4.1,
+        "end": 6.8,
+        "speaker": "A",
+        "ja": "はい、お願(ねが)いします。",
+        "vi": "Vâng, xin mời."
+      }
+    ]
+  }
+]

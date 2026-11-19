@@ -10,6 +10,7 @@
     "test:vocabulary": "node --test scripts/test-vocabulary-view.cjs scripts/test-vocabulary-edit.cjs",
     "test:speaking": "node --test scripts/test-speaking-quiz.cjs",
     "test:listening": "node --test scripts/test-listening-quiz.cjs",
+    "choukai:validate": "node scripts/validate-choukai.cjs",
     "test:microphone": "node --test scripts/test-microphone.cjs",
     "test:push": "node --test scripts/test-push.cjs",
     "push:setup": "node scripts/setup-push.cjs",

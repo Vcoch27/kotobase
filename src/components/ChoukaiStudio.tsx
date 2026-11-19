@@ -7,6 +7,8 @@ import rawLessons from "@/data/choukai-lessons.json";
 import { compareJapanese, plainJapanese, type Cue, type Lesson, type DiffPart } from "@/lib/choukai";
 
 const lessons = rawLessons as Lesson[];
+const groupLabels: Record<string, string> = { TNCS: "TNCS · Giao tiếp", TNCN: "TNCN · Công việc" };
+const lessonGroups = Array.from(new Set(lessons.map(item => item.group)));
 type Mode = "listen" | "dictation";
 type Result = ReturnType<typeof compareJapanese>;
 
@@ -205,9 +207,9 @@ export function ChoukaiStudio() {
 
       <div className="choukai-layout">
         <aside className="choukai-library" aria-label="Danh sách bài nghe">
-          <div className="choukai-panel-title"><span>Thư viện bài nghe</span><span>08 bài</span></div>
-          {(["TNCS", "TNCN"] as const).map(group => <div className="choukai-group" key={group}>
-            <div className="choukai-group-title">{group === "TNCS" ? "TNCS · Giao tiếp" : "TNCN · Công việc"}</div>
+          <div className="choukai-panel-title"><span>Thư viện bài nghe</span><span>{lessons.length} bài</span></div>
+          {lessonGroups.map(group => <div className="choukai-group" key={group}>
+            <div className="choukai-group-title">{lessons.find(item => item.group === group)?.groupLabel || groupLabels[group] || group}</div>
             {lessons.filter(item => item.group === group).map(item => <button key={item.id} type="button" onClick={() => changeLesson(item.id)} className={`choukai-lesson ${lesson.id === item.id ? "is-active" : ""}`} aria-current={lesson.id === item.id ? "page" : undefined}>
               <span className="choukai-lesson-icon"><Volume2 size={16} /></span><span><strong>{item.title}</strong><small>{item.cues.length} câu · {item.filename}</small></span><ChevronRight size={15} className="choukai-lesson-chevron" />
             </button>)}

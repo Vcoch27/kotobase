@@ -1,7 +1,7 @@
 export type Cue = { start: number; end: number; speaker: string; ja: string; vi: string };
 export type Lesson = {
-  id: string; group: string; title: string; filename: string; audio: string;
-  source: string; note: string; cues: Cue[];
+  id: string; group: string; groupLabel?: string; title: string; filename: string; audio: string;
+  source: string; note?: string; cues: Cue[];
 };
 
 export function plainJapanese(text: string) {
