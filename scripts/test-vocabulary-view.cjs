@@ -67,6 +67,7 @@ function actions(extra = []) {
   const hidden = { id: 'hidden', word: '猫', folderIds: ['private'], updatedAt: '2026-10-25' };
   const raw = [...records, hidden, ...extra];
   const calls = [];
+  const recordReads = [];
   const api = load('src/app/actions/vocabulary.ts', {
     '@/lib/firebase-admin': {}, '@/lib/session': { getCurrentUser: async () => null },
     'next/cache': {}, '@/lib/kanji-parser': {}, '@/lib/vocabulary-view': view,
@@ -74,11 +75,29 @@ function actions(extra = []) {
     '@/lib/vocabulary-pagination': pagination,
     '@/lib/vocabulary-index': {
       getVocabularyCatalog: async () => { calls.push('catalog'); return raw; },
-      getVocabularyRecords: async entries => entries.map(entry => raw.find(v => v.id === entry.id)),
+      getVocabularyRecords: async entries => {
+        recordReads.push(...entries.map(entry => entry.id));
+        return entries.map(entry => raw.find(v => v.id === entry.id));
+      },
     },
   });
-  return { api, calls };
+  return { api, calls, recordReads };
 }
+test('deck summaries reach later pages with full word readings and meanings without reading full records', async () => {
+  const extra = Array.from({ length: 105 }, (_, index) => ({
+    id: `extra-${index}`, word: `猫${index}`, reading: `ねこ${index}`,
+    meaning: `nghĩa đầy đủ của từ ${index}`, folderIds: [index === 104 ? 'private' : 'a'],
+    createdAt: new Date(Date.UTC(2024, 0, 1, 0, index)).toISOString(),
+  }));
+  const { api, calls, recordReads } = actions(extra);
+  const summaries = await api.getVocabularySummaries(['a', 'b'], { search: 'nghĩa đầy đủ', sort: 'created_desc' });
+  assert.equal(summaries.length, 104);
+  assert.equal(summaries[0].word, '猫103');
+  assert.equal(summaries[0].reading, 'ねこ103');
+  assert.equal(summaries[0].meaning, 'nghĩa đầy đủ của từ 103');
+  assert.deepEqual(calls, ['catalog']);
+  assert.deepEqual(recordReads, []);
+});
 test('server filters permissions before selecting winners, without per-word reads', async () => {
   const { api, calls } = actions();
   assert.deepEqual(ids(await api.getVocabularies('all')), ['loose', 'new', 'other']);

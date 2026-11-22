@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { KanjiModal } from './KanjiModal';
 import { getBulkKanjiNotes } from '@/app/actions/kanji';
 import { extractKanji } from '@/lib/kanji-parser';
 import { Sparkles, ChevronDown, ChevronUp, BookOpen, PlusCircle } from 'lucide-react';
 import { HighlightMnemonic } from './HighlightMnemonic';
+import { MeaningText } from './MeaningText';
 
 interface KanjiNote {
   character: string;
@@ -14,15 +15,86 @@ interface KanjiNote {
   mnemonic?: string;
 }
 
-interface VocabularyData {
+export interface KanjiVocabulary {
   id: string;
   word: string;
+  reading?: string | null;
+  meaning?: string | null;
 }
 
 interface KanjiSubsectionProps {
-  vocabularies: VocabularyData[];
+  vocabularies: KanjiVocabulary[];
   /** Key thay đổi khi người dùng chuyển folder → reset state */
   folderKey?: string;
+  isSelection?: boolean;
+  loadVocabulary?: () => Promise<KanjiVocabulary[]>;
+}
+
+type VocabularyRequest =
+  | { status: 'idle' | 'loading' | 'error' }
+  | { status: 'loaded'; words: KanjiVocabulary[] };
+
+function KanjiVocabularyDetails({ character, words, status, onLoad }: {
+  character: string;
+  words: KanjiVocabulary[];
+  status: VocabularyRequest['status'];
+  onLoad: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const matches = open ? words.filter(({ word }) => word.includes(character)) : [];
+
+  return (
+    <details
+      className="group mx-4 mt-4 rounded-xl border border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-800/50 sm:mx-6"
+      onToggle={(event) => {
+        const expanded = event.currentTarget.open;
+        setOpen(expanded);
+        if (expanded) onLoad();
+      }}
+    >
+      <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-slate-200 [&::-webkit-details-marker]:hidden">
+        <BookOpen aria-hidden="true" className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
+        Từ chứa chữ này
+        <ChevronDown aria-hidden="true" className="ml-auto h-4 w-4 text-slate-400 group-open:rotate-180" />
+      </summary>
+      {open && (
+        <div className="border-t border-slate-200 px-3 py-2.5 dark:border-slate-700">
+          {status === 'loading' && <p role="status" className="mb-2 text-xs text-slate-600 dark:text-slate-300">Đang tìm trong các trang còn lại…</p>}
+          {status === 'error' && (
+            <p role="status" className="mb-2 text-xs text-slate-600 dark:text-slate-300">
+              Chỉ hiển thị các từ đã tải.{' '}
+              <button type="button" onClick={onLoad} className="font-semibold text-indigo-700 underline dark:text-indigo-300">Thử lại</button>
+            </p>
+          )}
+          {matches.length ? (
+            <ul
+              tabIndex={0}
+              aria-label={`Từ vựng chứa chữ ${character}`}
+              className="max-h-56 overflow-y-auto overscroll-contain rounded-sm divide-y divide-slate-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500 dark:divide-slate-700"
+            >
+              {matches.map(({ id, word, reading, meaning }) => (
+                <li key={id} className="space-y-0.5 py-2 first:pt-0 last:pb-0">
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 break-words [overflow-wrap:anywhere]">
+                    <span lang="ja" className="font-bold text-amber-700 dark:text-amber-300">{word}</span>
+                    {reading?.trim() ? (
+                      <span lang="ja" className="text-sm text-indigo-700 dark:text-indigo-300">{reading}</span>
+                    ) : (
+                      <span className="text-xs text-slate-600 dark:text-slate-300">Chưa có cách đọc</span>
+                    )}
+                  </div>
+                  <p className="text-sm leading-relaxed text-slate-700 [overflow-wrap:anywhere] dark:text-slate-300">
+                    {meaning?.trim() ? <MeaningText text={meaning} hideTip /> : 'Chưa có nghĩa'}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : status !== 'loading' && (
+            <p className="text-xs text-slate-600 dark:text-slate-300">Chưa tìm thấy từ chứa chữ này.</p>
+          )}
+        </div>
+      )}
+    </details>
+  );
 }
 
 const LS_KEY = 'kotobase_cached_kanji_notes';
@@ -45,7 +117,7 @@ function writeLocalCache(note: KanjiNote) {
   } catch {}
 }
 
-export function KanjiSubsection({ vocabularies, folderKey }: KanjiSubsectionProps) {
+export function KanjiSubsection({ vocabularies, folderKey, isSelection, loadVocabulary }: KanjiSubsectionProps) {
   // ── Trích xuất unique kanji từ danh sách từ vựng ──────────────────────────
   const uniqueKanji = useMemo(() => {
     const set = new Set<string>();
@@ -62,6 +134,22 @@ export function KanjiSubsection({ vocabularies, folderKey }: KanjiSubsectionProp
   const [showWithoutNotes, setShowWithoutNotes] = useState(true);
   const [modalChar, setModalChar] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [vocabularyRequest, setVocabularyRequest] = useState<VocabularyRequest>({ status: 'idle' });
+  const vocabularyPending = useRef(false);
+
+  const loadRemainingVocabulary = async () => {
+    if (!loadVocabulary || vocabularyPending.current || vocabularyRequest.status === 'loaded') return;
+    vocabularyPending.current = true;
+    setVocabularyRequest({ status: 'loading' });
+    try {
+      const words = await loadVocabulary();
+      setVocabularyRequest({ status: 'loaded', words });
+    } catch {
+      setVocabularyRequest({ status: 'error' });
+    } finally {
+      vocabularyPending.current = false;
+    }
+  };
 
   // ── Fetch bulk notes (tối ưu: 1 server action, cache localStorage) ────────
   useEffect(() => {
@@ -160,7 +248,7 @@ export function KanjiSubsection({ vocabularies, folderKey }: KanjiSubsectionProp
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
           </span>
           <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-            Hán tự trong thư mục
+            {isSelection ? 'Hán tự trong tập đã chọn' : 'Hán tự trong thư mục'}
           </span>
           <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
             {uniqueKanji.length} hán tự
@@ -282,7 +370,7 @@ export function KanjiSubsection({ vocabularies, folderKey }: KanjiSubsectionProp
           {showWithoutNotes && (
             <div className="p-3 sm:p-4">
               <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-3">
-                Bấm vào hán tự để xem và thêm mẹo nhớ
+                Bấm vào hán tự để xem từ sử dụng chữ đó hoặc thêm mẹo nhớ
               </p>
               <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
                 {withoutNotes.map((char) => {
@@ -319,6 +407,15 @@ export function KanjiSubsection({ vocabularies, folderKey }: KanjiSubsectionProp
         character={modalChar}
         isOpen={isModalOpen}
         onClose={handleModalClose}
+        relatedVocabulary={modalChar && isModalOpen ? (
+          <KanjiVocabularyDetails
+            key={modalChar}
+            character={modalChar}
+            words={loadVocabulary && vocabularyRequest.status === 'loaded' ? vocabularyRequest.words : vocabularies}
+            status={loadVocabulary ? vocabularyRequest.status : 'idle'}
+            onLoad={loadRemainingVocabulary}
+          />
+        ) : undefined}
       />
     </div>
   );

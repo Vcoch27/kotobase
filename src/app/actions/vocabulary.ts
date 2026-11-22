@@ -10,7 +10,7 @@ import {
 import { extractKanji } from "@/lib/kanji-parser";
 import { uniqueVocabularyByWord } from "@/lib/vocabulary-view";
 import { getVocabularyCatalog, getVocabularyRecords, createVocabularyWriteBatch } from "@/lib/vocabulary-index";
-import { paginateVocabularyIndex, VocabularyPageOptions } from "@/lib/vocabulary-pagination";
+import { paginateVocabularyIndex, sortVocabularyIndex, VocabularyPageOptions } from "@/lib/vocabulary-pagination";
 
 export interface CreateVocabInput {
   word: string;
@@ -385,8 +385,14 @@ export async function getVocabularies(folderId?: string | string[], searchQuery?
 }
 
 /** Kanji lists only need searchable summaries, not every full vocabulary document. */
-export async function getVocabularySummaries(folderId?: string | string[]) {
-  try { return await selectVocabularyIndex(folderId); }
+export async function getVocabularySummaries(
+  folderId?: string | string[],
+  options?: Pick<VocabularyPageOptions, "search" | "sort">,
+) {
+  try {
+    const entries = await selectVocabularyIndex(folderId);
+    return options ? sortVocabularyIndex(entries, options) : entries;
+  }
   catch (error: any) { return vocabularyReadError(error); }
 }
 

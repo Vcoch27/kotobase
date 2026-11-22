@@ -35,7 +35,7 @@ import { VocabularyEditModal } from './VocabularyEditModal';
 import { BulkDeleteConfirmModal } from './BulkDeleteConfirmModal';
 import { BulkFolderModal } from './BulkFolderModal';
 import { getFolderFullPath } from '@/lib/folder-utils';
-import { KanjiSubsection } from './KanjiSubsection';
+import { KanjiSubsection, type KanjiVocabulary } from './KanjiSubsection';
 import { MeaningText } from './MeaningText';
 
 
@@ -70,6 +70,7 @@ interface OverviewViewProps {
   searchQuery?: string;
   sortOrder?: string;
   isSidebarCollapsed?: boolean;
+  loadKanjiVocabulary?: () => Promise<KanjiVocabulary[]>;
 }
 
 export function OverviewView({
@@ -87,6 +88,7 @@ export function OverviewView({
   searchQuery,
   sortOrder,
   isSidebarCollapsed = false,
+  loadKanjiVocabulary,
 }: OverviewViewProps) {
   const [editingVocab, setEditingVocab] = useState<VocabularyData | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -552,8 +554,11 @@ export function OverviewView({
       {/* TAB: KANJI */}
       {overviewTab === 'kanji' && (
         <KanjiSubsection
-          vocabularies={localVocabs}
+          key={JSON.stringify([folderKey, searchQuery, sortOrder])}
+          vocabularies={selectedIds.length ? selectedVocabObjects : localVocabs}
           folderKey={folderKey}
+          isSelection={selectedIds.length > 0}
+          loadVocabulary={selectedIds.length ? undefined : loadKanjiVocabulary}
         />
       )}
 

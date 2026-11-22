@@ -14,9 +14,10 @@ interface KanjiModalProps {
   character: string | null;
   isOpen: boolean;
   onClose: () => void;
+  relatedVocabulary?: React.ReactNode;
 }
 
-export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
+export function KanjiModal({ character, isOpen, onClose, relatedVocabulary }: KanjiModalProps) {
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -224,6 +225,8 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
         {/* Header với hiệu ứng gradient */}
         <div className="relative p-6 bg-gradient-to-br from-indigo-50 dark:from-indigo-900/60 via-white dark:via-slate-900 to-purple-50 dark:to-purple-900/40 border-b border-slate-200 dark:border-slate-700/60 transition-colors flex-shrink-0">
           <button
+            type="button"
+            aria-label="Đóng chi tiết Hán tự"
             onClick={onClose}
             className="absolute top-4 right-4 p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-full hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors"
           >
@@ -274,13 +277,15 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
         </div>
 
         {/* Content Body */}
+        <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar">
+        {relatedVocabulary}
         {loading && !hanviet && !meaning && !mnemonic ? (
           <div className="p-12 text-center text-slate-500 dark:text-slate-400">
             <div className="inline-block w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin mb-3"></div>
             <p className="text-sm font-medium">Đang tải thông tin Hán tự từ từ điển...</p>
           </div>
         ) : (
-          <form onSubmit={handleSave} className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
+          <form onSubmit={handleSave} className="p-6 space-y-4">
             {message && (
               <div
                 className={`p-3 text-xs rounded-xl border ${
@@ -481,6 +486,7 @@ export function KanjiModal({ character, isOpen, onClose }: KanjiModalProps) {
             </div>
           </form>
         )}
+        </div>
       </div>
     </div>,
     document.body

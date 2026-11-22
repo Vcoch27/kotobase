@@ -19,7 +19,7 @@ import { GeminiSettingsModal } from "./GeminiSettingsModal";
 import { BgSettingsModal } from "./BgSettingsModal";
 import { useCustomBg } from "@/hooks/useCustomBg";
 import { JishoSearchResults } from "./JishoSearchResults";
-import { getVocabularyPage } from "@/app/actions/vocabulary";
+import { getVocabularyPage, getVocabularySummaries } from "@/app/actions/vocabulary";
 import { getVocabularyView } from "@/lib/vocabulary-view";
 import { getFolders, createFolder } from "@/app/actions/folder";
 import { 
@@ -1709,6 +1709,11 @@ export function Dashboard({ currentUser }: DashboardProps) {
                     searchQuery={debouncedSearchQuery}
                     sortOrder={sortOrder}
                     isSidebarCollapsed={isSidebarCollapsed}
+                    loadKanjiVocabulary={nextVocabularyCursor && !isOfflineMode ? async () => {
+                      const result = await getVocabularySummaries(selectedFolderIds, { search: debouncedSearchQuery, sort: sortOrder });
+                      if (!Array.isArray(result)) throw new Error(result.error);
+                      return result;
+                    } : undefined}
                   />
                 </div>
                 <div className={viewMode === "focus" ? "block" : "hidden"}>
