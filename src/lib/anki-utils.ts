@@ -85,10 +85,10 @@ export function calculateNextReview(rating: AnkiRating, card: AnkiCardData): Ank
 // Helpers for localStorage
 export const ANKI_STORAGE_KEY = "kotobase_anki_progress";
 
-export function loadAnkiProgress(): Record<string, AnkiCardData> {
+export function loadAnkiProgress(uid?: string): Record<string, AnkiCardData> {
   if (typeof window === "undefined") return {};
   try {
-    const data = localStorage.getItem(ANKI_STORAGE_KEY);
+    const data = localStorage.getItem(uid ? `${ANKI_STORAGE_KEY}:${encodeURIComponent(uid)}` : ANKI_STORAGE_KEY);
     return data ? JSON.parse(data) : {};
   } catch (e) {
     console.error("Lỗi khi đọc Anki Progress", e);
@@ -96,10 +96,10 @@ export function loadAnkiProgress(): Record<string, AnkiCardData> {
   }
 }
 
-export function saveAnkiProgress(progress: Record<string, AnkiCardData>) {
+export function saveAnkiProgress(progress: Record<string, AnkiCardData>, uid?: string) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(ANKI_STORAGE_KEY, JSON.stringify(progress));
+    localStorage.setItem(uid ? `${ANKI_STORAGE_KEY}:${encodeURIComponent(uid)}` : ANKI_STORAGE_KEY, JSON.stringify(progress));
   } catch (e) {
     console.error("Lỗi khi lưu Anki Progress", e);
   }

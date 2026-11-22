@@ -40,14 +40,28 @@ import { playSpeakingSample } from "@/lib/speaking-sample";
 import { getWebVolume } from "@/lib/tts-utils";
 import { audioFX } from "@/lib/audio-fx";
 import { MicrophoneSettingsModal } from "./MicrophoneSettingsModal";
+import { useInitialStudySnapshot, useSaveStudySnapshot, type StudyPersistence } from "@/hooks/useStudySnapshot";
+import { isStudyIdList, wordIds, wordsInOrder, type StudyScope } from "@/lib/study-session";
 
 type PromptMode = "word" | "meaning";
 type Outcome = "correct" | "skipped" | null;
-interface Props {
+interface Props extends StudyPersistence {
   vocabularies: VocabularyData[];
   selectedVocabIds?: string[];
   isActive?: boolean;
   onFullscreenChange?: (fullscreen: boolean) => void;
+}
+interface SpeakingSnapshot extends StudyScope {
+  queueIds: string[];
+  index: number;
+  mode: PromptMode;
+  gradingMode: SpokenMatchMode;
+  outcome: Outcome;
+  finished: boolean;
+  correct: string[];
+  skippedIds: string[];
+  reviewIds: string[];
+  hold: boolean;
 }
 const button =
   "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600";
@@ -74,29 +88,44 @@ export function SpeakingQuizView({
   selectedVocabIds = [],
   isActive = true,
   onFullscreenChange,
+  sessionKey,
+  sessionContext = "",
 }: Props) {
+  const initial = useInitialStudySnapshot<SpeakingSnapshot, VocabularyData>(
+    sessionKey, sessionContext, vocabularies, (saved, words) => {
+      const validIds = (ids: unknown) => isStudyIdList(ids) && ids.every(id => words.has(id));
+      if (!validIds(saved.queueIds) || !validIds(saved.correct) || !validIds(saved.skippedIds) ||
+          !validIds(saved.reviewIds) || !Number.isInteger(saved.index) || saved.index < 0 ||
+          saved.index >= saved.queueIds.length || !["word", "meaning"].includes(saved.mode) ||
+          ![null, "correct", "skipped"].includes(saved.outcome)) return null;
+      return saved;
+    },
+  );
+  const saved = initial?.snapshot;
+  const restoreWords = (ids: string[]) => initial ? wordsInOrder(initial.wordsById, ids) : [];
   const initialScope = () => {
+    if (saved) return restoreWords(saved.scopeIds);
     const selected = new Set(selectedVocabIds);
     return selected.size
       ? vocabularies.filter((v) => selected.has(v.id))
       : vocabularies;
   };
   const [scoped, setScoped] = useState(initialScope);
-  const [queue, setQueue] = useState(initialScope);
-  const [index, setIndex] = useState(0);
+  const [queue, setQueue] = useState(() => saved ? restoreWords(saved.queueIds) : initialScope());
+  const [index, setIndex] = useState(saved?.index ?? 0);
   const [round, setRound] = useState(0);
-  const [mode, setMode] = useState<PromptMode>("word");
-  const [gradingMode, setGradingMode] = useState<SpokenMatchMode>("flexible");
+  const [mode, setMode] = useState<PromptMode>(saved?.mode ?? "word");
+  const [gradingMode, setGradingMode] = useState<SpokenMatchMode>(saved?.gradingMode ?? "flexible");
   const [acceptedText, setAcceptedText] = useState<{ key: string; text: string } | null>(null);
-  const [outcome, setOutcome] = useState<Outcome>(null);
-  const [finished, setFinished] = useState(false);
-  const [correct, setCorrect] = useState<string[]>([]);
-  const [skipped, setSkipped] = useState<VocabularyData[]>([]);
-  const [review, setReview] = useState<VocabularyData[]>([]);
+  const [outcome, setOutcome] = useState<Outcome>(saved?.outcome ?? null);
+  const [finished, setFinished] = useState(saved?.finished ?? false);
+  const [correct, setCorrect] = useState(saved?.correct ?? []);
+  const [skipped, setSkipped] = useState(() => restoreWords(saved?.skippedIds ?? []));
+  const [review, setReview] = useState(() => restoreWords(saved?.reviewIds ?? []));
   const [showReading, setShowReading] = useState(false);
   const [delay, setDelay] = useState(5);
   const [countdown, setCountdown] = useState(5);
-  const [hold, setHold] = useState(false);
+  const [hold, setHold] = useState(saved?.hold ?? false);
   const [fullscreen, setFullscreen] = useState(false);
   const [visible, setVisible] = useState(true);
   const [sampleMessage, setSampleMessage] = useState("");
@@ -104,7 +133,7 @@ export function SpeakingQuizView({
   const [audioBusy, setAudioBusy] = useState(false);
   const cancelSample = useRef<(() => void) | null>(null);
   const resumeAfterRetry = useRef(false);
-  const settled = useRef(false);
+  const settled = useRef(!!saved?.outcome);
   const advancing = useRef(false);
   const customBg = useCustomBg();
   const item = queue[index];
@@ -199,10 +228,21 @@ export function SpeakingQuizView({
     [speech.pause],
   );
   const scopeKey = scoped.map((v) => v.id).join(",");
+  const previousScope = useRef(scopeKey);
+  const previousQuestion = useRef(questionKey);
+  useSaveStudySnapshot(sessionKey, sessionContext, isActive && !!item && previousScope.current === scopeKey,
+    scoped, () => ({
+      queueIds: wordIds(queue), index, mode, gradingMode, outcome, finished, correct,
+      skippedIds: wordIds(skipped), reviewIds: wordIds(review), hold,
+    } satisfies Omit<SpeakingSnapshot, "scopeIds">));
   useEffect(() => {
+    if (previousScope.current === scopeKey) return;
+    previousScope.current = scopeKey;
     restart(scoped);
   }, [scopeKey, restart]);
   useEffect(() => {
+    if (previousQuestion.current === questionKey) return;
+    previousQuestion.current = questionKey;
     settled.current = false;
     advancing.current = false;
     setShowReading(false);
@@ -430,15 +470,16 @@ export function SpeakingQuizView({
             onClose={() => setShowMicrophoneSettings(false)}
           />
         )}
-        {!fullscreen && (
+        <div className={fullscreen ? "hidden" : undefined}>
           <StudyScopeSelector
             allVocabularies={vocabularies}
             selectedVocabIds={selectedVocabIds}
+            keepInitialScope={!!saved}
             activeCount={scoped.length}
             onScopeChange={setScoped}
             modeTheme="emerald"
           />
-        )}
+        </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div

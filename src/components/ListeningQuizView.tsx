@@ -12,39 +12,80 @@ import { ListeningAudioPlayer, type ListeningAudioState } from "@/lib/listening-
 import { bindListeningShortcuts, sanitizeListeningDictation } from "@/lib/listening-shortcuts";
 import {
   listeningExampleText, buildMeaningQuestion, gradeListeningAttempt, listeningReviewReason, shuffleListening,
-  type ListeningWord, type ListeningResult,
+  type ListeningWord, type ListeningResult, type MeaningQuestion,
 } from "@/lib/listening-quiz";
+import { useInitialStudySnapshot, useSaveStudySnapshot, type StudyPersistence } from "@/hooks/useStudySnapshot";
+import { isStudyIdList, wordIds, wordsInOrder, type StudyScope } from "@/lib/study-session";
 
-interface Props {
+interface Props extends StudyPersistence {
   vocabularies: ListeningWord[];
   selectedVocabIds?: string[];
   isActive?: boolean;
   onFullscreenChange?: (fullscreen: boolean) => void;
 }
 type Stage = "dictation" | "meaning" | "result";
+type SavedResult = Omit<ListeningResult, "word"> & { id: string };
+interface ListeningSnapshot extends StudyScope {
+  queueIds: string[];
+  index: number;
+  flow: "word" | "example";
+  started: boolean;
+  finished: boolean;
+  stage: Stage;
+  typed: string;
+  freeMeaning: string;
+  chosenMeaning: string | null;
+  question: MeaningQuestion;
+  results: SavedResult[];
+  result: SavedResult | null;
+  hold: boolean;
+}
+
+function saveResult({ word, ...result }: ListeningResult): SavedResult {
+  return { ...result, id: word.id };
+}
 const button = "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 disabled:cursor-not-allowed disabled:opacity-50";
 const primary = `${button} bg-violet-600 text-white hover:bg-violet-700`;
 const secondary = `${button} border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800`;
 
-export function ListeningQuizView({ vocabularies, selectedVocabIds = [], isActive = true, onFullscreenChange }: Props) {
-  const initialScope = () => selectedVocabIds.length
-    ? vocabularies.filter((word) => selectedVocabIds.includes(word.id)) : vocabularies;
-  const [flow, setFlow] = useState<"word" | "example">("word");
+export function ListeningQuizView({
+  vocabularies, selectedVocabIds = [], isActive = true, onFullscreenChange, sessionKey, sessionContext = "",
+}: Props) {
+  const initial = useInitialStudySnapshot<ListeningSnapshot, ListeningWord>(
+    sessionKey, sessionContext, vocabularies, (saved, words) => {
+      if (!isStudyIdList(saved.queueIds) || !saved.queueIds.every(id => words.has(id)) ||
+          !Number.isInteger(saved.index) || saved.index < 0 || saved.index >= Math.max(1, saved.queueIds.length) ||
+          !["word", "example"].includes(saved.flow) || !["dictation", "meaning", "result"].includes(saved.stage) ||
+          !Array.isArray(saved.question?.choices) || !Array.isArray(saved.results) ||
+          !saved.results.every(entry => words.has(entry.id)) ||
+          (saved.result && !words.has(saved.result.id)) || (saved.stage === "result" && !saved.result) ||
+          typeof saved.typed !== "string" || typeof saved.freeMeaning !== "string") return null;
+      return saved;
+    },
+  );
+  const saved = initial?.snapshot;
+  const restoreResult = ({ id, ...result }: SavedResult): ListeningResult => ({
+    ...result, word: initial!.wordsById.get(id)!,
+  });
+  const initialScope = () => initial ? wordsInOrder(initial.wordsById, initial.snapshot.scopeIds) :
+    selectedVocabIds.length ? vocabularies.filter((word) => selectedVocabIds.includes(word.id)) : vocabularies;
+  const [flow, setFlow] = useState<ListeningSnapshot["flow"]>(saved?.flow ?? "word");
   const exampleFlow = flow === "example";
-  const [chosenMeaning, setChosenMeaning] = useState<string | null>(null);
+  const [chosenMeaning, setChosenMeaning] = useState<string | null>(saved?.chosenMeaning ?? null);
   const [scoped, setScoped] = useState(initialScope);
-  const [queue, setQueue] = useState(initialScope);
-  const [index, setIndex] = useState(0);
+  const [queue, setQueue] = useState(() => initial ? wordsInOrder(initial.wordsById, initial.snapshot.queueIds) : initialScope());
+  const [index, setIndex] = useState(saved?.index ?? 0);
   const [round, setRound] = useState(0);
-  const [started, setStarted] = useState(false);
-  const [finished, setFinished] = useState(false);
-  const [stage, setStage] = useState<Stage>("dictation");
-  const [typed, setTyped] = useState("");
-  const [freeMeaning, setFreeMeaning] = useState("");
-  const [question, setQuestion] = useState(() => buildMeaningQuestion(initialScope()[0] || { id: "", word: "", meaning: "" }, vocabularies));
-  const [results, setResults] = useState<ListeningResult[]>([]);
-  const [result, setResult] = useState<ListeningResult | null>(null);
-  const [hold, setHold] = useState(false);
+  const [started, setStarted] = useState(saved?.started ?? false);
+  const [finished, setFinished] = useState(saved?.finished ?? false);
+  const [stage, setStage] = useState<Stage>(saved?.stage ?? "dictation");
+  const [typed, setTyped] = useState(saved?.typed ?? "");
+  const [freeMeaning, setFreeMeaning] = useState(saved?.freeMeaning ?? "");
+  const [question, setQuestion] = useState(() => saved?.question ??
+    buildMeaningQuestion(initialScope()[0] || { id: "", word: "", meaning: "" }, vocabularies));
+  const [results, setResults] = useState<ListeningResult[]>(() => saved?.results.map(restoreResult) ?? []);
+  const [result, setResult] = useState<ListeningResult | null>(() => saved?.result ? restoreResult(saved.result) : null);
+  const [hold, setHold] = useState(saved?.hold ?? false);
   const [delay, setDelay] = useState(5);
   const [countdown, setCountdown] = useState(5);
   const [fullscreen, setFullscreen] = useState(false);
@@ -52,7 +93,7 @@ export function ListeningQuizView({ vocabularies, selectedVocabIds = [], isActiv
   const [audio, setAudio] = useState<ListeningAudioState>({ status: "idle", hasHeard: false, message: "" });
   const [audioWarning, setAudioWarning] = useState("");
   const player = useRef<ListeningAudioPlayer | null>(null);
-  const settled = useRef(false);
+  const settled = useRef(saved?.stage === "result");
   const composing = useRef(false);
   const input = useRef<HTMLInputElement>(null);
   const customBg = useCustomBg();
@@ -64,6 +105,17 @@ export function ListeningQuizView({ vocabularies, selectedVocabIds = [], isActiv
 
   const promptText = exampleFlow ? listeningExampleText(item?.example) : wordPrompt;
   const eligible = exampleFlow ? scoped.filter((word) => listeningExampleText(word.example)) : scoped;
+  const scopeAndFlow = JSON.stringify([scopeKey, flow]);
+  const previousScope = useRef(scopeAndFlow);
+  const previousQuestion = useRef(key);
+  const restoredQuestionKey = useRef(saved ? key : null);
+
+  useSaveStudySnapshot(sessionKey, sessionContext,
+    isActive && previousScope.current === scopeAndFlow && previousQuestion.current === key,
+    scoped, () => ({
+      queueIds: wordIds(queue), index, flow, started, finished, stage, typed, freeMeaning, chosenMeaning, question,
+      results: results.map(saveResult), result: result ? saveResult(result) : null, hold,
+    } satisfies Omit<ListeningSnapshot, "scopeIds">));
 
   useEffect(() => {
     const controller = new ListeningAudioPlayer(
@@ -98,8 +150,14 @@ export function ListeningQuizView({ vocabularies, selectedVocabIds = [], isActiv
     setStarted(false); setFinished(false); setStage(exampleFlow ? "meaning" : "dictation"); setResults([]); setResult(null);
     setTyped(""); setFreeMeaning(""); setAudioWarning("");
   }, [exampleFlow]);
-  useEffect(() => { restart(eligible); }, [scopeKey, restart]);
   useEffect(() => {
+    if (previousScope.current === scopeAndFlow) return;
+    previousScope.current = scopeAndFlow;
+    restart(eligible);
+  }, [scopeAndFlow, restart]);
+  useEffect(() => {
+    if (previousQuestion.current === key) return;
+    previousQuestion.current = key;
     settled.current = false; composing.current = false;
     player.current?.reset(); setStage(exampleFlow ? "meaning" : "dictation"); setTyped(""); setChosenMeaning(null);
     setFreeMeaning(""); setResult(null); setHold(false); setAudioWarning("");
@@ -112,7 +170,7 @@ export function ListeningQuizView({ vocabularies, selectedVocabIds = [], isActiv
   }, [isActive, visible, promptText, finished]);
   useEffect(() => {
     if (!isActive) { player.current?.cancel(); setFullscreen(false); return; }
-    if (!started || finished || !visible) return;
+    if (!started || finished || !visible || key === restoredQuestionKey.current) return;
     listen();
     // Replaying on tab focus is explicit; don't surprise the user with audio.
   }, [key, started, isActive]);
@@ -173,7 +231,10 @@ export function ListeningQuizView({ vocabularies, selectedVocabIds = [], isActiv
   const progress = index + (stage === "result" ? 1 : 0);
   return <div data-listening-quiz className={fullscreen ? "fixed inset-0 z-[100] overflow-y-auto bg-slate-50 p-3 pb-24 dark:bg-slate-950 sm:p-8" : "pb-20 md:pb-0"}>
     <div className="mx-auto max-w-4xl space-y-4 text-slate-800 dark:text-slate-100">
-      {!fullscreen && <StudyScopeSelector allVocabularies={vocabularies} selectedVocabIds={selectedVocabIds} activeCount={scoped.length} onScopeChange={setScoped} modeTheme="purple" />}
+      <div className={fullscreen ? "hidden" : undefined}>
+        <StudyScopeSelector allVocabularies={vocabularies} selectedVocabIds={selectedVocabIds}
+          keepInitialScope={!!saved} activeCount={scoped.length} onScopeChange={setScoped} modeTheme="purple" />
+      </div>
       <div className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 font-bold text-violet-700 dark:text-violet-300"><Headphones size={19} />{exampleFlow ? "Nghe ví dụ → Hiểu nghĩa → Gõ từ" : "Nghe → Gõ → Hiểu nghĩa"}</div>

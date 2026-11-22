@@ -7,6 +7,7 @@ export default async function Home() {
   
   return (
     <Dashboard 
+      key={currentUser?.uid || "guest"}
       currentUser={currentUser ? {
         uid: currentUser.uid,
         email: currentUser.email,

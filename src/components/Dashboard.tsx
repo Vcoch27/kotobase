@@ -1,6 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
+import {
+  readQuizMode, readStudyLocation, readStudySnapshot, studyContext, studyStorageKey, writeStudyData,
+  type QuizMode, type StudyMode,
+} from "@/lib/study-session";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/cn";
 import dynamic from "next/dynamic";
@@ -64,8 +68,13 @@ interface DashboardProps {
 }
 
 export function Dashboard({ currentUser }: DashboardProps) {
-  const [viewMode, setViewMode] = useState<"overview" | "focus" | "flashcard" | "quiz">("overview");
+  const [viewMode, setViewMode] = useState<StudyMode>("overview");
+  const locationKey = studyStorageKey(currentUser?.uid, "location");
+  const quizModeKey = studyStorageKey(currentUser?.uid, "quiz-mode");
+  const flashcardKey = studyStorageKey(currentUser?.uid, "flashcard");
   const [requestedListening, setRequestedListening] = useState(0);
+  const [restoring, setRestoring] = useState(false);
+  const initialSearch = useRef<string | null>(null);
   
   // Trạng thái thu gọn / mở rộng cây thư mục (Persist localStorage)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
@@ -122,6 +131,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
     return [];
   });
   const [selectedFolderIds, setSelectedFolderIds] = useState<string[]>(() => {
+    if (currentUser?.uid) return ["all"];
     if (typeof window !== "undefined") {
       try {
         const savedMulti = localStorage.getItem("kotobase_selected_folders");
@@ -179,6 +189,8 @@ export function Dashboard({ currentUser }: DashboardProps) {
     const newIds = id ? [id] : ["all"];
     setSelectedFolderIds(newIds);
     setSelectedVocabIds([]);
+    setViewMode("overview");
+    setRestoring(false);
     if (typeof window !== "undefined" && window.innerWidth < 768) {
       setIsMobileFolderOpen(false);
       setShowMobileFolderDrawer(false);
@@ -189,7 +201,9 @@ export function Dashboard({ currentUser }: DashboardProps) {
         }
       }, 80);
     }
-    try {
+    if (locationKey) {
+      writeStudyData(locationKey, { folderIds: newIds, selectedIds: [], search: searchQuery, sort: sortOrder, mode: "overview" });
+    } else try {
       localStorage.setItem("kotobase_selected_folders", JSON.stringify(newIds));
       localStorage.setItem("kotobase_selected_folder", id);
     } catch (e) {}
@@ -199,7 +213,11 @@ export function Dashboard({ currentUser }: DashboardProps) {
     const newIds = ids && ids.length > 0 ? ids : ["all"];
     setSelectedFolderIds(newIds);
     setSelectedVocabIds([]);
-    try {
+    setViewMode("overview");
+    setRestoring(false);
+    if (locationKey) {
+      writeStudyData(locationKey, { folderIds: newIds, selectedIds: [], search: searchQuery, sort: sortOrder, mode: "overview" });
+    } else try {
       localStorage.setItem("kotobase_selected_folders", JSON.stringify(newIds));
       if (newIds.length === 1) {
         localStorage.setItem("kotobase_selected_folder", newIds[0]);
@@ -427,6 +445,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const [totalVocabularyCount, setTotalVocabularyCount] = useState(0);
   const [nextVocabularyCursor, setNextVocabularyCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadedBrowseKey, setLoadedBrowseKey] = useState<string>();
   const [vocabularyLoadError, setVocabularyLoadError] = useState<string | null>(null);
   
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
@@ -435,6 +454,10 @@ export function Dashboard({ currentUser }: DashboardProps) {
   const isGoogleUser = !!currentUser?.uid;
 
   const browseCacheKey = JSON.stringify([selectedFolderIds.slice().sort(), debouncedSearchQuery.trim(), sortOrder]);
+  const sessionContext = studyContext(browseCacheKey, selectedVocabIds);
+  const lastBrowseKey = useRef<string>();
+  const restorePageRequest = useRef<number>();
+  const unavailableRestore = useRef<string>();
 
   const fetchData = async (isBackground = false) => {
     const request = ++fetchRequest.current;
@@ -491,12 +514,22 @@ export function Dashboard({ currentUser }: DashboardProps) {
         else if (error.message !== "OFFLINE") setVocabularyLoadError("Không tải được từ vựng. Vui lòng thử lại.");
       } else toast("Đang dùng các từ vựng đã lưu trên máy.", { icon: "📶", id: "offline-status" });
     } finally {
-      if (request === fetchRequest.current) setLoading(false);
+      if (request === fetchRequest.current) {
+        setLoadedBrowseKey(browseCacheKey);
+        setLoading(false);
+      }
     }
   };
 
-  const loadMoreVocabulary = async (all = false): Promise<boolean> => {
-    if (pagingRequest.current !== null || !nextVocabularyCursor) return !nextVocabularyCursor;
+  const loadMoreVocabulary = async (all = false, requiredIds?: string[]): Promise<boolean> => {
+    const remaining = requiredIds ? new Set(requiredIds) : undefined;
+    if (remaining) {
+      vocabularies.forEach(word => remaining.delete(word.id));
+      if (!remaining.size) return true;
+    }
+    if (pagingRequest.current !== null || !nextVocabularyCursor) {
+      return !nextVocabularyCursor && !remaining?.size;
+    }
     const request = fetchRequest.current;
     pagingRequest.current = request;
     setLoadingMore(true);
@@ -508,6 +541,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
         if ("error" in result) throw new Error(result.error);
         if (request !== fetchRequest.current) return false;
         records = Array.from(new Map([...records, ...result.vocabularies].map(record => [record.id, record])).values());
+        result.vocabularies.forEach(word => remaining?.delete(word.id));
         cursor = result.nextCursor;
         setVocabularies(records);
         setTotalVocabularyCount(result.totalCount);
@@ -515,8 +549,8 @@ export function Dashboard({ currentUser }: DashboardProps) {
         vocabCache.current[browseCacheKey] = records;
         pageCache.current[browseCacheKey] = { totalCount: result.totalCount, nextCursor: cursor };
         saveVocabulariesOffline(result.vocabularies).catch(() => {});
-      } while (all && cursor);
-      return true;
+      } while (all && cursor && (!remaining || remaining.size > 0));
+      return !remaining?.size;
     } catch (error: any) {
       if (request === fetchRequest.current) toast.error(error.message === "VOCABULARY_CURSOR_EXPIRED"
         ? "Dữ liệu đã thay đổi. Vui lòng tải lại danh sách."
@@ -527,31 +561,53 @@ export function Dashboard({ currentUser }: DashboardProps) {
     }
   };
 
-  const changeStudyMode = async (mode: typeof viewMode, ids?: string[]) => {
+  const changeStudyMode = async (mode: StudyMode, ids?: string[], quizMode?: QuizMode) => {
+    if (restoring || loading || loadedBrowseKey !== browseCacheKey) return;
     if (mode === "quiz" && !isGoogleUser) {
       toast.error("Vui lòng đăng nhập Google để sử dụng chế độ Quiz phản xạ!", { icon: "🔒" });
       return;
     }
-    if (mode !== "overview" && !ids?.length && !selectedVocabIds.length && nextVocabularyCursor) {
-      if (!(await loadMoreVocabulary(true))) return;
+    if (mode !== "overview" && nextVocabularyCursor) {
+      const selection = ids ?? selectedVocabIds;
+      const key = mode === "flashcard" ? flashcardKey :
+        mode === "quiz" ? studyStorageKey(currentUser?.uid, quizMode ?? readQuizMode(quizModeKey)) : undefined;
+      const saved = readStudySnapshot(key, studyContext(browseCacheKey, selection));
+      const required = [...new Set([...selection, ...(saved?.scopeIds ?? [])])];
+      if (!(await loadMoreVocabulary(true, required.length ? required : undefined))) return;
     }
     if (ids) setSelectedVocabIds(ids);
+    if (mode === "quiz" && viewMode !== "quiz") setRequestedListening(quizMode === "listening" ? 1 : 0);
     setViewMode(mode);
   };
 
-  // Khôi phục selectedFolderIds & sortOrder từ localStorage ở Client
+  // Read browser storage after hydration, before the first vocabulary request.
   useEffect(() => {
+    const saved = readStudyLocation(locationKey);
+    if (saved) {
+      setSelectedFolderIds(saved.folderIds);
+      setSelectedVocabIds(saved.selectedIds);
+      setSortOrder(saved.sort);
+      setSearchQuery(saved.search);
+      initialSearch.current = saved.search;
+      setViewMode(saved.mode);
+      setRestoring(true);
+      setMounted(true);
+      return;
+    }
     try {
-      const savedMulti = localStorage.getItem("kotobase_selected_folders");
-      if (savedMulti) {
-        const parsed = JSON.parse(savedMulti);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setSelectedFolderIds(parsed);
-        }
-      } else {
-        const savedFolder = localStorage.getItem("kotobase_selected_folder");
-        if (savedFolder && savedFolder !== "all") {
-          setSelectedFolderIds([savedFolder]);
+      // The previous unscoped selection is still available to guests.
+      if (!locationKey) {
+        const savedMulti = localStorage.getItem("kotobase_selected_folders");
+        if (savedMulti) {
+          const parsed = JSON.parse(savedMulti);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setSelectedFolderIds(parsed);
+          }
+        } else {
+          const savedFolder = localStorage.getItem("kotobase_selected_folder");
+          if (savedFolder && savedFolder !== "all") {
+            setSelectedFolderIds([savedFolder]);
+          }
         }
       }
       const savedSort = localStorage.getItem("kotobase_sort_order") as any;
@@ -560,14 +616,55 @@ export function Dashboard({ currentUser }: DashboardProps) {
       }
     } catch (e) {}
     setMounted(true);
-  }, []);
+  }, [locationKey]);
 
   useEffect(() => {
-    if (!mounted) return;
-    setViewMode("overview");
-    setSelectedVocabIds([]);
-    fetchData();
+    if (!mounted || (initialSearch.current !== null && initialSearch.current !== debouncedSearchQuery)) return;
+    initialSearch.current = null;
+    if (lastBrowseKey.current === browseCacheKey) return;
+    if (lastBrowseKey.current !== undefined) {
+      setViewMode("overview");
+      setSelectedVocabIds([]);
+      setRestoring(false);
+    }
+    lastBrowseKey.current = browseCacheKey;
+    void fetchData();
   }, [selectedFolderIds, mounted, debouncedSearchQuery, sortOrder]);
+
+  useEffect(() => {
+    if (!restoring || loading || loadedBrowseKey !== browseCacheKey) return;
+    const request = fetchRequest.current;
+    if (restorePageRequest.current === request) return;
+    restorePageRequest.current = request;
+    const key = viewMode === "flashcard" ? flashcardKey :
+      viewMode === "quiz" ? studyStorageKey(currentUser?.uid, readQuizMode(quizModeKey)) : undefined;
+    const saved = readStudySnapshot(key, sessionContext);
+    const required = [...new Set([...selectedVocabIds, ...(saved?.scopeIds ?? [])])];
+    const shouldLoadAll = viewMode !== "overview" && (!saved || !saved.scopeIds.length) && !required.length;
+    void (async () => {
+      const loaded = await loadMoreVocabulary(true, shouldLoadAll ? undefined : required);
+      if (request !== fetchRequest.current) return;
+      if (!loaded) {
+        unavailableRestore.current = sessionContext;
+        setViewMode("overview");
+        toast.error("Chưa tải đủ từ để tiếp tục phiên học đã lưu.", { id: "study-restore-unavailable" });
+      }
+      setRestoring(false);
+    })();
+  }, [restoring, loading, loadedBrowseKey, browseCacheKey, viewMode, sessionContext]);
+
+  useLayoutEffect(() => {
+    if (!mounted || restoring || loadedBrowseKey !== browseCacheKey) return;
+    if (viewMode === "overview" && unavailableRestore.current === sessionContext) return;
+    unavailableRestore.current = undefined;
+    writeStudyData(locationKey, {
+      folderIds: selectedFolderIds,
+      selectedIds: selectedVocabIds,
+      search: debouncedSearchQuery,
+      sort: sortOrder,
+      mode: viewMode,
+    });
+  }, [locationKey, mounted, restoring, loadedBrowseKey, browseCacheKey, sessionContext, selectedFolderIds, selectedVocabIds, debouncedSearchQuery, sortOrder, viewMode]);
 
   // Client-side Filtering & Sorting cực nhanh và 0 tốn read của Firebase
   const filteredVocabularies = React.useMemo(() => {
@@ -1573,7 +1670,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                   Vui lòng chờ đến <strong>14:00 (2h chiều) theo giờ Việt Nam</strong> để hạn mức được thiết lập lại về 0, hoặc nâng cấp gói Firebase của bạn để sử dụng tiếp.
                 </p>
               </div>
-            ) : loading ? (
+            ) : loading || restoring || loadedBrowseKey !== browseCacheKey ? (
               <div className="py-6 space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                   {[...Array(6)].map((_, i) => (
@@ -1589,7 +1686,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
               <>
                 {nextVocabularyCursor && !isOfflineMode && (
                   <div className="my-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 text-sm dark:border-indigo-900 dark:bg-indigo-950/30">
-                    <span>Đã tải {vocabularies.length} / {totalVocabularyCount} từ. Chọn chế độ học để tải cả bộ.</span>
+                    <span>Đã tải {vocabularies.length} / {totalVocabularyCount} từ.</span>
                     <div className="flex gap-2">
                       <button disabled={loadingMore} onClick={() => { void loadMoreVocabulary(); }} className="rounded-lg bg-indigo-600 px-3 py-2 text-white disabled:opacity-50">{loadingMore ? "Đang tải…" : "Tải thêm 40 từ"}</button>
                       <button disabled={loadingMore} onClick={() => { void loadMoreVocabulary(true); }} className="rounded-lg border border-indigo-200 px-3 py-2 disabled:opacity-50">Tải toàn bộ</button>
@@ -1627,9 +1724,18 @@ export function Dashboard({ currentUser }: DashboardProps) {
                   />
                 </div>
                 <div className={viewMode === "quiz" ? "block" : "hidden"}>
-                  {isGoogleUser ? (
+                  {isGoogleUser ? viewMode === "quiz" && (
                     <QuizView
+                      key={sessionContext}
+                      userId={currentUser?.uid}
                       requestedListening={requestedListening}
+                      sessionContext={sessionContext}
+                      prepareMode={async (mode) => {
+                        if (!nextVocabularyCursor) return true;
+                        const saved = readStudySnapshot(studyStorageKey(currentUser?.uid, mode), sessionContext);
+                        const required = [...new Set([...selectedVocabIds, ...(saved?.scopeIds ?? [])])];
+                        return loadMoreVocabulary(true, required.length ? required : undefined);
+                      }}
                       vocabularies={filteredVocabularies}
                       selectedVocabIds={selectedVocabIds}
                       isActive={viewMode === "quiz"}
@@ -1665,7 +1771,10 @@ export function Dashboard({ currentUser }: DashboardProps) {
                   )}
                 </div>
                 <div className={viewMode === "flashcard" ? "block" : "hidden"}>
-                  <FlashcardView 
+                  {(!isGoogleUser || viewMode === "flashcard") && <FlashcardView
+                    key={isGoogleUser ? sessionContext : undefined}
+                    sessionKey={flashcardKey}
+                    sessionContext={sessionContext}
                     vocabularies={filteredVocabularies}
                     selectedVocabIds={selectedVocabIds}
                     isActive={viewMode === "flashcard"}
@@ -1679,10 +1788,9 @@ export function Dashboard({ currentUser }: DashboardProps) {
                         toast.error("Đăng nhập Google để luyện Nghe & hiểu trong Quiz.", { icon: "🔒" });
                         return;
                       }
-                      setRequestedListening((value) => value + 1);
-                      void changeStudyMode("quiz", ids);
+                      void changeStudyMode("quiz", ids, "listening");
                     }}
-                  />
+                  />}
                 </div>
               </>
             )}

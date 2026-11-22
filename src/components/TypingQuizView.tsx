@@ -5,6 +5,8 @@ import { HelpCircle, CheckCircle2, XCircle, SkipForward, Info, RotateCcw, Shuffl
 import { ClickableKanjiString } from "./ClickableKanjiString";
 import { StudyCardArtwork } from "./StudyCardArtwork";
 import { StudyScopeSelector } from "./StudyScopeSelector";
+import { useInitialStudySnapshot, useSaveStudySnapshot, type StudyPersistence } from "@/hooks/useStudySnapshot";
+import { wordsInOrder, type StudyScope } from "@/lib/study-session";
 import { useCustomBg } from "@/hooks/useCustomBg";
 import { audioFX } from "@/lib/audio-fx";
 import { playAudio } from "@/lib/tts-utils";
@@ -20,7 +22,7 @@ interface VocabularyData {
   example?: string | null;
 }
 
-interface TypingQuizViewProps {
+interface TypingQuizViewProps extends StudyPersistence {
   vocabularies: VocabularyData[];
   selectedVocabIds?: string[];
   isActive?: boolean;
@@ -31,6 +33,29 @@ type QuizType = 1 | 2; // 1: Xem Từ -> Gõ Cách đọc, 2: Xem Nghĩa -> Gõ 
 
 interface QuizItem extends VocabularyData {
   quizType: QuizType;
+}
+
+type QuizEntry = Pick<QuizItem, "id" | "quizType">;
+type Feedback = "none" | "correct" | "wrong" | "skipped";
+interface TypingSnapshot extends StudyScope {
+  queue: QuizEntry[];
+  correct: QuizEntry[];
+  skipped: QuizEntry[];
+  index: number;
+  input: string;
+  feedback: Feedback;
+  hint: boolean;
+  wrongAttempts: number;
+  finished: boolean;
+  mode: "mix" | "type1" | "type2";
+  shuffled: boolean;
+  timerMs: number;
+  timerStarted: boolean;
+  finalTime: number | null;
+}
+
+function quizEntries(items: QuizItem[]): QuizEntry[] {
+  return items.map(({ id, quizType }) => ({ id, quizType }));
 }
 
 // Hàm xáo trộn mảng Fisher-Yates
@@ -53,8 +78,33 @@ export function TypingQuizView({
   selectedVocabIds = [],
   isActive = true,
   onFullscreenChange,
+  sessionKey,
+  sessionContext = "",
 }: TypingQuizViewProps) {
   const customBg = useCustomBg();
+  const initial = useInitialStudySnapshot<TypingSnapshot, VocabularyData>(
+    sessionKey, sessionContext, vocabularies, (saved, words) => {
+      const validEntries = (entries: QuizEntry[]) => Array.isArray(entries) &&
+        entries.every(entry => words.has(entry.id) && (entry.quizType === 1 || entry.quizType === 2));
+      if (!validEntries(saved.queue) || !saved.queue.length || !validEntries(saved.correct) ||
+          !validEntries(saved.skipped) || !Number.isInteger(saved.index) ||
+          saved.index < 0 || saved.index >= saved.queue.length ||
+          !["mix", "type1", "type2"].includes(saved.mode) ||
+          !["none", "correct", "wrong", "skipped"].includes(saved.feedback) ||
+          typeof saved.input !== "string" || !Number.isFinite(saved.timerMs)) return null;
+      if (saved.finished || (saved.feedback !== "correct" && saved.feedback !== "skipped")) return saved;
+      const finished = saved.index === saved.queue.length - 1;
+      return {
+        ...saved, finished, index: finished ? saved.index : saved.index + 1,
+        input: "", feedback: "none", hint: false, wrongAttempts: 0,
+        finalTime: finished && !saved.skipped.length ? saved.timerMs : saved.finalTime,
+      };
+    },
+  );
+  const saved = initial?.snapshot;
+  const restoreEntries = (entries: QuizEntry[] | undefined): QuizItem[] => initial && entries
+    ? entries.map(({ id, quizType }) => ({ ...initial.wordsById.get(id)!, quizType }))
+    : [];
   const getScopedFromSelection = useCallback((all: VocabularyData[], selIds: string[]) => {
     if (selIds && selIds.length > 0) {
       const set = new Set(selIds);
@@ -65,12 +115,13 @@ export function TypingQuizView({
   }, []);
 
   const [scopedVocabs, setScopedVocabs] = useState<VocabularyData[]>(() => 
-    getScopedFromSelection(vocabularies, selectedVocabIds)
+    initial ? wordsInOrder(initial.wordsById, initial.snapshot.scopeIds) :
+      getScopedFromSelection(vocabularies, selectedVocabIds)
   );
-  const [quizList, setQuizList] = useState<QuizItem[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [userInput, setUserInput] = useState("");
-  const [feedback, setFeedback] = useState<"none" | "correct" | "wrong" | "skipped">("none");
+  const [quizList, setQuizList] = useState(() => restoreEntries(saved?.queue));
+  const [currentIndex, setCurrentIndex] = useState(saved?.index ?? 0);
+  const [userInput, setUserInput] = useState(saved?.input ?? "");
+  const [feedback, setFeedback] = useState<Feedback>(saved?.feedback ?? "none");
   const skipTimestampRef = useRef<number>(0);
 
   // Cấu hình: có hiển thị đáp án sau khi bấm Tab / Bỏ qua hay không
@@ -95,10 +146,10 @@ export function TypingQuizView({
       );
     }
   };
-  const [showHint, setShowHint] = useState(false);
-  const [isFinished, setIsFinished] = useState(false);
-  const [quizMode, setQuizMode] = useState<"mix" | "type1" | "type2">("mix");
-  const [isShuffled, setIsShuffled] = useState(false);
+  const [showHint, setShowHint] = useState(saved?.hint ?? false);
+  const [isFinished, setIsFinished] = useState(saved?.finished ?? false);
+  const [quizMode, setQuizMode] = useState<TypingSnapshot["mode"]>(saved?.mode ?? "mix");
+  const [isShuffled, setIsShuffled] = useState(saved?.shuffled ?? false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Thông báo trạng thái Fullscreen lên component cha (Dashboard) để ẩn/hiện Header
@@ -136,7 +187,7 @@ export function TypingQuizView({
   });
 
   // Đếm số lần đã gõ sai của câu hiện tại
-  const [wrongAttempts, setWrongAttempts] = useState<number>(0);
+  const [wrongAttempts, setWrongAttempts] = useState(saved?.wrongAttempts ?? 0);
 
   const handleUpdateMaxWrong = (val: number) => {
     const clamped = Math.max(0, Math.min(val, 10));
@@ -194,13 +245,13 @@ export function TypingQuizView({
   };
 
   // Danh sách từ làm đúng và từ đã bấm bỏ qua
-  const [skippedList, setSkippedList] = useState<QuizItem[]>([]);
-  const [correctList, setCorrectList] = useState<QuizItem[]>([]);
+  const [skippedList, setSkippedList] = useState(() => restoreEntries(saved?.skipped));
+  const [correctList, setCorrectList] = useState(() => restoreEntries(saved?.correct));
   
   // ===== TIMER STATES =====
-  const [timerMs, setTimerMs] = useState(0);
-  const [timerRunning, setTimerRunning] = useState(false);
-  const [timerStarted, setTimerStarted] = useState(false);
+  const [timerMs, setTimerMs] = useState(saved?.timerMs ?? 0);
+  const [timerRunning, setTimerRunning] = useState(!!saved?.timerStarted && saved.finalTime === null);
+  const [timerStarted, setTimerStarted] = useState(saved?.timerStarted ?? false);
   const [showTimer, setShowTimer] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('kotobase_quiz_show_timer');
@@ -208,7 +259,7 @@ export function TypingQuizView({
     }
     return true;
   });
-  const [finalTime, setFinalTime] = useState<number | null>(null);
+  const [finalTime, setFinalTime] = useState<number | null>(saved?.finalTime ?? null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Format timer: mm:ss
@@ -221,14 +272,14 @@ export function TypingQuizView({
 
   // Timer ticker
   useEffect(() => {
-    if (!timerRunning) return;
+    if (!timerRunning || !isActive) return;
     timerIntervalRef.current = setInterval(() => {
       setTimerMs(prev => prev + 1000);
     }, 1000);
     return () => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     };
-  }, [timerRunning]);
+  }, [timerRunning, isActive]);
 
   // Dừng timer khi hoàn thành TẤT CẢ (không còn từ nào bị skip)
   useEffect(() => {
@@ -342,7 +393,7 @@ export function TypingQuizView({
   const selectedVocabIdsStr = selectedVocabIds.join(',');
 
   useEffect(() => {
-    setScopedVocabs(getScopedFromSelection(vocabularies, selectedVocabIds));
+    if (!sessionKey) setScopedVocabs(getScopedFromSelection(vocabularies, selectedVocabIds));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vocabIdsStr, selectedVocabIdsStr]);
 
@@ -363,6 +414,14 @@ export function TypingQuizView({
   // Track previous mode and previous scoped vocab IDs to avoid resetting progress on unrelated re-renders
   const prevModeRef = useRef<"mix" | "type1" | "type2">(quizMode);
   const prevVocabIdsRef = useRef<string>(scopedVocabs.map(v => v.id).join(","));
+  useSaveStudySnapshot(sessionKey, sessionContext,
+    isActive && !!quizList.length && prevModeRef.current === quizMode &&
+      prevVocabIdsRef.current === scopedVocabs.map(v => v.id).join(","),
+    scopedVocabs, () => ({
+      queue: quizEntries(quizList), correct: quizEntries(correctList), skipped: quizEntries(skippedList),
+      index: currentIndex, input: userInput, feedback, hint: showHint, wrongAttempts, finished: isFinished,
+      mode: quizMode, shuffled: isShuffled, timerMs, timerStarted, finalTime,
+    } satisfies Omit<TypingSnapshot, "scopeIds">));
 
   // Khởi tạo quiz khi scopedVocabs hoặc quizMode thay đổi
   useEffect(() => {
@@ -852,6 +911,7 @@ export function TypingQuizView({
         <StudyScopeSelector
           allVocabularies={vocabularies}
           selectedVocabIds={selectedVocabIds}
+          keepInitialScope={!!saved}
           onScopeChange={(scoped) => {
             setScopedVocabs(scoped);
           }}

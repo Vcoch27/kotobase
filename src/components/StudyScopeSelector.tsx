@@ -22,11 +22,12 @@ export interface VocabularyData {
   folderVocabularies?: any[];
 }
 
-export type ScopeType = 'all' | 'chunk' | 'random' | 'range' | 'selected';
+export type ScopeType = 'all' | 'chunk' | 'random' | 'range' | 'selected' | 'restored';
 
 interface StudyScopeSelectorProps {
   allVocabularies: VocabularyData[];
   selectedVocabIds?: string[];
+  keepInitialScope?: boolean;
   onScopeChange: (scopedVocabs: VocabularyData[], scopeDescription: string) => void;
   activeCount: number;
   modeTheme?: 'amber' | 'indigo' | 'emerald' | 'purple';
@@ -37,6 +38,7 @@ interface StudyScopeSelectorProps {
 export function StudyScopeSelector({
   allVocabularies,
   selectedVocabIds = [],
+  keepInitialScope,
   onScopeChange,
   activeCount,
   modeTheme = 'emerald',
@@ -44,7 +46,7 @@ export function StudyScopeSelector({
   bottomContent,
 }: StudyScopeSelectorProps) {
   const [scopeType, setScopeType] = useState<ScopeType>(
-    selectedVocabIds.length > 0 ? 'selected' : 'all'
+    keepInitialScope ? 'restored' : selectedVocabIds.length > 0 ? 'selected' : 'all'
   );
   const [selectedChunkIndex, setSelectedChunkIndex] = useState(0);
   const [randomCount, setRandomCount] = useState(30);
@@ -156,12 +158,14 @@ export function StudyScopeSelector({
   const vocabIdsStr = allVocabularies.map(v => v.id).join(',');
   const selectedVocabIdsStr = selectedVocabIds.join(',');
 
-  const isFirstMountRef = useRef(true);
+  const previousSelection = useRef<string>();
 
   // Tự động áp dụng scope khi danh sách allVocabularies thay đổi
   useEffect(() => {
-    if (isFirstMountRef.current) {
-      isFirstMountRef.current = false;
+    const previous = previousSelection.current;
+    previousSelection.current = selectedVocabIdsStr;
+    if (scopeType === 'restored' && (previous === undefined || previous === selectedVocabIdsStr)) return;
+    if (previous === undefined) {
       if (selectedVocabIds.length > 0) {
         applyScope('selected');
       } else {
@@ -240,6 +244,10 @@ export function StudyScopeSelector({
             >
               Tất cả
             </button>
+
+            {scopeType === 'restored' && (
+              <span className={`rounded-xl px-2 py-1 font-bold ${activeBtnClasses}`}>Phiên đã lưu</span>
+            )}
 
             {/* Nút: Các từ đã chọn ở Mode 1 (nếu có) */}
             {selectedVocabIds.length > 0 && (

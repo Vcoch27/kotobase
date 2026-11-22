@@ -22,6 +22,8 @@ import { HighlightMnemonic } from "./HighlightMnemonic";
 import { MeaningText, parseMeaning } from "./MeaningText";
 import { VocabularyEditModal } from "./VocabularyEditModal";
 import { canUserManageFolder } from "@/lib/folder-utils";
+import { useInitialStudySnapshot, useSaveStudySnapshot, type StudyPersistence } from "@/hooks/useStudySnapshot";
+import { isStudyIdList, wordIds, wordsInOrder, type StudyScope } from "@/lib/study-session";
 // Fetch mẹo nhớ Hán tự qua API Route (tránh dùng Server Action vì Next.js serialize response đặc biệt không phải JSON thuần)
 async function fetchKanjiNotesMap(): Promise<Record<string, { character: string; hanviet?: string; meaning?: string; mnemonic?: string }>> {
   try {
@@ -44,7 +46,7 @@ interface VocabularyData {
   example?: string | null;
 }
 
-interface FlashcardViewProps {
+interface FlashcardViewProps extends StudyPersistence {
   vocabularies: VocabularyData[];
   selectedVocabIds?: string[];
   isActive?: boolean;
@@ -57,6 +59,20 @@ interface FlashcardViewProps {
 }
 
 type StudyMode = "normal" | "progress" | "anki";
+type ProgressRating = { id: string; wasKnown: boolean };
+type AnkiUndo = { id: string; before: AnkiCardData | null };
+interface FlashcardSnapshot extends StudyScope {
+  mode: StudyMode;
+  deckIds: string[];
+  index: number;
+  flipped: boolean;
+  finished: boolean;
+  shuffled: boolean;
+  knownIds: string[];
+  unknownIds: string[];
+  ratings: ProgressRating[];
+  ankiUndo: AnkiUndo[];
+}
 
 // Fisher-Yates Shuffle
 const shuffleArray = <T,>(array: T[]): T[] => {
@@ -78,8 +94,22 @@ export function FlashcardView({
   selectedFolderId,
   onVocabularyUpdated,
   onOpenListeningQuiz,
+  sessionKey,
+  sessionContext = "",
 }: FlashcardViewProps) {
   const customBg = useCustomBg();
+  const uid = currentUser?.uid;
+  const initial = useInitialStudySnapshot<FlashcardSnapshot, VocabularyData>(
+    sessionKey, sessionContext, vocabularies, (saved, words) => {
+      if (!["normal", "progress", "anki"].includes(saved.mode) ||
+          !isStudyIdList(saved.deckIds) || !saved.deckIds.every(id => words.has(id)) ||
+          !Number.isInteger(saved.index) || saved.index < 0 || saved.index >= Math.max(1, saved.deckIds.length) ||
+          !isStudyIdList(saved.knownIds) || !isStudyIdList(saved.unknownIds) ||
+          !Array.isArray(saved.ratings) || !Array.isArray(saved.ankiUndo)) return null;
+      return saved;
+    },
+  );
+  const saved = initial?.snapshot;
   const getScopedFromSelection = useCallback((all: VocabularyData[], selIds: string[]) => {
     if (selIds && selIds.length > 0) {
       const set = new Set(selIds);
@@ -90,13 +120,14 @@ export function FlashcardView({
   }, []);
 
   const [scopedVocabs, setScopedVocabs] = useState<VocabularyData[]>(() => 
-    getScopedFromSelection(vocabularies, selectedVocabIds)
+    initial ? wordsInOrder(initial.wordsById, initial.snapshot.scopeIds) :
+      getScopedFromSelection(vocabularies, selectedVocabIds)
   );
-  const [mode, setMode] = useState<StudyMode>("normal");
-  const [deck, setDeck] = useState<VocabularyData[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [isFinished, setIsFinished] = useState(false);
+  const [mode, setMode] = useState<StudyMode>(saved?.mode ?? "normal");
+  const [deck, setDeck] = useState<VocabularyData[]>(() => initial ? wordsInOrder(initial.wordsById, initial.snapshot.deckIds) : []);
+  const [currentIndex, setCurrentIndex] = useState(saved?.index ?? 0);
+  const [isFlipped, setIsFlipped] = useState(saved?.flipped ?? false);
+  const [isFinished, setIsFinished] = useState(saved?.finished ?? false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showSino, setShowSino] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -189,7 +220,7 @@ export function FlashcardView({
     }
     return {};
   });
-  const [isShuffled, setIsShuffled] = useState(false);
+  const [isShuffled, setIsShuffled] = useState(saved?.shuffled ?? false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Thông báo trạng thái Fullscreen lên component cha (Dashboard) để ẩn/hiện Header
@@ -268,7 +299,7 @@ export function FlashcardView({
   const modeRef = useRef(mode);
   modeRef.current = mode;
   const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const progressHistoryRef = useRef<{ id: string; wasKnown: boolean }[]>([]);
+  const progressHistoryRef = useRef<ProgressRating[]>(saved?.ratings ?? []);
 
   // Dọn dẹp timeout chuyển thẻ khi unmount
   useEffect(() => {
@@ -320,7 +351,7 @@ export function FlashcardView({
   useEffect(() => {
     // Chỉ cập nhật scopedVocabs khi có danh sách ID chọn từ Bảng (selectedVocabIds)
     // Các trường hợp khác (Tất cả, Chia đợt chunk, Dải STT, Random) được quản lý ổn định bởi StudyScopeSelector
-    if (selectedVocabIds.length > 0) {
+    if (!sessionKey && selectedVocabIds.length > 0) {
       setScopedVocabs(getScopedFromSelection(vocabularies, selectedVocabIds));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -496,24 +527,39 @@ export function FlashcardView({
   const [touchEnd, setTouchEnd] = useState<{x: number, y: number} | null>(null);
 
   // Progress tracking
-  const [knownIds, setKnownIds] = useState<Set<string>>(new Set());
-  const [unknownIds, setUnknownIds] = useState<Set<string>>(new Set());
+  const [knownIds, setKnownIds] = useState(() => new Set(saved?.knownIds));
+  const [unknownIds, setUnknownIds] = useState(() => new Set(saved?.unknownIds));
 
   // Anki tracking
-  const [ankiProgress, setAnkiProgress] = useState<Record<string, AnkiCardData>>({});
-  const [ankiStats, setAnkiStats] = useState({ new: 0, due: 0 });
-  const [ankiHistory, setAnkiHistory] = useState<Record<string, AnkiCardData>[]>([]);
+  const [ankiProgress, setAnkiProgress] = useState(() => saved?.mode === "anki" ? loadAnkiProgress(uid) : {});
+  const [ankiStats, setAnkiStats] = useState(() => {
+    const fresh = deck.filter(word => !ankiProgress[word.id]).length;
+    return { new: fresh, due: deck.length - fresh };
+  });
+  const [ankiHistory, setAnkiHistory] = useState<AnkiUndo[]>(saved?.ankiUndo ?? []);
 
   // Track previous mode and previous scoped vocab IDs to avoid resetting progress on unrelated re-renders
   const prevModeRef = useRef<StudyMode>(mode);
   const prevVocabIdsRef = useRef<string>(scopedVocabs.map(v => v.id).join(","));
+  const initialized = useRef(!!initial);
+  const scopeKey = wordIds(scopedVocabs).join(",");
+
+  useSaveStudySnapshot(sessionKey, sessionContext,
+    isActive && initialized.current && prevModeRef.current === mode && prevVocabIdsRef.current === scopeKey,
+    scopedVocabs, () => ({
+      mode, deckIds: wordIds(deck), index: currentIndexRef.current, flipped: isFlippedRef.current,
+      finished: isFinished, shuffled: isShuffled, knownIds: [...knownIds], unknownIds: [...unknownIds],
+      ratings: progressHistoryRef.current, ankiUndo: ankiHistory,
+    } satisfies Omit<FlashcardSnapshot, "scopeIds">));
 
   // Initialization
   useEffect(() => {
+    if (initialized.current && prevModeRef.current === mode && prevVocabIdsRef.current === scopeKey) return;
+    initialized.current = true;
     if (scopedVocabs.length > 0) {
       let nextDeck: VocabularyData[] = [];
       if (mode === "anki") {
-        const progress = loadAnkiProgress();
+        const progress = loadAnkiProgress(uid);
         setAnkiProgress(progress);
         
         const now = Date.now();
@@ -557,6 +603,7 @@ export function FlashcardView({
         setKnownIds(new Set());
         setUnknownIds(new Set());
         progressHistoryRef.current = [];
+        setAnkiHistory([]);
         if (transitionTimeoutRef.current) {
           clearTimeout(transitionTimeoutRef.current);
           transitionTimeoutRef.current = null;
@@ -577,7 +624,7 @@ export function FlashcardView({
       setCurrentIndex(0);
       setIsShuffled(false);
     }
-  }, [scopedVocabs, mode]);
+  }, [scopedVocabs, mode, scopeKey, uid]);
 
   // Actions
   const flipCard = useCallback(() => {
@@ -593,12 +640,9 @@ export function FlashcardView({
 
     const curr = currentIndexRef.current;
     if (curr >= deckLen - 1) {
-      setIsTransitioning(true);
       if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
-      transitionTimeoutRef.current = setTimeout(() => {
-        setIsFinished(true);
-        setIsTransitioning(false);
-      }, 150);
+      setIsFinished(true);
+      setIsTransitioning(false);
       return;
     }
 
@@ -669,8 +713,7 @@ export function FlashcardView({
     const currentVocab = currentDeck[curr];
     if (!currentVocab) return;
     
-    // Lưu lịch sử trước khi thay đổi
-    setAnkiHistory(prev => [...prev, ankiProgress]);
+    setAnkiHistory(prev => [...prev, { id: currentVocab.id, before: ankiProgress[currentVocab.id] ?? null }]);
     
     const currentProgress = ankiProgress[currentVocab.id] || { ...DEFAULT_ANKI_DATA };
     const newProgressData = calculateNextReview(rating, currentProgress);
@@ -681,21 +724,27 @@ export function FlashcardView({
     };
     
     setAnkiProgress(newAnkiProgress);
-    saveAnkiProgress(newAnkiProgress);
+    saveAnkiProgress(newAnkiProgress, uid);
     
     handleNext();
-  }, [ankiProgress, handleNext]);
+  }, [ankiProgress, handleNext, uid]);
+
+  const undoAnkiRating = useCallback(() => {
+    const last = ankiHistory.at(-1);
+    if (!last) return;
+    const progress = { ...ankiProgress };
+    if (last.before) progress[last.id] = last.before;
+    else delete progress[last.id];
+    setAnkiProgress(progress);
+    saveAnkiProgress(progress, uid);
+    setAnkiHistory(prev => prev.slice(0, -1));
+  }, [ankiHistory, ankiProgress, uid]);
 
   const handleUndo = useCallback(() => {
     if (isFinished) {
       setIsFinished(false);
       // Revert Anki history for the last card
-      if (modeRef.current === "anki" && ankiHistory.length > 0) {
-        const prevProgress = ankiHistory[ankiHistory.length - 1];
-        setAnkiProgress(prevProgress);
-        saveAnkiProgress(prevProgress);
-        setAnkiHistory(prev => prev.slice(0, -1));
-      }
+      if (modeRef.current === "anki") undoAnkiRating();
       return;
     }
     
@@ -723,12 +772,7 @@ export function FlashcardView({
     }
 
     // Revert Anki history for the current card we are stepping back TO
-    if (modeRef.current === "anki" && ankiHistory.length > 0) {
-      const prevProgress = ankiHistory[ankiHistory.length - 1];
-      setAnkiProgress(prevProgress);
-      saveAnkiProgress(prevProgress);
-      setAnkiHistory(prev => prev.slice(0, -1));
-    }
+    if (modeRef.current === "anki") undoAnkiRating();
 
     const prev = Math.max(0, curr - 1);
     currentIndexRef.current = prev;
@@ -741,7 +785,7 @@ export function FlashcardView({
       setIsFlipped(false);
       setIsTransitioning(false);
     }, 150);
-  }, [isFinished, ankiHistory]);
+  }, [isFinished, undoAnkiRating]);
 
   // Auto-play (Tự động lật và chuyển thẻ) cho Mode Bình Thường
   useEffect(() => {
@@ -1007,7 +1051,7 @@ export function FlashcardView({
     setDeck(targetVocabs); // Normal mode behavior
     // If anki mode, it should ideally re-fetch from local storage.
     if (mode === "anki") {
-      const progress = loadAnkiProgress();
+      const progress = loadAnkiProgress(uid);
       setAnkiProgress(progress);
       
       const now = Date.now();
@@ -1026,6 +1070,7 @@ export function FlashcardView({
     setIsShuffled(false);
     setKnownIds(new Set());
     setUnknownIds(new Set());
+    setAnkiHistory([]);
   };
 
   const toggleShuffle = () => {
@@ -1040,7 +1085,7 @@ export function FlashcardView({
       setIsShuffled(true);
     } else {
       if (mode === "anki") {
-        const progress = loadAnkiProgress();
+        const progress = loadAnkiProgress(uid);
         const now = Date.now();
         const ankiDeck = scopedVocabs.filter(v => {
           const p = progress[v.id];
@@ -1058,6 +1103,7 @@ export function FlashcardView({
     isFlippedRef.current = false;
     setIsFlipped(false);
     setIsFinished(false);
+    setAnkiHistory([]);
   };
 
   const studyUnknowns = () => {
@@ -1149,6 +1195,7 @@ export function FlashcardView({
         <StudyScopeSelector
           allVocabularies={vocabularies}
           selectedVocabIds={selectedVocabIds}
+          keepInitialScope={!!saved}
           onScopeChange={(scoped) => {
             setScopedVocabs(scoped);
           }}
