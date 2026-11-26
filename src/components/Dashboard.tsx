@@ -55,6 +55,7 @@ import { FocusRecallView } from "./FocusRecallView";
 import { FlashcardView } from "./FlashcardView";
 import { QuizView } from "./QuizView";
 import { NotificationBell } from "./NotificationBell";
+import { mondaiN3 } from "@/config/mondai-n3";
 
 interface UserInfo {
   uid: string;
@@ -334,6 +335,17 @@ export function Dashboard({ currentUser }: DashboardProps) {
       badge: "Luyện tập",
     },
     {
+      id: "mondai-n3",
+      title: "Mondai 4 & 5",
+      subtitle: "Audio gốc & flashcard",
+      href: mondaiN3.href,
+      icon: Volume2,
+      color: "text-indigo-600 dark:text-indigo-400",
+      bg: "bg-indigo-50 dark:bg-indigo-950/40",
+      border: "border-indigo-200/60 dark:border-indigo-800/40",
+      badge: "N3",
+    },
+    {
       id: "grammar",
       title: "Ngữ Pháp N3",
       subtitle: "308 bài & chi tiết",
@@ -378,6 +390,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
       badge: "PDF",
     },
   ];
+  const utilityCount = UTILITY_APPS.length + Number(isAdminEmail(currentUser?.email));
 
   // Đóng dropdown khi click bất kỳ đâu bên ngoài
   useEffect(() => {
@@ -906,7 +919,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                       <span>Tiện ích học tập</span>
                     </span>
                     <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700">
-                      {isAdminEmail(currentUser?.email) ? '7 tiện ích' : '6 tiện ích'}
+                      {utilityCount} tiện ích
                     </span>
                   </div>
 
@@ -1306,7 +1319,7 @@ export function Dashboard({ currentUser }: DashboardProps) {
                   <Sparkles className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
                   <span>Tiện ích phụ</span>
                   <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 font-extrabold border border-slate-200/50 dark:border-slate-700">
-                    {isAdminEmail(currentUser?.email) ? '7' : '6'}
+                    {utilityCount}
                   </span>
                 </button>
 

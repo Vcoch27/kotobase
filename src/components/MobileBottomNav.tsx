@@ -8,6 +8,7 @@ import {
   Sparkles, Smartphone, GraduationCap, LayoutGrid, Headphones
 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { mondaiN3 } from "@/config/mondai-n3";
 
 export function MobileBottomNav() {
   const pathname = usePathname();
@@ -58,8 +59,7 @@ export function MobileBottomNav() {
     };
   }, []);
 
-  // Ẩn thanh bottom nav khi ở trang login
-  if (pathname === "/login") return null;
+  if (pathname === "/login" || pathname === mondaiN3.href) return null;
 
   const navItems = [
     {
